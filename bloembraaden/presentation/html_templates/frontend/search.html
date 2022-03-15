@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} | Bloembraaden default</title>
+    <meta name="description" content="{{excerpt_parsed|clean}}"/>
+    <link rel="canonical" href="{{root}}/{{slug}}"/>
+    <meta property="og:url" content="{{root}}/{{slug}}"/>
+    <meta property="og:site_name" content="Peatcms default"/>
+    <meta property="og:title" content="{{title|clean}}"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:description" content="{{excerpt_parsed|clean}}"/>
+    <meta property="og:image" content="{{root}}{{image:src_large}}"/>
+    <meta property="og:image:width" content="{{image:width_large}}"/>
+    <meta property="og:image:height" content="{{image:height_large}}"/>
+    <meta property="og:image:secure_url" content="{{root}}{{image:src_large}}"/>
+</head>
+<body class="{{css_class}} search" data-online="{{online}}">
+<div role="main">
+    <header>
+        <!-- branding -->
+        <h2>Bloembraaden welcomes you</h2>
+        <p>This is a default template, rather scant at that. <em>Just to confirm it works.</em> You should create your
+            own templates and content in the admin interface. Download manuals and watch how-to video’s on <a href="https://bloembraaden.io">bloembraaden.io</a>.</p>
+    </header>
+    <h1>{{title}}</h1>
+    <h2>Search is not really working yet, only finds variants by LIKE</h2>
+    <pre>{{content_parsed}}</pre>
+    {%__variants__%}
+    <ul>
+        {%__row__%}
+        <li><a href="{{slug}}">{{title}}</a></li>
+        {%__row__%}
+    </ul>
+    {%__variants__%}
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

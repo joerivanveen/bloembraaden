@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="admin" id="PEATCMS_admin_page">
+<div class="page_content PEATCMS_admin">
+    <h1>Admin {{nickname}}</h1>
+    <p>
+        <a href="mailto:{{email}}">{{email}}</a><br/>
+    </p>
+    {%__clients__%}
+    <h2><input type="text" class="PEATCMS_editable" data-column_name="name" data-table_name="{{table_name}}"
+               value="{{name}}" data-handle="update_column"/></h2>
+    {%__instances__%}
+    <h3>Instances:</h3>
+    {%__row__%}
+    <div class="toggle">
+        <header>
+            <button class="toggle_button" alt="Open / close"></button>
+            <a href="//{{domain}}">{{name}}</a> <a class="button" href="/__admin__/instance/{{domain}}">EDIT</a>
+        </header>
+        <section>
+            <div><label>Instance {{id}}:</label><input type="text" class="PEATCMS_editable" data-column_name="name"
+                                                       data-table_name="{{table_name}}"
+                                                       value="{{name|enquote}}" data-peatcms_handle="update_column"/></div>
+            <div><label>Canonical:</label><input type="text" class="PEATCMS_editable" data-column_name="domain"
+                                                 data-table_name="{{table_name}}"
+                                                 value="{{domain}}" data-handle="update_column"/> <a
+                    href="//{{domain}}">Go!</a></div>
+            <div><label>Date published:</label><input type="text" class="PEATCMS_editable" data-column_name="date_published"
+                                                       data-table_name="{{table_name}}"
+                                                       value="{{date_published}}" data-peatcms_handle="update_column"/></div>
+            <!--<div><input type="button" class="PEATCMS_editable delete" style="float:right;" value="🗑"
+                        data-table_name="_instance" data-peatcms_handle="delete_row" data-confirm="Delete {{name}}?"/>
+            </div>-->
+        </section>
+        <div class="toggle">
+            <header>
+                <button class="toggle_button" alt="Open / close"></button>
+                Extra domains
+            </header>
+            <section>
+                {%__domains__%}
+                <div><label></label><input type="text" class="PEATCMS_editable" data-column_name="domain"
+                                           data-table_name="{{table_name}}"
+                                           value="{{domain}}" data-peatcms_handle="update_column"/>
+                    <input type="button" class="PEATCMS_editable delete" data-table_name="{{table_name}}"
+                           data-peatcms_handle="delete_row" value="🗑"/>
+                    <a href="//{{domain}}">Go</a></div>
+                {%__domains__%}
+                <div><label></label><input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                                           data-table_name="_instance_domain"
+                                           data-peatcms_handle="new_row" value="Extra domain"/></div>
+            </section>
+        </div>
+        <div class="toggle">
+            <header>
+                <button class="toggle_button" alt="Open / close"></button>
+                Presentation
+            </header>
+            <section>
+                <div><label>Admin:</label><input type="text" class="PEATCMS_editable"
+                                                 data-column_name="presentation_admin"
+                                                 data-table_name="{{table_name}}"
+                                                 value="{{presentation_admin|enquote}}" data-handle="update_column"/></div>
+                <div><label>Theme:</label><input type="text" class="PEATCMS_editable"
+                                                 data-column_name="presentation_theme"
+                                                 data-table_name="{{table_name}}"
+                                                 value="{{presentation_theme|enquote}}" data-handle="update_column"/></div>
+                <div><label>Instance:</label><input type="text" class="PEATCMS_editable"
+                                                    data-column_name="presentation_instance"
+                                                    data-table_name="{{table_name}}"
+                                                    value="{{presentation_instance|enquote}}" data-handle="update_column"/>
+                </div>
+            </section>
+        </div>
+        <div class="toggle">
+            <header>
+                <button class="toggle_button" alt="Open / close"></button>
+                E-Commerce
+            </header>
+            <span style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="not_in_stock_can_be_ordered_{{instance_id}}"
+                       data-column_name="not_in_stock_can_be_ordered"
+                       data-table_name="_instance" data-handle="update_column"
+                       {{not_in_stock_can_be_ordered: checked="checked" }}/>
+                <label for="not_in_stock_can_be_ordered_{{instance_id}}">variants that are not in stock can still be ordered</label>
+            </span>
+            <div><label>Decimal separator:</label>
+                <input type="text" class="PEATCMS_editable small" data-column_name="decimal_separator"
+                       data-table_name="_instance" value="{{decimal_separator}}" data-peatcms_handle="update_column"/>
+                <em>This should be ‘.’ or ‘,’, the radix will be set to the other one</em>
+            </div>
+            <div><label>Decimal digits:</label>
+                <input type="text" class="PEATCMS_editable small" data-column_name="decimal_digits"
+                       data-table_name="_instance" value="{{decimal_digits}}" data-peatcms_handle="update_column"/>
+                <em>The number of digits calculated amounts will be displayed with</em>
+            </div>
+            <h4>VAT Category</h4>
+            {%__vat_categories__%}
+            <div><label>Name, percentage, o</label>
+                <input type="text" class="PEATCMS_editable medium" data-column_name="title"
+                       data-table_name="{{table_name}}"
+                       value="{{title}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="percentage"
+                       data-table_name="{{table_name}}"
+                       value="{{percentage}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="o"
+                       data-table_name="{{table_name}}"
+                       value="{{o}}" data-peatcms_handle="update_column"/>
+                <input type="button" class="PEATCMS_editable delete" data-table_name="{{table_name}}"
+                       data-peatcms_handle="delete_row" value="🗑"/>
+            </div>
+            {%__vat_categories__%}
+            <div><label></label><input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                                       data-table_name="_vat_category"
+                                       data-peatcms_handle="new_row" value="Add category"/></div>
+            <h4>Order process</h4>
+            <div style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="confirmation_before_payment_{{instance_id}}"
+                       data-column_name="confirmation_before_payment"
+                       data-table_name="_instance" data-handle="update_column"
+                       {{confirmation_before_payment: checked="checked" }}/>
+                <label for="confirmation_before_payment_{{instance_id}}">send order confirmation before payment</label>
+            </div>
+            <div style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="confirmation_of_payment_{{instance_id}}"
+                       data-column_name="confirmation_of_payment"
+                       data-table_name="_instance" data-handle="update_column"
+                       {{confirmation_of_payment: checked="checked" }}/>
+                <label for="confirmation_of_payment_{{instance_id}}">send payment confirmation</label>
+            </div>
+            <div><label>(Internal) e-mail:</label>
+                <input type="text" class="PEATCMS_editable" data-column_name="confirmation_copy_to"
+                       data-table_name="_instance" value="{{confirmation_copy_to|enquote}}"
+                       data-peatcms_handle="update_column"/>
+                <em>(comma seperated)</em>
+            </div>
+            <div style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="create_invoice_{{instance_id}}"
+                       data-column_name="create_invoice"
+                       data-table_name="_instance" data-handle="update_column"
+                       {{create_invoice: checked="checked" }}/>
+                <label for="create_invoice_{{instance_id}}">create invoice (pdf)</label>
+            </div>
+            <span style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="send_invoice_as_pdf_{{instance_id}}"
+                       data-column_name="send_invoice_as_pdf"
+                       data-table_name="_instance" data-handle="update_column"
+                       {{send_invoice_as_pdf: checked="checked" }}/>
+                <label for="send_invoice_as_pdf_{{instance_id}}">attach invoice to payment confirmation</label>
+            </span>
+            <h4>Payment Service Provider
+                <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                       data-table_parent_id="{{instance_id}}"
+                       data-table_name="_payment_service_provider" data-peatcms_handle="new_row" value="+"/>
+            </h4>
+            <section class="psp">
+                <p><em>Currently active: </em>
+                    <select class="PEATCMS_editable" data-column_name="payment_service_provider_id"
+                            data-table_name="_instance" data-handle="update_column"
+                            data-value="{{payment_service_provider_id}}">
+                        <option hidden>choose</option>
+                        {%__payment_service_providers__%}
+                        <option value="{{payment_service_provider_id}}">{{given_name}}{{provider_name: (::value::)}}
+                        </option>
+                        {%__payment_service_providers__%}
+                    </select>
+                </p>
+                {%__payment_service_providers__%}
+                <div data-online="{{online}}">
+                    {{given_name}}{{provider_name: (::value::)}}
+                    <a class="button" href="/__admin__/payment_service_provider/{{id}}">EDIT</a>
+                </div>
+                {%__payment_service_providers__%}
+            </section>
+        </div>
+        <div class="toggle">
+            <header>
+                <button class="toggle_button" alt="Open / close"></button>
+                Mail
+            </header>
+            <section>
+                <div><label>Custom domain:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="mailgun_custom_domain"
+                           data-table_name="{{table_name}}"
+                           placeholder="Validated domain Mailgun uses"
+                           value="{{mailgun_custom_domain}}"
+                           data-handle="update_column"/>
+                </div>
+                <div><label>Verified sender:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="mail_verified_sender"
+                           data-table_name="{{table_name}}"
+                           placeholder="Valid email address as default sender"
+                           value="{{mail_verified_sender}}"
+                           data-handle="update_column"/>
+                </div>
+                <div><label>Default receiver:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="mail_default_receiver"
+                           data-table_name="{{table_name}}"
+                           placeholder="Valid email address as default receiver"
+                           value="{{mail_default_receiver}}"
+                           data-handle="update_column"/>
+                </div>
+                <p>Mailing provider is set system wide in config file</p>
+                <!--<div><label>Test mail to:</label><input type="email"/>
+                     <button data-peatcms_handle="send_email">SEND</button>
+                 </div>-->
+            </section>
+        </div>
+        <div class="toggle">
+            <header>
+                <button class="toggle_button" alt="Open / close"></button>
+                Keys and identifiers
+            </header>
+            <section>
+                <h3>Google analytics:</h3>
+                <div><label>UA, GA-4 or GTM id:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="google_tracking_id"
+                           data-table_name="_instance" value="{{google_tracking_id}}"
+                           data-peatcms_handle="update_column"/>
+                </div>
+                <h3>Google recaptcha V3:</h3>
+                <div><label>Site key:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="recaptcha_site_key"
+                           data-table_name="{{table_name}}"
+                           value="{{recaptcha_site_key}}" data-handle="update_column"/>
+                </div>
+                <div><label>Secret key:</label>
+                    <input type="password" class="PEATCMS_editable"
+                           data-column_name="recaptcha_secret_key"
+                           data-table_name="{{table_name}}"
+                           value="{{recaptcha_secret_key}}" data-handle="update_column"/>
+                </div>
+                <div><label>Pass score:</label>
+                    <input type="text" class="PEATCMS_editable small"
+                           data-column_name="recaptcha_pass_score"
+                           data-table_name="{{table_name}}"
+                           value="{{recaptcha_pass_score}}" data-handle="update_column"/>
+                    <em>decimal < 1.0</em>
+                </div>
+                <h3>Postcode.nl:</h3>
+                <div><label>Key:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="postcode_nl_key"
+                           data-table_name="{{table_name}}"
+                           value="{{postcode_nl_key}}" data-handle="update_column"/>
+                </div>
+                <div><label>Secret:</label>
+                    <input type="password" class="PEATCMS_editable"
+                           data-column_name="postcode_nl_secret"
+                           data-table_name="{{table_name}}"
+                           value="{{postcode_nl_secret}}" data-handle="update_column"/>
+                </div>
+            </section>
+        </div>
+    </div>
+    {%__row__%}
+    {%__instances__%}
+    <input type="button" class="PEATCMS_editable" data-table_parent="_client" data-table_name="_instance"
+           data-peatcms_handle="new_row" value="New instance"/>
+    {%__clients__%}
+
+    {%__instances__%}
+    <!-- for admins that belong to a specific instance: -->
+    <h3><a href="/__admin__/instance/{{domain}}">Edit {{name}}</a></h3>
+    {%__instances__%}
+
+    <p style="font-size:85%;margin-top:2rem;">(Accessing with instance_id: {{instance_id}})</p>
+    <form action="/__action__/account_delete_session">
+        <input type="submit" value="LOGOUT"/> (this session only)
+    </form>
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

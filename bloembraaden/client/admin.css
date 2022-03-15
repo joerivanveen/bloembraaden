@@ -1,0 +1,1027 @@
+/*
+ * admin page specific styles
+ */
+#PEATCMS_admin_page :focus {
+    outline: 0;
+}
+
+#PEATCMS_admin_page img {
+    display: block;
+    line-height: 0;
+    border: 0;
+}
+
+#PEATCMS_admin_page em {
+    font-style: italic;
+}
+
+#PEATCMS_admin_page strong {
+    font-weight: 700;
+}
+
+#PEATCMS_admin_page {
+    background-color: #fff;
+    background-image: none;
+    min-height: 100vh;
+    padding: 1rem;
+    width: auto;
+}
+
+#PEATCMS_admin_page .toggle {
+    height: 2rem;
+    overflow: hidden; /* open / close handled by button.toggle */
+    transition: height .4s;
+}
+
+#PEATCMS_admin_page .toggle.open {
+    height: auto;
+    margin-bottom: .5rem;
+}
+
+#PEATCMS_admin_page .toggle header {
+    height: 2rem;
+}
+
+#PEATCMS_admin_page .toggle header * {
+    text-decoration: none;
+    font-weight: normal;
+    margin-right: .2rem;
+}
+
+#PEATCMS_admin_page .toggle .toggle_button:after {
+    content: '▶';
+    font-weight: bold;
+    display: inline-block;
+}
+
+#PEATCMS_admin_page .toggle.open > header > .toggle_button:after {
+    transform: rotateZ(90deg);
+}
+
+#PEATCMS_admin_page .toggle .toggle {
+    margin-left: 1.6em; /* indent for a bit */
+}
+
+.PEATCMS_admin .info,
+#PEATCMS_admin_page .info {
+    opacity: .8;
+}
+
+/**
+ * reset some stuff that might be changed by a client css
+ */
+#admin_wrapper *,
+#admin_console *,
+#admin_sidebar .edit-area * {
+    font-family: 'Arial', sans-serif;
+    font-size: 15px;
+    line-height: 1.5em;
+    letter-spacing: 0;
+}
+
+.edit-area * {
+    color: rgb(44, 44, 52);
+}
+
+#admin_console_button {
+    vertical-align: text-top;
+}
+
+#PEATCMS_admin_page section {
+    width: 100%;
+    max-width: 100%;
+    margin: auto;
+}
+
+/**
+ * generic
+ */
+[data-done="true"] {
+    color: rgb(0, 180, 20) !important;
+}
+
+[data-done="false"] {
+    color: rgb(200, 0, 0) !important;
+}
+
+.PEATCMS_admin [data-disabled="1"] {
+    display: none !important;
+}
+
+#PEATCMS_admin_page #PEATCMS_edit_menu {
+    display: none;
+}
+
+#PEATCMS_admin_page .page_content label {
+    display: inline-block;
+    max-width: 160px;
+    width: 20vw;
+}
+
+#PEATCMS_admin_page :not(.edit-area) > input[type=password],
+#PEATCMS_admin_page :not(.edit-area) > input[type=email],
+#PEATCMS_admin_page :not(.edit-area) > input[type=text]:not(.searchable) {
+    background-color: inherit;
+    font-size: inherit;
+    min-width: 160px;
+    width: 50vw;
+    border: 0;
+    border-bottom: solid 1px #333;
+}
+
+#PEATCMS_admin_page input[type=button]:hover {
+    color: rgb(48, 63, 123);
+}
+
+/**
+ * publish button and functionality
+ */
+#peatcms_publish {
+    margin: .25rem .5rem;
+    padding: .25rem;
+    background-color: rgb(48, 63, 123);
+    border-radius: .25rem;
+    position: absolute;
+    top: 2.08rem;
+    right: 0;
+}
+
+#peatcms_publish:after {
+    content: 'publish';
+    font-weight: bold;
+    color: #fff;
+}
+
+#peatcms_publish.published {
+    background-color: #f0f0f0;
+}
+
+.template.published:after,
+#peatcms_publish.published:before {
+    content: '✔';
+    color: rgb(0, 180, 20);
+    font-weight: bold;
+    margin-left: .2em;
+}
+
+#peatcms_publish.published:after {
+    content: 'published';
+    font-weight: normal;
+    color: #999;
+}
+
+.template {
+    display: table-row;
+}
+
+.template > *:first-child {
+    text-transform: capitalize;
+}
+
+.template > * {
+    padding-right: .5rem;
+    color: #444;
+    display: table-cell;
+}
+
+/**
+ * Template editor is a special case :-)
+ */
+#PEATCMS_admin_page.template {
+    overflow: hidden;
+}
+
+#PEATCMS_admin_page.template,
+#PEATCMS_admin_page.template > * {
+    margin: 0;
+    padding: 0;
+}
+
+#PEATCMS_admin_page.template header.bar {
+    height: 4rem;
+    padding: .25rem 1rem;
+}
+
+#PEATCMS_admin_page.template header.bar > * {
+    display: inline-block !important;
+}
+
+#PEATCMS_admin_page.template textarea {
+    font-family: Consolas, "Courier New", Courier, sans-serif;
+    display: block;
+    width: calc(100vw - 17px);
+    height: calc(100vh - 4.5rem - 17px);
+    overflow: scroll;
+    border-bottom: 0;
+}
+
+/**
+ * PEATCMS_admin styles...
+ */
+.PEATCMS_admin img {
+    display: block;
+    line-height: 0;
+    border: 0;
+}
+
+.PEATCMS_admin em {
+    font-style: italic;
+}
+
+.PEATCMS_admin header,
+.PEATCMS_admin strong {
+    font-weight: bold;
+}
+
+
+/**
+ * Menu editor
+ */
+
+/* menu_item */
+#PEATCMS_admin_menu_editor,
+#PEATCMS_admin_menu_finder {
+    float: left;
+    width: 45vw;
+    padding: 30px 0 0 .5em;
+}
+
+#PEATCMS_admin_menu_finder input.searchable {
+    position: absolute;
+    margin-top: -30px;
+    max-width: 45vw;
+}
+
+/*#PEATCMS_admin_menu_editor .toggle,
+.PEATCMS_admin.menu_editor ul li*/
+.menu_editor ul li {
+    background-color: #fff;
+    box-shadow: 0 2px 4px #f0f0f0;
+    padding: 0 6px;
+    margin: 0 0 3px 0;
+    border: 1px solid #f0f0f0;
+    list-style-type: none;
+    border-top: 2px solid transparent;
+}
+
+#PEATCMS_admin_page.menu_editor ul li div.drop_area {
+    height: 10px;
+    background-color: #ccc;
+    margin-left: 3%;
+    width: 97%;
+}
+
+/* items that already have children don't need the child-drop_area! */
+#PEATCMS_admin_page.menu_editor ul li ul + div.drop_area {
+    display: none;
+}
+
+#PEATCMS_admin_page.menu_editor ul li button {
+    float: right;
+}
+
+/* toggle area that allows to add the first menu item or delete / remove them */
+#PEATCMS_admin_menu_editor .toggle {
+    max-height: 40px;
+    margin-top: 1em;
+    background-color: #fff;
+}
+
+#PEATCMS_admin_menu_editor .toggle.dragover {
+    border-color: rgb(48, 63, 123);
+}
+
+/**
+ * Console
+ */
+.offline {
+    border-left: solid .2em rgba(0, 0, 0, .1);
+}
+
+.PEATCMS_admin .offline {
+    display: inherit;
+    /*    outline: dotted 2px #f00;*/
+}
+
+
+.PEATCMS_admin .online {
+    border-left: solid .2em rgb(48, 63, 123);
+}
+
+.PEATCMS_admin .button.edit,
+.PEATCMS_admin button.edit {
+    margin: 0 .2em;
+}
+
+.PEATCMS_admin .button.edit:hover,
+.PEATCMS_admin button.edit:hover {
+    color: rgb(48, 63, 123);
+}
+
+.peatcms-link,
+.PEATCMS_admin a,
+.PEATCMS_admin a:active,
+.PEATCMS_admin a:visited,
+.PEATCMS_admin .link {
+    color: rgb(48, 63, 123);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* panel close buttons */
+label.close:hover {
+    color: rgb(48, 63, 123);
+}
+
+/*.PEATCMS_editable.unsaved,
+.PEATCMS_admin */
+body .PEATCMS_admin .peatcms_loading,
+body .PEATCMS_admin select.unsaved, /* more explicit to overwrite arrow background image */
+body .PEATCMS_admin .unsaved {
+    background-image: url('/client/logo.png');
+    background-repeat: no-repeat;
+    background-position: right .7em top 50%, 0 0;
+}
+body .PEATCMS_admin .peatcms_loading {
+    background-image: url('/client/logo-anim.gif');
+}
+body .PEATCMS_admin div.peatcms_loading {
+    background-position: right .7em top .7em, 0 0;
+}
+/* for admin placeholder must signal layout may shift soon */
+body .PEATCMS_admin [data-peatcms-placeholder] {
+    background-position: left 0 top 0, 0 0;
+    height: 30px;
+    width: 30px;
+    background-repeat: no-repeat;
+    background-image: url('/client/logo-anim.gif');
+}
+body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {
+    display: block !important;
+}
+
+body .PEATCMS_admin textarea.unsaved {
+    background-position: right 1.7em top .7em, 0 0;
+}
+body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty checkboxes */
+    color: rgb(48, 63, 123);
+}
+
+.PEATCMS_admin .pretty_parent {
+    width: calc(100% - .5em);
+    padding: .25em;
+    border: transparent;
+    color: #333;
+    font-weight: bold;
+}
+
+.PEATCMS_admin .suggestions div {
+    padding: 0 .25em;
+    cursor: pointer;
+}
+
+.PEATCMS_admin .create-new { /* inside suggestions */
+    opacity: .56;
+}
+
+.PEATCMS_admin .create-new:hover { /* inside suggestions */
+    opacity: 1;
+}
+
+.PEATCMS_admin .button { /* inside suggestions */
+    margin: 0 2px;
+}
+
+.PEATCMS_data_stasher {
+    position: absolute;
+    /*    border: solid 3px rgb(48, 63, 123);
+        color: rgb(48, 63, 123);
+        border-radius: 10px;
+        height: 0;
+        width: 10px;
+        margin-left: -10px;*/
+}
+
+.PEATCMS_admin ul li.dragover,
+.PEATCMS_admin .order.dragover {
+    border-top: solid 2px rgb(48, 63, 123);
+}
+
+/*.admin.menu_editor ul li span.drag_handle,
+.PEATCMS_admin */
+.drag_handle {
+    cursor: grab;
+    font-weight: bold;
+    color: rgb(48, 63, 123);
+}
+
+/*.admin.menu_editor ul li span.drag_handle:active,
+.PEATCMS_admin */
+.drag_handle:active {
+    cursor: grabbing;
+}
+
+.PEATCMS_admin h3.divider {
+    display: block;
+    color: #333;
+    font-size: 125%;
+    padding-top: .5em;
+    padding-bottom: .2em;
+    text-transform: capitalize;
+}
+
+.PEATCMS_admin h3.divider button {
+    margin-left: 5px;
+}
+
+.PEATCMS_admin .linkable > div:last-child {
+    margin-bottom: 2rem;
+}
+
+.PEATCMS_admin .linkable button::after {
+    content: '\26AC\26AC';
+}
+
+.PEATCMS_admin .linkable button.linked::after,
+.PEATCMS_admin .linkable .linked button::after {
+    content: '\26AD';
+}
+
+.process_area {
+    height: 2rem;
+}
+.PEATCMS_admin .process_area .button {
+    cursor: pointer;
+    width: auto;
+    height: 1.8rem;
+    background-image: none;
+    padding: .09rem .21rem;
+    background-color: #f3f3f6;
+    box-shadow: none;
+    border: none;
+}
+.PEATCMS_admin .process_area .button option {
+
+}
+
+.drop_area {
+    width: 90%;
+    height: 200px;
+    border: dotted 3px #999;
+    overflow: hidden; /* for the progress indicator */
+}
+
+.drop_area.dragover {
+    border-color: rgb(48, 63, 123);
+}
+
+.drop_area .progress {
+    width: 100%;
+    height: 100%;
+    margin-top: 100%;
+    background-color: rgba(48, 63, 123, .4);
+    color: #fff;
+    font-size: 10px;
+}
+
+body .PEATCMS.progress {
+    position: fixed;
+    width: 5px;
+    right: 0;
+    bottom: 0;
+}
+
+/**
+ * PEATCMS_admin please use normal font
+ */
+body .PEATCMS_admin,
+body .PEATCMS_admin * {
+    font-family: Arial, sans-serif;
+    font-size: 1rem;
+    /*padding: 0;
+    margin: 0;*/
+}
+
+/**
+ * Neutralize some specific colors
+ */
+/*body #admin_console_button label,*/
+body .PEATCMS_admin .linkable a,
+body .PEATCMS_admin label,
+body .PEATCMS_admin h1,
+body .PEATCMS_admin h2,
+body .PEATCMS_admin h3,
+body .PEATCMS_admin h4,
+body .PEATCMS_admin h5,
+body .PEATCMS_admin h6,
+body .PEATCMS_admin em,
+body .PEATCMS_admin strong,
+body .PEATCMS_admin header,
+body .PEATCMS_admin div,
+body .PEATCMS_admin span,
+body .PEATCMS_admin p {
+    color: rgb(44, 44, 52);
+}
+
+/* admin items that are only visible when hovering */
+.PEATCMS_admin .onhover {
+    display: none;
+}
+
+.PEATCMS_admin:hover .onhover {
+    display: inline-block;
+}
+
+/**
+ * The one admin button
+ */
+#admin_console_button {
+    position: fixed;
+    bottom: .5em;
+    left: .5em;
+    background-color: rgba(255, 255, 255, .9);
+    color: rgb(44, 44, 52);
+    padding: .25em;
+    border-radius: 2em;
+    border: solid 3px rgb(48, 63, 123);
+    z-index: 100;
+    line-height: 0;
+    text-align: center;
+}
+
+.PEATCMS_admin input[type=submit],
+.PEATCMS_admin input[type=button],
+.PEATCMS_admin .button,
+.PEATCMS_admin button {
+    /* reset a button */
+    background-color: #fff;
+    border-radius: 0;
+    border: none;
+    color: rgb(44, 44, 52);
+    cursor: pointer;
+    padding: 0 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .08);
+    text-decoration: none;
+}
+.PEATCMS_admin input[type=submit]:hover,
+.PEATCMS_admin input[type=button]:hover,
+.PEATCMS_admin .button:hover,
+.PEATCMS_admin button:hover {
+    background-color: inherit;
+}
+
+#admin_console_button label {
+    cursor: pointer;
+}
+.peatcms_ctrl_key_tip {
+    position: absolute;
+    display: inline-block;
+    padding: 0 2px;
+    background-color: #ffc;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    white-space: nowrap;
+}
+
+#PEATCMS_edit_menu {
+    cursor: pointer;
+    position: fixed; /* because boundingRect = relative to view */
+    background-color: rgba(255, 255, 255, .9);
+    border: solid 3px rgb(48, 63, 123);
+    padding: 0 .25em;
+    border-radius: 2em;
+    margin: -1px 4px;
+    color: rgb(48, 63, 123);
+}
+.hoverstate {
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+/*.PEATCMS_admin button.hoverstate:hover,
+#admin_console_button label*/
+.hoverstate:hover {
+    background-color: rgba(48, 63, 123, .1);
+    color: #000;
+}
+
+/**
+ * the various screens / consoles that can be activated by admin
+ */
+.PEATCMS_admin .console_screen {
+    background-color: #fff;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+}
+
+.PEATCMS_admin .console_screen .cell {
+    display: table-cell;
+    padding: .2em .5em;
+    background-color: #fff; /* to prevent overflow:hidden to be shown in the next .harmonica cell */
+}
+
+.PEATCMS_admin .console_screen .cell header {
+    white-space: nowrap;
+    background-color: inherit;
+    width: inherit;
+    border: 0 !important;
+    height: auto; /* for when a client css has the header height defined */
+}
+
+.PEATCMS_admin .console_screen .cell:first-child {
+    width: 162px;
+}
+
+.PEATCMS_admin .console_screen .cell:not(:first-child) {
+    border-left: solid 1px #f0f0f0;
+}
+
+.PEATCMS_admin .console_screen .cell.harmonica {
+    transition: border-color .5s;
+    width: 20px;
+    max-width: 20px;
+}
+
+.PEATCMS_admin .console_screen .cell.harmonica.active {
+    width: 260px;
+    max-width: 260px;
+    border-left-color: rgb(48, 63, 123);
+}
+
+.PEATCMS_admin .console_screen .cell.active header *,
+.PEATCMS_admin .console_screen .cell.active header {
+    color: rgb(48, 63, 123);
+    height: auto;
+}
+
+.PEATCMS_admin .console_screen .cell .results {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.PEATCMS_admin .console_screen .cell .results div {
+    font-size: 85%;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.PEATCMS_admin .console_screen .cell:not(.active) * {
+    overflow: hidden !important;
+}
+
+.PEATCMS_admin .console_screen .cell:not(.active) header {
+    cursor: pointer;
+}
+
+.PEATCMS_admin .console_screen button {
+    margin-bottom: 0;
+}
+
+.PEATCMS_admin .console_screen .cell.messages div {
+    font-size: 85%;
+}
+
+/* stuff that should not be displayde (eg the checkboxes) */
+.PEATCMS_admin .nodisplay {
+    display: none;
+}
+
+/**
+ * default states (before opening, with the corresponding checkboxes unchecked
+ */
+#admin_console {
+    height: 0;
+    bottom: -3px; /* size of the border-top */
+    width: 100%;
+    border-top: solid 3px rgb(48, 63, 123);
+    z-index: 100;
+    overflow: hidden;
+}
+
+#admin_sidebar {
+    position: fixed;
+    width: 0;
+    left: -4px;
+    height: 100%;
+    /*border-right: inset 3px rgb(48, 63, 123);*/
+    z-index: 100;
+    float: left;
+    display: inline-block;
+    overflow: hidden;
+}
+
+#admin_sidebar_positioner {
+    float: right;
+    width: 3px;
+    height: 100vh;
+    background-color: rgb(48, 63, 123);
+}
+
+#admin_sidebar .edit-area {
+    position: absolute;
+    top: 0;
+    height: calc(100vh - 4em); /* TODO maybe calc is not absolutely necessary, since padding bottom has no effect... */
+    margin-right: 3px; /* the width of the positioner */
+    padding: 2em 8px;
+    overflow-y: auto;
+    max-width: calc(100% - 16px);
+}
+
+.edit-area .button.delete,
+.edit-area button.delete {
+    margin: 2rem 0;
+}
+.edit-area span[id] { /* the edit checkboxes */
+    display: block;
+    margin-bottom: 6px;
+}
+
+.edit-area .button.delete,
+.edit-area button.delete,
+.PEATCMS_admin input[type="button"].delete {
+    color: rgb(200, 0, 0);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.edit-area .button.delete,
+.edit-area button.delete,
+#PEATCMS_admin_page input[type="button"].delete:hover {
+    color: rgb(255, 0, 0);
+}
+
+
+.edit-area button.delete ~ span.button {
+    display: block;
+    cursor: pointer;
+    margin: 0 0 4rem 0;
+}
+
+.edit-area #admin_date_popvote {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: solid 5px rgb(48, 63, 123); /* fill color is currently in javascript indicating the relative position */
+    border-radius: 20px;
+}
+.edit-area #admin_date_popvote button {
+    color: #fff;
+    text-shadow: 0 0 1px rgb(44, 44, 52);
+}
+
+/* open / close box for x_value in properties */
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible {
+    float: right;
+    display: block;
+    width: .6rem;
+    height: .6rem;
+    background-color: #eee;
+    transform: rotateZ(45deg);
+}
+
+.PEATCMS_admin .edit-area input[type="text"].flexible {
+    display: none;
+}
+
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked + input[type="text"].flexible {
+    display: block;
+}
+
+.edit-area #admin_date_popvote button {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+#admin_sidebar label.close { /* the close button */
+    position: absolute;
+    top: 0;
+    z-index: 101;
+}
+
+#admin_sidebar button.edit {
+    float: left;
+    font-size: 1.25em;
+}
+
+.PEATCMS_admin input[type=text],
+.PEATCMS_admin input[type=email],
+.PEATCMS_admin input[type=number],
+.PEATCMS_admin input[type=password],
+.PEATCMS_admin .edit-area select,
+.PEATCMS_admin textarea {
+    border: none;
+    outline: none;
+    border-bottom: solid 1px rgb(48, 63, 123);
+    color: rgb(44, 44, 52);
+    box-shadow: 0 2px 4px 0 inset rgba(0, 0, 0, .06);
+    padding: .25em;
+    margin-bottom: .25em;
+    width: calc(100% - .5em);
+    max-width: calc(100% - .5em);
+}
+/* why we need teh #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
+#PEATCMS_admin_page input:focus-visible,
+#PEATCMS_admin_page textarea:focus-visible,
+#PEATCMS_admin_page select:focus-visible,
+#PEATCMS_admin_page .button:focus-visible,
+#PEATCMS_admin_page button:focus-visible,
+#PEATCMS_admin_page label:focus-visible,
+#PEATCMS_admin_page a:focus-visible,
+.PEATCMS_admin input[type=text]:focus-visible,
+.PEATCMS_admin input[type=email]:focus-visible,
+.PEATCMS_admin input[type=number]:focus-visible,
+.PEATCMS_admin input[type=password]:focus-visible,
+.PEATCMS_admin textarea:focus-visible,
+.PEATCMS_admin select:focus-visible,
+.PEATCMS_admin .button:focus-visible,
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible,
+.PEATCMS_admin button:focus-visible,
+.PEATCMS_admin label:focus-visible,
+.PEATCMS_admin a:focus-visible {
+    outline: solid 1px rgb(48, 63, 123);
+    outline-offset: -1px;
+    animation: none;
+}
+.PEATCMS_admin a:focus-visible {
+    outline-offset: 0;
+}
+#PEATCMS_admin_page label:focus-visible,
+.PEATCMS_admin label:focus-visible {
+    outline-offset: 2px;
+}
+.PEATCMS_admin textarea {
+    min-width: calc(100% - .5em);
+}
+
+.PEATCMS_admin textarea.as-input {
+    display: inline;
+    vertical-align: bottom;
+    margin: 0 2px;
+    height: 1.21em;
+    width: 147px;
+    min-width: 0;
+}
+
+.PEATCMS_admin select {
+    background-color: #fff;
+}
+
+#PEATCMS_admin_page input[type=text].PEATCMS_editable.small {
+    width: 40px;
+    max-width: 40px;
+    min-width: 40px;
+}
+
+#PEATCMS_admin_page input[type=text].PEATCMS_editable.medium {
+    width: 120px;
+    max-width: 120px;
+    min-width: 120px;
+}
+
+/*.admin input[type=text].searchable,
+#admin_console input[type=text].searchable,
+#admin_sidebar input[type=text]*/
+.PEATCMS_admin input[type=text].searchable {
+    background-color: #f0f0f0;
+    border-bottom: 0;
+}
+
+.PEATCMS_admin .uneditable {
+    width: 100%;
+    border: none;
+    background: transparent;
+}
+
+body .PEATCMS_admin span.template_status {
+    color: rgb(48, 63, 123);
+    text-transform: uppercase;
+}
+
+/* quick edit tables */
+#PEATCMS_admin_page.search_settings .alternatives {
+    display: block;
+}
+
+#PEATCMS_admin_page.search_settings .alternatives input[type="text"] {
+    display: inline-block;
+    width: 160px;
+}
+
+
+/**
+ * The opening and closing of admin menu's console, sidebar, new, etc. from the button
+ * Default settings that are overridden by admin.js (panels)
+ */
+#admin_console_checkbox:checked ~ #admin_console {
+    height: 25vh;
+}
+
+#admin_sidebar_checkbox:checked ~ #admin_sidebar {
+    left: 0;
+    width: 333px;
+}
+
+#admin_sidebar_checkbox:checked ~ #admin_console_button,
+#admin_console_checkbox:checked ~ #admin_console_button {
+    display: none;
+}
+
+#PEATCMS_admin_page .spacer {
+    clear: both;
+    margin-top: 3em;
+    height: 4.5em;
+}
+
+#PEATCMS_admin_page .footer {
+    font-size: .8em;
+    text-align: center;
+    color: #1d367d;
+}
+
+/**
+ * Order template specials
+ */
+#PEATCMS_admin_page input[type="text"].admin_order_search {
+    max-width: 180px;
+}
+
+.admin_order_search.right {
+    position: absolute;
+    right: 17px;
+    top: 8px;
+    /*float: right;*/
+}
+
+.payment-table,
+.order-table {
+    display: table;
+    width: 100%;
+}
+
+.payment-table .row,
+.order-table .row {
+    display: table-row;
+}
+
+.payment-table .header,
+.order-table .header {
+    display: table-row;
+    background-color: rgb(44, 44, 52);
+}
+
+.payment-table .header > *,
+.order-table .header > * {
+    display: table-cell;
+    color: #fff;
+    font-weight: bold;
+}
+
+.payment-table .row > *,
+.order-table .row > * {
+    display: table-cell;
+    padding: .1em .25em;
+}
+
+.order-table .row > .amount {
+    text-align: right;
+}
+
+.order-table .row:not([data-emailed]) {
+    background-color: rgba(255, 0, 0, .1);
+}
+
+.order-table .row[data-paid] {
+    background-color: rgba(0, 180, 20, .25);
+}
+
+.payment-table .row:not([data-processed]) {
+    background-color: rgba(255, 0, 0, .4);
+}
+
+textarea.code {
+    border: none;
+    background-color: transparent;
+    height: 1.5em;
+}
+
+header.payment {
+    font-weight: normal;
+}
+
+.PEATCMS_admin .paging {
+    padding: .5rem 0;
+}
+.PEATCMS_admin .paging a {
+    padding: .2rem .4rem;
+}
+.PEATCMS_admin .paging a.peatcms-current-slug {
+    text-decoration: none;
+    outline: solid 1px rgb(44, 44, 52);
+}
+
+
+.payment-table .row.raw {
+    display: none;
+}

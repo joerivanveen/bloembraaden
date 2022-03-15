@@ -1,0 +1,421 @@
+.bloembraaden-icon {max-height: 1.4em; max-width:1.4em;width:1.4em;margin-bottom:-.3em;}
+.bloembraaden-icon svg {width:100%;height:100%;}
+.bloembraaden-icon .st0{opacity:0.81;fill:#303f7b;}
+
+/**
+ * Reset
+ */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+main, section, article, nav, figure, figcaption,
+header, footer, aside, mark, details, summary, time,
+table, caption, tbody, tfoot, thead, tr, th, td {
+    border: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: inherit;
+    line-height: 1.6em;
+    font-style: inherit;
+    font-weight: inherit;
+    margin: 0;
+    outline: 0;
+    padding: 0;
+    vertical-align: baseline;
+    color: #000;
+}
+
+fieldset, legend {
+    display: inline;
+    vertical-align: top;
+}
+
+:focus { /* remember to define focus styles! */
+    outline: 0;
+}
+
+img {
+    display: block;
+    line-height: 0;
+    border: 0;
+}
+
+em {
+    font-style: italic;
+}
+
+strong {
+    font-weight: 700;
+}
+
+s {
+    text-decoration: line-through;
+}
+
+/**
+ * basic margins
+ */
+p, h2, h3, h4, h5, h6 {
+    margin-top: .8rem;
+}
+
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {
+    margin-top: 0;
+}
+
+ol li {
+    margin-bottom: .6rem;
+}
+
+ol label {
+    display: block;
+}
+
+/* links and wannabe links */
+a, .peatcms-link {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/**
+ * formatting headers
+ */
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    text-decoration: none;
+}
+
+h1 {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 1.8em;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 1.6em;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 1.4em;
+    font-weight: bold;
+}
+
+h4 {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+h5 {
+    font-weight: bold;
+}
+
+h6 {
+    font-weight: bold;
+}
+[data-peatcms-placeholder] {
+    display: none !important;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    font-size: 16px;
+}
+/**
+ * handy standard css classes
+ */
+.nodisplay,
+.display-none {
+    display: none;
+}
+
+/* nice embed https://stackoverflow.com/a/20130011 */
+.embed_wrapper         {width: 100%; height: 100%; margin: 0 auto; background: #CCC}
+.embed_iframe        {position: relative; padding-top: 56%;}
+.embed_iframe iframe {position: absolute; top: 0; left: 0; width: 100%; height: 100%;}
+
+
+.attention-grabber,
+.peatcms_attention_grabber {
+    animation: peatcms_attention_grabber .2s 6 ease-in-out; /* 6 = iteration count, used to be infinite but removing the class does not stop the animation in IE11 then */
+}
+
+@keyframes peatcms_attention_grabber {
+    0% {
+        transform: translateX(0)
+    }
+    25% {
+        transform: translateX(-6px)
+    }
+    75% {
+        transform: translateX(6px)
+    }
+    100% {
+        transform: translateX(0)
+    }
+}
+
+.peatcms_signal_change {
+    animation: peatcms_pulsating .3s 2 ease-in;
+}
+
+/**
+ * Messages
+ */
+#message_wrapper {
+    position: fixed;
+    width: 80vw;
+    top: 0;
+    left: 10vw;
+    display: block;
+    z-index: 101;
+}
+
+.message {
+    position: relative;
+    display: block;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, .4);
+}
+
+.log {
+    color: rgb(48, 63, 123);
+}
+
+.warn {
+    color: rgb(216, 136, 16);
+}
+
+.error {
+    color: rgb(200, 0, 0);
+    font-weight: bold;
+}
+
+.note {
+    background-color: #ffc;
+}
+
+.message .button.close::before {
+    content: '×';
+}
+
+.message .button.close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 5px;
+    color: #fff;
+    border-radius: 5px; /* same as message */
+    background-color: rgb(90,90,90);
+    font-weight: bold;
+}
+
+.message .button.close:hover {
+    background-color: rgb(0, 180, 20);
+}
+
+/**
+ * from parser
+ */
+.nowrap {
+    white-space: nowrap;
+}
+
+/**
+ * Form elements
+ */
+textarea,
+button,
+input[type="submit"],
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="date"],
+input[type="checkbox"],
+input[type="password"] {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    color: #484844;
+    padding: .25em;
+    margin-bottom: .25em;
+    outline: none;
+    outline-offset: -1px;
+}
+
+input[type="checkbox"]{
+    padding: 0;
+    width: .5rem;
+    height: .5rem;
+    background-color: rgba(0,0,0,.1);
+}
+input[type="checkbox"]:checked{
+    background-color: rgb(48, 63, 123);
+}
+
+textarea,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="date"],
+input[type="password"] {
+    outline: solid 1px #484844;
+}
+button,
+input[type="submit"] {
+    padding: .25em .5em;
+}
+
+/*TODO FOCUS STYLES*/
+
+/**
+ * Pretty checkboxes
+ */
+input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"] + label {
+    line-height: .8em;
+}
+
+input[type="checkbox"] + label:before {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: .2em;
+    padding: 0;
+    content: url("data:image/svg+xml, %3Csvg xmlns='http://www.w3.org/2000/svg' height='12' width='12'%3E%3Ccircle fill='%23fff' cx='6' cy='6' r='5' /%3E%3C/svg%3E ");
+    width: 20px;
+    height: 12px;
+    line-height: 12px;
+    border-radius: 6px;
+    background-color: #f0f0f0;
+    color: #fff;
+    text-align: left;
+    transition: background-color .4s;
+    box-shadow: 0 .1em 1em rgba(0, 0, 0, .25) inset;
+}
+
+input[type="checkbox"]:checked + label:before {
+    background-color: rgb(48, 63, 123);
+    text-align: right;
+}
+input[type="checkbox"].peatcms_loading + label:before {
+   animation: peatcms_pulsating 613ms infinite ease-in-out;
+}
+input[type="checkbox"].peatcms_danger:checked + label:before {
+    background-color: rgb(180, 0, 0);
+}
+@keyframes peatcms_pulsating {
+    25% {
+        opacity: 1;
+    }
+    75% {
+        opacity: .31;
+    }
+}
+
+/**
+ * Pretty select lists
+ */
+body select {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0;
+    border: none;
+    padding: .25em 1.6rem .25em .25em;
+    margin-bottom: .25em;
+    /* border for select can only be done with outline */
+    outline: none;
+    outline-offset: -1px;
+    /* the arrow image (https://www.filamentgroup.com/lab/select-css.html): */
+    /* the color is the 484844 slightly after 'fill' */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23484844%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'),
+    linear-gradient(to bottom, #ffffff 0%, #ffffff 100%);
+    background-repeat: no-repeat, repeat;
+    background-position: right .7em top 50%, 0 0;
+    background-size: .65em auto, 100%;
+}
+body select::-ms-expand {
+    display: none;
+}
+
+/* https://developers.google.com/recaptcha/docs/faq */
+.grecaptcha-badge {
+    visibility: hidden;
+}
+
+
+/**
+ * slider https://cheewebdevelopment.com/boilerplate-vanilla-javascript-content-slider/
+ */
+
+.peatcms-slideshow-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    transition: 300ms;
+}
+
+/* ensure that we can adjust z-index or position elements absolutely within the slideshow itself (e.g., navigation) */
+.peatcms-slideshow {
+    position: relative;
+}
+
+/* set all slides as absolute positioning so they will stack on top of each other, and hidden from one another */
+.peatcms-slide-entry {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1;
+    transition: opacity .6s;
+}
+
+.peatcms-slide-entry.active { /* this is how we transition the slides in/out */
+    opacity: 1;
+    visibility: visible;
+}
+
+/* set up our basic left/right navigation, would should ideally be vertically centered */
+
+.peatcms-slide-nav {
+    list-style: none;
+}
+
+.peatcms-slide-nav li {
+    position: absolute;
+    z-index: 2;
+    cursor: pointer;
+    color: #333;
+    background-color: #fff;
+    font-size: 25px;
+}
+
+/* pull our navigation out of the slider container to avoid z-index issues */
+
+#peatcms-prev-slide {
+    left: 0;
+}
+
+#peatcms-next-slide {
+    right: 0;
+}

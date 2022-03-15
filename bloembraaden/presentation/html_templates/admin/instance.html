@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="instance" id="PEATCMS_admin_page">
+<div class="page_content PEATCMS_admin">
+    <span class="PEATCMS_data_stasher" data-peatcms_id="{{instance_id}}" data-table_name="_instance"></span>
+    <h1><a href="/__admin__/admin">◀ {{name}}</a></h1>
+    <form action="/__action__/admin_clear_cache_for_instance">
+        <p>Domain: <a href="//{{domain}}">{{domain}}</a>
+            <input type="submit" value="↫" title="Clear cache for {{name}}"/><input type="hidden" name="instance_id"
+                                                                                    value="{{instance_id}}"/></p>
+    </form>
+
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Templates
+        </header>
+        <form action="/__action__/admin_publish_templates">
+            <input type="submit" value="Publish all" title="Publish all templates at once"/>
+            <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+            <input type="hidden" name="slug" value="__action__/templates"/>
+        </form>
+        {%__action__/templates%}
+        {%__row__%}
+        <div class="template{{published: published}}"><span>{{element}}:</span>
+            <a href="/__admin__/template/{{template_id}}">{{name}}</a>
+            <span>nest: {{nested_max}} {{nested_show_first_only:(1st only):not:(show all)}}</span>
+            <span>{{variant_page_size}}</span>
+            <a href="/__admin__/template/{{template_id}}" class="button">EDIT</a>
+        </div>
+        {%__row__%}
+        {%__action__/templates%}
+        <table style="margin:14px 0;"><tr><td>
+            <input type="button" class="PEATCMS_editable" data-table_parent="instance"
+               data-table_parent_id="{{instance_id}}"
+               data-table_name="_template" data-peatcms_handle="new_row" value="New template"/>
+        </td><td>
+            <span>&nbsp;</span>json holding all templates:
+        </td><td>
+            <form action="/__action__/admin_export_templates_by_name">
+                <input type="submit" value="Export" title="Export all templates for this instance by name"/>
+                <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+            </form>
+        </td><td>
+            <form action="/__action__/admin_import_templates_by_name" style="min-width:300px;">
+                <textarea name="template_json" placeholder="Paste your json here" class="as-input"></textarea>
+                <input type="submit" value="Import" title="Import all templates for this instance by name"/>
+                <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+                <input type="hidden" name="re_render" value="__action__/templates"/>
+            </form>
+        </td></tr></table>
+        <div><label>Order confirmation: </label>
+            <select class="PEATCMS_editable" data-column_name="template_id_order_confirmation"
+                    data-table_name="_instance" data-handle="update_column"
+                    data-value="{{template_id_order_confirmation}}">
+                <option hidden>choose</option>
+                <!-- todo the template engine trips over returned indexed arrays, while these are just rows, fix that -->
+                {%__action__/admin_get_templates/mail%}
+                {%__row__%}
+                <option value="{{template_id}}">{{name}}</option>
+                {%__row__%}
+                {%__action__/admin_get_templates/mail%}
+            </select>
+            <em>Mail to client for order confirmation</em>
+        </div>
+        <div><label>Payment confirmation: </label>
+            <select class="PEATCMS_editable" data-column_name="template_id_payment_confirmation"
+                    data-table_name="_instance" data-handle="update_column"
+                    data-value="{{template_id_payment_confirmation}}">
+                <option hidden>choose</option>
+                <!-- todo the template engine trips over returned indexed arrays, while these are just rows, fix that -->
+                {%__action__/admin_get_templates/mail%}
+                {%__row__%}
+                <option value="{{template_id}}" class="different yo">{{name}}</option>
+                {%__row__%}
+                {%__action__/admin_get_templates/mail%}
+            </select>
+            <em>Mail to client for payment confirmation</em>
+        </div>
+        <div><label>(Internal) e-mail: </label>
+            <select class="PEATCMS_editable" data-column_name="template_id_internal_confirmation"
+                    data-table_name="_instance" data-handle="update_column"
+                    data-value="{{template_id_internal_confirmation}}">
+                <option hidden>choose</option>
+                <!-- todo the template engine trips over returned indexed arrays, while these are just rows, fix that -->
+                {%__action__/admin_get_templates/mail%}
+                {%__row__%}
+                <option value="{{template_id}}" class="different the second yo">{{name}}</option>
+                {%__row__%}
+                {%__action__/admin_get_templates/mail%}
+            </select>
+            <em>Confirmation for addresses listed as (internal) e-mail</em>
+        </div>
+        <div>
+            <label>Not found slug:</label>
+            <input type="text" class="PEATCMS_editable medium" data-column_name="not_found_slug"
+                   data-table_name="_instance" value="{{not_found_slug}}"
+                   data-peatcms_handle="update_column"/>
+            <em>Slug will be summoned as 404 page</em>
+        </div>
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Redirects
+        </header>
+        {%__action__/admin_redirect%}
+        <div class="redirects">
+            <div class="info"><em>The requested term will be replaced by the slug.
+                If the slug does not exist, Bloembraaden will search for ‘term’ as usual.</em></div>
+            {%__row__%}
+            <span class="PEATCMS_data_stasher" data-peatcms_id="{{redirect_id}}"
+                  data-table_name="_redirect"></span>
+            <div>
+                <label for="term_{{redirect_id}}">Term → slug</label>
+                <input type="text" class="PEATCMS_editable medium"
+                       data-column_name="term"
+                       data-table_name="_redirect"
+                       placeholder="Term"
+                       value="{{term}}"
+                       data-peatcms_handle="update_column"
+                       id="term_{{redirect_id}}"/>
+                →
+                <input type="text" class="PEATCMS_editable medium"
+                       data-column_name="to_slug"
+                       data-table_name="_redirect"
+                       placeholder="To slug"
+                       value="{{to_slug}}"
+                       data-peatcms_handle="update_column"
+                       id="to_slug_{{redirect_id}}"/>
+                <input type="button" class="PEATCMS_editable delete" data-table_name="_redirect"
+                       data-peatcms_handle="delete_row" value="🗑" data-confirm="Delete redirect for {{term}}?"/>
+            </div>
+            {%__row__%}
+            <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                   data-table_parent_id="{{instance_id}}"
+                   data-table_name="_redirect" data-peatcms_handle="new_row" value="Add redirect"/>
+        </div>
+        {%__action__/admin_redirect%}
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Search
+        </header>
+        {%__action__/admin_search%}
+        <!-- TODO just like template this works with __rows__ but I think that should not be mandatory -->
+        {%__rows__%}
+        <div class="search_settings">
+            <span class="PEATCMS_data_stasher" data-peatcms_id="{{search_settings_id}}"
+                  data-table_name="_search_settings"></span>
+            <div>
+                <label for="name_{{search_settings_id}}">Title</label>
+                <input type="text" class="PEATCMS_editable"
+                       data-column_name="name"
+                       data-table_name="_search_settings"
+                       placeholder="Name"
+                       value="{{name}}"
+                       data-peatcms_handle="update_column"
+                       id="name_{{search_settings_id}}"/>
+                <input type="radio" name="is_default" {{is_default:checked="checked" }}
+                       data-column_name="name"
+                       data-table_name="_search_settings"
+                       data-peatcms_handle="update_column"
+                       id="is_default_{{search_settings_id}}"/>
+                <label for="is_default_{{search_settings_id}}">default</label>
+            </div>
+            <div>
+                <label for="slug_{{search_settings_id}}">Slug</label>
+                <input type="text" class="PEATCMS_editable"
+                       data-column_name="slug"
+                       data-table_name="_search_settings"
+                       placeholder="slug"
+                       value="{{slug}}"
+                       data-peatcms_handle="update_column"
+                       id="slug_{{search_settings_id}}"/>
+            </div>
+            <div>
+                <label for="template_id_{{search_settings_id}}">Template</label>
+                <select class="PEATCMS_editable peatcms_loading" data-column_name="template_id"
+                        id="template_id_{{search_settings_id}}"
+                        data-table_name="_search_settings" data-handle="update_column" data-value="{{template_id}}">
+                    <option hidden>choose...</option>
+                </select>
+            </div>
+            <div>
+                <span style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable" id="use_fts_{{search_settings_id}}"
+                       data-column_name="use_fts" data-table_name="_search_settings" data-handle="update_column"
+                       {{use_fts: checked="checked" }}/>
+                <label for="use_fts_{{search_settings_id}}">Full Text Search</label>
+            </span>
+                <select class="PEATCMS_editable" data-column_name="fts_language"
+                        id="fts_language_{{search_settings_id}}"
+                        data-table_name="_search_settings" data-handle="update_column" data-value="{{fts_language}}">
+                    <option hidden>choose:</option>
+                    <option value="dutch">dutch</option>
+                    <option value="english">english</option>
+                    <option value="french">french</option>
+                    <option value="spanish">spanish</option>
+                    <option value="italian">italian</option>
+                </select>
+                <label for="fts_language_{{search_settings_id}}">(FTS-language)</label>
+                <a href="/__admin__/search_settings/{{search_settings_id}}">Manage tables</a>
+            </div>
+
+        </div>
+        {%__rows__%}
+        {%__action__/admin_search%}
+        <div class="info"><em>Still being developed.</em></div>
+        <!--<div>
+            <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                   data-table_parent_id="{{instance_id}}"
+                   data-table_name="_search_settings" data-peatcms_handle="new_row" value="Add search"/>
+        </div>-->
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Countries
+        </header>
+        <!--admin_countries can get countries for different instances, whereas countries always gets them for the current instance-->
+        {%__action__/admin_countries%}
+        <!-- TODO just like template this works with __rows__ but I think that should not be mandatory -->
+        {%__rows__%}
+        <div class="country">
+            <span class="PEATCMS_data_stasher" data-peatcms_id="{{country_id}}" data-table_name="_country"></span>
+            <div>
+                <input type="text" class="PEATCMS_editable" data-column_name="name"
+                       data-table_name="_country" placeholder="Name of the country"
+                       value="{{name}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="iso2"
+                       data-table_name="_country" placeholder="ISO2"
+                       value="{{iso2}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="iso3"
+                       data-table_name="_country" placeholder="ISO3"
+                       value="{{iso3}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="o"
+                       data-table_name="_country" title="Order of the countries in lists"
+                       value="{{o}}" data-peatcms_handle="update_column"/>
+                <input type="button" class="PEATCMS_editable delete" data-table_name="_country"
+                       data-peatcms_handle="delete_row" value="🗑"/>
+            </div>
+            <div>
+                <label>Shipping costs</label>
+                <input type="text" class="PEATCMS_editable medium" data-column_name="shipping_costs"
+                       data-table_name="_country" placeholder="Shipping costs" title="Shipping costs"
+                       value="{{shipping_costs}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable medium" data-column_name="shipping_free_from"
+                       data-table_name="_country" placeholder="Shipping free from (amount)"
+                       title="Shipping free from (amount)"
+                       value="{{shipping_free_from}}" data-peatcms_handle="update_column"/>
+            </div>
+        </div>
+        {%__rows__%}
+        {%__action__/admin_countries%}
+        <div>
+            <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                   data-table_parent_id="{{instance_id}}"
+                   data-table_name="_country" data-peatcms_handle="new_row" value="Add country"/>
+        </div>
+    </section>
+    <section class="toggle" data-instance_id="{{instance_id}}"
+             data-instance_id_message="To manage Instagram switch to the native instance">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Instagram
+        </header>
+        {%__action__/admin_instagram%}
+        {%__feeds__%}
+        <span class="PEATCMS_data_stasher" data-peatcms_id="{{instagram_feed_id}}"
+              data-table_name="_instagram_feed"></span>
+        <div>
+            <!--<strong>{{instagram_auth_id}} / {{instagram_feed_id}}</strong>-->
+            <div class="info"><em>NOTE: changes may take up to 5 minutes to become visible or start manifesting at all.</em></div>
+            <input type="text" class="PEATCMS_editable medium" data-column_name="feed_name"
+                   data-table_name="_instagram_feed" placeholder="Feed name"
+                   title="Choose a feed name to load this feed"
+                   value="{{feed_name}}" data-peatcms_handle="update_column"/>
+            <input type="text" class="PEATCMS_editable small" data-column_name="quantity"
+                   data-table_name="_instagram_feed" placeholder="Quantity"
+                   title="(Max) number of media items to show"
+                   value="{{quantity}}" data-peatcms_handle="update_column"/>
+            <strong>@</strong>
+            <input type="text" class="PEATCMS_editable medium" data-column_name="instagram_username"
+                   data-table_name="_instagram_feed" placeholder="Username"
+                   title="Provide a username to restrict media to that user"
+                   value="{{instagram_username}}" data-peatcms_handle="update_column"/>
+            <strong>#</strong>
+            <input type="text" class="PEATCMS_editable medium" data-column_name="instagram_hashtag"
+                   data-table_name="_instagram_feed" placeholder="Hashtag..." title="Show only media with this hashtag"
+                   value="{{instagram_hashtag}}" data-peatcms_handle="update_column"/>
+            <input type="button" class="PEATCMS_editable delete" data-table_name="_instagram_feed"
+                   data-peatcms_handle="delete_row" value="🗑" data-confirm="Delete feed?"/>
+            summon: {&shy;%__action__/instagram/feed/{{feed_name}}%&shy;}
+        </div>
+        {%__feeds__%}
+        {%__authorizations__%}
+        <span class="PEATCMS_data_stasher" data-peatcms_id="{{instagram_auth_id}}"
+              data-table_name="_instagram_auth"></span>
+        <div><strong>{{instagram_username}}</strong> {{access_granted:authorized,:not:<em>failed attempt</em>,}}
+            expires: {{access_token_expires}} {{deauthorized:<span class="warn">DEAUTHORIZING</span>:not:
+            <input type="button" class="PEATCMS_editable delete" data-table_name="_instagram_auth"
+                   data-column_name="deauthorized" data-column_value="true" data-success="DEAUTHORIZING"
+                   data-peatcms_handle="update_column" value="🗑" data-confirm="Deauthorize {{instagram_username}}?"/>
+            <input type="button" class="PEATCMS_editable" data-table_parent="_instagram_auth"
+                   data-table_parent_id="{{instagram_auth_id}}"
+                   data-table_name="_instagram_feed" data-peatcms_handle="new_row" value="Add feed"/>}}
+            {{done::not:<em class="note">Loading media approx 4 images / minute</em>}}
+        </div>
+        {%__authorizations__%}
+        {%__action__/admin_instagram%}
+        <p>Add Instagram accounts by (re-)authorizing Bloembraaden with the appropriate user:
+            <a class="button" href="/__action__/instagram/authorize/">Authorize Bloembraaden</a></p>
+        <p>Authorization is extended automagically approx 5 days before it expires.</p>
+        {%__action__/instagram/feed/default-feed%}
+        <h2>{{feed_name}} {{instagram_username:@::value::}} {{instagram_hashtag:#::value::}}</h2>
+        {%__media__%}
+        <a href="{{permalink}}" title="{{caption|clean}}" class="{{media_type}}" style="display:inline-block;background-image:url('{{src_small}}');
+        background-size:cover;width:100px;height:100px;"></a>
+        {%__media__%}
+        {%__action__/instagram/feed/default-feed%}
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Admins
+        </header>
+        {%__admins__%}
+        <div><label>Email:</label>
+            <input type="button" class="PEATCMS_editable delete" style="float:right;" value="Delete admin"
+                   data-table_name="_admin" data-peatcms_handle="delete_row" data-confirm="Delete {{nickname}}?"/>
+            <input type="text" class="PEATCMS_editable" data-column_name="email"
+                   data-table_name="_admin"
+                   value="{{email}}" data-peatcms_handle="update_column"/></div>
+        <div><label>Nickname:</label>
+            <input type="text" class="PEATCMS_editable" data-column_name="nickname"
+                   data-table_name="_admin"
+                   value="{{nickname}}" data-handle="update_column"/></div>
+        <div style="margin-bottom:.5rem;"><label>Password:</label>
+            <input type="password" class="PEATCMS_editable" data-column_name="password"
+                   data-table_name="_admin"
+                   value="" data-handle="update_column"/></div>
+        {%__admins__%}
+        <input type="button" class="PEATCMS_editable" data-table_parent="instance"
+               data-table_parent_id="{{instance_id}}"
+               data-table_name="_admin" data-peatcms_handle="new_row" value="New admin"/>
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Danger
+        </header>
+        <span style="white-space: nowrap;">
+                <input type="checkbox" class="PEATCMS_editable peatcms_danger" id="park_{{instance_id}}"
+                       data-column_name="park" data-table_name="_instance" data-handle="update_column"
+                       {{park: checked="checked" }}/>
+                <label for="park_{{instance_id}}">park <em>switches OFF this entire website for non-admins!</em></label>
+            </span>
+    </section>
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden {{version}}, we’ve got your backend</p>
+</body>
+</html>

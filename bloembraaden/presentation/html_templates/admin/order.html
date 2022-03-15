@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="admin" id="PEATCMS_admin_page">
+<header data-peatcms-keep="admin_order_header" class="PEATCMS_admin">
+    <input class="admin_order_search right searchable" type="text" placeholder="last digits order number"/>
+</header>
+<div class="page_content PEATCMS_admin">
+    {%__order__%}
+    <h1><a href="/__order__">◀ Orders overview</a></h1>
+    <h2>{{order_number_human}} (€ {{amount_grand_total}})</h2>
+    <!--<h3>TEST: {{payment_afterwards}} {{payment_afterwards_captured}} {{payment_transaction_id}}</h3>
+    <p>{{payment_tracking_id}} {{payment_tracking_text}}
+    <button data-peatcms_handle="admin_payment_capture" data-order_id="{{order_id}}">CAPT</button> </p>-->
+    <div class="toggle">
+        <header data-done="{{emailed_order_confirmation_success}}">
+            <button class="toggle_button" alt="Open / close"></button>
+            {{emailed_order_confirmation:Order confirmation:not:Wait for order confirmation}}
+            {{emailed_order_confirmation_success:✔:not:×}}
+        </header>
+        <section>
+            <textarea class="code">{{emailed_order_confirmation_response}}</textarea>
+        </section>
+    </div>
+    <div class="toggle">
+        <header data-done="{{payment_confirmed_bool}}">
+            <button class="toggle_button" alt="Open / close"></button>
+            {{payment_confirmed_bool:Paid ✔:not:Not paid}}
+            {{payment_sequential_number:<a target="_blank" href="/__action__/invoice/order_number:{{order_number}}">Invoice: ::value::</a>}}
+            {{payment_live_flag::not:(test)}}
+            {{payment_confirmed_bool::not:<button id="payment_link" data-href="/__action__/pay/order_number:{{order_number}}">Payment link</button>}}
+        </header>
+        <section>
+            <div>Status: <strong>{{payment_status}}</strong> (last update: {{payment_confirmed_date}})</div>
+            {%__payments__%}
+            <div class="toggle">
+            <header class="payment">
+                <button class="toggle_button" alt="Open / close"></button>
+                € {{amount|format_money}} (received: {{date_created}}, last update: {{date_processed}})
+            </header>
+            <section>
+                <textarea class="code">{{raw}}</textarea>
+            </section>
+            </div>
+            {%__payments__%}
+        </section>
+    </div>
+    <div class="toggle">
+        <header data-done="{{emailed_payment_confirmation_success}}">
+            <button class="toggle_button" alt="Open / close"></button>
+            {{emailed_payment_confirmation:Payment confirmation:not:Wait for payment confirmation}}
+            {{emailed_payment_confirmation_success:✔:not:×}}
+        </header>
+        <section>
+            <textarea class="code">{{emailed_payment_confirmation_response}}</textarea>
+        </section>
+    </div>
+    <hr/>
+    <!--
+    {%__items__%}
+    <div>{{title}} {{price}} × {{quantity}} = {{total}}</div>
+    {%__items__%}
+    <div>shipping: {{shippingcosts}}</div>
+    <div>total: {{amount_grand_total}}</div>
+    -->
+    {{html}}
+    {%__order__%}
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

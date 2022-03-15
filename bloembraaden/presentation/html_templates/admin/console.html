@@ -1,0 +1,129 @@
+<!-- data-peatcms-keep="permanent" is mandatory, or it won't work with peat.js template -->
+<div class="PEATCMS_admin" id="admin_wrapper" data-peatcms-keep="permanent">
+    <input type="checkbox" class="nodisplay" id="admin_console_checkbox"/>
+    <input type="checkbox" class="nodisplay" id="admin_sidebar_checkbox"/>
+    <div class="PEATCMS_admin admin_console transition console_screen" id="admin_console">
+        <div class="cell admin">
+            <div><a href="/__admin__/instance">
+                <svg class="bloembraaden-icon" title="Open console" xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 46 46" xml:space="preserve">
+                <path class="st0"
+                      d="M22.4,0c4.5,0,8.1,2.8,8.1,10.7s-3.6,14.3-8.1,14.3s-8.1-6.4-8.1-14.3S17.9,0,22.4,0z"/>
+                    <path class="st0"
+                          d="M43.2,14.2c2.3,3.7,2.1,8.1-4.1,12s-13,3.9-15.4,0.2s0.7-9.9,6.9-13.8S40.9,10.4,43.2,14.2z"/>
+                    <path class="st0"
+                          d="M39.1,40.9c-3,3-7.3,3.5-12.6-1.8s-7.2-12.1-4.2-15s9.7-1.1,15,4.2S42.1,37.9,39.1,40.9z"/>
+                    <path class="st0"
+                          d="M10.5,45c-3.8-2-5.6-6-2-12.5s9.4-10.3,13.2-8.2s3.9,9,0.4,15.5S14.3,47,10.5,45z"/>
+                    <path class="st0"
+                          d="M1.7,16.2C3.1,12,6.9,9.5,14.3,12s12.2,8,10.7,12.2s-8.6,5.5-16,3S0.2,20.4,1.7,16.2z"/>
+            </svg>
+                Settings</a></div>
+            <div class="linkable"><a href="/">Homepage</a>
+                <button title="Set current" data-peatcms_handle="set_homepage"></button>
+            </div>
+            <span for="admin_sidebar_checkbox" data-ctrl_key="Edit: CTRL+," data-peatcms_handle="edit_current" class="hoverstate">EDIT</span>
+            <button data-peatcms_handle="uncache_current" title="Refresh cache entry">↫</button>
+            <span class="template_status" title="Template status"></span>
+        </div>
+        <div class="cell page">
+            <header>Page
+                <button data-action="new" data-element_name="page">+</button>
+            </header>
+            <div data-action="search" data-element_name="page" class="results"></div>
+        </div>
+        <div class="cell image">
+            <header>Image
+                <button data-action="new" data-element_name="image">+</button>
+            </header>
+            <div data-action="search" data-element_name="image" class="results"></div>
+        </div>
+        <div class="cell embed">
+            <header>Embed
+                <button data-action="new" data-element_name="embed">+</button>
+            </header>
+            <div data-action="search" data-element_name="embed" class="results"></div>
+        </div>
+        <div class="cell file">
+            <header>File
+                <button data-action="new" data-element_name="file">+</button>
+            </header>
+            <div data-action="search" data-element_name="file" class="results"></div>
+        </div>
+        <div class="cell menu">
+            <header>Menu
+                <button data-action="new" data-element_name="menu">+</button>
+            </header>
+            <div data-action="search" data-element_name="menu" class="results"></div>
+        </div>
+        <div class="cell brand">
+            <header>Brand
+                <button data-action="new" data-element_name="brand">+</button>
+            </header>
+            <div data-action="search" data-element_name="brand" class="results"></div>
+        </div>
+        <div class="cell serie">
+            <header>Series
+                <button data-action="new" data-element_name="serie">+</button>
+            </header>
+            <div data-action="search" data-element_name="serie" class="results"></div>
+        </div>
+        <div class="cell product">
+            <header>Product
+                <button data-action="new" data-element_name="product">+</button>
+            </header>
+            <div data-action="search" data-element_name="product" class="results"></div>
+        </div>
+        <div class="cell variant">
+            <header>Variant
+                <button data-action="new" data-element_name="variant">+</button>
+            </header>
+            <div data-action="search" data-element_name="variant" class="results"></div>
+        </div>
+        <div class="cell property">
+            <header>&middot; Property
+                <button data-action="new" data-element_name="property">+</button>
+            </header>
+            <div data-action="search" data-element_name="property" class="results"></div>
+        </div>
+        <div class="cell messages">
+            <header><a href="/__order__">▶ Order overview</a></header>
+            <input class="admin_order_search searchable" type="text" placeholder="last digits order number"/>
+            <div id="order-summaries"></div>
+            <!--<header><a href="/__admin__/search">▶ Fine search</a></header>
+            <input class="admin_search searchable" type="text" placeholder="find"/>-->
+            <span><a href="/not_online" data-online="false">▶ not online</a></span>
+            <form action="/__action__/account_delete_session" style="float:right">
+                <input type="submit" value="LOGOUT"/> (this session only)
+            </form>
+        </div>
+        <label for="admin_console_checkbox" data-ctrl_key="Close: CTRL+." class="button close"
+               style="position:absolute;top:0;right:0;">&times;</label>
+    </div>
+    <div class="PEATCMS_admin admin_sidebar transition console_screen" id="admin_sidebar">
+        <div id="admin_sidebar_positioner"></div>
+        <label for="admin_sidebar_checkbox" data-ctrl_key="Close: CTRL+," class="button close">&times;</label>
+    </div>
+    <div class="PEATCMS_admin admin_console_button" id="admin_console_button">
+        <label for="admin_console_checkbox" class="transition" title="Open console">
+            <svg class="bloembraaden-icon" xmlns="http://www.w3.org/2000/svg"
+                 xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 46 46" xml:space="preserve">
+                <path class="st0"
+                      d="M22.4,0c4.5,0,8.1,2.8,8.1,10.7s-3.6,14.3-8.1,14.3s-8.1-6.4-8.1-14.3S17.9,0,22.4,0z"/>
+                <path class="st0"
+                      d="M43.2,14.2c2.3,3.7,2.1,8.1-4.1,12s-13,3.9-15.4,0.2s0.7-9.9,6.9-13.8S40.9,10.4,43.2,14.2z"/>
+                <path class="st0"
+                      d="M39.1,40.9c-3,3-7.3,3.5-12.6-1.8s-7.2-12.1-4.2-15s9.7-1.1,15,4.2S42.1,37.9,39.1,40.9z"/>
+                <path class="st0" d="M10.5,45c-3.8-2-5.6-6-2-12.5s9.4-10.3,13.2-8.2s3.9,9,0.4,15.5S14.3,47,10.5,45z"/>
+                <path class="st0"
+                      d="M1.7,16.2C3.1,12,6.9,9.5,14.3,12s12.2,8,10.7,12.2s-8.6,5.5-16,3S0.2,20.4,1.7,16.2z"/>
+            </svg>
+            <span class="template_status" title="Template status"></span>
+        </label>
+        <label class="onhover transition hoverstate" id="admin_button_edit"
+               data-panel="sidebar" data-peatcms_handle="edit_current">EDIT</label>
+        <span class="onhover transition hoverstate" data-peatcms_handle="uncache_current">Refresh cache</span>
+    </div>
+</div>

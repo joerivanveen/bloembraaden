@@ -1,0 +1,145 @@
+<?php
+
+namespace Peat;
+class Instance extends BaseLogic
+{
+    private array $menus, $instagram_feeds;
+
+    public function __construct(\stdClass $row = null)
+    {
+        parent::__construct();
+        $this->type_name = 'instance';
+        if (null === $row) {
+            if (null === ($host = $_SERVER['HTTP_HOST'])) {
+                $this->handleErrorAndStop('Cannot serve pages without HTTP_HOST header');
+            } else {
+                $this->load($host);
+            }
+        } else {
+            $this->row = $row;
+        }
+    }
+
+    public function getId(): int
+    {
+        return (int)$this->row->instance_id;
+    }
+
+    public function getHomepageId(): int
+    {
+        return (int)$this->row->homepage_id;
+    }
+
+    public function getClientId(): ?int
+    {
+        if (isset($this->row->client_id)) {
+            return $this->row->client_id;
+        }
+
+        return null;
+    }
+
+    public function getName(): string
+    {
+        return (string)$this->row->name;
+    }
+
+    public function getDomain(bool $includeProtocol = false): string
+    {
+        return ($includeProtocol ? "https://" : "") . $this->row->domain;
+    }
+
+    public function completeRowForOutput(): void
+    {
+        // TODO domains and admins should get the same lazy loading construction as menus
+        if (false === isset($this->row->__domains__)) {
+            $this->row->__domains__ = $this->getDB()->fetchInstanceDomains($this->getId()); // db only returns the rows, customarily
+        }
+        if (false === isset($this->row->__admins__)) {
+            $this->row->__admins__ = $this->getDB()->fetchInstanceAdmins($this->getId()); // db only returns the rows, customarily
+        }
+        if (false === isset($this->row->__payment_service_providers__)) {
+            $this->row->__payment_service_providers__ = $this->getDB()->fetchInstancePsps($this->getId()); // db only returns the rows, customarily
+        }
+        if (false === isset($this->row->__vat_categories__)) {
+            $this->row->__vat_categories__ = $this->getDB()->fetchInstanceVatCategories($this->getId()); // db only returns the rows, customarily
+        }
+        Help::prepareAdminRowForOutput($this->row, 'instance', $this->getDomain());
+    }
+
+    public function getMenus(): array
+    {
+        if (false === isset($this->menus)) {
+            $this->menus = $this->getDB()->fetchInstanceMenus($this->getId());
+        }
+
+        return $this->menus;
+    }
+
+    /**
+     * @return PaymentServiceProvider|null
+     * @since 0.6.2
+     * @since 0.7.6 return child class of the correct type
+     */
+    public function getPaymentServiceProvider(): ?PaymentServiceProvider
+    {
+        if (($psp_id = $this->getSetting('payment_service_provider_id')) > 0) {
+            if (($row = $this->getDB()->getPaymentServiceProviderRow($psp_id))) {
+                if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
+                    return new $class_name($row);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // global stuff accessible from outside
+    public function getPresentationInstance(): string
+    {
+        return (string)$this->row->presentation_instance;
+    }
+
+    public function getPresentationAdmin(): string
+    {
+        return (string)$this->row->presentation_admin;
+    }
+
+    /**
+     * @param string $which the name of the setting you wish to get
+     * @return null|mixed returns the original value (@since 0.7.6)
+     * @since 0.4.0
+     */
+    public function getSetting(string $which)
+    {
+        return $this->row->$which ?? null;
+    }
+
+    public function isParked(): bool
+    {
+        return $this->row->park ?? false;
+    }
+
+    /**
+     * Loads the instance based on domain accessed
+     * When this fails execution is halted, hence no return value is needed
+     *
+     * @param $domain string
+     */
+    private function load(string $domain)
+    {
+        // load the instance based on the supplied host
+        if (!($this->row = $this->getDB()->fetchInstance($domain))) {
+            // try to find alternative hosts to provide a 301 redirect
+            if (($canonical = $this->getDB()->fetchInstanceCanonicalDomain($domain))) {
+                // @since 0.7.1 also supply the originally requested uri...
+                header('Location: https://' . $canonical . urldecode($_SERVER['REQUEST_URI']), true, 301);
+                die();
+            } else {
+                // @since 0.10.2 no more error reporting for these kinds of requests
+                $this->addError('No instance found for domain ' . $domain);
+                die('<pre style="font-family:Courier,monospace">' . Setup::FLOWER . '</pre>');
+            }
+        }
+    }
+}

@@ -1,0 +1,72 @@
+<table style="width:100%;">
+    <tbody>
+    <tr>
+        <td valign="top">
+            <img src="https://www.peatcms.com/instance/peatcms/PEATCMS_logo.svg" alt="Logo"/>
+            <p style="font-size:16px;font-family:arial;">Bevestiging van bestelling</p>
+            <p style="font-size:14px;margin-bottom:3px;">Aan: <a href="{{user_email}}">{{user_email}}</a> {{user_phone}}</p>
+            <h2 style="font-size:14px; font-weight:bold;">Bezorgadres</h2>
+            {{shipping_address_name}}<br/>
+            {{shipping_address_street}} {{shipping_address_number}} {{shipping_address_number_addition}}<br/>
+            {{shipping_address_street_addition:::value::<br/>}}
+            {{shipping_address_postal_code}} {{shipping_address_city}}<br/>
+            {{shipping_address_country_name}}
+            <h2 style="font-size:14px;font-weight:bold;margin-top:3px;">Factuuradres</h2>
+            {{billing_address_name}}<br/>
+            {{billing_address_street}} {{billing_address_number}} {{billing_address_number_addition}}<br/>
+            {{billing_address_street_addition:::value::<br/>}}
+            {{billing_address_postal_code}} {{billing_address_city}}<br/>
+            {{billing_address_country_name}}
+        </td>
+        <td valign="top" align="right">
+            <p style="font-size:14px;font-weight:bold;font-family:arial;">Bezorgen op: {{preferred_delivery_day}}</p>
+            <h2 style="font-family:arial;font-size:16px;">Bestelnummer {{order_number}}</h2>
+            <h3 style="font-family:arial;font-size:14px;white-space:nowrap;margin-top:8px;">
+                Besteldatum: {{date_created}}</h3>
+            <p style="font-family:arial;font-size:12px;margin-top: 3px;">
+                <b>Petit Clos</b><br/>
+                ✉ info@petitclos.nl<br/>
+                ✆ 06 1234567<br/>
+                IBAN: NL 00 INGB 0XX XXXXXXXX<br/>
+                BIC / SWIFT: INGBXXXX<br/>
+                KVK: ...<br/>
+                BTW: ...
+            </p>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<table style="font-family:Arial,sans-serif;color:#475148;font-size:12px;width:100%;border-bottom: 1px dotted #475148;border-top: 1px dotted #475148;margin-bottom:0px; padding-bottom:10px;">
+    {%__items__%}
+    <tr>
+        <td colspan="3">{{title}}</td>
+    </tr>
+    <tr>
+        <td>{{price_from:<s>€ ::value::</s>}} € {{price}}</td>
+        <td>× {{quantity}}</td>
+        <td align="right">€ {{total}}</td>
+    </tr>
+    {%__items__%}
+    <tr>
+        <td colspan="2"> </td>
+        <td align="right"><hr style="margin:0;float:right;"/></td>
+    </tr>
+    <tr>
+        <td colspan="2">Subtotaal</td>
+        <td align="right">€ {{amount_row_total}}</td>
+    </tr>
+    <tr>
+        <td colspan="2">Verzendkosten</td>
+        <td align="right">€ {{shipping_costs}}</td>
+    </tr>
+    <tr>
+        <td colspan="2"> </td>
+        <td align="right"><hr style="margin:0;float:right;"/></td>
+    </tr>
+    <tr>
+        <td colspan="2">Totaal</td>
+        <td align="right">€ {{amount_grand_total}}</td>
+    </tr>
+</table>
+<p>{{remarks_user}}</p>

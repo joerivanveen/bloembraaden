@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="admin" id="PEATCMS_admin_page">
+<header data-peatcms-keep="admin_order_header" class="PEATCMS_admin">
+    <input class="admin_order_search right searchable" type="text" placeholder="last digits order number"/>
+</header>
+<div class="page_content PEATCMS_admin">
+    <h1><a href="/__admin__/instance">◀ Back</a></h1>
+    {%__pages__%}
+    <div class="paging">
+        {%__row__%}
+        <a href="/__order__/page:{{page_number}}" class="button">{{page_number}}</a>
+        {%__row__%}
+    </div>
+    {%__pages__%}
+    <section class="order-table">
+        <div class="header">
+            <span>Bestelnummer</span>
+            <span>E-mail</span>
+            <span>Factuuradres</span>
+            <span class="amount">Totaalbedrag</span>
+        </div>
+        {%__orders__%}
+        <div id="order-{{order_id}}" class="row" {{payment_confirmed_bool: data-paid="1" }}{{emailed_payment_confirmation_success:
+             data-emailed="1" }} {{payment_live_flag data-payment_live_flag="1" }}>
+            <a href="/__order__/{{order_number}}">{{order_number|format_order_number}}</a>
+            <span>{{user_email}} {{emailed_payment_confirmation_success:✔:not:×}}</span>
+            <span>{{billing_address_city}}</span>
+            <span class="amount">€ {{amount_grand_total|format_money}}</span>
+        </div>
+        {%__orders__%}
+    </section>
+    {%__action__/admin_get_payment_status_updates%}
+    <div class="toggle">
+        <header>
+            <button class="toggle_button" alt="Open / close"></button>
+            Recent payments for this instance
+        </header>
+        <section class="payment-table">
+            <div class="header">
+                <span>Bestelnummer</span>
+                <span>Processed</span>
+                <span>Created</span>
+                <span>Origin</span>
+            </div>
+            {%__rows__%}
+            <div class="row" {{bool_processed: data-processed="1" }}>
+                <span>
+                    <a href="__order__/{{order_number}}">{{order_number|format_order_number}}</a>
+                    <textarea class="code">{{raw}}</textarea>
+                </span>
+                <span>{{date_processed}}</span>
+                <span>{{date_created}}</span>
+                <span>{{origin}}</span>
+            </div>
+            {%__rows__%}
+        </section>
+    </div>
+    {%__action__/admin_get_payment_status_updates%}
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

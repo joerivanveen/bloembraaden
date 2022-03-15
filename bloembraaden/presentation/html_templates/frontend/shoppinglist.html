@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} | Bloembraaden default</title>
+    <meta name="description" content="{{excerpt_parsed|clean}}"/>
+    <link rel="canonical" href="{{root}}/{{slug}}"/>
+    <meta property="og:url" content="{{root}}/{{slug}}"/>
+    <meta property="og:site_name" content="Peatcms default"/>
+    <meta property="og:title" content="{{title|clean}}"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:description" content="{{excerpt_parsed|clean}}"/>
+    <meta property="og:image" content="{{root}}{{image:src_large}}"/>
+    <meta property="og:image:width" content="{{image:width_large}}"/>
+    <meta property="og:image:height" content="{{image:height_large}}"/>
+    <meta property="og:image:secure_url" content="{{root}}{{image:src_large}}"/>
+</head>
+<body class="{{css_class}} shoppinglist" data-online="{{online}}">
+<div role="main">
+    <header>
+        <!-- branding -->
+        <h2>Bloembraaden welcomes you</h2>
+        <p>This is a default template, rather scant at that. <em>Just to confirm it works.</em> You should create your
+            own templates and content in the admin interface. Download manuals and watch how-to video’s on <a href="https://bloembraaden.io">bloembraaden.io</a>.</p>
+    </header>
+    <h1>Winkelwagen</h1>
+    <p>Hieronder ziet u de winkelwagen. U kunt de aantallen wijzigen en artikelen verwijderen. (Id =
+        {{shoppinglist_id}}.)</p>
+    <div class="rows">
+        {%rows%}
+        <div class="row">
+            <div>
+                {%__variants__%}
+                <figure>
+                    <a href="/{{slug}}"><img src="{{image:src_small}}" alt="{{title}}"
+                                             onload="this.style.opacity='1';"/></a>
+                </figure>
+                <strong><a href="/{{slug}}">{{title}}</a></strong>
+                <div class="excerpt">
+                    {{product:title}}
+                    {{excerpt_parsed}}
+                </div>
+                {%__variants__%}
+            </div>
+            <div class="prices">
+                {{price_from:<span class="from_price nowrap">&euro; ::value::</span>}}
+                <strong class="nowrap">&euro; {{price}}</strong>
+                {%__variants__%}<span class="{{in_stock::not:not_}}in_stock">●</span>{%__variants__%}
+            </div>
+            <div class="quantity">
+                <!-- quantity -->
+                <form method="post" action="/__shoppinglist__/winkelwagen/">
+                    🗑
+                    <input type="hidden" name="csrf_token" value="{{csrf_token}}"/>
+                    <input type="hidden" name="action" value="update_quantity_in_list"/>
+                    <input type="hidden" name="variant_id" value="{{variant_id}}"/>
+                    <input type="text" name="quantity" value="{{quantity}}" placeholder="{{quantity}}"
+                           onblur="if (!isInt(this.value)){ this.value = this.placeholder; }"/>
+                    <input type="submit" value="↻"/>
+                    <span class="nowrap">= € {{total}}</span>
+                </form>
+            </div>
+            <div class="delete">
+                <!-- delete button: -->
+                <form method="post" action="/__shoppinglist__/winkelwagen/">
+                    <input type="hidden" name="csrf_token" value="{{csrf_token}}"/>
+                    <input type="hidden" name="action" value="remove_from_list"/>
+                    <input type="hidden" name="variant_id" value="{{variant_id}}"/>
+                    <input type="submit" value="🗑" title="Verwijder {%__variants__%}{{title}}{%__variants__%}"/>
+                </form>
+            </div>
+        </div>
+        {%rows%}
+        <div class="row">
+            <div>&nbsp;</div>
+            <div>Totaal:</div>
+            <div>€ {{total}}</div>
+            <div>&nbsp;</div>
+        </div>
+    </div>
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

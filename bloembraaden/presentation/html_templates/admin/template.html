@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="template" id="PEATCMS_admin_page">
+<div class="PEATCMS_admin">
+    <span class="PEATCMS_data_stasher" data-peatcms_id="{{template_id}}" data-table_name="_template"></span>
+    <header class="bar">
+        {%__instances__%}
+        <a href="/__admin__/instance/{{domain}}">◀ {{name}}</a>
+        {%__instances__%}
+        <div>
+            <input type="text" class="PEATCMS_editable" data-column_name="name"
+                   data-table_name="_template"
+                   value="{{name}}" data-handle="update_column"/>
+            <input type="button" class="PEATCMS_editable delete" data-table_name="_template"
+                   data-peatcms_handle="delete_row" value="🗑" data-confirm="Delete this template?"/>
+            for: <select class="PEATCMS_editable" data-column_name="element"
+                         data-table_name="_template" data-handle="update_column" data-value="{{element}}">
+            <option hidden="hidden">element:</option>
+            <option value="page">page</option>
+            <option value="image">image</option>
+            <option value="embed">embed</option>
+            <option value="file">file</option>
+            <option value="brand">brand</option>
+            <option value="serie">serie</option>
+            <option value="product">product</option>
+            <option value="variant">variant</option>
+            <option value="property">property</option>
+            <option value="property_value">property value</option>
+            <option value="search">search</option>
+            <option value="shoppinglist">shoppinglist</option>
+            <option value="partial">partial</option>
+            <option value="mail">mail</option>
+            <option value="order">order</option>
+            <option value="invoice">invoice</option>
+        </select>
+        </div>
+        <div>
+            (<select class="PEATCMS_editable" data-column_name="nested_max"
+                    data-table_name="_template" data-handle="update_column" data-value="{{nested_max}}">
+                <option hidden>max:</option>
+                <option value="1">max 1</option>
+                <option value="2">max 2</option>
+                <option value="3">max 3</option>
+            </select>
+            <span style="white-space: nowrap;">
+                <input type="checkbox" id="nested_show_first_only_checkbox" class="PEATCMS_editable"
+                       data-column_name="nested_show_first_only"
+                       data-table_name="_template" data-handle="update_column"
+                       {{nested_show_first_only: checked="checked" }}/>
+                <label for="nested_show_first_only_checkbox">1st</label>
+            </span>)
+            <input type="text" class="PEATCMS_editable small"  data-column_name="variant_page_size"
+                   data-table_name="_template" placeholder="60"
+                   value="{{variant_page_size}}" data-peatcms_handle="update_column"/>
+        </div>
+        <button id="peatcms_publish" class="PEATCMS_editable{{published: published}}"
+                data-column_name="published" data-table_name="_template"
+                data-handle="update_column" data-value="true"></button>
+    </header>
+    <!--TODO make this use codemirror-->
+    <textarea class="PEATCMS_editable" data-column_name="html"
+              data-table_name="_template" data-handle="update_column">{{html|encode_for_template}}</textarea>
+</div>
+</body>
+</html>

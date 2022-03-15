@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body class="search_settings" id="PEATCMS_admin_page">
+<div class="page_content PEATCMS_admin">
+    <span class="PEATCMS_data_stasher" data-peatcms_id="{{instance_id}}" data-table_name="_instance"></span>
+    <h1><a href="/__admin__/instance/{{instance_id}}">◀ {{name}}</a> {{use_fts}} {{fts_language}}</h1>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
+            Alternatives
+            <input type="button" class="PEATCMS_editable" data-table_parent="_search_settings"
+                   data-table_parent_id="{{search_settings_id}}"
+                   data-table_name="_search_alternatives" data-peatcms_handle="new_row" value="+"/>
+        </header>
+        {%__alternatives__%}
+        <fieldset class="alternatives">
+            <span class="PEATCMS_data_stasher" data-peatcms_id="{{search_alternatives_id}}"
+                  data-table_name="_search_alternatives"></span>
+            <input type="text" class="PEATCMS_editable" data-column_name="alternative"
+                   data-table_name="_search_alternatives" placeholder="alternative"
+                   value="{{alternative}}" data-peatcms_handle="update_column"/>
+            ⮞
+            <input type="text" class="PEATCMS_editable" data-column_name="correct"
+                   data-table_name="_search_alternatives" placeholder="correct"
+                   value="{{correct}}" data-peatcms_handle="update_column"/>
+            <input type="button" class="PEATCMS_editable delete" data-table_name="_search_alternatives"
+                   data-peatcms_handle="delete_row" value="🗑"/>
+        </fieldset>
+        {%__alternatives__%}
+    </section>
+    <section class="log">
+        here comes the log... not working at all now
+        {%__action__/search_log%}
+        <p>{{search}} ({{results}}) {{date_updated}} 🗑</p>
+        {%__action__/search_log%}
+    </section>
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>
