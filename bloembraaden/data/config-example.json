@@ -1,0 +1,57 @@
+{
+  "DB_MAIN": {
+    "host": "localhost",
+    "port": "5432",
+    "name": "peatcms",
+    "user": "peatcms",
+    "pass": "blank",
+    "schema": "public"
+  },
+  "DB_HISTORY": {
+    "host": "localhost",
+    "port": "5432",
+    "name": "peatcms_history",
+    "user": "peatcms",
+    "pass": "blank",
+    "schema": "public"
+  },
+  "MAIL": {
+    "active": "mailchimp",
+    "mailchimp": {
+      "api_key": "your_api_key",
+      "api_url": "https://mandrillapp.com/api/1.0/"
+    },
+    "sendgrid": {
+      "api_key": "your_api_key",
+      "api_url": "https://api.sendgrid.com/v3/"
+    },
+    "mailgun": {
+      "api_key": "your_api_key",
+      "api_url": "https://api.eu.mailgun.net/v3/"
+    }
+  },
+  "integrations": {
+    "instagram": {
+      "app_id": "your_app_id",
+      "secret": "your_secret",
+      "redirect_uri": "https://your_main_domain.tld/__action__/instagram/authorize",
+      "default_expires": 2500000
+    },
+    "postcode": {
+      "api_url": "https://api.postcode.eu/nl/v1"
+    },
+    "pdfmaker": {
+      "api_key": "your_api_key",
+      "api_url": "https://chrome.browserless.io/pdf"
+    }
+  },
+  "VERBOSE": true,
+  "dbcache": "/path/to/writable/cache/",
+  "cdnpath": "/static/files/",
+  "cdnroot": "https://static.trompetters.nl/",
+  "logfile": "/path/to/writable/logs/bloembraaden_",
+  "uploads": "/path/to/writable/uploads/",
+  "invoice": "/path/to/writable/invoice/",
+  "version": "0.10.4",
+  "install": false
+}
