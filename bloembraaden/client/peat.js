@@ -2585,11 +2585,57 @@ PEATCMS.prototype.swipifyDOMElement = function (el, on_swipe_left, on_swipe_righ
     el.addEventListener('touchmove', moveTouch, {passive: true});
 }
 
+PEATCMS.prototype.ajaxNavigate = function(e) {
+    if (e.ctrlKey === false) { // opening in new tab / window should still be possible
+        e.preventDefault();
+        e.stopPropagation();
+        return NAV.go(this.getAttribute('data-peatcms_href'));
+    }
+}
+
+PEATCMS.prototype.ajaxMailto = function () {
+    window.location.href = 'mailto:' + this.innerHTML;
+}
+
+PEATCMS.prototype.ajaxSubmit = function (e) {
+    var submit_button, submit_msg; // the form
+    e.preventDefault();
+    e.stopPropagation();
+    if (this.hasAttribute('data-submitting')) {
+        console.warn('Already submitting');
+        return false;
+    }
+    this.setAttribute('data-submitting', '1');
+    // @since 0.7.9 allow confirmation question on submit button
+    if ((submit_button = this.querySelector('[type="submit"]'))) {
+        if (submit_button.getAttribute('data-confirm') &&
+            null !== (submit_msg = submit_button.getAttribute('data-confirm'))) {
+            if (false === confirm(submit_msg)) {
+                this.removeAttribute('data-submitting');
+                return false;
+            }
+        }
+    }
+    // submit the form
+    this.dispatchEvent(new CustomEvent('peatcms.form_posting', {
+        bubbles: true,
+        detail: {
+            "form": this
+        }
+    }));
+    NAV.submitForm(this);
+    return false;
+}
+
 PEATCMS.prototype.ajaxifyDOMElements = function (el) {
-    var forms, form, as, a, i, len, sibling, stasher, parent_name;
-    // if supplied 'el' must be a valid dom element, we don't check for that here
-    if (!el) {
-        el = document.body; // all over body program
+    var self = this, forms, form, as, a, i, len, sibling, stasher, parent_name;
+    if (el) {
+        if (! el instanceof Element) {
+            console.error(el, 'must be a DOMElement');
+            return;
+        }
+    } else {
+        el = document.body; // defaut to all over body program
     }
     // update links
     as = el.getElementsByTagName('a');
@@ -2597,17 +2643,9 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     for (i = 0, len = as.length; i < len; i++) {
         a = as[i];
         if (true === a.hasAttribute('target')) continue;
-        if (false === a.hasAttribute('data-peatcms_href')) {
-            // make sure to add the eventlistener only once, or each click will generate multiple ajax calls over time
-            a.addEventListener('click', function (e) {
-                if (e.ctrlKey === false) { // opening in new tab / window should still be possible
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return NAV.go(this.getAttribute('data-peatcms_href'));
-                }
-            });
-        }
-        // (re)set it anyway, may have changed
+        // make sure to add the eventlistener only once, or each click will generate multiple ajax calls over time
+        a.removeEventListener('click', self.ajaxNavigate);
+        a.addEventListener('click', self.ajaxNavigate);
         a.setAttribute('data-peatcms_href', a.href);
     }
     // update forms
@@ -2623,72 +2661,44 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
             form.setAttribute('data-peatcms_ajaxified', '1');
             // method defaults to post
             if (false === form.hasAttribute('method')) form.setAttribute('method', 'post');
-            form.addEventListener('submit', function (e) {
-                var self = this, submit_button, submit_msg; // the form
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.hasAttribute('data-submitting')) {
-                    console.warn('Already submitting');
-                    return false;
-                }
-                this.setAttribute('data-submitting', '1');
-                // @since 0.7.9 allow confirmation question on submit button
-                if ((submit_button = self.querySelector('[type="submit"]'))) {
-                    if (submit_button.getAttribute('data-confirm') &&
-                        null !== (submit_msg = submit_button.getAttribute('data-confirm'))) {
-                        if (false === confirm(submit_msg)) {
-                            this.removeAttribute('data-submitting');
-                            return false;
-                        }
-                    }
-                }
-                // submit the form
-                self.dispatchEvent(new CustomEvent('peatcms.form_posting', {
-                    bubbles: true,
-                    detail: {
-                        "form": self
-                    }
-                }));
-                NAV.submitForm(self);
-                return false;
-            });
+            form.removeEventListener('submit', self.ajaxSubmit);
+            form.addEventListener('submit', self.ajaxSubmit);
         }
     }
     // fix e-mail links:
     as = el.getElementsByClassName('peatcms-email-link')
     for (i = 0, len = as.length; i < len; ++i) {
         a = as[i];
+        a.removeEventListener('click', self.ajaxMailto);
+        a.addEventListener('click', self.ajaxMailto);
         if (a.classList.contains('peatcms-link')) continue;
         a.innerHTML = PEATCMS.replace('-dot-', '.', PEATCMS.replace('-at-', '@', a.innerHTML));
         a.classList.add('peatcms-link');
         a.classList.add('link');
         a.setAttribute('tabindex', '0');
-        a.addEventListener('click', function () {
-            window.location.href = 'mailto:' + this.innerHTML;
-        });
     }
     if (typeof CMS_admin !== 'undefined') {
         as = el.getElementsByClassName('PEATCMS_edit_button');
         // render edit buttons / regions
-        for (i = as.length - 1; i >= 0; i--) {
-            a = as[i];
-            sibling = a.nextSibling;
-            // TODO what when it's a textnode or something that doesn't accept setAttribute
-            if (typeof sibling.setAttribute === 'function') {
-                sibling.setAttribute('data-peatcms_slug', a.getAttribute('data-peatcms_slug'));
-                sibling.id = el.getAttribute('data-peatcms_id');
-                sibling.addEventListener('mouseover', function () {
-                    if (CMS_admin) {
-                        this.classList.add('hovering');
-                        CMS_admin.showEditMenu(this);
-                    }
-                });
-                sibling.addEventListener('mouseout', function () {
-                    this.classList.remove('hovering');
-                });
-            }
-            a.remove();
-        }
+        // for (i = as.length - 1; i >= 0; i--) {
+        //     a = as[i];
+        //     sibling = a.nextSibling;
+        //     // TODO what when it's a textnode or something that doesn't accept setAttribute
+        //     if (typeof sibling.setAttribute === 'function') {
+        //         sibling.setAttribute('data-peatcms_slug', a.getAttribute('data-peatcms_slug'));
+        //         sibling.id = el.getAttribute('data-peatcms_id');
+        //         sibling.addEventListener('mouseover', function () {
+        //             if (CMS_admin) {
+        //                 this.classList.add('hovering');
+        //                 CMS_admin.showEditMenu(this);
+        //             }
+        //         });
+        //         sibling.addEventListener('mouseout', function () {
+        //             this.classList.remove('hovering');
+        //         });
+        //     }
+        //     a.remove();
+        // }
         // if this is an administration page, some elements are directly editable
         as = el.getElementsByClassName('PEATCMS_editable');
         for (i = as.length - 1; i >= 0; i--) {
