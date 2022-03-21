@@ -48,9 +48,9 @@ class jobTransaction
 }
 $trans = new jobTransaction();
 
-require __DIR__ . '/../Require.php';
+require __DIR__ . '/Require.php';
 // to test, run it as follows:
-// # php-cgi /var/www/peatcms.com/site/bloembraaden/Job.php param=value (e.g. interval=temp)
+// # php-cgi /path/to/bloembraaden/Job.php param=value (e.g. interval=temp)
 if (!isset($_GET['interval'])) {
     die('interval needed');
 }

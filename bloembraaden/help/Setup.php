@@ -47,7 +47,7 @@ Create your next website with bloembraaden.io
                 Help::logErrorMessages();
                 // newrelic reporting
                 if (extension_loaded('newrelic')) {
-                    newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN);
+                    newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN ?? 'unknown');
                     newrelic_add_custom_parameter('bloembraaden_output_json', Defined('OUTPUT_JSON') && true === OUTPUT_JSON);
                 }
             });
