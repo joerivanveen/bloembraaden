@@ -113,7 +113,7 @@ Create your next website with bloembraaden.io
 
     private static function loadConfig(): void
     {
-        $config = json_decode(file_get_contents(CORE . 'data/config.json'));
+        $config = json_decode(file_get_contents(CORE . '../config.json'));
         self::$VERSION = $config->version;
         self::$UPLOADS = $config->uploads;
         self::$INVOICE = $config->invoice;
