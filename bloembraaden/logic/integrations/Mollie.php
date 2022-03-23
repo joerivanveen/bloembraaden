@@ -212,10 +212,13 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                     ), $log_id);
                     // update the status in the order
                     return $this->getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
+                } elseif ('expired' === $status) {
+                    $this->addError(sprintf('Payment ‘%s’ with status expired discarded', $payment_id));
+                    return true; // don’t bother any further with expired statuses, already logged with processed false
                 }
             }
         } else {
-            $this->addError('Mollie->updatePaymentStatus missing id in payload: ' . var_export($payload, true));
+            $this->addError(sprintf('%s->updatePaymentStatus missing id in payload: ' . var_export($payload, true), 'Mollie'));
         }
 
         return false;

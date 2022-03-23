@@ -70,10 +70,6 @@ class PaymentServiceProvider extends BaseLogic
         return $this->row->live_flag ?? false;
     }
 
-    // you need default-src for live and stage
-    // https://stagconnect.acehubpaymentservices.com https://connect.acehubpaymentservices.com
-    // and api-location:
-    // Gateway/v3/Checkouts
     public function checkPaymentStatusByPaymentId(string $payment_id): int
     {
         $this->handleErrorAndStop('->checkPaymentStatusByPaymentId must be overridden by actual PaymentServiceProvider class');
