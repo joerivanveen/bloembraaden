@@ -144,10 +144,12 @@ You don’t have to setup anything, Bloembraaden checks for ‘extension_loaded�
 The first install is done after you have prepared you config file and the two databases, as well as your webserver.
 Set `install` to `true` in the config and go to:
 
-https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult_password
+`https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult`
 Bloembraaden will contact the database and setup a first ‘instance’.
+Please use an actual difficult password.
+Do not forget these credentials, because you will not be able to login without them.
 
-Go to https://your_main_domain.tld/__admin__/ and login with the credentials you just provided.
+Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
 You should switch off the install flag (set it to `false`).
 
 ### Now what?
