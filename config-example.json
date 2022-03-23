@@ -2,7 +2,7 @@
   "DB_MAIN": {
     "host": "localhost",
     "port": "5432",
-    "name": "peatcms",
+    "name": "peatcms_main",
     "user": "peatcms",
     "pass": "blank",
     "schema": "public"
@@ -48,10 +48,10 @@
   "VERBOSE": true,
   "dbcache": "/path/to/writable/cache/",
   "cdnpath": "/static/files/",
-  "cdnroot": "https://static.trompetters.nl/",
+  "cdnroot": "https://static.your_main_domain.tld/",
   "logfile": "/path/to/writable/logs/bloembraaden_",
   "uploads": "/path/to/writable/uploads/",
   "invoice": "/path/to/writable/invoice/",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "install": false
 }

@@ -6,7 +6,7 @@ and you know how to realise your vision with them,
 you can take advantage of Bloembraaden to build your new websites.
 
 You can build a website **exactly** the way you want,
-simply substituting content for some simple template tags.
+simply substituting content for standard template tags.
 Logic and representation are strictly separated,
 which opens up fresh approaches for dynamic websites.
 
@@ -19,7 +19,7 @@ free to realise websites exactly the way they want.
 
 We like **unicorns** more than uniforms...
 
-While the code is free to setup and use, we also offer Bloembraaden as a hosted solution,
+While the code is free to setup and use, Bloembraaden also exists as a hosted solution,
 if you’d rather be creative than maintaining your server.
 
 ## What does it do
@@ -44,7 +44,14 @@ On the vps you need two websites, one for Bloembraaden itself and one for the im
 Contact me if you need any help setting up.
 
 ## Configuration
-Rename `/data/config-example.json` to `/data/config.json` and fill in your own data.
+Rename `config-example.json` to `config.json` and fill in your own data.
+
+### Version and settings
+- VERBOSE when set to true will output debugging information both in the logs as well as in the browser console.
+It will also serve fresh css rather than compress it into the \<head>. Note: for the client this value is set when you publish the templates.
+- version: must be the current running version.
+- upgrade: when set to true, Bloembraaden will check whether an upgrade is necessary. This mechanism will be improved in the future.
+When you have no upgrade to install just set it to false.
 
 ### Api keys
 Bloembraaden uses the following services:
@@ -61,12 +68,6 @@ You need to have several folders on your server writable by the web user (e.g. n
 The following folder needs to be **as fast as possible**.
 - cache (where table info will be cached)
 
-Make web-user-writable subfolders yourself in cache:
-- cache/templates
-- cache/css
-- cache/js
-- cache/filter
-
 The following may be slower e.g. on a separate disk if you find that comfortable.
 
 Writable folders for:
@@ -79,10 +80,14 @@ Point to those folders in the config.
 ## Web server
 Setup a webserver. We recommend NGINX.
 We use php-fpm with php 8.0 (which is the minimum version for Bloembraaden).
+You can have it process index.php at all times, Bloembraaden will determine what content to show.
 
 Set up two virtual hosts, one for Bloembraaden and one for static files.
 Point to the static files in the config, both the path on the server `cdnpath` (that is the root of the virtual host) as the location on the internet `cdnroot`.
 You can optimise that virtual host for static files, only images will be served by it.
+
+Bloembraaden saves all images as webp with fallback to jpg (same filename, but .jpg extension in stead of .webp).
+If you need this fallback, you should configure it in the static site.
 
 It is recommended to put Bloembraaden (the bloembraaden folder) outside of the webroot.
 In the webroot the following is needed:
@@ -111,7 +116,7 @@ And put in the four lines that are currently needed for Bloembraaden:
 ```
 
 ### Clients’ websites
-Your clients’ websites will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
+Your clients’ websites’ assets will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
 Each website must contain a `script.js` and `style.css` that will be compiled by bloembraaden.
 
 The website itself is build with simple templates that you put in the admin interface.
@@ -136,8 +141,19 @@ You can install new relic on your server and Bloembraaden will use it to report 
 You don’t have to setup anything, Bloembraaden checks for ‘extension_loaded’.
 
 ## Initial install
-The first install is done on your main domain providing that domain also as a querystring to the first request.
-Bloembraaden will contact the database and setup a first ‘instance’. From there on you can do everything yourself.
+The first install is done after you have prepared you config file and the two databases, as well as your webserver.
+Set `install` to `true` in the config and go to:
+
+https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult_password
+Bloembraaden will contact the database and setup a first ‘instance’.
+
+Go to https://your_main_domain.tld/__admin__/ and login with the credentials you just provided.
+You should switch off the install flag (set it to `false`).
+
+### Now what?
+The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
+
+I will post some ‘getting started’ info on https://bloembraaden.io in the future.
 
 ## Docker?
 There is some benefit in setting up your webserver manually, mainly you can tweak some extra speed and security out of your specific environment.
