@@ -732,6 +732,9 @@ class Help
                         case 'timestamp':
                             $sql .= 'Timestamp With Time Zone ';
                             break;
+                        case 'double':
+                            $sql .= 'float ';
+                            break;
                         default:
                             $sql .= $col_type . ' ';
                             break;
@@ -819,7 +822,7 @@ class Help
                              Setup::$DBCACHE . 'css',
                              Setup::$DBCACHE . 'js',
                              Setup::$DBCACHE . 'filter',
-                             Setup::$DBCACHE . 'config',
+                             Setup::$DBCACHE . 'templates',
                          ) as $index => $subfolder_name) {
                     if (false === file_exists($subfolder_name)) {
                         if (false === mkdir($subfolder_name)) {
@@ -871,15 +874,26 @@ class Help
                 die('PASSWORD_ARGON2ID seems missing');
             }
             // check if a first instance domain is provided
-            if (isset($_GET['instance'])) {
-                $instance_url = $_GET['instance'];
+            if (isset($_SERVER['HTTP_HOST'])) {
+                $instance_url = $_SERVER['HTTP_HOST'];
             } else {
-                die('Install failed, please provide first instance: ?instance=X');
+                die('Cannot install without HTTP_HOST header');
+            }
+            // check for first admin
+            if (isset($_GET['admin_email']) && isset($_GET['admin_password'])) {
+                $admin_email = $_GET['admin_email'];
+                $admin_password = $_GET['admin_password'];
+            } else {
+                die('Install failed, please provide first admin: ?admin_email=X&admin_password=Y');
             }
             /**
              * run the entire install file
              */
-            $sql = file_get_contents(CORE . '../install.sql');
+            $install_file = CORE . '/data/install.sql';
+            if (! file_exists($install_file)) {
+                die('Expected sql file not found: ' . $install_file);
+            }
+            $sql = file_get_contents($install_file);
             $db->run($sql);
             /**
              * insert first client
@@ -915,8 +929,8 @@ class Help
             /**
              * insert first admin
              */
-            $hash = Help::passwordHash('change_this_password_before_install');
-            $user_id = $db->insertAdmin('hallo@ruigehond.nl', $hash, $client_id);
+            $hash = Help::passwordHash($admin_password);
+            $user_id = $db->insertAdmin($admin_email, $hash, $client_id);
             if ($user_id === null) {
                 var_dump(Help::getErrors());
                 die('<h1>Install error</h1>');
