@@ -27,7 +27,7 @@ class Resolver extends BaseLogic
             //Setup::$instance_id = $instance_id;
             Setup::loadInstanceSettings(new Instance($row));
         }
-        $GLOBALS['slugs'] = array(); //
+        $GLOBALS['slugs'] = new \stdClass;
         // urldecode means get utf-8 characters of requested path + querystring
         // remove uppercase through db
         // TODO: if we are certain slugs / urls are always (correct) lowercase, we can remove the conversion from DB methods

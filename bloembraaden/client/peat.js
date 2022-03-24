@@ -471,7 +471,7 @@ PEATCMS_element.prototype.load = function (slug, callback) {
     var self = this;
     if (slug.charAt(0) !== '/') slug = '/' + slug;
     NAV.ajax(slug, false, function (data) {
-        if (VERBOSE) console.log(data);
+        if (VERBOSE) console.log('Element is loading', data);
         if (data.hasOwnProperty('slug')) {
             // fill the object with this element
             self.state = data;
@@ -1196,13 +1196,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 window.PEATCMS_globals.__guest__ = window.PEATCMS_globals.is_account ? {} : {show: true};
-                if (data.hasOwnProperty('slugs')) {
-                    if (VERBOSE) {
-                        console.log('Unpacking object');
-                        console.log(data);
-                    }
-                    data = unpack_temp(data);
-                }
+                if (data.hasOwnProperty('slugs')) data = unpack_temp(data);
                 // do the callback
                 on_done(data);
                 // @since 0.6.11 redirect user when you receive a redirect_uri
@@ -1240,7 +1234,6 @@ function unpack_temp(obj) {
 function unpack_rec(obj, nest_level) {
     var slugs = window.PEATCMS_globals.slugs, n, i, len, arr;
     if (nest_level > 2) return obj; // recursion stops here
-    //console.log(obj);
     for (n in obj) {
         if (obj.hasOwnProperty(n)) {
             if (n === '__ref' && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
@@ -1498,6 +1491,9 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         // vars used by : template show / hide
         content, parts, equals, is_false, str_to_replace;
     // process out object
+    if (out.hasOwnProperty('__ref')) {
+        out = unpack_temp(out, 1);
+    }
     for (tag_name in out) {
         if (false === out.hasOwnProperty(tag_name)) continue;
         output_object = out[tag_name];
@@ -3113,7 +3109,8 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             // cache is built into PEATCMS_ajax
             this.cache({state: unpack_temp(globals.slug)});
             delete globals.slug;
-            delete globals.slugs;
+            PEAT.addEventListener('peatcms.document_ready', function() {delete window.PEATCMS_globals.slugs}, true);
+            //delete globals.slugs;
         }
         new PEATCMS_element(path, function (el) {
             if (el === false) {

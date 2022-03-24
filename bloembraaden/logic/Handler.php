@@ -1397,7 +1397,7 @@ class Handler extends BaseLogic
                 // @since 0.6.1 add any changed session vars for update on client
                 $out->session = $this->getSession()->getUpdatedVars();
                 ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
-                $response = gzencode(json_encode($out), 9);
+                $response = gzencode(json_encode($out), 6);
                 unset($out);
                 header('Content-Type: application/json');
                 header('Content-Encoding: gzip');
@@ -1544,7 +1544,7 @@ class Handler extends BaseLogic
             $out->dark_mode = $session->getValue('dark_mode');
             // render in template
             $temp = new Template();
-            // @since 0.10.6 add complex tags (menus, instagram feeds, other pages) to make integral to the first output
+            // @since 0.10.6 add complex tags (menus, instagram feeds, other elements) to make integral to the first output
             $temp->addComplexTags($out);
             // render the page already
             $temp->render($out);
@@ -1560,6 +1560,7 @@ class Handler extends BaseLogic
                 'presentation_instance' => $out->presentation_instance,
                 'session' => $session->getVars(),
                 'slug' => $out,
+                'slugs' => $GLOBALS['slugs'],
                 'is_account' => $out->is_account,
                 '__user__' => ($user === null) ? (object)null : $user->getOutput(),
                 '__messages__' => Help::getMessages(),

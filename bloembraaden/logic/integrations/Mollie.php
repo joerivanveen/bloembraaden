@@ -93,7 +93,6 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                     $this->addError($result);
                 }
                 $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
-                $this->addMessage($this->getLastError(), 'error'); //JOERI
             } else { // status code must be 200...
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return $return_object->id;
@@ -146,7 +145,6 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 } else {
                     $this->addError($result);
                 }
-                $this->addMessage($this->getLastError(), 'error'); //JOERI
                 $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
                 if (json_last_error() === JSON_ERROR_NONE) {

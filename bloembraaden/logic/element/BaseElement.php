@@ -160,7 +160,7 @@ class BaseElement extends BaseLogic implements Element
         if (isset($this->row->__variants__)) {
             // remove all current variants from $globals['slugs']
             foreach ($this->row->__variants__ as $index => $obj) {
-                unset($GLOBALS['slugs'][$obj->__ref]);
+                unset($GLOBALS['slugs']->{$obj->__ref});
             }
             // clean the linked table
             unset($this->row->__variants__);
@@ -287,7 +287,7 @@ class BaseElement extends BaseLogic implements Element
         $order_column = ($this->getLinkedTypes()->$linkable_type_name === 'cross_parent') ? 'o' : 'sub_o';
         $keep_order = 1;
         foreach ($elements as $key => $element_row) {
-            if (!isset($element_row->slug)) $element_row = $GLOBALS['slugs'][$element_row->__ref];
+            if (!isset($element_row->slug)) $element_row = $GLOBALS['slugs']->{$element_row->__ref};
             $link_element = $linkable_type->getElement($element_row);
             if ($link_element->getSlug() === $slug) continue; // don't process the dropped item in the row
             if ($link_element->getSlug() === $before_slug) {
@@ -329,7 +329,7 @@ class BaseElement extends BaseLogic implements Element
             $linked_type = new Type($linkable_type_name);
             $relation = $this->getLinkedTypes()->$linkable_type_name;
             //$relation = 'cross_child';
-            $GLOBALS['slugs'] = array();
+            $GLOBALS['slugs'] = new \stdClass;
 
             return $this->getDB()->fetchElementRowsLinked(
                 $peat_type,
@@ -397,7 +397,7 @@ class BaseElement extends BaseLogic implements Element
         //$slug = $this->row->slug ?? null;
         $slug = $this->getPath();
         // @since 0.8.0 get from packed object, only at the level of elements this is cached for the request
-        if (isset($GLOBALS['slugs'][$slug]) && $GLOBALS['slugs'][$slug]->nest_level <= $nest_level) {
+        if (isset($GLOBALS['slugs']->{$slug}) && $GLOBALS['slugs']->{$slug}->nest_level <= $nest_level) {
             return (object)array('__ref' => $slug);
         }
         // @since 0.7.1 master template settings for the request are stored in global var
@@ -418,7 +418,7 @@ class BaseElement extends BaseLogic implements Element
             foreach ($linked_types as $table_name => $relation) {
                 $plural_tag = "__{$table_name}s__";
                 if (isset($this->row->$plural_tag[0]) && ($el = $this->row->$plural_tag[0])) {
-                    if (isset($el->__ref)) $el = $GLOBALS['slugs'][$el->__ref]; // @since 0.8.0
+                    if (isset($el->__ref)) $el = $GLOBALS['slugs']->{$el->__ref}; // @since 0.8.0
                     $this->addParentTags($el, $table_name);
                 }
             }
@@ -453,7 +453,7 @@ class BaseElement extends BaseLogic implements Element
         }
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
         if (isset($slug)) {
-            $GLOBALS['slugs'][$slug] = $this->row;
+            $GLOBALS['slugs']->{$slug} = $this->row;
 
             return (object)array('__ref' => $slug);
         }
@@ -469,7 +469,7 @@ class BaseElement extends BaseLogic implements Element
     public function getOutputFull(): \stdClass
     {
         $out = $this->getOutput();
-        if (isset($out->__ref)) return $GLOBALS['slugs'][$out->__ref];
+        if (isset($out->__ref)) return $GLOBALS['slugs']->{$out->__ref};
 
         return $out;
     }
@@ -535,7 +535,7 @@ class BaseElement extends BaseLogic implements Element
         if (isset($this->row->slug)) return $this->row;
         $this->row = parent::getRow();
         if (isset($this->row->__ref) && !isset($this->row->slug)) {
-            $this->row = $GLOBALS['slugs'][$this->row->__ref];
+            $this->row = $GLOBALS['slugs']->{$this->row->__ref};
         }
 
         return $this->row;

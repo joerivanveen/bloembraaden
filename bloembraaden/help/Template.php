@@ -152,10 +152,10 @@ class Template extends BaseLogic
 
     /**
      * @param \stdClass $output_object
-     * @param array $tags
+     * @param \stdClass $tags
      * @return \stdClass
      */
-    public function addTags(\stdClass $output_object, array $tags): \stdClass
+    public function addTags(\stdClass $output_object, \stdClass $tags): \stdClass
     {
         foreach ($tags as $key => $value) {
             if (isset($output_object->$key)) {
@@ -181,12 +181,15 @@ class Template extends BaseLogic
                 foreach ($obj as $path => $template) {
                     if (0 === strpos($path, '__action__/instagram/feed/')) {
                         $feed = (new Instagram())->feed(substr($path, 26));
-                        $this->addTags($output_object, array($feed->slug => $feed));
+                        $this->addTags($output_object, (object)array($feed->slug => $feed));
                     }
                     if (0 === strpos($path, '__')) continue; // non-insta actions cannot be processed here
-                    // for now, only get it from cache, if not in cache, then accept the responsive loading
+                    // for now, only get it from cache, if not in cache, then accept the progressive loading
                     if (($object_from_cache = $this->getDB()->cached($path))) {
-                        $this->addTags($output_object, (array)$object_from_cache->slugs);
+                        $this->addTags($output_object->slugs, $object_from_cache->slugs);
+                        if (isset($object_from_cache->__ref) && ($ref = $object_from_cache->__ref)) {
+                            $this->addTags($output_object, (object)array($ref => $object_from_cache->slugs->{$ref}));
+                        }
                     }
                 }
                 unset($obj);
@@ -319,21 +322,20 @@ class Template extends BaseLogic
      * Original render function, will render everything using the (element’s) $output object
      * automatically loads the correct template (by id or by file pointer) when not already loaded
      * this must be called as first of all the render functions, we don't check if this is the case
+     *
      * @param \stdClass $out
      */
     public function render(\stdClass $out)
     {
         // @since 0.8.0 use __ref
         if (isset($out->slugs)) {
-            $GLOBALS['slugs'] = (array)$out->slugs;
-            //unset($out->slugs); // we need this in ‘View’
+            $GLOBALS['slugs'] = $out->slugs;
+            unset($out->slugs);
         }
-        //if (isset($out->__ref)) $out = $GLOBALS['slugs'][$out->__ref];
         if (isset($out->__ref)) {
-            $out = (object)array_merge((array)$GLOBALS['slugs'][$out->__ref], (array)$out);
+            $out = (object)array_merge((array)$GLOBALS['slugs']->{$out->__ref}, (array)$out);
             unset($out->__ref);
         }
-        //
         if (null !== ($obj = $this->getTemplateObjectForElement($out))) {
             $this->html = $this->convertTagsRemaining($this->renderOutput($out, (array)$obj));
             unset($obj);
@@ -371,7 +373,7 @@ class Template extends BaseLogic
         $html = $template['__html__'];
         // @since 0.8.0 use __ref
         if (isset($output->__ref)) {
-            $output = $GLOBALS['slugs'][$output->__ref];
+            $output = $GLOBALS['slugs']->{$output->__ref};
             unset($output->__ref);
         }
         //

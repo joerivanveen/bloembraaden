@@ -120,7 +120,7 @@ class BaseLogic extends Base
         // all children obey to these settings due to __construct() in BaseLogic
         $GLOBALS['template_settings'] = $this->getAndSetTemplateSettings();
         $out = $this->getOutput();
-        $out->slugs = (object)$GLOBALS['slugs']; // IMPORTANT convert to object because $out->slugs when fresh is also a \stdClass, be consistent
+        $out->slugs = $GLOBALS['slugs'];
         $this->output_object = $out;
 
         return $out;
@@ -152,7 +152,7 @@ class BaseLogic extends Base
             // remove all the variants and add the next page of variants
             while ($this->pageVariants($this->variant_page_counter) > 0) {
                 $out = $this->getOutput();
-                $out->slugs = (object)$GLOBALS['slugs']; // IMPORTANT convert to object because $out->slugs when fresh is also a \stdClass, be consistent
+                $out->slugs = $GLOBALS['slugs'];
                 $out->variant_page = $this->variant_page_counter;
                 $this->getDB()->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
                 $this->variant_page_counter++;
