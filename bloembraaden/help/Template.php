@@ -169,21 +169,24 @@ class Template extends BaseLogic
     }
 
     /**
-     * Adds instagram feeds found in the template for the output object (element) to said object
+     * Add elements when called upon by the template to the output object when found in cache, as well as instagram feeds
      *
      * @param \stdClass $output_object
      * @return \stdClass
-     * @since 0.9.3
      */
-    public function addInstagramFeeds(\stdClass $output_object): \stdClass
+    public function addComplexTags(\stdClass $output_object): \stdClass
     {
-        // scan the template for instagram feeds, and add only those present to the output_object
         if (isset($output_object->__ref) && ($ref = $output_object->__ref)) {
             if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->$ref))) {
                 foreach ($obj as $path => $template) {
                     if (0 === strpos($path, '__action__/instagram/feed/')) {
                         $feed = (new Instagram())->feed(substr($path, 26));
                         $this->addTags($output_object, array($feed->slug => $feed));
+                    }
+                    if (0 === strpos($path, '__')) continue; // non-insta actions cannot be processed here
+                    // for now, only get it from cache, if not in cache, then accept the responsive loading
+                    if (($object_from_cache = $this->getDB()->cached($path))) {
+                        $this->addTags($output_object, (array)$object_from_cache->slugs);
                     }
                 }
                 unset($obj);
@@ -333,8 +336,6 @@ class Template extends BaseLogic
         //
         if (null !== ($obj = $this->getTemplateObjectForElement($out))) {
             $this->html = $this->convertTagsRemaining($this->renderOutput($out, (array)$obj));
-            $this->element = $out;
-            $this->template_name = $out->template_id;
             unset($obj);
 
             return;
@@ -345,8 +346,6 @@ class Template extends BaseLogic
                 $html = $this->renderOutput($out, $this->prepare($html));
                 // remove tags remaining once at the end (calls are removed from renderOutput())
                 $this->html = $this->convertTagsRemaining($html);
-                $this->element = $out;
-                $this->template_name = $template_pointer->name;
             } else {
                 $this->handleErrorAndStop(
                     'Template ‘' . $template_pointer->name . '’ not found in theme ',

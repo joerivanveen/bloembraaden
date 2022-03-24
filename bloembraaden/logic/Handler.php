@@ -1544,10 +1544,8 @@ class Handler extends BaseLogic
             $out->dark_mode = $session->getValue('dark_mode');
             // render in template
             $temp = new Template();
-            // add menus when this is the first page they are not lazy loaded
-            $temp->addTags($out, $instance->getMenus());
-            // @since 0.9.3 get instagram feeds to make integral to the page
-            $temp->addInstagramFeeds($out);
+            // @since 0.10.6 add complex tags (menus, instagram feeds, other pages) to make integral to the first output
+            $temp->addComplexTags($out);
             // render the page already
             $temp->render($out);
             // render server values for the site to be picked up by javascript client
