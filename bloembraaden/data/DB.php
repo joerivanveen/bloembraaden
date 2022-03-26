@@ -3969,13 +3969,13 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
         foreach ($linked_types as $type => $relation) {
-            if ("properties" === $relation) {
+            if ('properties' === $relation) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
                     $this->markStale($row->property_slug);
                     $this->markStale($row->slug); // meaning property value slug
                 }
-            } elseif (in_array($relation, array("direct_child", "cross_child"))) {
+            } elseif (in_array($relation, array('direct_child', 'cross_child'))) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
                     $this->markStale($row->__ref ?? $row->slug);

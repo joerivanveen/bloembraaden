@@ -204,6 +204,7 @@ class BaseElement extends BaseLogic implements Element
                     if (!isset($this->row->__x_values__)) {
                         // to improve performance we only get property slug and title, and property_value slug and title
                         $this->row->__x_values__ = $this->getDB()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
+                        $this->row->__x_values__['item_count'] = count($this->row->__x_values__);
                     }
                 } elseif ($this->nested_level === 1) { // only get these from base property and property_value
                     // relation must be the other way around, an indexed array is supplied containing the elements linked
@@ -217,8 +218,9 @@ class BaseElement extends BaseLogic implements Element
                                 $peat_type, $id, $linked_type, $this->variant_page_size, $this->variant_page_counter, $this->getProperties()
                             ))) {
                                 foreach ($tmp as $key => $row) {
-                                    $this->row->$plural_tag[] = $linked_type->getElement($row)->getOutput(1);
+                                    $this->row->{$plural_tag}[] = $linked_type->getElement($row)->getOutput(1);
                                 }
+                                $this->row->{$plural_tag}['item_count'] = count($tmp);
                             }
                         }
                     }
@@ -237,14 +239,16 @@ class BaseElement extends BaseLogic implements Element
                         // NOTE use $this->nested_level to check for the loop or the one, not $nested_level
                         if ($this->nested_level > 1 and true === $this->nested_show_first_only) {
                             if (count($tmp) > 0) {
-                                $this->row->$plural_tag[] = $linked_type->getElement($tmp[0])->getOutput($nested_level);
+                                $this->row->{$plural_tag}[] = $linked_type->getElement($tmp[0])->getOutput($nested_level);
+                                $this->row->{$plural_tag}['item_count'] = 1;
                             }
                         } else {
                             foreach ($tmp as $key => $row) {
                                 // linked items only one level deep, or else you create loops with elements
                                 // linking up and down cross relationships
-                                $this->row->$plural_tag[] = $linked_type->getElement($row)->getOutput($nested_level);
+                                $this->row->{$plural_tag}[] = $linked_type->getElement($row)->getOutput($nested_level);
                             }
+                            $this->row->{$plural_tag}['item_count'] = count($tmp);
                         }
                     }
                 }
