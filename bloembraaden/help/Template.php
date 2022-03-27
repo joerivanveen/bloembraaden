@@ -453,28 +453,26 @@ class Template extends BaseLogic
                                 foreach ($sub_template['__row__'] as $template_index => $row_template) {
                                     $build_rows = '';
                                     foreach ($output_object as $row_index => $value) {
-                                        if (is_int($row_index)) { // this is a row
-                                            if (is_string($value)) { // row consists of a single string value.
-                                                $obj = (object)array('value' => $value);
-                                            } else {
-                                                //if (method_exists($value, 'getOutput')) $value = $value->getOutput();
-                                                // @since 0.7.6 do not render items that are not online
-                                                if (false === ADMIN && isset($value->online) && false === $value->online) continue;
-                                                $obj = $value;
-                                            }
-                                            $obj->__index__ = $row_index;
-                                            $obj->__count__ = $count;
-                                            // if this row doesn't contain any tags that are different for each row,
-                                            // just leave it at the first execution, repetition is unnecessary
-                                            if ($row_index === 1) { // check this only the second time the row is processed
-                                                if (($add_string = $this->renderOutput($obj, (array)$row_template)) === $build_rows) {
-                                                    // leave it as is and stop processing rows
-                                                    $sub_template['__html__'] = $build_rows;//$temp_remember_html;
-                                                    break; // don't process any more rows from this $output_object
-                                                }
-                                            }
-                                            $build_rows .= $this->renderOutput($obj, (array)$row_template);
+                                        if (false === is_int($row_index)) continue; // this is not a row
+                                        if (true === is_string($value)) { // row consists of a single string value.
+                                            $obj = (object)array('value' => $value);
+                                        } else {
+                                            // @since 0.7.6 do not render items that are not online
+                                            if (false === ADMIN && isset($value->online) && false === $value->online) continue;
+                                            $obj = $value;
                                         }
+                                        $obj->__index__ = $row_index;
+                                        $obj->__count__ = $count;
+                                        // if this row doesn't contain any tags that are different for each row,
+                                        // just leave it at the first execution, repetition is unnecessary
+                                        if ($row_index === 1) { // check this only the second time the row is processed
+                                            if ($this->renderOutput($obj, (array)$row_template) === $build_rows) {
+                                                // leave it as is and stop processing rows
+                                                $sub_template['__html__'] = $build_rows;//$temp_remember_html;
+                                                break; // don't process any more rows from this $output_object
+                                            }
+                                        }
+                                        $build_rows .= $this->renderOutput($obj, (array)$row_template);
                                     }
                                     $sub_template['__html__'] = str_replace('{{__row__[' . $template_index . ']}}', $build_rows, $sub_template['__html__']);
                                 }

@@ -9,14 +9,6 @@ class Warmup extends BaseLogic
 {
     private array $slugs = array();
 
-    /**
-     * constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     public function Warmup(string $slug, int $instance_id): bool
     {
         if (isset($this->slugs[$slug])) return false; // no need to warmup more than once

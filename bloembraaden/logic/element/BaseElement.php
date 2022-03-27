@@ -431,6 +431,7 @@ class BaseElement extends BaseLogic implements Element
         if (isset($this->row->__x_values__) && is_array($values = $this->row->__x_values__)) {
             $properties = array();
             foreach ($values as $index => $row) {
+                if (false === is_int($index)) continue;
                 $property_name = $row->property_slug; // the slug is used for summoning
                 if (isset($properties[$property_name])) {
                     $properties[$property_name][] = (object)array('title' => $row->title, 'value' => $row->x_value, 'slug' => $row->slug);
@@ -456,7 +457,7 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
-        if (isset($slug)) {
+        if (isset($slug) && isset($GLOBALS['slugs'])) {
             $GLOBALS['slugs']->{$slug} = $this->row;
 
             return (object)array('__ref' => $slug);

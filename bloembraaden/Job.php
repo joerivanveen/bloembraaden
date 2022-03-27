@@ -321,7 +321,7 @@ if ('1' === $interval) { // interval should be '1'
     echo 'remove duplicates from cache: ';
     echo $db->removeDuplicatesFromCache();
     echo PHP_EOL;
-    if (40 > $warmed) {
+    if ($warmed < 40) {
         echo 'warmup old cache: ';
         echo $db->jobWarmupOldCache(120, 60 - $warmed);
         echo ' found' . PHP_EOL;
@@ -508,10 +508,7 @@ if ('1' === $interval) { // interval should be '1'
     // fill them with an appropriate number of entries
     echo 'Updating feeds triggered by media updates... ' . PHP_EOL;
     $updated_feeds = array(); // each feed has to be updated only once here
-    foreach ($updated_user_ids as $user_id => $ok) {
-        echo 'user ' . $user_id . PHP_EOL;
-        $feeds = $db->getInstagramFeedSpecsByUserId($user_id);
-        // TODO this code is duplicated below...
+    $update_feeds = static function($feeds) use ($updated_feeds, $db) {
         foreach ($feeds as $index => $specs) {
             echo($feed_name = $specs->feed_name);
             if (isset($updated_feeds[$feed_name])) {
@@ -526,25 +523,16 @@ if ('1' === $interval) { // interval should be '1'
             $updated_feeds[$feed_name] = true;
             echo PHP_EOL;
         }
+    };
+    foreach ($updated_user_ids as $user_id => $ok) {
+        echo 'user ' . $user_id . PHP_EOL;
+        $feeds = $db->getInstagramFeedSpecsByUserId($user_id);
+        $update_feeds($feeds);
     }
     // there may be (changed) feeds that do not yet have an actual feed or need updating anyway
     echo 'Updating feeds that are outdated... ' . PHP_EOL;
     $feeds = $db->getInstagramFeedSpecsOutdated();
-    // TODO duplicate code ahead, same as directly above
-    foreach ($feeds as $index => $specs) {
-        echo($feed_name = $specs->feed_name);
-        if (isset($updated_feeds[$feed_name])) {
-            echo ' already done' . PHP_EOL;
-            continue;
-        }
-        $feed = $db->fetchInstagramMediaForFeed($specs->instance_id, $specs->instagram_username, $specs->instagram_hashtag, $specs->quantity, Setup::$CDNROOT);
-        echo ($db->updateColumns('_instagram_feed', array(
-            'feed' => json_encode($feed),
-            'feed_updated' => 'NOW()'
-        ), $specs->instagram_feed_id)) ? ': OK' : ': failed';
-        $updated_feeds[$feed_name] = true;
-        echo PHP_EOL;
-    }
+    $update_feeds($feeds);
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
     echo $db->jobPurgeDeleted($interval) . PHP_EOL;
@@ -573,7 +561,7 @@ if ('1' === $interval) { // interval should be '1'
         Setup::$instance_id = $row->instance_id;
         echo $img->getSlug();
         if (true === $img->process($logger)) {
-            echo ' SUCCES' . PHP_EOL;
+            echo ' SUCCESS' . PHP_EOL;
         } else {
             echo ' FAILED' . PHP_EOL;
         }
@@ -653,9 +641,6 @@ if ('1' === $interval) { // interval should be '1'
     $trans->start('remove old sessions and shoppinglists');
     echo $db->jobDeleteOldSessions() . ' and ';
     echo $db->jobDeleteOrphanedLists() . PHP_EOL;
-    // @since 0.8.x
-    //echo "clean client scripts cache folder: ";
-    //echo $db->jobCleanClientScriptsFolder() . PHP_EOL;
     // @since 0.7.9 remove orphaned list variants
     $trans->start('remove orphaned shoppinglist rows (variants)');
     echo $db->jobDeleteOrphanedShoppinglistVariants() . PHP_EOL;

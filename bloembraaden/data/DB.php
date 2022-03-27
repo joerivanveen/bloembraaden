@@ -3972,12 +3972,14 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             if ('properties' === $relation) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
+                    if (false === is_int($index)) continue;
                     $this->markStale($row->property_slug);
                     $this->markStale($row->slug); // meaning property value slug
                 }
             } elseif (in_array($relation, array('direct_child', 'cross_child'))) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
+                    if (false === is_int($index)) continue;
                     $this->markStale($row->__ref ?? $row->slug);
                 }
             }
@@ -4090,7 +4092,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     /**
      * @param int $limit
      * @return int
-     * @since 0.8.0 @since 0.8.19 since can be in the future, for pages that need to be published just then
+     * @since 0.8.0 @since 0.8.19 ‘since’ can be in the future, for pages that need to be published just then
      */
     public function jobWarmupStaleCache(int $limit = 60): int
     {
