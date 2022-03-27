@@ -630,6 +630,7 @@ PEATCMS_element.prototype.hasLinked = function (type, id) {
         element,
         element_id;
     for (element in linked) {
+        if (false === PEATCMS.isInt(element)) continue;
         if (has === false && linked.hasOwnProperty(element))
             has = ((element_id = linked[element][type + '_id']) ? element_id === id : false);
     }
@@ -710,7 +711,9 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
         }
     }
     // add the currently linked x_values (properties...)
-    for (i = 0, len = linked_elements.length; i < len; ++i) {
+    for (i in linked_elements) {
+        if (false === linked_elements.hasOwnProperty(i)
+            || false === PEATCMS.isInt(i)) continue;
         linked_element = linked_elements[i];
         x_value_id = linked_element.x_value_id;
         if (children_by_id[x_value_id]) {
@@ -851,7 +854,9 @@ PEATCMS_element.prototype.populateLinkableArea = function (type, suggestions, sr
             children_by_slug[n.getAttribute('data-peatcms_slug')] = n;
         }
     }
-    for (i = 0, len = linked_elements.length; i < len; ++i) {
+    for (i in linked_elements) {
+        if (false === linked_elements.hasOwnProperty(i)
+            || false === PEATCMS.isInt(i)) continue;
         linked_element = linked_elements[i];
         if (children_by_slug[linked_element.slug]) {
             if (linkable_area.childNodes[i] !== children_by_slug[linked_element.slug])
@@ -1496,8 +1501,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     }
     for (tag_name in out) {
         if (false === out.hasOwnProperty(tag_name)) continue;
-        output_object = out[tag_name];
-        if (output_object === null) continue;
+        if (!(output_object = out[tag_name])) continue;
         if (typeof output_object === 'object') {
             // this is a complex element which might contain indexed values that are rows
             if (template.hasOwnProperty(tag_name)) {
@@ -1519,40 +1523,40 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                             row_template = PEATCMS.cloneShallow(sub_template.__row__[temp_i]);
                             build_rows = '';
                             for (row_i in output_object) {
-                                if (!output_object.hasOwnProperty(row_i)) continue;
-                                if (true === PEATCMS.isInt(row_i)) { // this is a row
-                                    value = output_object[row_i];
-                                    if (typeof value === 'string') {
-                                        obj = {value: value};
-                                    } else {
-                                        // @since 0.7.6 do not render items that are not online
-                                        if (false === admin && value.hasOwnProperty('online') && false === value.online) continue;
-                                        obj = value;
-                                    }
-                                    obj.__count__ = __count__;
-                                    obj.__index__ = row_i;
-                                    if (admin && false === in_open_tag) {
-                                        if (obj.hasOwnProperty('id')) {
-                                            build_rows += '<span class="PEATCMS_data_stasher" data-peatcms_id="' + obj.id +
-                                                '" data-table_name="' + obj.table_name + '" data-tag="' + tag_name + '"></span>';
-                                        }
-                                        if (obj.slug && obj.type) {
-                                            obj_id = obj.type + '_' + obj[obj.type + '_id'];
-                                            build_rows += '<span class="PEATCMS_edit_button" data-peatcms_slug="' + obj.slug +
-                                                '" data-peatcms_id="' + obj_id + '[' + i + ']"></span>'; // placeholder
-                                        }
-                                    }
-                                    // if this row doesn't contain any tags that are different for each row,
-                                    // just leave it at the first execution, repetition is unnecessary
-                                    if (parseInt(row_i) === 1) { // check this only the second time the row is processed
-                                        if ((add_string = this.renderOutput(obj, row_template)) === build_rows) {
-                                            // leave it as is and stop processing rows
-                                            sub_template.__html__ = build_rows;
-                                            break; // don't process any more rows from this output_object
-                                        }
-                                    }
-                                    build_rows += this.renderOutput(obj, row_template);
+                                if (false === output_object.hasOwnProperty(row_i)) continue;
+                                if (false === PEATCMS.isInt(row_i)) continue
+                                // this is a row
+                                value = output_object[row_i];
+                                if (typeof value === 'string') {
+                                    obj = {value: value};
+                                } else {
+                                    // @since 0.7.6 do not render items that are not online
+                                    if (false === admin && value.hasOwnProperty('online') && false === value.online) continue;
+                                    obj = value;
                                 }
+                                obj.__count__ = __count__;
+                                obj.__index__ = row_i;
+                                if (admin && false === in_open_tag) {
+                                    if (obj.hasOwnProperty('id')) {
+                                        build_rows += '<span class="PEATCMS_data_stasher" data-peatcms_id="' + obj.id +
+                                            '" data-table_name="' + obj.table_name + '" data-tag="' + tag_name + '"></span>';
+                                    }
+                                    if (obj.slug && obj.type) {
+                                        obj_id = obj.type + '_' + obj[obj.type + '_id'];
+                                        build_rows += '<span class="PEATCMS_edit_button" data-peatcms_slug="' + obj.slug +
+                                            '" data-peatcms_id="' + obj_id + '[' + i + ']"></span>'; // placeholder
+                                    }
+                                }
+                                // if this row doesn't contain any tags that are different for each row,
+                                // just leave it at the first execution, repetition is unnecessary
+                                if (parseInt(row_i) === 1) { // check this only the second time the row is processed
+                                    if ((add_string = this.renderOutput(obj, row_template)) === build_rows) {
+                                        // leave it as is and stop processing rows
+                                        sub_template.__html__ = build_rows;
+                                        break; // don't process any more rows from this output_object
+                                    }
+                                }
+                                build_rows += this.renderOutput(obj, row_template);
                             }
                             sub_template.__html__ = sub_template.__html__.replace('{{__row__[' + temp_i + ']}}', build_rows);
                         }
@@ -1610,7 +1614,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 }
             }
         } else {
-            if (VERBOSE) console.warn('Unrecognized type of tag: ' + (typeof output_object));
+            if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, typeof output_object);
         }
     }
     //  return this.convertTagsRemaining(html);
@@ -2581,7 +2585,7 @@ PEATCMS.prototype.swipifyDOMElement = function (el, on_swipe_left, on_swipe_righ
     el.addEventListener('touchmove', moveTouch, {passive: true});
 }
 
-PEATCMS.prototype.ajaxNavigate = function(e) {
+PEATCMS.prototype.ajaxNavigate = function (e) {
     if (e.ctrlKey === false) { // opening in new tab / window should still be possible
         e.preventDefault();
         e.stopPropagation();
@@ -2626,7 +2630,7 @@ PEATCMS.prototype.ajaxSubmit = function (e) {
 PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     var self = this, forms, form, as, a, i, len, sibling, stasher, parent_name;
     if (el) {
-        if (! el instanceof Element) {
+        if (!el instanceof Element) {
             console.error(el, 'must be a DOMElement');
             return;
         }
@@ -3109,7 +3113,9 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             // cache is built into PEATCMS_ajax
             this.cache({state: unpack_temp(globals.slug)});
             delete globals.slug;
-            PEAT.addEventListener('peatcms.document_ready', function() {delete window.PEATCMS_globals.slugs}, true);
+            PEAT.addEventListener('peatcms.document_ready', function () {
+                delete window.PEATCMS_globals.slugs
+            }, true);
             //delete globals.slugs;
         }
         new PEATCMS_element(path, function (el) {
