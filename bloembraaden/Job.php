@@ -486,13 +486,15 @@ if ('1' === $interval) { // interval should be '1'
             //echo $src;
             // save the image and update src
             if (file_put_contents($save_path . $src, $result)) {
+                $row->src = $src;
                 $img = new InstagramImage($row);
                 if (true === $img->process($logger)) {
-                    //if (true === $db->updateColumns('_instagram_media', array('src' => $src), $row->media_id)) {
+                    if (true === $db->updateColumns('_instagram_media', array('src' => $src), $row->media_id)) {
+                        echo ' DB updated';
+                    }
                     // remember you updated this user_id, so their feeds can be refreshed
                     $updated_user_ids[(string)$row->user_id] = true;
                     $logger->out();
-                    //echo ' DB updated';
                 }
             }
         } else { // mark it for update
