@@ -1485,14 +1485,14 @@ PEATCMS_template.prototype.inOpenTag = function (needle, haystack) {
 
 PEATCMS_template.prototype.renderOutput = function (out, template) {
     var break_reference = template.__html__ || template.html || '', // todo remove second one when all templates are published
-        tag_name, output_object, processed_object, value,
+        tag_name, output_object, processed_object, type_of_object, value,
         admin = (typeof CMS_admin === 'object'),
         html = break_reference,
         // vars needed later:
         len, i, temp_i, row_i, temp_remember_html, sub_template, row_template, sub_html, build_rows, obj, obj_id,
         __count__, add_string, in_open_tag,
         // vars used for | method_name calling
-        start, next_start, end, function_name,
+        start, end, function_name,
         // vars used by : template show / hide
         content, parts, equals, is_false, str_to_replace;
     // process out object
@@ -1501,8 +1501,8 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     }
     for (tag_name in out) {
         if (false === out.hasOwnProperty(tag_name)) continue;
-        if (!(output_object = out[tag_name])) continue;
-        if (typeof output_object === 'object') {
+        if ('undefined' === (type_of_object = typeof (output_object = out[tag_name]))) continue;
+        if ('object' === type_of_object) {
             // this is a complex element which might contain indexed values that are rows
             if (template.hasOwnProperty(tag_name)) {
                 // for each occurrence in the template, render this out object please
@@ -1569,7 +1569,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     html = html.replace('{{' + tag_name + '[' + i + ']}}', sub_html);
                 }
             }
-        } else if (['string', 'number', 'boolean'].includes(typeof output_object)) {
+        } else if (['string', 'number', 'boolean'].includes(type_of_object)) {
             html = PEATCMS.replace('{{' + tag_name + '}}', output_object.toString(), html);
             // @since 0.4.6: simple tags can also be processed by a function by using a pipe character |, {{tag|function_name}}
             while ((start = html.indexOf('{{' + tag_name + '|')) > -1) {
@@ -1614,7 +1614,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 }
             }
         } else {
-            if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, typeof output_object);
+            if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, type_of_object);
         }
     }
     //  return this.convertTagsRemaining(html);
@@ -2181,7 +2181,6 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         node_unique_qualifier,
         // meta name, meta http-equiv and meta property can only be in the head once (per name and property)
         // rel=canonical may only be in the head once as well
-        // TODO there can be only one name=bloembraaden-js and one name=bloembraaden-css in the head for now.
         only_once = {
             "name": true,
             "http-equiv": true,
@@ -2228,7 +2227,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     //this.template_cache_name = template_cache_name;
     data = template['template']['__template_status__'] || '';
     // TODO temporary fix, integrate this with live hints for admin
-    var checkers = document.querySelectorAll('.template_status');
+    var checkers = document.getElementsByClassName('template_status');
     for (i = 0; i < checkers.length; ++i) {
         checkers[i].innerText = data;
     }
