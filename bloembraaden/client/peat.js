@@ -1882,7 +1882,7 @@ PEATCMS_template.prototype.peat_as_float = function (str) {
     return '';
 }
 PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the instances radix and decimal settings
-    if (!isInt(str)) return '0';
+    if (false === PEATCMS.isInt(str)) return '0';
     var n = parseInt(str) / 100,
         c = 2,
         d = ',',

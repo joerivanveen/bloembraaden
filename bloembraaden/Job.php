@@ -6,6 +6,7 @@ if (extension_loaded('newrelic')) {
     newrelic_name_transaction('Job start');
     newrelic_background_job(true);
 }
+
 /**
  * File called by cron job to perform maintenance tasks
  * @since 0.5.7
@@ -23,6 +24,7 @@ class jobTransaction
             $this->newRelicApp = ini_get('newrelic.appname');
         }
     }
+
     public function start(string $name): void
     {
         $this->message .= ob_get_clean();
@@ -38,7 +40,9 @@ class jobTransaction
         echo ' ===';
         echo PHP_EOL;
     }
-    public function flush(bool $with_log = true) {
+
+    public function flush(bool $with_log = true)
+    {
         $this->message .= ob_get_clean();
         if ($with_log) {
             error_log($this->message, 3, Setup::$LOGFILE);
@@ -46,8 +50,8 @@ class jobTransaction
         echo $this->message;
     }
 }
-$trans = new jobTransaction();
 
+$trans = new jobTransaction();
 require __DIR__ . '/Require.php';
 // to test, run it as follows:
 // # php-cgi /path/to/bloembraaden/Job.php param=value (e.g. interval=temp)
@@ -510,7 +514,7 @@ if ('1' === $interval) { // interval should be '1'
     // fill them with an appropriate number of entries
     echo 'Updating feeds triggered by media updates... ' . PHP_EOL;
     $updated_feeds = array(); // each feed has to be updated only once here
-    $update_feeds = static function($feeds) use ($updated_feeds, $db) {
+    $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
         foreach ($feeds as $index => $specs) {
             echo($feed_name = $specs->feed_name);
             if (isset($updated_feeds[$feed_name])) {
@@ -731,7 +735,6 @@ if ('1' === $interval) { // interval should be '1'
     // it has to be uncached as well, or else the image is gone when it’s deleted in the next run...
 }
 $trans->start('report current job');
-
 echo date("Y-m-d H:i:s") . ' (ended)' . PHP_EOL;
 printf("«completed in %s seconds»\r\n", microtime(true) - $start_timer);
 $trans->flush();
