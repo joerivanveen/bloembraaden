@@ -4052,12 +4052,13 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         // delete (accidental) duplicates from cache table, rows that are exactly the same... should not happen but hey
         $statement = $this->conn->prepare('
             DELETE FROM _cache c1 USING (
-              SELECT MIN(ctid) as ctid, slug, variant_page
+              SELECT MIN(ctid) as ctid, slug, instance_id, variant_page
                 FROM _cache
-                GROUP BY slug, variant_page HAVING COUNT(*) > 1
+                GROUP BY slug, instance_id, variant_page HAVING COUNT(*) > 1
               ) c2
               WHERE c1.slug = c2.slug 
                 AND c1.variant_page = c2.variant_page
+                AND c1.instance_id = c2.instance_id
                 AND c1.ctid <> c2.ctid;
         ');
         $statement->execute();
