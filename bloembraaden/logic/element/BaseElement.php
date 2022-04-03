@@ -160,6 +160,7 @@ class BaseElement extends BaseLogic implements Element
         if (isset($this->row->__variants__)) {
             // remove all current variants from $globals['slugs']
             foreach ($this->row->__variants__ as $index => $obj) {
+                if (false === is_int($index)) continue;
                 unset($GLOBALS['slugs']->{$obj->__ref});
             }
             // clean the linked table
