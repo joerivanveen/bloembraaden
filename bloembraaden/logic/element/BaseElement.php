@@ -292,6 +292,7 @@ class BaseElement extends BaseLogic implements Element
         $order_column = ($this->getLinkedTypes()->$linkable_type_name === 'cross_parent') ? 'o' : 'sub_o';
         $keep_order = 1;
         foreach ($elements as $key => $element_row) {
+            if (false === is_int($key)) continue;
             if (!isset($element_row->slug)) $element_row = $GLOBALS['slugs']->{$element_row->__ref};
             $link_element = $linkable_type->getElement($element_row);
             if ($link_element->getSlug() === $slug) continue; // don't process the dropped item in the row
