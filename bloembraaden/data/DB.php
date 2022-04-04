@@ -3960,7 +3960,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function markStaleTheParents(string $slug): bool
     {
         // from 0.8.8 we only warmup parents through their linked tables
-        // children must be caught (later) in batches by jobWarmupOldCache
+        // children must be caught (later) in batches by jobOldCacheRows
         // get all the slugs we need to warmup for this element
         $element_row = $this->fetchElementIdAndTypeBySlug($slug);
         if (!$element_row) return false;
@@ -4029,7 +4029,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
     public function markStaleFrom(string $slug, string $date_from): bool
     {
-        if (null === ($dt = Help::getDate($date_from))) return false;
+        if (null === (Help::getDate($date_from))) return false;
         // delete from stale table
         $statement = $this->conn->prepare('DELETE FROM _stale WHERE instance_id = ? AND slug = ?;');
         $statement->execute(array(Setup::$instance_id, $slug));
@@ -4037,6 +4037,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug, since) VALUES (?, ?, ?);');
         $statement->execute(array(Setup::$instance_id, $slug, $date_from));
         $this->stale_slugs[$slug] = true;
+        $statement = null;
 
         return true;
     }
@@ -4092,14 +4093,12 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
     /**
      * @param int $limit
-     * @return int
+     * @return array the rows
      * @since 0.8.0 @since 0.8.19 ‘since’ can be in the future, for pages that need to be published just then
      */
-    public function jobWarmupStaleCache(int $limit = 60): int
+    public function jobStaleCacheRows(int $limit = 60): array
     {
-        $total_count = 0;
-        $done = array();
-        // collect all the stale slugs and refresh cache
+        // collect all the stale slugs
         $statement = $this->conn->prepare('
             SELECT DISTINCT s.slug, s.instance_id, s.since, c.slug in_cache FROM _stale s
             LEFT OUTER JOIN _cache c ON c.slug = s.slug
@@ -4108,56 +4107,50 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $this->normalizeRows($statement->fetchAll());
-            $stove = new Warmup();
-            foreach ($rows as $key => $row) {
-                $stale_slug = (string)$row->slug;
-                if (isset($done[$stale_slug])) continue;
-                // todo make switching instance id a method so you can handle it better
-                $instance_id = $row->instance_id;
-                if (isset($row->in_cache)) { // only warmup rows already in cache
-                    $done[$stale_slug] = $instance_id;
-                    $stove->Warmup($stale_slug, $instance_id);
-                    $total_count++;
-                }
-                // delete the slug when we’re done todo batch this?
-                $statement = $this->conn->prepare('DELETE FROM _stale WHERE slug = :slug AND instance_id = :instance_id;');
-                $statement->bindValue(':slug', $stale_slug);
-                $statement->bindValue(':instance_id', $instance_id);
-                $statement->execute();
-            }
+        } else {
+            $rows = array();
         }
+        $statement = null;
 
-        return $total_count;
+        return $rows;
+    }
+
+    /**
+     * @param string $slug
+     * @param int $instance_id
+     * @return bool success
+     */
+    public function deleteFromStale(string $slug, int $instance_id): bool
+    {
+        $statement = $this->conn->prepare('DELETE FROM _stale WHERE slug = :slug AND instance_id = :instance_id;');
+        $statement->bindValue(':slug', $slug);
+        $statement->bindValue(':instance_id', $instance_id);
+        $success = $statement->execute();
+        $statement = null;
+
+        return $success;
     }
 
     /**
      * Warms up existing cache rows that are old, handles a maximum of $limit rows each time called
      * @param int $interval in minutes that is considered ‘old’, default 600 (10 hours)
      * @param int $limit default 60 batch size
-     * @return int rows affected
+     * @return array the rows
      */
-    public function jobWarmupOldCache(int $interval = 600, int $limit = 60): int
+    public function jobOldCacheRows(int $interval = 600, int $limit = 60): array
     {
-        $total_count = 0;
         $statement = $this->conn->prepare('
             SELECT DISTINCT slug, instance_id, since FROM _cache WHERE since < NOW() - interval \'' .
             $interval . ' minutes\' ORDER BY since DESC LIMIT ' . $limit . ';');
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $this->normalizeRows($statement->fetchAll());
-            $stove = new Warmup();
-            foreach ($rows as $key => $row) {
-                echo PHP_EOL;
-                echo 'Warming up ';
-                echo $row->slug;
-                echo ': ';
-                echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
-                $total_count += 1;
-            }
-            echo PHP_EOL;
+        } else {
+            $rows = array();
         }
+        $statement = null;
 
-        return $total_count;
+        return $rows;
     }
 
     /**

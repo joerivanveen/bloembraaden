@@ -1,3 +1,4 @@
+
 # Bloembraaden
 _We’ve got your backend._
 
@@ -110,6 +111,7 @@ Please setup a crontab for the web user (e.g. nginx) like so:
 And put in the four lines that are currently needed for Bloembraaden:
 ```
 */1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
+*/1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=warmup > /dev/null 2>&1
 */5 * * * * php-cgi /path/to/bloermbaaden/Job.php interval=5 > /dev/null 2>&1
 4 * * * * php-cgi /path/to/bloembraaden/Job.php interval=hourly > /dev/null 2>&1
 0 3 * * * php-cgi /path/to/bloembraaden/Job.php interval=daily > /dev/null 2/&1

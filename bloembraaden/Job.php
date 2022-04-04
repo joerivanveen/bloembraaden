@@ -311,25 +311,8 @@ if ('1' === $interval) { // interval should be '1'
         }
     }
     unset($mailer);
-    // @since 0.7.0 update ci_ai column, the column each element has for search purposes
-    $trans->start('update ci_ai');
-    echo $db->jobSearchUpdateIndexColumn() . PHP_EOL;
     $trans->start('empty expired lockers');
     echo $db->jobEmptyExpiredLockers() . PHP_EOL;
-    // handle cache, NOTE you have to do this late / last, because some pages may depend on the ci_ai (that should not be NULL)
-    $trans->start('warmup (elements) cache');
-    echo 'clear stale cache: ';
-    $warmed = $db->jobWarmupStaleCache(60);
-    echo $warmed;
-    echo ' found' . PHP_EOL;
-    echo 'remove duplicates from cache: ';
-    echo $db->removeDuplicatesFromCache();
-    echo PHP_EOL;
-    if ($warmed < 40) {
-        echo 'warmup old cache: ';
-        echo $db->jobWarmupOldCache(120, 60 - $warmed);
-        echo ' found' . PHP_EOL;
-    }
     // Refresh Instagram media
     $trans->start('refresh instagram data');
     // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
@@ -539,6 +522,61 @@ if ('1' === $interval) { // interval should be '1'
     echo 'Updating feeds that are outdated... ' . PHP_EOL;
     $feeds = $db->getInstagramFeedSpecsOutdated();
     $update_feeds($feeds);
+} elseif ('warmup' === $interval) { // interval should be ‘warmup’
+    $max_running_seconds = 50;
+    set_time_limit($max_running_seconds);
+    // @since 0.7.0 update ci_ai column, the column each element has for search purposes
+    $trans->start('update ci_ai');
+    echo $db->jobSearchUpdateIndexColumn() . PHP_EOL;
+    // handle cache, NOTE some pages may depend on the ci_ai (that should not be NULL)
+    $total_count = 0;
+    $done = array();
+    $stove = new Warmup();
+    $rows = $db->jobStaleCacheRows(60);
+    $trans->start('warmup stale (elements) cache');
+    foreach ($rows as $key => $row) {
+        // warmup can take very long, this job starts every minute, so terminate it before that
+        if (microtime(true) - $start_timer > $max_running_seconds) {
+            echo 'Stopped for time';
+            echo PHP_EOL;
+            break;
+        }
+        $stale_slug = (string)$row->slug;
+        if (isset($done[$stale_slug])) continue;
+        // todo make switching instance id a method so you can handle it better
+        $instance_id = $row->instance_id;
+        if (isset($row->in_cache)) { // only warmup rows already in cache
+            $done[$stale_slug] = $instance_id;
+            $stove->Warmup($stale_slug, $instance_id);
+            $total_count++;
+        }
+        // delete the slug when we’re done
+        $db->deleteFromStale($stale_slug, $instance_id);
+    }
+    echo $total_count;
+    echo ' done' . PHP_EOL;
+    echo 'remove duplicates from cache: ';
+    echo $db->removeDuplicatesFromCache();
+    echo PHP_EOL;
+    $trans->start('warmup old (elements) cache');
+    $rows = $db->jobOldCacheRows(120, 60 - $total_count);
+    $total_count = 0;
+    foreach ($rows as $key => $row) {
+        // warmup can take very long, this job starts every minute, so terminate it before that
+        if (microtime(true) - $start_timer > $max_running_seconds) {
+            echo 'Stopped for time';
+            echo PHP_EOL;
+            break;
+        }
+        echo 'Warming up ';
+        echo $row->slug;
+        echo ': ';
+        echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
+        echo PHP_EOL;
+        $total_count += 1;
+    }
+    echo $total_count;
+    echo ' done' . PHP_EOL;
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
     echo $db->jobPurgeDeleted($interval) . PHP_EOL;
