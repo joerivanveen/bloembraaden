@@ -365,6 +365,7 @@ class BaseElement extends BaseLogic implements Element
         $elements = $this->getLinked()['x_value'];
         $keep_order = 1;
         foreach ($elements as $key => $element_row) {
+            if (false === is_int($key)) continue;
             if ($element_row->x_value_id === $x_value_id) continue; // don't process the dropped item in the row
             if ($element_row->x_value_id === $before_x_value_id) {
                 $this->getDB()->updateColumns($table_name, array('o' => $keep_order), $x_value_id);
