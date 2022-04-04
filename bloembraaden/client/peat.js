@@ -723,6 +723,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
             linkable_area.insertBefore(new PEATCMS_x_value(linked_element, this).DOMElement, linkable_area.childNodes[i]);
         }
     }
+    ++i; // do not remove the actual last element... :-P
     // remove remaining / no longer valid
     while ((el = linkable_area.childNodes[i]) && !el.classList.contains('searchable')) {
         PEATCMS.removeNode(el);
