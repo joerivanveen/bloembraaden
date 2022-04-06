@@ -377,6 +377,7 @@ class Template extends BaseLogic
             unset($output->__ref);
         }
         //
+        $check_if = array(); // @since 0.10.7 remember simple tags to check for if-statements in template last
         foreach ($output as $tag_name => $output_object) { // for each tag in the output object
             if (in_array($out_type = gettype($output_object), ['string', 'integer', 'boolean'])) {
                 if ($out_type === 'boolean') {
@@ -384,6 +385,7 @@ class Template extends BaseLogic
                 } else {
                     $output_object = (string)$output_object;
                 }
+                $check_if[$tag_name] = $output_object;
                 // regular tag replacement
                 if (strpos($html, '{{' . $tag_name . '}}') !== false) {
                     $html = str_replace('{{' . $tag_name . '}}', $output_object, $html);
@@ -402,37 +404,6 @@ class Template extends BaseLogic
                         $processed_object = $output_object;
                     }
                     $html = str_replace('{{' . $tag_name . '|' . $function_name . '}}', $processed_object, $html);
-                }
-                // @since 0.4.12: simple elements can show / hide parts of the template
-                while (($str_pos = strpos($html, '{{' . $tag_name . ':')) !== false) {
-                    // @since 0.7.9 you can use ‘equal to’ operator ‘==’
-                    if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
-                        $str_pos = $str_pos + strlen($tag_name) + 5;
-                        $equals = strtolower(substr($html, $str_pos, strpos($html, ':', $str_pos) - $str_pos));
-                        $is_false = (false === isset($output->$tag_name) || strtolower($output->$tag_name) !== $equals);
-                        $str_pos = $str_pos + strlen($equals) + 1;
-                    } else {
-                        $str_pos = $str_pos + strlen($tag_name) + 3;
-                        $is_false = ("" === $output_object || "false" === $output_object);
-                        $equals = null;
-                    }
-                    $end_pos = strpos($html, '}}', $str_pos);
-                    $content = substr($html, $str_pos, $end_pos - $str_pos);
-                    $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
-                    $str_to_replace = '{{' . $tag_name . ((isset($equals)) ? ':==' . $equals . ':' : ':') . $content . '}}';
-                    if ($is_false) {
-                        if (count($parts) > 1) { // display the 'false' part
-                            $html = str_replace($str_to_replace, $parts[1], $html);
-                        } else { // forget it
-                            $html = str_replace($str_to_replace, '', $html);
-                        }
-                    } else {// display the 'true' part, substitute original value into ::value::
-                        $html = str_replace(
-                            $str_to_replace,
-                            str_replace('::value::', $output_object, $parts[0]),
-                            $html
-                        );
-                    }
                 }
             } else {
                 $output_object = (array)$output_object; // this is a complex element which might contain indexed values that are rows
@@ -488,6 +459,43 @@ class Template extends BaseLogic
                 }
             }
         }
+        foreach ($check_if as $tag_name => $output_object) { // @since 0.10.7 if tags should be able to contain other tags
+            // @since 0.4.12: simple elements can show / hide parts of the template
+            while (($str_pos = strpos($html, '{{' . $tag_name . ':')) !== false) {
+                // @since 0.7.9 you can use ‘equal to’ operator ‘==’
+                if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
+                    $str_pos = $str_pos + strlen($tag_name) + 5;
+                    $equals = strtolower(substr($html, $str_pos, strpos($html, ':', $str_pos) - $str_pos));
+                    $is_false = (false === isset($output->$tag_name) || strtolower($output->$tag_name) !== $equals);
+                    $str_pos = $str_pos + strlen($equals) + 1;
+                } else {
+                    $str_pos = $str_pos + strlen($tag_name) + 3;
+                    $is_false = ('' === $output_object || 'false' === $output_object);
+                    $equals = null;
+                }
+                $end_pos = strpos($html, '}}', $str_pos);
+                $content = substr($html, $str_pos, $end_pos - $str_pos);
+                $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
+                $str_to_replace = '{{' . $tag_name . ((isset($equals)) ? ':==' . $equals . ':' : ':') . $content . '}}';
+                if ($is_false) {
+                    if (count($parts) > 1) { // display the 'false' part
+                        $html = str_replace($str_to_replace, $parts[1], $html);
+                    } else { // forget it
+                        $html = str_replace($str_to_replace, '', $html);
+                    }
+                } else { // display the 'true' part, substitute original value into ::value::
+                    $html = str_replace(
+                        $str_to_replace,
+                        str_replace('::value::', $output_object, $parts[0]),
+                        $html
+                    );
+                }
+            }
+        }
+
+        $check_if = null;
+        $output = null;
+        $output_object = null;
 
         return $html;
     }

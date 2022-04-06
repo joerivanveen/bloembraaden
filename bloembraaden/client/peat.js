@@ -1491,7 +1491,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         html = break_reference,
         // vars needed later:
         len, i, temp_i, row_i, temp_remember_html, sub_template, row_template, sub_html, build_rows, obj, obj_id,
-        __count__, add_string, in_open_tag,
+        __count__, add_string, in_open_tag, check_if = {},
         // vars used for | method_name calling
         start, end, function_name,
         // vars used by : template show / hide
@@ -1571,6 +1571,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 }
             }
         } else if (['string', 'number', 'boolean'].includes(type_of_object)) {
+            check_if[tag_name] = output_object; // @since 0.10.7 remember tags to check for if-statements in template last
             html = PEATCMS.replace('{{' + tag_name + '}}', output_object.toString(), html);
             // @since 0.4.6: simple tags can also be processed by a function by using a pipe character |, {{tag|function_name}}
             while ((start = html.indexOf('{{' + tag_name + '|')) > -1) {
@@ -1587,35 +1588,39 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 }
                 html = PEATCMS.replace('{{' + tag_name + '|' + function_name + '}}', processed_object, html);
             }
-            // @since 0.4.12: simple elements can show / hide parts of the template
-            while ((start = html.indexOf('{{' + tag_name + ':')) !== -1) {
-                // @since 0.7.9 you can use ‘equal to’ operator ‘==’
-                equals = null;
-                if (html.indexOf('{{' + tag_name + ':==') !== -1) {
-                    start += 5 + tag_name.length;
-                    equals = html.substring(start, html.indexOf(':', start)).toLowerCase();
-                    is_false = (false === out.hasOwnProperty(tag_name) || String(out[tag_name]).toLowerCase() !== equals);
-                    start += equals.length + 1;
-                } else {
-                    start += 3 + tag_name.length;
-                    is_false = !output_object;
-                }
-                end = html.indexOf('}}', start);
-                content = html.substring(start, end);
-                parts = content.split(':not:'); // the content can be divided in true and false part using :not:
-                str_to_replace = '{{' + tag_name + ((equals) ? ':==' + equals + ':' : ':') + content + '}}';
-                if (is_false) {
-                    if (parts.length > 1) { // display the 'false' part
-                        html = PEATCMS.replace(str_to_replace, parts[1], html);
-                    } else { // forget it
-                        html = PEATCMS.replace(str_to_replace, '', html);
-                    }
-                } else { // display the 'true' part, substitute original value into ::value::
-                    html = PEATCMS.replace(str_to_replace, PEATCMS.replace('::value::', output_object, parts[0]), html);
-                }
-            }
         } else {
             if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, type_of_object);
+        }
+    }
+    for (tag_name in check_if) {
+        if (false === check_if.hasOwnProperty(tag_name)) continue;
+        output_object = check_if[tag_name];
+        // @since 0.4.12: simple elements can show / hide parts of the template
+        while ((start = html.indexOf('{{' + tag_name + ':')) !== -1) {
+            // @since 0.7.9 you can use ‘equal to’ operator ‘==’
+            equals = null;
+            if (html.indexOf('{{' + tag_name + ':==') !== -1) {
+                start += 5 + tag_name.length;
+                equals = html.substring(start, html.indexOf(':', start)).toLowerCase();
+                is_false = (false === out.hasOwnProperty(tag_name) || String(out[tag_name]).toLowerCase() !== equals);
+                start += equals.length + 1;
+            } else {
+                start += 3 + tag_name.length;
+                is_false = !output_object;
+            }
+            end = html.indexOf('}}', start);
+            content = html.substring(start, end);
+            parts = content.split(':not:'); // the content can be divided in true and false part using :not:
+            str_to_replace = '{{' + tag_name + ((equals) ? ':==' + equals + ':' : ':') + content + '}}';
+            if (is_false) {
+                if (parts.length > 1) { // display the 'false' part
+                    html = PEATCMS.replace(str_to_replace, parts[1], html);
+                } else { // forget it
+                    html = PEATCMS.replace(str_to_replace, '', html);
+                }
+            } else { // display the 'true' part, substitute original value into ::value::
+                html = PEATCMS.replace(str_to_replace, PEATCMS.replace('::value::', output_object, parts[0]), html);
+            }
         }
     }
     //  return this.convertTagsRemaining(html);
