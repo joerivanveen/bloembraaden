@@ -628,14 +628,14 @@ class Help
         }
         echo 'Upgrading from ' . $version . PHP_EOL;
         // read the sql file up until the old version and process everything after that. Remember the new version to check
-        if (!file_exists(CORE . '../install.sql')) {
+        if (!file_exists(CORE . 'data/install.sql')) {
             echo 'install.sql not found, nothing to do';
             Help::addError(new \Exception('Install flag switched on, but no instructions found'));
 
             return;
         }
         // if the version mentioned in config is accurate
-        $sql = file_get_contents(CORE . '../install.sql');
+        $sql = file_get_contents(CORE . 'data/install.sql');
         // skip to the line -- version $version
         $position_of_current_version_in_sql = strpos($sql, '-- version ' . $version);
         if ($position_of_current_version_in_sql === false) {

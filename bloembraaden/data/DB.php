@@ -126,6 +126,29 @@ class DB extends Base
     }
 
     /**
+     * @param string $column_name
+     * @return string|null
+     * @since 0.10.7
+     */
+    public function getSystemValue(string $column_name): ?string
+    {
+        return $this->fetchRow('_system', [$column_name], [])->{$column_name};
+    }
+
+    /**
+     * @param string $column_name
+     * @param string|null $value
+     * @return bool
+     * @since 0.10.7
+     */
+    public function setSystemValue(string $column_name, ?string $value): bool
+    {
+        return $this->updateColumnsWhere('_system', array(
+            $column_name => $value,
+        ), []);
+    }
+
+    /**
      * put expiring info in a locker, receive a key to open it once with emptyLocker
      * which will return the info and the instance_id
      * @param int $key_type not used at the moment, may be used to specify complexity or length of the key
@@ -3310,21 +3333,29 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         // @since 0.7.9 source of potential bugs, the changing of a where clause, will cause a fatal error from now on
         if (count($where['discarded']) !== 0) $this->handleErrorAndStop('->fetchRows discarded columns in where clause');
         // build the query
-        $sql = 'SELECT ' . implode(', ', $columns['names']) . ' FROM ' . $table_name .
-            ' WHERE ' . implode(' AND ', $where['parameterized']);
+        ob_start();
+        echo 'SELECT ';
+        echo implode(', ', $columns['names']);
+        echo ' FROM ';
+        echo $table_name;
+        if ('' !== ($where_statement = implode(' AND ', $where['parameterized']))) {
+            echo ' WHERE ';
+            echo $where_statement;
+        }
         if (in_array('o', $columns['names'])) {
-            $sql .= ' ORDER BY o';
+            echo ' ORDER BY o';
         } elseif ('_template' !== $table_name && in_array('date_published', $columns['names'])) {
             if (Defined('ADMIN') && false === ADMIN) {
-                $sql .= ' AND date_published < NOW() - INTERVAL \'5 minutes\''; // allow a few minutes for the cache to update
+                echo ' AND date_published < NOW() - INTERVAL \'5 minutes\''; // allow a few minutes for the cache to update
             }
-            $sql .= ' ORDER BY date_published DESC';
+            echo ' ORDER BY date_published DESC';
         } elseif ('_order' !== $table_name && in_array('date_updated', $columns['names'])) {
-            $sql .= ' ORDER BY date_updated DESC';
+            echo ' ORDER BY date_updated DESC';
         } elseif (in_array('date_created', $columns['names'])) {
-            $sql .= ' ORDER BY date_created DESC';
+            echo ' ORDER BY date_created DESC';
         }
-        $sql .= ' LIMIT 1000;';
+        echo ' LIMIT 1000;';
+        $sql = ob_get_clean();
         // prepare the statement to let it execute as fast as possible
         $statement = $this->conn->prepare($sql);
         $statement->execute($where['values']);
@@ -3579,7 +3610,10 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $table = new Table($this->getTableInfo($table_name));
         $key_column_name = $table->getInfo()->getPrimaryKeyColumn()->getName();
         $where = $table->formatColumnsAndData($where, true);
-        $sql = 'SELECT ' . $key_column_name . ' FROM ' . $table_name . ' WHERE ' . implode(' AND ', $where['parameterized']);
+        $sql = 'SELECT ' . $key_column_name . ' FROM ' . $table_name;
+        if ('' !== ($where_statement = implode(' AND ', $where['parameterized']))) {
+            $sql .= ' WHERE ' . $where_statement;
+        }
         $statement = $this->conn->prepare($sql);
         $statement->execute($where['values']);
         $rows = $this->normalizeRows($statement->fetchAll());

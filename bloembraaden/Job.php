@@ -1,6 +1,9 @@
 <?php
 
 namespace Peat;
+// TODO make configurable using config file
+const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
+const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 10;
 //
 if (extension_loaded('newrelic')) {
     newrelic_name_transaction('Job start');
@@ -561,7 +564,7 @@ if ('1' === $interval) { // interval should be '1'
     echo $db->removeDuplicatesFromCache();
     echo PHP_EOL;
     $trans->start('warmup old (elements) cache');
-    $rows = $db->jobOldCacheRows(120, 60 - $total_count);
+    $rows = $db->jobOldCacheRows(MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
     $total_count = 0;
     foreach ($rows as $key => $row) {
         // warmup can take very long, this job starts every minute, so terminate it before that
@@ -579,6 +582,45 @@ if ('1' === $interval) { // interval should be '1'
     }
     echo $total_count;
     echo ' done' . PHP_EOL;
+    // refresh the json files for the filters as well
+    $trans->start('handle properties filters cache');
+    $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
+    // get the cache pointer to resume where we left off, if present
+    $cache_pointer_filter_filename = $db->getSystemValue('cache_pointer_filter_filename');
+    $filename_for_cache = null;
+    foreach ($dir as $index => $file_info) {
+        if ($file_info->isDir()) {
+            if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
+            echo 'Filters for instance ' . $instance_id . PHP_EOL;
+            $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
+            foreach ($filter_dir as $index2 => $filter_file_info) {
+                if ('serialized' === $filter_file_info->getExtension()) {
+                    $age = (int)Setup::getNow() - $filter_file_info->getMTime();
+                    if ($age < 60 * MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
+                    $filename = $filter_file_info->getFilename();
+                    $filename_for_cache = $instance_id . '/' . $filename;
+                    if (microtime(true) - $start_timer > $max_running_seconds) {
+                        echo 'Stopped for time, filter age being ' . $age . ' seconds';
+                        echo PHP_EOL;
+                        // remember we left off here, to resume next run
+                        $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
+                        break 2;
+                    }
+                    if ($filename_for_cache === $cache_pointer_filter_filename) $cache_pointer_filter_filename = null;
+                    if (null !== $cache_pointer_filter_filename) continue;
+                    // -11 to remove .serialized extension
+                    $path = urldecode(substr($filename, 0, -11));
+                    $src = new Search();
+                    $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
+                    echo 'Refreshed ' . $path . PHP_EOL;
+                }
+            }
+        }
+    }
+    if (null !== $cache_pointer_filter_filename && null === $filename_for_cache) {
+        $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
+    }
+    echo 'done... ' . PHP_EOL;
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
     echo $db->jobPurgeDeleted($interval) . PHP_EOL;
@@ -656,26 +698,6 @@ if ('1' === $interval) { // interval should be '1'
                         unlink($file_info->getPathname());
                         echo 'Deleted ' . $file_info->getFilename() . PHP_EOL;
                     }
-                }
-            }
-        }
-    }
-    // refresh the json files for the filters as well
-    $trans->start('handle properties filters cache');
-    $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
-    foreach ($dir as $index => $file_info) {
-        if ($file_info->isDir()) {
-            if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
-            echo 'Filters for instance ' . $instance_id . PHP_EOL;
-            $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
-            foreach ($filter_dir as $index2 => $filter_file_info) {
-                if ('serialized' === $filter_file_info->getExtension()) {
-                    $filename = $filter_file_info->getFilename();
-                    // -11 to remove .serialized extension
-                    $path = urldecode(substr($filename, 0, -11));
-                    $src = new Search();
-                    $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
-                    echo 'Refreshed ' . $path . PHP_EOL;
                 }
             }
         }

@@ -2664,6 +2664,35 @@ BEGIN;
 
 COMMIT;
 
+
+-- version 0.10.5
+
+BEGIN;
+
+COMMIT;
+
+
+-- version 0.10.6
+
+BEGIN;
+
+COMMIT;
+
+
+-- version 0.10.7
+
+BEGIN;
+
+ALTER TABLE _system
+    DROP CONSTRAINT IF EXISTS "unique__system_version";
+ALTER TABLE _system
+    ADD CONSTRAINT "unique__system_version" PRIMARY KEY ("version");
+
+ALTER TABLE _system
+    ADD COLUMN if not exists "cache_pointer_filter_filename" text;
+
+COMMIT;
+
 -- next version: comments + ratings
 
 

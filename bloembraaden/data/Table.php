@@ -344,7 +344,7 @@ class TableInfo
 
     /**
      * @param $name String the name of the column
-     * @return Column Returns the requested column as Column object, or null when not found
+     * @return Column | null Returns the requested column as Column object, or null when not found
      */
     public function getColumnByName(string $name): ?Column
     {
