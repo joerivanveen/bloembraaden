@@ -68,7 +68,7 @@ if ('1' === $interval) { // interval should be '1'
     $trans->start('mail order confirmations');
     // @since 0.5.16: mail order confirmation to client
     // @since 0.9.0: added creation of invoice and sending payment confirmation to client
-    $mailgun_custom_domain = '/|\\';
+    $mailgun_custom_domain = '___';
     $mailer = null;
     $rows = $db->jobGetUnconfirmedOrders();
     foreach ($rows as $index => $row) {
@@ -301,6 +301,8 @@ if ('1' === $interval) { // interval should be '1'
                         }
                     }
                     var_dump($out);
+                } else {
+                    $out = (object)array('success' => false, 'reason' => 'mailer has error');
                 }
                 $db->updateColumns('_order', array(
                     'emailed_payment_confirmation' => true,

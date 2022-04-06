@@ -1856,7 +1856,8 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
        i.template_id_order_confirmation, i.template_id_payment_confirmation, i.template_id_internal_confirmation,
        o.*
             FROM _order o INNER JOIN _instance i ON i.instance_id = o.instance_id
-            WHERE o.emailed_order_confirmation = FALSE OR o.emailed_payment_confirmation = FALSE
+            WHERE o.emailed_order_confirmation = FALSE
+               OR (o.emailed_payment_confirmation = FALSE AND o.payment_confirmed_bool = TRUE)
             ORDER BY mailgun_custom_domain;'
         );
         $statement->execute();
