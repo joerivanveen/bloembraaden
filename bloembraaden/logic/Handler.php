@@ -1447,6 +1447,10 @@ class Handler extends BaseLogic
                 $element = $this->resolver->getElement($from_history, $this->session);
                 $out = $element->cacheOutputObject(true);
                 unset($element);
+                if (extension_loaded('newrelic')) {
+                    $transaction_name = (ADMIN) ? 'Admin: ' : 'Visit: ';
+                    newrelic_name_transaction($transaction_name . 'cache');
+                }
             }
         }
         // set path to __ref if not present
