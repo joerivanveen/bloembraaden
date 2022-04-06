@@ -474,6 +474,14 @@ class Template extends BaseLogic
                     $equals = null;
                 }
                 $end_pos = strpos($html, '}}', $str_pos);
+                if (false === $end_pos) { // error: if tag has no end
+                    $html = str_replace(
+                        '{{' . $tag_name . ':',
+                        'If-error near ' . $tag_name,
+                        $html
+                    );
+                    continue;
+                }
                 $content = substr($html, $str_pos, $end_pos - $str_pos);
                 $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
                 $str_to_replace = '{{' . $tag_name . ((isset($equals)) ? ':==' . $equals . ':' : ':') . $content . '}}';

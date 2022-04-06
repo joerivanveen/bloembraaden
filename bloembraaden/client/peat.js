@@ -1609,6 +1609,10 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 is_false = !output_object;
             }
             end = html.indexOf('}}', start);
+            if (-1 === end) {
+                html = PEATCMS.replace('{{' + tag_name + ':', '<span class="warn">If-error near ' + tag_name + '</span>', html);
+                continue;
+            }
             content = html.substring(start, end);
             parts = content.split(':not:'); // the content can be divided in true and false part using :not:
             str_to_replace = '{{' + tag_name + ((equals) ? ':==' + equals + ':' : ':') + content + '}}';
