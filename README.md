@@ -15,7 +15,7 @@ Your client can edit the content of their website through an easy interface,
 laid over their website, that you can configure as well as change the appearance of.
 
 ## Who’s it for
-Bloembraaden is aimed at webdevelopers and starting digital agencies that want to be
+Bloembraaden is aimed at webdevelopers and digital agencies that want to be
 free to realise websites exactly the way they want.
 
 We like **unicorns** more than uniforms...
@@ -108,7 +108,7 @@ require __DIR__ . '/../bloembraaden/Web.php';
 Many operations such as mailing and refreshing object cache are performed asynchronously. These are handled by the file `Job.php`.
 Please setup a crontab for the web user (e.g. nginx) like so:
 `crontab -e -u nginx`
-And put in the four lines that are currently needed for Bloembraaden:
+And put in the five lines that are currently needed for Bloembraaden:
 ```
 */1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
 */1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=warmup > /dev/null 2>&1
@@ -143,7 +143,7 @@ You can install new relic on your server and Bloembraaden will use it to report 
 You don’t have to setup anything, Bloembraaden checks for ‘extension_loaded’.
 
 ## Initial install
-The first install is done after you have prepared you config file and the two databases, as well as your webserver.
+The first install is done after you have prepared your config file and the two databases, as well as your webserver.
 Set `install` to `true` in the config and go to:
 
 `https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult`
@@ -152,7 +152,7 @@ Please use an actual difficult password.
 Do not forget these credentials, because you will not be able to login without them.
 
 Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
-You should switch off the install flag (set it to `false`).
+You should now switch off the install flag (set it to `false`).
 
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
@@ -163,4 +163,4 @@ I will post some ‘getting started’ info on https://bloembraaden.io in the fu
 There is some benefit in setting up your webserver manually, mainly you can tweak some extra speed and security out of your specific environment.
 However, to check out some new cool piece of software, it would be handy if it came as a Docker container.
 
-Feel free to help me with that :-)
+Currently for lack of time I am not working on this, contact me if you want to help me set it up, your help is greatly appreciated.
