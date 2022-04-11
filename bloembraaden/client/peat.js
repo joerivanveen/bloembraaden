@@ -3013,7 +3013,7 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
     var navigated_parts, current_parts, i;
     if (navigated_to) {
         this.last_navigate = navigated_to
-    } else if (!this.last_navigate) {
+    } else if (null === this.last_navigate) {
         return false;
     }
     navigated_parts = this.last_navigate.split('/');
@@ -3034,7 +3034,6 @@ PEATCMS_navigator.prototype.go = function (path, local) {
             this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
             slug = path.replace(this.getRoot(true), '');
             if (0 === slug.indexOf('/')) slug = slug.substr(1);
-            self.last_navigate = decodeURI(slug);
             document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
                 bubbles: false,
                 detail: {
@@ -3042,6 +3041,7 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                 }
             }));
             new PEATCMS_element(slug, function (el) {
+                var slug, title, path;
                 if (el === false) {
                     console.error('The slug ‘' + slug + '’ is not an element');
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
@@ -3049,17 +3049,20 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                 } else {
                     try {
                         if (el.state.hasOwnProperty('slug')) {
-                            path = el.state.path || el.state.slug;
+                            slug = el.state.slug;
+                            title = el.state.title;
+                            path = el.state.path || slug;
                             self.element = el; // cache current element
+                            self.last_navigate = slug;
                             // data holds max 640k hence you can't put pages in it
                             window.history.pushState({
-                                title: el.state.title,
+                                title: title,
                                 path: path
-                            }, el.state.title, '/' + path);
-                            self.maybeEdit(el.state.slug);
+                            }, title, '/' + path);
+                            self.maybeEdit(slug);
                         }
                         PEAT.render(el, function (el) {
-                            if (VERBOSE) console.log('Finished rendering ' + el.state.title);
+                            if (VERBOSE) console.log('Finished rendering ' + title);
                             document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                             self.is_navigating = false;
                         });
