@@ -1627,7 +1627,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             }
         }
     }
-    //  return this.convertTagsRemaining(html);
+    // return this.convertTagsRemaining(html);
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
 }

@@ -103,10 +103,10 @@ class BaseLogic extends Base
             $row->type = $this->getType()->typeName();
             // fields title, excerpt, description and content need to be parsed
             $parser = new Parser();
-            if (isset($row->excerpt)) $row->excerpt_parsed = $parser->parse($row->excerpt);
-            if (isset($row->description)) $row->description_parsed = $parser->parse($row->description);
-            if (isset($row->content)) $row->content_parsed = $parser->parse($row->content);
-            if (isset($row->title)) $row->title_parsed = $parser->parse($row->title, true);
+            $row->excerpt_parsed = $parser->parse($row->excerpt ?? null);
+            $row->description_parsed = $parser->parse($row->description ?? null);
+            $row->content_parsed = $parser->parse($row->content ?? null);
+            $row->title_parsed = $parser->parse($row->title ?? null, true);
             $parser = null;
         }
 
