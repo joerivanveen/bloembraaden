@@ -1492,13 +1492,10 @@ class Handler extends BaseLogic
                 // @since 0.8.19 do not show items that are not yet published
                 || (isset($base_element->is_published) and false === $base_element->is_published)
             ) {
-                if (null !== $render_in_tag) {
-                    $this->addMessage(sprintf(__('%s not found', 'peatcms'), $render_in_tag), 'warn');
-                    $out = new \stdClass; // clear the previous ‘not found’ element
-                    $out->render_in_tag = $render_in_tag;
-                } else {
-                    $this->handleNotFoundAndStop($instance->getSetting('not_found_slug'));
-                }
+                $element = new Search();
+                $element->find(array($base_element->title));
+                $out = $element->getOutputObject();
+                if (null !== $render_in_tag) $out->render_in_tag = $render_in_tag;
             }
         }
         unset($base_element);

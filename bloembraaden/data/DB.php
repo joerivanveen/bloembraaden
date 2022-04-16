@@ -1236,7 +1236,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         );
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
-        $slug = $statement->fetchColumn() ?? $this->handleNotFoundAndStop('/');
+        $slug = $statement->fetchColumn() ?: 'homepage';
         $statement = null;
 
         return $slug;

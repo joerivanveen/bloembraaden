@@ -103,39 +103,4 @@ class Base
         }
         die();
     }
-
-    /**
-     * Sends a redirect_uri or 307 temporary redirect header, use it for items that are not online
-     * @param string|null $slug
-     * @since 0.7.6 elements that are not online will generate a user-specifiable error akin to 404
-     */
-    public function handleNotFoundAndStop(?string $slug): void
-    {
-        if (null !== $slug) {
-            if (Help::slugify($slug) !== $slug) {
-                $this->handleErrorAndStop(
-                    sprintf('While handling not found: %s is not a slug', $slug),
-                    __('Error handling not found page','peatcms')
-                );
-            }
-            if (false === strpos($slug, '/')) $slug = '/' . $slug;
-        } else {
-            $this->addMessage(__('Not Found', 'peatcms'), 'error');
-            $slug = '/';
-        }
-        // @since 0.8.16 check if the slug is even online...
-        if ($_SERVER['REQUEST_URI'] === $slug) {
-            $this->handleErrorAndStop(
-                sprintf('Not found page %s is calling itself', $slug),
-                __('Error handling not found page','peatcms')
-            );
-        }
-        if (defined('OUTPUT_JSON')) {
-            echo '{ "error": "Not found", "redirect_uri": ' . json_encode($slug) . ' }';
-        } else {
-            header($_SERVER['SERVER_PROTOCOL'] . ' 307 Temporary Redirect', true, 307);
-            header('Location:' . $slug);
-        }
-        die();
-    }
 }

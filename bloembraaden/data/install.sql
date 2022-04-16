@@ -2693,6 +2693,16 @@ ALTER TABLE _system
 
 COMMIT;
 
+
+-- version 0.10.8
+
+BEGIN;
+
+ALTER TABLE "_instance"
+    DROP COLUMN if exists "not_found_slug";
+
+COMMIT;
+
 -- next version: comments + ratings
 
 

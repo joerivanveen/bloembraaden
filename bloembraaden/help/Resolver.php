@@ -59,8 +59,6 @@ class Resolver extends BaseLogic
                 return true;
             }));
         }
-        // TODO where is the problem with the '+' sign at? Please document it, % is also a problem with urldecode
-        // TODO so it only accepts json, fortunately payvision also sends json, but what if... etc.
         // 0.5.3 / if you change this, check if the templates can still be saved
         $this->post_data = json_decode(file_get_contents('php://input'));
         if (json_last_error() === JSON_ERROR_NONE) {
@@ -225,6 +223,7 @@ class Resolver extends BaseLogic
                         }
                         if (count($orders) === 1) {
                             $order = new Order($orders[0]);
+
                             return new BaseElement((object)array(
                                 'title' => __('Order detail', 'peatcms'),
                                 'template_pointer' => (object)array('name' => 'order', 'admin' => true),
@@ -246,13 +245,12 @@ class Resolver extends BaseLogic
                     }
             }
         }
-        // short circuit resolve for now
+        // resolve
         $type_name = 'search';
         $element_id = 0;
         $terms = $this->getTerms();
         $num_terms = count($terms);
-        if (0 === $num_terms) { // homepage is requested <- dit kan dus niet?
-            $this->addError('There can not be 0 terms in the resolver');
+        if (0 === $num_terms) { // homepage is requested
             $type_name = 'page';
             $element_id = $session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
