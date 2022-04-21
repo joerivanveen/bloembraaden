@@ -553,11 +553,16 @@ PEATCMS_actor.prototype.set = function (data) {
 }
 
 PEATCMS_actor.prototype.hasChanged = function () {
-    var DOMElement = this.DOMElement, el;
+    var DOMElement = this.DOMElement, el, current_value = '';
     if ('undefined' === typeof DOMElement) return false;
-    if (typeof DOMElement.selectedIndex !== 'undefined') {
+    if ('undefined' !== typeof DOMElement.selectedIndex) {
         // select lists always return option value as string
-        return this.changed || (this.server_value.toString() !== DOMElement.options[DOMElement.selectedIndex].value);
+        if ('undefined' !== typeof (el = DOMElement.options[DOMElement.selectedIndex])) {
+            current_value = el.value;
+        } else if (VERBOSE) {
+            console.error('Options in select error', DOMElement);
+        }
+        return this.changed || (this.server_value.toString() !== current_value);
     }
     if (false === DOMElement.hasAttribute('type')) { // these may be embellished checkboxes and date_popvoted
         if ((el = DOMElement.querySelector('[type="checkbox"]'))) {
