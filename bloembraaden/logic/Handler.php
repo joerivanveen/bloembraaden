@@ -713,9 +713,9 @@ class Handler extends BaseLogic
                     }
                     $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
                     $mail->set(array(
-                        'to' => isset($post_data->to) ? $post_data->to : $instance->getSetting('mail_default_receiver'),
+                        'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
                         'from' => $instance->getSetting('mail_verified_sender'),
-                        'subject' => isset($post_data->subject) ? $post_data->subject : 'Mailed by ' . $instance->getDomain(),
+                        'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
                         'text' => Help::html_to_text($body),
                         'html' => $body,
                     ));

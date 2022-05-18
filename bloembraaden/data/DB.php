@@ -3176,13 +3176,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         // requests can try to update on the exact same timestamp (has been tested)
         // so we will use sessionvars_id for that, and hopefully not run out anytime soon...
         if (false === isset($var->delete)) {
-            /*// check if the column exists prior to inserting, no need to insert the same value again
-            $statement = $this->conn->prepare('SELECT EXISTS(SELECT 1 FROM _sessionvars WHERE session_id = ' .
-                $session_id . ' AND name = ? AND value = ?);');
-            $statement->execute(array(
-                $name,
-                json_encode($var->value),
-            ));*/
             // we need to make sure there’s always the most current value available, hence we insert first and delete older ones later
             $statement = $this->conn->prepare(
                 'INSERT INTO _sessionvars (session_id, name, value, times) VALUES (?, ?, ?, ?) RETURNING sessionvars_id;');
@@ -3200,7 +3193,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             }
             $statement = null;
 
-            // if you came here we are going to assume it worked
+            // if you are here we are going to assume it worked
             return $var;
         } else {
             $statement = $this->conn->prepare('DELETE FROM _sessionvars WHERE session_id = ' .
