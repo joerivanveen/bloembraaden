@@ -56,14 +56,19 @@ class jobTransaction
 
 $trans = new jobTransaction();
 require __DIR__ . '/Require.php';
-// to test, run it as follows:
-// # php-cgi /path/to/bloembraaden/Job.php param=value (e.g. interval=temp)
-if (!isset($_GET['interval'])) {
+// to test from cli / as a cron job, run it as follows:
+// # /path/to/php /path/to/bloembraaden/Job.php interval_value (eg: warmup, or 1)
+$interval = $_GET['interval'] ?? $argv[1];
+if (!$interval) {
     die('interval needed');
 }
+// backwards compatibility:
+if (0 === strpos($interval, 'interval=')) {
+    $interval = str_replace('interval=', '', $interval);
+}
+// the work starts here
 $start_timer = microtime(true);
 $db = new DB;
-$interval = $_GET['interval'];
 Define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
 echo "\r\n" . date('Y-m-d H:i:s') . " JOB $interval:\r\n";
