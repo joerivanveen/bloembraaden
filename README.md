@@ -110,12 +110,15 @@ Please setup a crontab for the web user (e.g. nginx) like so:
 `crontab -e -u nginx`
 And put in the five lines that are currently needed for Bloembraaden:
 ```
-*/1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
-*/1 * * * * php-cgi /path/to/bloembraaden/Job.php interval=warmup > /dev/null 2>&1
-*/5 * * * * php-cgi /path/to/bloembraaden/Job.php interval=5 > /dev/null 2>&1
-4 * * * * php-cgi /path/to/bloembraaden/Job.php interval=hourly > /dev/null 2>&1
-0 3 * * * php-cgi /path/to/bloembraaden/Job.php interval=daily > /dev/null 2/&1
+*/1 * * * * php /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
+*/1 * * * * php /path/to/bloembraaden/Job.php interval=warmup > /dev/null 2>&1
+*/5 * * * * php /path/to/bloembraaden/Job.php interval=5 > /dev/null 2>&1
+4 * * * * php /path/to/bloembraaden/Job.php interval=hourly > /dev/null 2>&1
+0 3 * * * php /path/to/bloembraaden/Job.php interval=daily > /dev/null 2/&1
 ```
+Regarding the ‘interval’: on CentOS the interval=1 is magically translated into $_GET, on Debian / Ubuntu it is not,
+on those systems just fill in the value, the Job.php file will interpret it as the interval value.
+Ensure that `php` works for you, put in the path to the php executable otherwise.
 
 ### Clients’ websites
 Your clients’ websites’ assets will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
