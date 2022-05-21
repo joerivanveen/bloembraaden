@@ -151,6 +151,8 @@ class Template extends BaseLogic
     }
 
     /**
+     * Tags may already been present from another element, just don’t update then.
+     *
      * @param \stdClass $output_object
      * @param \stdClass $tags
      * @return \stdClass
@@ -158,11 +160,9 @@ class Template extends BaseLogic
     public function addTags(\stdClass $output_object, \stdClass $tags): \stdClass
     {
         foreach ($tags as $key => $value) {
-            if (isset($output_object->$key)) {
-                $this->addError(sprintf('template->addTags(): ‘%s’ already present', (string)$key));
-                continue;
+            if (false === isset($output_object->$key)) {
+                $output_object->$key = $value;
             }
-            $output_object->$key = $value;
         }
 
         return $output_object;
