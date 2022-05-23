@@ -104,6 +104,14 @@ The index.php file only has to require bloembraaden/Web.php like so (point to th
 require __DIR__ . '/../bloembraaden/Web.php';
 ```
 
+For the robots.txt file sane content would be:
+```
+User-agent: *
+Disallow: /__admin__
+Disallow: /__shoppinglist__
+Noindex: /__action__
+```
+
 ### Async operations
 Many operations such as mailing and refreshing object cache are performed asynchronously. These are handled by the file `Job.php`.
 Please setup a crontab for the web user (e.g. nginx) like so:
@@ -126,6 +134,13 @@ Each website must contain a `script.js` and `style.css` that will be compiled by
 
 The website itself is build with simple templates that you put in the admin interface.
 You also point to the `/instance/example` folder through that admin interface.
+
+#### Known bugs
+The templating engine has 2 known bugs:
+1) If you define two regions that are exactly the same (in compressed html), only one is processed.
+Just add a css class to one of the regions to have them differ and process correctly.
+2) The detecting of nested tags fails in some complex situations where the same tags are repeated on the page.
+Unfortunately there is no workaround, this has to be fixed. Working on it.
 
 ### SSL
 Both static as well as the Bloembraaden site / vhost must use ssl. Bloembraaden does not work without ssl.
