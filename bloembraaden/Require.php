@@ -29,7 +29,6 @@ require CORE . 'logic/integrations/Instagram.php';
 require CORE . 'logic/integrations/InstagramImage.php';
 require CORE . 'logic/integrations/PaymentServiceProviderInterface.php';
 require CORE . 'logic/integrations/PaymentServiceProvider.php';
-require CORE . 'logic/integrations/Payvision.php';
 require CORE . 'logic/integrations/Mollie.php';
 // search
 require CORE . 'logic/search/Search.php';
