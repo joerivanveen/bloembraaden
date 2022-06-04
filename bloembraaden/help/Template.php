@@ -124,7 +124,7 @@ class Template extends BaseLogic
      *
      * @param string $template_name
      * @param bool $admin
-     * @return string the html or null when not loaded
+     * @return string|null the html or null when not loaded
      * @since 0.5.16
      */
     public function loadByTemplatePointer(string $template_name, bool $admin = false): ?string

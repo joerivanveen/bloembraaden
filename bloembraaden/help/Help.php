@@ -4,14 +4,12 @@ namespace Peat;
 /**
  * This is a static class with some functions used throughout peatcms
  */
-// setup environment variables
-$GLOBALS['messages'] = array(); // indexed array of objects {message:..,count:..,level:..}
-$GLOBALS['errors'] = array();
-$GLOBALS['trace'] = array();
 
 class Help
 {
     private static DB $db;
+    private static array $errors = array();
+    private static array $messages = array(); // indexed array of objects {message:..,count:..,level:..}
 
     /**
      * Construct won't be called inside this class and is uncallable from
@@ -55,7 +53,7 @@ class Help
      */
     public static function getAsFloat($var, ?float $default = null): ?float
     {
-        if ((string)($float = floatVal($var)) === $var) return $float; // return correctly formatted vars immediately
+        if ((string)($float = floatval($var)) === $var) return $float; // return correctly formatted vars immediately
         // get the float correctly from string
         $var = str_replace(Setup::$DECIMAL_SEPARATOR, '.', str_replace(array(Setup::$RADIX, ' '), '', (string)$var));
         // convert to float
@@ -230,19 +228,19 @@ class Help
     public static function getDate(string $value): ?\DateTime
     {
         // parse the date, it should be YYYY-MM-DD HH:MM:SS.milliseconds+timezone diff compared to UTC
-        if (($dt = \DateTime::createFromFormat("Y-m-d G:i:s O", $value))) {
+        if (($dt = \DateTime::createFromFormat('Y-m-d G:i:s O', $value))) {
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d\TG:i:s O", $value))) { // official, used by eg Instagram
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d\TG:i:s O', $value))) { // official, used by eg Instagram
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d G:i:s.u O", $value))) {
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s.u O', $value))) {
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d G:i:s.u", $value))) {
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s.u', $value))) {
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d G:i:s", $value))) {
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s', $value))) {
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d G:i", $value))) {
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i', $value))) {
             return $dt;
-        } elseif (($dt = \DateTime::createFromFormat("Y-m-d", $value))) {
+        } elseif (($dt = \DateTime::createFromFormat('Y-m-d', $value))) {
             return $dt;
         }
         //if ($dt === false or array_sum($dt::getLastErrors())) {}
@@ -258,17 +256,17 @@ class Help
     {
         if (false === in_array($level, array('note', 'warn', 'error', 'log'), true)) $level = 'log'; // default to log
         // NOTE the level is not updated when the count for a message is updated
-        $messages = $GLOBALS['messages'];
+        $messages = static::$messages;
         foreach ($messages as $index => $obj) {
             if ($obj->message === $message) {
                 $obj->count++;
-                $GLOBALS['messages'] = $messages;
+                static::$messages = $messages;
 
                 return;
             }
         }
         $messages[] = (object)array('message' => $message, 'level' => $level, 'count' => 1);
-        $GLOBALS['messages'] = $messages;
+        static::$messages = $messages;
     }
 
     /**
@@ -277,7 +275,7 @@ class Help
      */
     public static function hasMessages(): bool
     {
-        return count($GLOBALS['messages']) > 0;
+        return count(static::$messages) > 0;
     }
 
     /**
@@ -287,8 +285,7 @@ class Help
     public static function getMessages(): array
     {
         $messages = array();
-        $env_m = $GLOBALS['messages']; // the indexed array with message objects
-        foreach ($env_m as $index => $obj) {
+        foreach (static::$messages as $index => $obj) {
             $level = $obj->level;
             if (isset($messages[$level])) {
                 $messages[$level][] = $obj; // add the message to the array for its level
@@ -296,7 +293,7 @@ class Help
                 $messages[$level] = array($obj); // create new array for this level
             }
         }
-        $GLOBALS['messages'] = array(); // the messages are on their way, clear the array
+        static::$messages = array(); // the messages are on their way, clear the array
 
         return $messages; // return the object with messages per level, as the rest of peatcms expects it now
     }
@@ -307,7 +304,7 @@ class Help
      */
     public static function getMessagesAsJson(): string
     {
-        return json_encode($GLOBALS['messages']);
+        return json_encode(static::$messages);
     }
 
     /**
@@ -316,7 +313,7 @@ class Help
      */
     public static function addError(\Exception $e)
     {
-        $GLOBALS['errors'][] = $e;
+        static::$errors[] = $e;
     }
 
     /**
@@ -325,7 +322,7 @@ class Help
      */
     public static function getErrors(): array
     {
-        return $GLOBALS['errors'];
+        return static::$errors;
     }
 
     /**
@@ -353,7 +350,7 @@ class Help
             } else {
                 $message = "\r\nNO CLIENT";
             }
-            $message .= "\t" .  date("Y-m-d H:i:s") . "\t";
+            $message .= "\t" .  date('Y-m-d H:i:s') . "\t";
             if (isset($_SERVER['REQUEST_METHOD'])) $message .=  $_SERVER['REQUEST_METHOD'] . "\t";
             if (isset($_SERVER['REQUEST_URI'])) $message .=  $_SERVER['REQUEST_URI'] . "\t";
             $message .= "LOG\r\n";
@@ -834,7 +831,7 @@ class Help
                              Setup::$DBCACHE . 'js',
                              Setup::$DBCACHE . 'filter',
                              Setup::$DBCACHE . 'templates',
-                         ) as $index => $subfolder_name) {
+                         ) as $index2 => $subfolder_name) {
                     if (false === file_exists($subfolder_name)) {
                         if (false === mkdir($subfolder_name)) {
                             Help::addError(new \Exception(sprintf('Could not create folder %s', $subfolder_name)));
