@@ -11,7 +11,7 @@ class Page extends BaseElement
 
     public function create(): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New document', 'peatcms'),
             'content' => __('Default content', 'peatcms'),
             'date_published' => 'NOW()',

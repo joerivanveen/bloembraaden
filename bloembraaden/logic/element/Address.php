@@ -18,7 +18,7 @@ class Address extends BaseElement
 
     public function new(int $user_id): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'user_id' => $user_id,
         ));
     }

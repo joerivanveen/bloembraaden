@@ -11,6 +11,8 @@ $GLOBALS['trace'] = array();
 
 class Help
 {
+    private static DB $db;
+
     /**
      * Construct won't be called inside this class and is uncallable from
      * the outside. This prevents instantiating this class.
@@ -18,6 +20,15 @@ class Help
      */
     private function __construct()
     {
+    }
+    
+    public static function getDB(): DB
+    {
+        if (! isset(static::$db)) {
+            static::$db = new DB();
+        }
+        
+        return static::$db;
     }
 
     /**

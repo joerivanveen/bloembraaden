@@ -7,7 +7,7 @@ class User extends BaseLogic
 
     public function __construct($user_id)
     {
-        parent::__construct($this->getDB()->fetchUser($user_id));
+        parent::__construct(Help::getDB()->fetchUser($user_id));
         $this->id = $user_id;
         $this->type_name = 'user';
 
@@ -20,12 +20,12 @@ class User extends BaseLogic
      */
     public function getAddresses(): array
     {
-        return $this->addresses ?? $this->addresses = $this->getDB()->fetchAddressesByUserId($this->getId());
+        return $this->addresses ?? $this->addresses = Help::getDB()->fetchAddressesByUserId($this->getId());
     }
 
     public function getOrders(): array
     {
-        return $this->orders ?? $this->orders = $this->getDB()->fetchOrdersByUserId($this->getId());
+        return $this->orders ?? $this->orders = Help::getDB()->fetchOrdersByUserId($this->getId());
     }
 
     /**

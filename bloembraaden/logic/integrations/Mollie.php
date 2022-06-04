@@ -179,7 +179,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 // get the order having this payment_id
                 $amount = (float)$result->amount->value ?? 0.0;
                 $status = $result->status;
-                if (($order_row = $this->getDB()->getOrderByPaymentTrackingId($payment_id))) {
+                if (($order_row = Help::getDB()->getOrderByPaymentTrackingId($payment_id))) {
                     $order_update_array = array(
                         'payment_status' => $status,
                         'payment_tracking_text' => '',
@@ -202,14 +202,14 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                         }
                     }
                     // update the log entry
-                    $this->getDB()->updateColumns('_payment_status_update', array(
+                    Help::getDB()->updateColumns('_payment_status_update', array(
                         'bool_processed' => true,
                         'date_processed' => 'NOW()',
                         'order_id' => $order_id,
                         'amount' => intval($amount * 100),
                     ), $log_id);
                     // update the status in the order
-                    return $this->getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
+                    return Help::getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
                 } elseif ('expired' === $status) {
                     $this->addError(sprintf('Payment ‘%s’ with status expired discarded', $payment_id));
                     return true; // don’t bother any further with expired statuses, already logged with processed false

@@ -11,7 +11,7 @@ class Brand extends BaseElement
 
     public function create(): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New brand', 'peatcms'),
             'content' => __('Default content', 'peatcms'),
             'excerpt' => '',

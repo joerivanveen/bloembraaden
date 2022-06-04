@@ -12,7 +12,7 @@ class Embed extends BaseElement
 
     public function create(): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New embed', 'peatcms'),
             'slug' => 'embed',
         ));

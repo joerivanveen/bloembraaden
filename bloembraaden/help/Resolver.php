@@ -23,7 +23,7 @@ class Resolver extends BaseLogic
     {
         parent::__construct();
         if (Setup::$instance_id !== $instance_id) {
-            $row = $this->getDB()->fetchInstanceById($instance_id);
+            $row = Help::getDB()->fetchInstanceById($instance_id);
             //Setup::$instance_id = $instance_id;
             Setup::loadInstanceSettings(new Instance($row));
         }
@@ -31,14 +31,14 @@ class Resolver extends BaseLogic
         // urldecode means get utf-8 characters of requested path + querystring
         // remove uppercase through db
         // TODO: if we are certain slugs / urls are always (correct) lowercase, we can remove the conversion from DB methods
-        $request_uri = $this->getDB()->toLower(strip_tags(urldecode($request_uri)));
+        $request_uri = Help::getDB()->toLower(strip_tags(urldecode($request_uri)));
         // deconstruct path + querystring
         $uri = (array)explode('?', $request_uri);
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
         if ($uri === '/') { // homepage is requested, get the slug so it can be retrieved from cache further down
-            $uri = array($this->getDB()->fetchHomeSlug($instance_id));
+            $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
         } else {
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
                 if ('' === $value) {
@@ -207,7 +207,7 @@ class Resolver extends BaseLogic
                         if (isset($this->getTerms()[0])) {
                             $src = '%' . $this->getTerms()[0]; // look up by last characters
                             // look for (multiple) orders
-                            $orders = $this->getDB()->fetchElementRowsWhere(
+                            $orders = Help::getDB()->fetchElementRowsWhere(
                                 new Type('order'),
                                 array('order_number' => $src),
                             );
@@ -217,9 +217,9 @@ class Resolver extends BaseLogic
                             $page = $this->getProperties()['page'][0] ?? 1;
                             $page_size = 250;
                             $peat_type = new Type('order');
-                            $orders = $this->getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
+                            $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
                             $slug = '__order__/page:' . $page;
-                            $pages = $this->getDB()->fetchElementRowsPageNumbers($peat_type, $page_size);
+                            $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page_size);
                         }
                         if (count($orders) === 1) {
                             $order = new Order($orders[0]);
@@ -255,13 +255,13 @@ class Resolver extends BaseLogic
             $element_id = $session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             // find element by slug
-            if (null !== ($row = $this->getDB()->fetchElementIdAndTypeBySlug($terms[0], $no_cache))) {
+            if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0], $no_cache))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type;
             } else {
                 // try to get it from history
-                if ($slug = $this->getDB()->getCurrentSlugBySlug($terms[0])) {
-                    if (null !== ($row = $this->getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
+                if ($slug = Help::getDB()->getCurrentSlugBySlug($terms[0])) {
+                    if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
                         $element_id = (int)$row->id;
                         $type_name = (string)$row->type;
                         $from_history = true;
@@ -295,14 +295,14 @@ class Resolver extends BaseLogic
                     break;
                 case 'instance':
                     if (isset($terms[1])) {
-                        $element = new Instance($this->getDB()->fetchInstance($terms[1]));
+                        $element = new Instance(Help::getDB()->fetchInstance($terms[1]));
                     } else {
                         $element = $session->getInstance();
                     }
                     break;
                 case 'template':
                     if (isset($terms[1])) {
-                        if (($row = $this->getDB()->getTemplateRow($terms[1], null))) {
+                        if (($row = Help::getDB()->getTemplateRow($terms[1], null))) {
                             $element = new Template($row);
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
                         }
@@ -321,12 +321,12 @@ class Resolver extends BaseLogic
                     $menu_item_id = $terms[1] ?? null; // assumption the menu_item_id is in there
                     // menu items are only returned for the current instance
                     $type = new Type('menu_item');
-                    $element = $type->getElement($this->getDB()->fetchElementRow($type, $menu_item_id));
+                    $element = $type->getElement(Help::getDB()->fetchElementRow($type, $menu_item_id));
                     break;
                 case 'payment_service_provider':
                     // get payment service provider for instance (this is a factory...)
                     if (isset($terms[1])) {
-                        if (($row = $this->getDB()->getPaymentServiceProviderRow($terms[1], null))) {
+                        if (($row = Help::getDB()->getPaymentServiceProviderRow($terms[1], null))) {
                             if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                                 $element = new $class_name($row);
                             } else {

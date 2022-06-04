@@ -141,12 +141,12 @@ class BaseLogic extends Base
             $slug = $out->__ref;
             // for elements with no results, drop the cache
             if (0 === $this->getResultCount()) {
-                $this->getDB()->deleteFromCache($slug);
+                Help::getDB()->deleteFromCache($slug);
 
                 return ($returnOutputObject) ? $this->getOutputObject() : null;
             }
             // cache the first page always
-            $this->getDB()->cache($out, $this->getTypeName(), $this->getId(), 1);
+            Help::getDB()->cache($out, $this->getTypeName(), $this->getId(), 1);
             $this->variant_page_counter = 2; // go on to the next page
             // loop through all the variant_pages to cache these separately and remember the paging as well in the out element
             // remove all the variants and add the next page of variants
@@ -154,12 +154,12 @@ class BaseLogic extends Base
                 $out = $this->getOutput();
                 $out->slugs = $GLOBALS['slugs'];
                 $out->variant_page = $this->variant_page_counter;
-                $this->getDB()->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
+                Help::getDB()->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
                 $this->variant_page_counter++;
                 if ($this->variant_page_counter > 60) break; // no more than 60 pages forget it
             }
             // remove any lingering pages
-            $this->getDB()->deleteFromCache($slug, $this->variant_page_counter);
+            Help::getDB()->deleteFromCache($slug, $this->variant_page_counter);
             // add the variant paging for template when appropriate
             if ($this->variant_page_counter > 2) {
                 $count = $this->variant_page_counter - 1;
@@ -170,16 +170,16 @@ class BaseLogic extends Base
                 }
                 $json = json_encode($pages);
                 $pages = null;
-                if ($count !== ($affected = $this->getDB()->updateVariantPageJsonInCache($slug, $json))) {
+                if ($count !== ($affected = Help::getDB()->updateVariantPageJsonInCache($slug, $json))) {
                     $this->addError("updated {$affected} rows in cache for ‘{$slug}’");
                 }
             }
             // when the cache is built during this request, sorry you can only get the first page back for now
             // this may return null sometimes on the first try...
             if ($returnOutputObject) {
-                if (null === ($out = $this->getDB()->cached($slug, 1))) {
+                if (null === ($out = Help::getDB()->cached($slug, 1))) {
                     usleep(387); // wait for the database to get ready an arbitrary number of milliseconds
-                    if (null === ($out = $this->getDB()->cached($slug, 1))) {
+                    if (null === ($out = Help::getDB()->cached($slug, 1))) {
                         $this->handleErrorAndStop('Could not read cache after creating it', __('Cache error, please try again', 'peatcms'));
                     }
                 }
@@ -235,7 +235,7 @@ class BaseLogic extends Base
     {
         if (isset($this->template_settings)) return $this->template_settings;
         if (isset($this->row->template_id)
-            and null !== ($settings = $this->getDB()->fetchTemplateSettings($this->row->template_id))) {
+            and null !== ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) {
             $this->template_settings = $settings;
         } else { // return default settings
             $settings = (object)array(
@@ -290,7 +290,7 @@ class BaseLogic extends Base
         }
 
         // todo maybe save everything on shutdown?
-        return $this->getDB()->updateElement($this->getType(), $row, $this->getId());
+        return Help::getDB()->updateElement($this->getType(), $row, $this->getId());
     }
 
     /**

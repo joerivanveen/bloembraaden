@@ -78,7 +78,7 @@ class PaymentServiceProvider extends BaseLogic
 
     protected function logPaymentStatus(\stdClass $payload): int
     {
-        return $this->getDB()->insertRowAndReturnKey('_payment_status_update', array(
+        return Help::getDB()->insertRowAndReturnKey('_payment_status_update', array(
             'instance_id' => Setup::$instance_id,
             'raw' => json_encode($payload),
             'origin' => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN IP'

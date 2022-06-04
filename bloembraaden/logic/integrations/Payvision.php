@@ -220,7 +220,7 @@ class Payvision extends PaymentServiceProvider implements PaymentServiceProvider
         $type = new Type('order');
         // prepare tracking code minimum 8 characters
         $trackingCode = sprintf('%08d', $order_id);
-        if (($order_row = $this->getDB()->fetchElementRow($type, $order_id)) && isset($order_row->payment_transaction_id)) {
+        if (($order_row = Help::getDB()->fetchElementRow($type, $order_id)) && isset($order_row->payment_transaction_id)) {
             $url = $this->getFieldValue('gateway_url') . '/payments/' . $order_row->payment_transaction_id . '/capture';
             $data = '{
                     "header": {
@@ -316,7 +316,7 @@ class Payvision extends PaymentServiceProvider implements PaymentServiceProvider
             if (isset($transaction->action)) $payment_tracking_text = $transaction->action;
             if ($order_id > 0) { // do the processing
                 $type = new Type('order');
-                if (($order = $this->getDB()->fetchElementRow($type, $order_id))) {
+                if (($order = Help::getDB()->fetchElementRow($type, $order_id))) {
                     $order_update_array = array();
                     if (true === $payment_confirmed) { // double check the amount (can be 1.0 off...)
                         if ((($amount + 1.0) * 100) < $order->amount_grand_total) {
@@ -354,8 +354,8 @@ class Payvision extends PaymentServiceProvider implements PaymentServiceProvider
                         'payment_tracking_text' => $payment_tracking_text,
                         'payment_transaction_id' => $transaction_id,
                     ));
-                    if ($this->getDB()->updateElement($type, $order_update_array, $order_id)) { // the order status is updated
-                        $this->getDB()->updateColumns('_payment_status_update', array(
+                    if (Help::getDB()->updateElement($type, $order_update_array, $order_id)) { // the order status is updated
+                        Help::getDB()->updateColumns('_payment_status_update', array(
                             'bool_processed' => true,
                             'date_processed' => 'NOW()',
                             'order_id' => $order_id,

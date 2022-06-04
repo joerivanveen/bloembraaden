@@ -27,7 +27,7 @@ class InstagramImage extends Image
 
     public function update(array $data): bool
     {
-        return $this->getDB()->updateColumns('_instagram_media', $data, $this->row->media_id);
+        return Help::getDB()->updateColumns('_instagram_media', $data, $this->row->media_id);
     }
 
     public function getInstanceId(): int

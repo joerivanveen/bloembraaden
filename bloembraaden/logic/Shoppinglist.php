@@ -15,9 +15,9 @@ class Shoppinglist extends BaseLogic
         $this->session = $session;
         $this->type_name = 'shoppinglist';
         // get the list from db
-        $this->row = $this->getDB()->getShoppingList(
+        $this->row = Help::getDB()->getShoppingList(
             $name, $session->getId(), (null === ($user = $session->getUser()))?0:$user->getId());
-        $this->rows = $this->getDB()->getShoppingListRows($this->getId());
+        $this->rows = Help::getDB()->getShoppingListRows($this->getId());
         // remember the state so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
         register_shutdown_function(array(&$this, '__shutdown'));
@@ -29,7 +29,7 @@ class Shoppinglist extends BaseLogic
     public function __shutdown()
     {
         if (true === $this->hasChanged()) {
-            $this->getDB()->upsertShoppingListRows($this->getId(), $this->rows);
+            Help::getDB()->upsertShoppingListRows($this->getId(), $this->rows);
         }
     }
 
@@ -193,7 +193,7 @@ class Shoppinglist extends BaseLogic
         // @since 0.5.12 get the shippingcosts if a shipping country is known
         $amount_grand_total = $amount_row_total;
         if (($country_id = $this->session->getValue('shipping_country_id'))) {
-            if (($country = $this->getDB()->getCountryById($country_id))) {
+            if (($country = Help::getDB()->getCountryById($country_id))) {
                 if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
                     $shipping_costs = Help::getAsFloat($country->shipping_costs);
                     $output_object->shipping_costs = Help::asMoney($shipping_costs);
@@ -203,7 +203,7 @@ class Shoppinglist extends BaseLogic
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
         // set template_id to default template, if it exists
-        $this->row->template_id = $this->getDB()->getDefaultTemplateIdFor('shoppinglist');
+        $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
 
         $this->row = $output_object;
     }

@@ -5,7 +5,7 @@ class DB extends Base
 {
     private string $version, $db_schema;
     private ?\PDO $conn;
-    private array $table_infos, $stale_slugs; // todo move these to globals, since they go for the whole request
+    private array $table_infos, $stale_slugs;
     public array $tables_without_history = array(
         '_session',
         '_sessionvars',
@@ -3439,7 +3439,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * @return \stdClass|null
      * @since 0.9.0
      */
-    public function getInstagramMediaByMediaId(string $media_id, array $columns = array('*'))
+    public function getInstagramMediaByMediaId(string $media_id, array $columns = array('*')): ?\stdClass
     {
         return $this->fetchRow('_instagram_media', $columns, array('media_id' => $media_id));
     }
@@ -3666,11 +3666,11 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
         $where = $table->formatColumnsAndData($where, true);
-        $where_string = implode(" AND ", $where["parameterized"]);
+        $where_string = implode(' AND ', $where['parameterized']);
         $statement = $this->conn->prepare("
             SELECT EXISTS (SELECT 1 FROM {$table_name} WHERE {$where_string});
         ");
-        $statement->execute($where["values"]);
+        $statement->execute($where['values']);
         $return_value = (bool)$statement->fetchColumn(0);
         $statement = null;
 
@@ -3685,9 +3685,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function getAllTables(): array
     {
-        $statement = $this->conn->prepare("
+        $statement = $this->conn->prepare('
             SELECT table_name, is_insertable_into FROM information_schema.tables WHERE table_schema = ?;
-        ");
+        ');
         $statement->execute(array($this->db_schema));
         $rows = $statement->fetchAll();
         $statement = null;
@@ -3778,10 +3778,10 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         $slug = $this->toLower($slug);
         // @since 0.8.1: use the redirect table for specific slugs (you probably need to clear cache to pick them up)
-        $statement = $this->conn->prepare("
+        $statement = $this->conn->prepare('
             SELECT to_slug FROM _redirect
             WHERE term = :term AND deleted = FALSE AND instance_id = :instance_id;
-        ");
+        ');
         $statement->bindValue(':term', $slug);
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();

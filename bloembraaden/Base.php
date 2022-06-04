@@ -30,10 +30,10 @@ class Base
      */
     public function addError($e): void
     {
-        if ($e instanceof \Exception) {
-            Help::addError($e);
-        } elseif (is_string($e)) {
+        if (is_string($e)) {
             Help::addError(new \Exception($e));
+        } elseif ($e instanceof \Exception) {
+            Help::addError($e);
         } else {
             Help::addError(new \Exception(var_export($e, true)));
         }

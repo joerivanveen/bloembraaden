@@ -11,7 +11,7 @@ class File extends BaseElement
 
     public function create(): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New file', 'peatcms'),
             'content_type' => 'application/octet-stream',
             'filename_saved' => '',

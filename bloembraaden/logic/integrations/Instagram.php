@@ -37,7 +37,7 @@ class Instagram extends BaseLogic
             $this->handleErrorAndStop($error_str, $error_str); // TODO maybe redirect the user to the original site?
         } elseif (isset($_GET['code'])) { // this is the first step in the authorization process
             // instagram will provide the original key you set as state back in the request variables
-            if (isset($_GET['state']) && ($contents = $this->getDB()->emptyLocker($_GET['state']))) {
+            if (isset($_GET['state']) && ($contents = Help::getDB()->emptyLocker($_GET['state']))) {
                 $code = $_GET['code'];
                 // go get the short lived token:
                 $curl = curl_init();
@@ -109,7 +109,7 @@ class Instagram extends BaseLogic
                 $default_expires = $this->config->default_expires;
                 $expires = isset($return_value->expires_in) ?
                     Help::getAsInteger($return_value->expires_in, $default_expires) : $default_expires;
-                if ($instagram_auth_id = $this->getDB()->insertRowAndReturnKey('_instagram_auth', array(
+                if ($instagram_auth_id = Help::getDB()->insertRowAndReturnKey('_instagram_auth', array(
                     'instance_id' => $contents->instance_id,
                     'user_id' => $user_id,
                     'access_token' => $access_token,
@@ -125,7 +125,7 @@ class Instagram extends BaseLogic
                             'https://graph.instagram.com/' . $user_id . '?fields=username&access_token=' . urlencode($access_token)
                         );
                         $return_value = json_decode(curl_exec($curl));
-                        $this->getDB()->updateColumns('_instagram_auth', array(
+                        Help::getDB()->updateColumns('_instagram_auth', array(
                             'instagram_username' => $return_value->username,
                         ), $instagram_auth_id);
                     } catch (\Exception $e) {
@@ -137,7 +137,7 @@ class Instagram extends BaseLogic
                     );
                 }
                 // return the user to the correct instance
-                $instance = $this->getDB()->fetchInstanceById($contents->instance_id);
+                $instance = Help::getDB()->fetchInstanceById($contents->instance_id);
 
                 return array('redirect_uri' => 'https://' . $instance->domain . '/__admin__/instance/' . $instance->domain);
             } else {
@@ -148,7 +148,7 @@ class Instagram extends BaseLogic
             }
         } else { // nothing specific, just redirect to the authorization screen
             // setup a state key so you will know what to change when the user comes back to the redirect url
-            if ($key = $this->getDB()->putInLocker(0)) {
+            if ($key = Help::getDB()->putInLocker(0)) {
                 return array('redirect_uri' => 'https://api.instagram.com/oauth/authorize?client_id=' . $this->config->app_id . '&redirect_uri=' .
                     $this->config->redirect_uri . '&scope=user_profile,user_media&response_type=code&state=' . $key);
             } else {
@@ -178,14 +178,14 @@ class Instagram extends BaseLogic
         $user_id = $data['user_id'];
         $confirmation_code = $user_id; // build a unique confirmation code for this request
         // set feeds with this user_id (possibly) to update by Job
-        $confirmation_code .= '_' . $this->getDB()->invalidateInstagramFeedSpecsByUserId($user_id);
+        $confirmation_code .= '_' . Help::getDB()->invalidateInstagramFeedSpecsByUserId($user_id);
         // delete the media associated with this user_id
-        $confirmation_code .= '_' . $this->getDB()->updateColumnsWhere('_instagram_media',
+        $confirmation_code .= '_' . Help::getDB()->updateColumnsWhere('_instagram_media',
                 array('deleted' => true),
                 array('user_id' => $user_id)
             );
         // delete _instagram_auth by user_id
-        $confirmation_code .= '_' . $this->getDB()->updateColumnsWhere('_instagram_auth',
+        $confirmation_code .= '_' . Help::getDB()->updateColumnsWhere('_instagram_auth',
                 array('deleted' => true),
                 array('user_id' => $user_id)
             );
@@ -232,10 +232,10 @@ class Instagram extends BaseLogic
         // this is instance_specific and csrf has been checked...
         // a feed can contain a username and a hashtag, it will filter the hashtag (if present) and one username (if present)
         // media is cached in feed column if all is well
-        if (!($feed = $this->getDB()->getInstagramFeed($feed_name))) {
+        if (!($feed = Help::getDB()->getInstagramFeed($feed_name))) {
             $this->addError(sprintf('Instagram feed ‘%s’ not found', $feed_name));
             // get default feed
-            if (($rows = $this->getDB()->getInstagramFeedSpecs())) {
+            if (($rows = Help::getDB()->getInstagramFeedSpecs())) {
                 if (count($rows) > 0 && isset($rows[0]->feed_name)) {
                     $feed = $rows[0];
                 }

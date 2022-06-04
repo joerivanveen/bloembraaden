@@ -76,7 +76,7 @@ class Session extends BaseLogic
     public function delete(): bool
     {
         // set the session to deleted in the db
-        if (true === $this->getDB()->updateColumns('_session', array('deleted' => true), $this->token)) {
+        if (true === Help::getDB()->updateColumns('_session', array('deleted' => true), $this->token)) {
             // @since 0.7.9 remove remnants of the session from this instance
             $this->admin = null;
             $this->user = null;
@@ -91,7 +91,7 @@ class Session extends BaseLogic
     {
         // failed login should always take exactly 2 seconds
         $start = round(microtime(true) * 1000);
-        if (($row = $this->getDB()->fetchForLogin($email, $as_admin))) {
+        if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
             if (password_verify($pass, $row->hash)) {
                 if (false === $as_admin) {
                     if ($this->user = new User($row->id)) {
@@ -124,11 +124,11 @@ class Session extends BaseLogic
         // $columns_to_update holds the user_id or admin_id that you must update in the _session table
         $new_token = $this->generateToken();
         $columns_to_update['token'] = $new_token; // also update the token
-        if ($this->getDB()->updateSession($this->token, $columns_to_update)) {
+        if (Help::getDB()->updateSession($this->token, $columns_to_update)) {
             if ($this->setCookie('BLOEMBRAADEN', $new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
                 if (isset($columns_to_update['user_id']) && ($user_id = \intval($columns_to_update['user_id'])) > 0) {
-                    $affected = $this->getDB()->mergeShoppingLists($this->session_id, $user_id);
+                    $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
                 }
                 $this->token = $new_token;
                 // TODO update csrf token as well here?
@@ -221,7 +221,7 @@ class Session extends BaseLogic
             }
         }
         // @since 0.5.13 update immediately since __destruct has proven not to work
-        $this->vars[$name] = $this->getDB()->updateSessionVar($this->getId(), $name, (object)array('value' => $value, 'times' => $times));
+        $this->vars[$name] = Help::getDB()->updateSessionVar($this->getId(), $name, (object)array('value' => $value, 'times' => $times));
         // @since 0.6.1 remember updated vars to update on the client as well
         $this->vars_updated[] = $name;
     }
@@ -231,7 +231,7 @@ class Session extends BaseLogic
         if (! isset($this->vars[$name])) return;
         // @since 0.5.13 update immediately since __destruct has proven not to work
         $this->vars[$name]->delete = true;
-        if (null === $this->getDB()->updateSessionVar($this->getId(), $name, $this->vars[$name])) {
+        if (null === Help::getDB()->updateSessionVar($this->getId(), $name, $this->vars[$name])) {
             unset($this->vars[$name]);
         }
     }
@@ -263,7 +263,7 @@ class Session extends BaseLogic
     public function load(bool $register_access = true): bool
     {
         // get all the stuff from the database
-        if ($s = $this->getDB()->fetchSession($this->token)) {
+        if ($s = Help::getDB()->fetchSession($this->token)) {
             // get user
             if ($s->user_id > 0) {
                 $this->user = new User($s->user_id);
@@ -289,9 +289,9 @@ class Session extends BaseLogic
             $this->session_id = $s->session_id; // must always be present, this is NOT the token, just an int for identifying internally
             if (true === $register_access) {
                 if ($this->ip_address !== $s->ip_address) {
-                    $this->getDB()->registerSessionAccess($this->token, $this->ip_address);
+                    Help::getDB()->registerSessionAccess($this->token, $this->ip_address);
                 } else {
-                    $this->getDB()->registerSessionAccess($this->token);
+                    Help::getDB()->registerSessionAccess($this->token);
                 }
             }
 
@@ -334,10 +334,10 @@ class Session extends BaseLogic
     private function newSession(): string
     {
         // get fresh token, insert a new session row in database, keep trying until success (meaning the token is unique)
-        if (!($token = $this->getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
-            if (!($token = $this->getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+        if (!($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+            if (!($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
                 // when failed twice there is something very fishy going on
-                $this->handleErrorAndStop($this->getDB()->getLastError(),
+                $this->handleErrorAndStop(Help::getDB()->getLastError(),
                     __('Unable to create unique session id.', 'peatcms'));
             }
         }

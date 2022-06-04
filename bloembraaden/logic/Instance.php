@@ -53,16 +53,16 @@ class Instance extends BaseLogic
     {
         // TODO domains and admins should get the same lazy loading construction as menus
         if (false === isset($this->row->__domains__)) {
-            $this->row->__domains__ = $this->getDB()->fetchInstanceDomains($this->getId()); // db only returns the rows, customarily
+            $this->row->__domains__ = Help::getDB()->fetchInstanceDomains($this->getId()); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__admins__)) {
-            $this->row->__admins__ = $this->getDB()->fetchInstanceAdmins($this->getId()); // db only returns the rows, customarily
+            $this->row->__admins__ = Help::getDB()->fetchInstanceAdmins($this->getId()); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__payment_service_providers__)) {
-            $this->row->__payment_service_providers__ = $this->getDB()->fetchInstancePsps($this->getId()); // db only returns the rows, customarily
+            $this->row->__payment_service_providers__ = Help::getDB()->fetchInstancePsps($this->getId()); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__vat_categories__)) {
-            $this->row->__vat_categories__ = $this->getDB()->fetchInstanceVatCategories($this->getId()); // db only returns the rows, customarily
+            $this->row->__vat_categories__ = Help::getDB()->fetchInstanceVatCategories($this->getId()); // db only returns the rows, customarily
         }
         Help::prepareAdminRowForOutput($this->row, 'instance', $this->getDomain());
     }
@@ -70,7 +70,7 @@ class Instance extends BaseLogic
     public function getMenus(): array
     {
         if (false === isset($this->menus)) {
-            $this->menus = $this->getDB()->fetchInstanceMenus($this->getId());
+            $this->menus = Help::getDB()->fetchInstanceMenus($this->getId());
         }
 
         return $this->menus;
@@ -84,7 +84,7 @@ class Instance extends BaseLogic
     public function getPaymentServiceProvider(): ?PaymentServiceProvider
     {
         if (($psp_id = $this->getSetting('payment_service_provider_id')) > 0) {
-            if (($row = $this->getDB()->getPaymentServiceProviderRow($psp_id))) {
+            if (($row = Help::getDB()->getPaymentServiceProviderRow($psp_id))) {
                 if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                     return new $class_name($row);
                 }
@@ -129,9 +129,9 @@ class Instance extends BaseLogic
     private function load(string $domain)
     {
         // load the instance based on the supplied host
-        if (!($this->row = $this->getDB()->fetchInstance($domain))) {
+        if (!($this->row = Help::getDB()->fetchInstance($domain))) {
             // try to find alternative hosts to provide a 301 redirect
-            if (($canonical = $this->getDB()->fetchInstanceCanonicalDomain($domain))) {
+            if (($canonical = Help::getDB()->fetchInstanceCanonicalDomain($domain))) {
                 // @since 0.7.1 also supply the originally requested uri...
                 header('Location: https://' . $canonical . urldecode($_SERVER['REQUEST_URI']), true, 301);
                 die();

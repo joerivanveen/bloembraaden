@@ -15,7 +15,7 @@ class MenuItem extends BaseElement
 
     public function create(): ?int
     {
-        return $this->getDB()->insertElement($this->getType(), array(
+        return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('Menu item', 'peatcms'),
             'act' => '{}',
             'content' => __('Type content here, if your template uses it', 'peatcms'),
