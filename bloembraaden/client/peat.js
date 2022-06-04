@@ -752,8 +752,8 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
                 NAV.ajax('/__action__/admin_x_value_link', {
                     element: self.getElementName(),
                     id: self.getElementId(),
-                    property_id: suggestion.getAttribute('data-property_id'),
-                    property_value_id: suggestion.getAttribute('data-property_value_id'),
+                    property_id: parseInt(suggestion.getAttribute('data-property_id')),
+                    property_value_id: parseInt(suggestion.getAttribute('data-property_value_id')),
                 }, function (data) {
                     var el;
                     // you get the x_value links back, put them in this linkable area
@@ -801,7 +801,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
                 NAV.ajax('/__action__/admin_x_value_create', {
                     element: self.getElementName(),
                     id: self.getElementId(),
-                    property_id: this.getAttribute('data-property_id'),
+                    property_id: parseInt(this.getAttribute('data-property_id')),
                     property_value_title: title
                 }, function (data) {
                     var el;

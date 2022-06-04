@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Peat;
 class DB extends Base
@@ -143,9 +144,9 @@ class DB extends Base
      */
     public function setSystemValue(string $column_name, ?string $value): bool
     {
-        return $this->updateColumnsWhere('_system', array(
-            $column_name => $value,
-        ), []);
+        return 0 !== $this->updateColumnsWhere('_system', array(
+                $column_name => $value,
+            ), []);
     }
 
     /**
@@ -154,7 +155,7 @@ class DB extends Base
      * @param int $key_type not used at the moment, may be used to specify complexity or length of the key
      * @param object|null $information optional info you want associated with the key, will be returned by emptyLocker
      * @param int $expires_after optional seconds until it expires, default 3600 (1 hour)
-     * @return string the key on success, null on fail
+     * @return string|null the key on success, null on fail
      * @since 0.7.2
      */
     public function putInLocker(int $key_type, ?object $information = null, int $expires_after = 3600): ?string
@@ -509,7 +510,7 @@ class DB extends Base
     /**
      * @param $slug string the slug to find an element by
      * @param $no_cache bool default false, set to true if you want to ignore cache when getting the type and id
-     * @return \stdClass returns a stdClass (normalized row) with ->type and ->id, or null when not found
+     * @return \stdClass|null returns a stdClass (normalized row) with ->type and ->id, or null when not found
      * @since 0.0.0
      */
     public function fetchElementIdAndTypeBySlug(string $slug, bool $no_cache = false): ?\stdClass
@@ -826,37 +827,35 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         if ('property_value' !== $type_name && 'property' !== $type_name) return array();
         $type = new Type($type_name);
         $sub_queries = array();
-        if (isset($properties)) { // we need to filter the found items <- copied from findElements with small changes :(
-            // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
-            $property_value_ids = array();
-            foreach ($properties as $property_name => $property_values) {
-                if ('price_min' === $property_name) {
-                    $sub_queries[] = sprintf(
-                        'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
-                        Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
-                    );
-                } elseif ('price_max' === $property_name) {
-                    $sub_queries[] = sprintf(
-                        'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
-                        Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
-                    );
-                } else {
-                    foreach ($property_values as $index => $value) {
-                        if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
-                            if ('property_value' === $row->type) {
-                                $property_value_ids[] = (int)$row->id;
-                            }
+        // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
+        $property_value_ids = array();
+        foreach ($properties as $property_name => $property_values) {
+            if ('price_min' === $property_name) {
+                $sub_queries[] = sprintf(
+                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
+                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                );
+            } elseif ('price_max' === $property_name) {
+                $sub_queries[] = sprintf(
+                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
+                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                );
+            } else {
+                foreach ($property_values as $index => $value) {
+                    if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
+                        if ('property_value' === $row->type) {
+                            $property_value_ids[] = (int)$row->id;
                         }
                     }
                 }
             }
-            foreach ($property_value_ids as $index => $property_value_id) {
-                $sub_queries[] = sprintf(
-                    'AND x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties' .
-                    ' WHERE property_value_id = %d) ',
-                    $property_value_id
-                );
-            }
+        }
+        foreach ($property_value_ids as $index => $property_value_id) {
+            $sub_queries[] = sprintf(
+                'AND x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties' .
+                ' WHERE property_value_id = %d) ',
+                $property_value_id
+            );
         }
         /*if (0 !== count($property_values)) {
             $statement = $this->conn->prepare('SELECT property_value_id FROM cms_property_value WHERE slug = :slug');
@@ -1335,10 +1334,10 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * Inserts a country with a specific name
      * @param string $name
      * @param int $instance_id defaults to current instance
-     * @return string|null the country_id for the freshly inserted country (int probably) or null on fail
+     * @return int|null the country_id for the freshly inserted country (int probably) or null on fail
      * @since 0.5.10
      */
-    public function insertCountry(string $name, int $instance_id = -1): ?string
+    public function insertCountry(string $name, int $instance_id = -1): ?int
     {
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
 
@@ -1373,10 +1372,10 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     /**
      * @param string $name the given name
      * @param int $instance_id
-     * @return string|null the id of the row or null on failure
+     * @return int|null the id of the row or null on failure
      * @since 0.6.2
      */
-    public function insertPaymentServiceProvider(string $name, int $instance_id = -1): ?string
+    public function insertPaymentServiceProvider(string $name, int $instance_id = -1): ?int
     {
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
 
@@ -1671,7 +1670,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
             if ($this->hasError()) return null;
             // setup the necessary vars
-            $country = $this->getCountryById($vars['shipping_country_id']);
+            $country = $this->getCountryById((int)$vars['shipping_country_id']);
             $amount_row_total = 0;
             $shipping_costs = 0;
             $quantity_total = 0; // @since 0.7.6. also count the quantity, maybe there are only empty rows, you can’t order those
@@ -1794,7 +1793,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             $two = 3 * (\intval($arr[1]) + \intval($arr[3]) + \intval($arr[5]));
             if (($check_digit = ($one + $two) % 10) > 0) $check_digit = 10 - $check_digit;
             // add year and check digit to order number
-            $order_number = Date('Y') . $order_number . $check_digit;
+            $order_number = date('Y') . $order_number . $check_digit;
             $statement->bindValue(':order_number', $order_number);
             try {
                 $statement->execute();
@@ -1912,7 +1911,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             } else {
                 $column = 'CONCAT(title, \' \', excerpt, \' \', content)';
             }
-            echo "{$table_name}\t";
+            echo "$table_name\t";
             $type = new Type($table_name);
             // now for each table get the entries that do not have their search index (ci_ai) column filled
             // NOTE (ci_ai = \'\') IS NOT FALSE checks for the ci_ai column being NULL or empty
@@ -2331,21 +2330,19 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
                     'online' => true,
                     'deleted' => false,
                 ), $where);
-                if (count($keys) === 1) {
-                    return true;
-                } else { // delete extra items
+                if (count($keys) !== 1) { // delete extra items
                     foreach ($keys as $index => $key) {
                         if ($index === 0) continue; // leave one :-)
                         $this->deleteRowAndReturnSuccess('cms_menu_item_x_menu_item', $key);
                     }
-
-                    return true;
                 }
+
+                return true;
             }
         } else {
             if ($to_item_id > 0) {
                 // insert into the menu items cross table
-                return (bool)$this->insertRowAndReturnLastId('cms_menu_item_x_menu_item', array_merge($where, array(
+                return 0 !== $this->insertRowAndReturnLastId('cms_menu_item_x_menu_item', array_merge($where, array(
                     'menu_item_id' => $to_item_id,
                     'online' => true,
                     'deleted' => false,
@@ -2383,7 +2380,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             if ($row = $this->fetchRow($link_table, array($id_column), $where)) { // update
                 return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->$id_column);
             } else { // insert
-                return (bool)$this->insertRowAndReturnLastId($link_table, array_merge($where, $update_array));
+                return 0 !== $this->insertRowAndReturnLastId($link_table, array_merge($where, $update_array));
             }
         }
         $this->addError('->upsertLinked failed, no link table found for ' . $type_name . ' and ' . $sub_type_name);
@@ -2721,9 +2718,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function jobDeleteOrphanedShoppinglistVariants(): int
     {
-        $statement = $this->conn->prepare("
+        $statement = $this->conn->prepare('
             DELETE FROM _shoppinglist_variant WHERE shoppinglist_id NOT IN (SELECT shoppinglist_id FROM _shoppinglist);
-        ");
+        ');
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
@@ -2923,9 +2920,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * Inserts default template with name $name for instance with $instance_id
      * @param string $name
      * @param int $instance_id
-     * @return string|null
+     * @return int|null
      */
-    public function insertTemplate(string $name, int $instance_id): ?string
+    public function insertTemplate(string $name, int $instance_id): ?int
     {
         return $this->insertRowAndReturnLastId('_template', array(
             'instance_id' => $instance_id,
@@ -3006,7 +3003,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE c.column_name = 'deleted' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
         ");
-        $statement->bindValue(":schema", $this->db_schema);
+        $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -3072,7 +3069,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function jobDeleteOldSessions(int $interval_in_days = 30): int
     {
         $statement = $this->conn->prepare("
-            DELETE FROM _session WHERE admin_id = 0 AND user_id = 0 AND date_accessed < NOW() - interval '{$interval_in_days} days';
+            DELETE FROM _session WHERE admin_id = 0 AND user_id = 0 AND date_accessed < NOW() - interval '$interval_in_days days';
         ");
         $statement->execute();
         $affected = $statement->rowCount();
@@ -3083,9 +3080,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
     public function jobDeleteOrphanedLists(): int
     {
-        $statement = $this->conn->prepare("
+        $statement = $this->conn->prepare('
             DELETE FROM _shoppinglist WHERE user_id = 0 AND session_id NOT IN (SELECT session_id FROM _session);
-        ");
+        ');
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
@@ -3129,7 +3126,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
     public function insertSession(string $token, string $ip_address, string $user_agent): ?string
     {
-        return $this->insertRowAndReturnLastId('_session', array(
+        return (string)$this->insertRowAndReturnLastId('_session', array(
             'token' => $token,
             'ip_address' => $ip_address,
             'user_agent' => $user_agent,
@@ -3338,7 +3335,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         if (in_array('o', $columns['names'])) {
             echo ' ORDER BY o';
         } elseif ('_template' !== $table_name && in_array('date_published', $columns['names'])) {
-            if (Defined('ADMIN') && false === ADMIN) {
+            if (defined('ADMIN') && false === ADMIN) {
                 echo ' AND date_published < NOW() - INTERVAL \'5 minutes\''; // allow a few minutes for the cache to update
             }
             echo ' ORDER BY date_published DESC';
@@ -3373,7 +3370,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * @param $table_name string holding correct table name
      * @param array $columns
      * @param array $where
-     * @return \stdClass null when failed, normalized row object when succeeded
+     * @return \stdClass|null null when failed, normalized row object when succeeded
      * @since 0.0.0
      */
     private function fetchRow(string $table_name, array $columns, array $where): ?\stdClass
@@ -3466,16 +3463,16 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     /**
      * @param string $table_name
      * @param array $data
-     * @return string|null
+     * @return int|string|null
      * @since 0.6.2, wrapper for insertRowAndReturnLastId
      */
-    public function insertRowAndReturnKey(string $table_name, array $data): ?string
+    public function insertRowAndReturnKey(string $table_name, array $data): int|string|null
     {
         return $this->insertRowAndReturnLastId($table_name, $data);
     }
 
     // TODO the return value kan be integer (mostly) or varchar (e.g. session), how to account for this?
-    private function insertRowAndReturnLastId(string $table_name, array $data = null): ?string
+    private function insertRowAndReturnLastId(string $table_name, array $data = null): int|string|null
     {
         $table = new Table($this->getTableInfo($table_name));
         // reCacheWithWarmup the slug, maybe used for a search page
@@ -3668,7 +3665,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $where = $table->formatColumnsAndData($where, true);
         $where_string = implode(' AND ', $where['parameterized']);
         $statement = $this->conn->prepare("
-            SELECT EXISTS (SELECT 1 FROM {$table_name} WHERE {$where_string});
+            SELECT EXISTS (SELECT 1 FROM $table_name WHERE $where_string);
         ");
         $statement->execute($where['values']);
         $return_value = (bool)$statement->fetchColumn(0);
@@ -3772,7 +3769,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * Returns the current slug based on an old slug by looking for the element in the history database
      *
      * @param string $slug the slug to search for in redirect table and history
-     * @return string the current slug or null when nothing is found
+     * @return string|null the current slug or null when nothing is found
      */
     public function getCurrentSlugBySlug(string $slug): ?string
     {
@@ -3808,8 +3805,8 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             if (false === strpos($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
             if (ob_get_length()) echo 'UNION ALL ';
             $element_name = str_replace('cms_', '', $row->table_name);
-            echo "SELECT {$element_name}_id AS id, '{$element_name}' AS type, date_updated 
-                FROM cms_{$element_name} WHERE slug = :slug AND instance_id = :instance_id AND deleted = false ";
+            echo "SELECT {$element_name}_id AS id, '$element_name' AS type, date_updated 
+                FROM cms_$element_name WHERE slug = :slug AND instance_id = :instance_id AND deleted = false ";
         }
         echo 'ORDER BY date_updated DESC LIMIT 1;';
         $statement = Setup::getHistoryDatabaseConnection()->prepare(ob_get_clean());
@@ -3820,7 +3817,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             $statement = null;
             // take the element and id to select the current slug in the live database
             $row = $this->normalizeRow($rows[0]);
-            if ($row = $this->fetchRow("cms_{$row->type}", array('slug'), array("{$row->type}_id" => $row->id))) {
+            if ($row = $this->fetchRow('cms_' . $row->type, array('slug'), array($row->type . '_id' => $row->id))) {
                 return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
         }
@@ -3896,7 +3893,11 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             $row = $rows[0];
             $obj = json_decode($row[0]);
             $obj->x_cache_timestamp = strtotime($row[1]); // @since 0.8.2
-            $obj->__variant_pages__ = json_decode($row[2]) ?? array(); // @since 0.8.6
+            if (isset($row[2])) {
+                $obj->__variant_pages__ = json_decode($row[2]);
+            } else {
+                $obj->__variant_pages__ = array(); // @since 0.8.6
+            }
             $rows = null;
 
             return $obj;

@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 /**
  * Class Mailer
  * @package Peat
@@ -19,7 +22,7 @@ class Mailer extends Base
     // https://mailchimp.com/developer/transactional/api/messages/
     /**
      * Mailer constructor.
-     * @param string $custom_domain
+     * @param string|null $custom_domain
      */
     public function __construct(?string $custom_domain)
     {

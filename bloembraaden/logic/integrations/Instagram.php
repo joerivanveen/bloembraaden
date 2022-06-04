@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Instagram extends BaseLogic
 {
     protected object $config;
@@ -113,7 +116,7 @@ class Instagram extends BaseLogic
                     'instance_id' => $contents->instance_id,
                     'user_id' => $user_id,
                     'access_token' => $access_token,
-                    'access_token_expires' => date("Y-m-d G:i:s.u O", time() + $expires),
+                    'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),
                     'access_granted' => true,
                 ))) {
                     // update to set username on this authorization

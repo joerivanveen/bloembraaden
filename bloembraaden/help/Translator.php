@@ -39,9 +39,9 @@ class MoParser
         }
         // get Endian
         $input = $this->_readMOData(1);
-        if (strtolower(substr(dechex($input[1]), -8)) == "950412de") {
+        if (strtolower(substr(dechex($input[1]), -8)) == '950412de') {
             $this->_bigEndian = false;
-        } else if (strtolower(substr(dechex($input[1]), -8)) == "de120495") {
+        } else if (strtolower(substr(dechex($input[1]), -8)) == 'de120495') {
             $this->_bigEndian = true;
         } else {
             Peat\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));

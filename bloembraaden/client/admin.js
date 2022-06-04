@@ -395,6 +395,7 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
     self.sse_log = function (msg) {
         var el = self.DOMElement.querySelector('.progress') || self.DOMElement.querySelector('.drop_area') || self.DOMElement;
         el.innerHTML = msg + '<br/>' + el.innerHTML;
+        console.warn(msg);
     }
     self.process = function (level) {
         var source = new EventSource('/__action__/process_file/sse:true/level:' + (level || 1) + '/slug:' + self.parent_PEATCMS_element.state.slug);
@@ -659,7 +660,7 @@ var PEATCMS_x_value = function (row, parent_element) { // contains property / pr
     });
     el.addEventListener('drop', function (event) {
         this.classList.remove('dragover');
-        var dropped_x_value_id = event.dataTransfer.getData('x_value_id');
+        var dropped_x_value_id = parseInt(event.dataTransfer.getData('x_value_id'));
         NAV.ajax('/__action__/admin_x_value_order/', {
             'element': self.parent_element.getElementName(),
             'id': self.parent_element.getElementId(),
@@ -876,8 +877,8 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
                         // noinspection JSPotentiallyInvalidUsageOfThis
                         CMS_admin.putMenuItem({
                             // 'this' is no longer 'el', but now it is 'div'
-                            menu_item_id: this.getAttribute('data-menu_item_id'),
-                            dropped_menu_item_id: dropped_menu_item_id,
+                            menu_item_id: parseInt(this.getAttribute('data-menu_item_id')),
+                            dropped_menu_item_id: parseInt(dropped_menu_item_id),
                             command: 'child',
                             menu: NAV.getCurrentSlug(),
                         });
@@ -909,8 +910,8 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
                 var dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
                 // send to server
                 CMS_admin.putMenuItem({
-                    menu_item_id: this.getAttribute('data-menu_item_id'),
-                    dropped_menu_item_id: dropped_menu_item_id,
+                    menu_item_id: parseInt(this.getAttribute('data-menu_item_id')),
+                    dropped_menu_item_id: parseInt(dropped_menu_item_id),
                     command: 'order',
                     menu: NAV.getCurrentSlug(),
                 });
@@ -962,7 +963,7 @@ var PEATCMS_column_updater = function (DOMElement, PEATElement) {
     this.column_name = DOMElement.getAttribute('data-column_name');
     this.table_name = DOMElement.getAttribute('data-table_name');
     this.handle = DOMElement.getAttribute('data-peatcms_handle');
-    this.id = DOMElement.getAttribute('data-peatcms_id');
+    this.id = parseInt(DOMElement.getAttribute('data-peatcms_id'));
     this.server_value = DOMElement.value;
     if (DOMElement.hasAttribute('id') && DOMElement.getAttribute('id') === 'peatcms_publish') {
         // NOTE Firefox says this is type 'submit' even though it's a button
@@ -1954,7 +1955,7 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
             // send to server
             self.putMenuItem({
                 menu_item_id: 0, // this will trigger the toggle behaviour on the server
-                dropped_menu_item_id: dropped_menu_item_id,
+                dropped_menu_item_id: parseInt(dropped_menu_item_id),
                 command: 'order',
                 menu: NAV.getCurrentSlug(),
             });

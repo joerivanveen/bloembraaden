@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class BaseLogic extends Base
 {
     private DB $db;
@@ -30,8 +33,8 @@ class BaseLogic extends Base
                 $this->template_pointer = $row->template_pointer;
             } elseif (isset($row->template_name)) {
                 $this->template_pointer = (object)(array(
-                    "name" => $row->template_name,
-                    "admin" => false, // admin defaults to false always
+                    'name' => $row->template_name,
+                    'admin' => false, // admin defaults to false always
                 ));
             }
         }
@@ -129,7 +132,7 @@ class BaseLogic extends Base
     /**
      *
      * @param bool $returnOutputObject
-     * @return \stdClass
+     * @return \stdClass|null
      * @since 0.8.8
      */
     public function cacheOutputObject(bool $returnOutputObject = true): ?\stdClass
@@ -166,12 +169,12 @@ class BaseLogic extends Base
                 $pages = array();
                 $pages[] = (object)array('page_number' => 1, 'slug' => $slug); // same as /variant_page1
                 for ($index = 2; $index <= $count; ++$index) {
-                    $pages[] = (object)array('page_number' => $index, 'slug' => "{$slug}/variant_page{$index}");
+                    $pages[] = (object)array('page_number' => $index, 'slug' => $slug . '/variant_page' . $index);
                 }
                 $json = json_encode($pages);
                 $pages = null;
                 if ($count !== ($affected = Help::getDB()->updateVariantPageJsonInCache($slug, $json))) {
-                    $this->addError("updated {$affected} rows in cache for ‘{$slug}’");
+                    $this->addError('Updated '. $affected . ' rows in cache for ' . $slug);
                 }
             }
             // when the cache is built during this request, sorry you can only get the first page back for now
@@ -215,8 +218,8 @@ class BaseLogic extends Base
             return $this->template_pointer;
         } else {
             return (object)array(
-                "name" => $this->getType()->typeName(), // use type template by default
-                "admin" => false,
+                'name' => $this->getType()->typeName(), // use type template by default
+                'admin' => false,
             );
         }
     }
@@ -234,17 +237,14 @@ class BaseLogic extends Base
     public function getAndSetTemplateSettings(): \stdClass
     {
         if (isset($this->template_settings)) return $this->template_settings;
-        if (isset($this->row->template_id)
-            and null !== ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) {
-            $this->template_settings = $settings;
-        } else { // return default settings
+        if (!isset($this->row->template_id) or null === ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) { // return default settings
             $settings = (object)array(
                 'nested_max' => $this->nested_max,
                 'nested_show_first_only' => $this->nested_show_first_only,
                 'variant_page_size' => $this->variant_page_size
             );
-            $this->template_settings = $settings;
         }
+        $this->template_settings = $settings;
 
         return $settings;
     }

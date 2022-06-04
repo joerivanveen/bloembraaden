@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class InstagramImage extends Image
 {
     protected array $sizes;

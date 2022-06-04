@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Shoppinglist extends BaseLogic
 {
     // TODO it's a bit wonky, with the 'rows' variable holding the rows
@@ -16,7 +19,7 @@ class Shoppinglist extends BaseLogic
         $this->type_name = 'shoppinglist';
         // get the list from db
         $this->row = Help::getDB()->getShoppingList(
-            $name, $session->getId(), (null === ($user = $session->getUser()))?0:$user->getId());
+            $name, $session->getId(), (null === ($user = $session->getUser())) ? 0 : $user->getId());
         $this->rows = Help::getDB()->getShoppingListRows($this->getId());
         // remember the state so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
@@ -192,7 +195,7 @@ class Shoppinglist extends BaseLogic
         $output_object->row_count = $row_count;
         // @since 0.5.12 get the shippingcosts if a shipping country is known
         $amount_grand_total = $amount_row_total;
-        if (($country_id = $this->session->getValue('shipping_country_id'))) {
+        if (($country_id = (int)$this->session->getValue('shipping_country_id'))) {
             if (($country = Help::getDB()->getCountryById($country_id))) {
                 if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
                     $shipping_costs = Help::getAsFloat($country->shipping_costs);
@@ -209,11 +212,11 @@ class Shoppinglist extends BaseLogic
     }
 
     /**
-     * @return mixed
+     * @return array
      * @since 0.7.9
      */
-    public function getRows() {
-        //return $this->getOutput()->rows;
+    public function getRows(): array
+    {
         return $this->rows;
     }
 
@@ -236,11 +239,7 @@ class Shoppinglist extends BaseLogic
 
     private function getStateSaved(): ?string
     {
-        if (isset($this->state)) {
-            return $this->state;
-        } else {
-            return null;
-        }
+        return $this->state ?? null;
     }
 
     private function setState(string $md5)

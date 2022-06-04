@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 
 use PDO, PDOException, Exception, stdClass;
 
@@ -48,7 +51,7 @@ Create your next website with bloembraaden.io
                 // newrelic reporting
                 if (extension_loaded('newrelic')) {
                     newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN ?? 'unknown');
-                    newrelic_add_custom_parameter('bloembraaden_output_json', Defined('OUTPUT_JSON') && true === OUTPUT_JSON);
+                    newrelic_add_custom_parameter('bloembraaden_output_json', defined('OUTPUT_JSON') && true === OUTPUT_JSON);
                 }
             });
     }
@@ -56,7 +59,7 @@ Create your next website with bloembraaden.io
     public static function getNow(): string
     {
         return self::$now_time_string
-            ?? (self::$now_time_string = strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]));
+            ?? (self::$now_time_string = (string)strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]));
     }
 
     public static function getMainDatabaseConnection(): PDO
@@ -151,7 +154,7 @@ Create your next website with bloembraaden.io
             self::$timezone = 'Europe/Amsterdam'; // this is a correct timezone and for now the default
         }
         if (false === self::getMainDatabaseConnection()->exec(sprintf('SET timezone TO \'%s\';', self::$timezone))) {
-            Help::addError(new \Exception('failed to set timezone'));
+            Help::addError(new Exception('failed to set timezone'));
         } else {
             date_default_timezone_set(self::$timezone);
         }

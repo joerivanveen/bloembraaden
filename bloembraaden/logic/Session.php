@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Session extends BaseLogic
 {
     // TODO the session currently saves user_agent only once, it is never updated, so a long running
@@ -109,7 +112,7 @@ class Session extends BaseLogic
         $this->addMessage(__('Name / pass combination unknown.', 'peatcms'), 'warn');
         // failed login should always take 2 seconds
         $time_taken = round(microtime(true) * 1000) - $start;
-        usleep(2000000 - $time_taken * 1000);
+        usleep(2000000 - (int)$time_taken * 1000);
 
         return false;
     }

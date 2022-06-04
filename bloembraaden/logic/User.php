@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class User extends BaseLogic
 {
     private $addresses, $orders;
@@ -30,7 +33,7 @@ class User extends BaseLogic
 
     /**
      * Overridden to include addresses in the output
-     * @return \stdClass
+     * @return void
      */
     public function completeRowForOutput(): void
     {

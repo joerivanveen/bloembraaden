@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Search extends BaseElement
 {
     // TODO : cache the suggest queries!
@@ -302,7 +305,7 @@ class Search extends BaseElement
     public function completeRowForOutput(): void
     {
         if (true === $this->admin) {
-            Help::prepareAdminRowForOutput($this->row, 'search_settings', $this->getId());
+            Help::prepareAdminRowForOutput($this->row, 'search_settings', (string)$this->getId());
              $this->row->template_id = null;
             // load the stopwords and alternatives
             // TODO use a meaningful order, maybe in javascript...

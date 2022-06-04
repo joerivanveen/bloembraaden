@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Instance extends BaseLogic
 {
-    private array $menus, $instagram_feeds;
+    private array $menus;
 
     public function __construct(\stdClass $row = null)
     {
@@ -46,7 +49,7 @@ class Instance extends BaseLogic
 
     public function getDomain(bool $includeProtocol = false): string
     {
-        return ($includeProtocol ? "https://" : "") . $this->row->domain;
+        return ($includeProtocol ? 'https://' : '') . $this->row->domain;
     }
 
     public function completeRowForOutput(): void

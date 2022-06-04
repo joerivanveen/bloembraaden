@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 /**
  * Class Template
  * @package Peat
@@ -97,7 +100,7 @@ class Template extends BaseLogic
         if (false === isset($this->row->__instances__)) {
             $this->row->__instances__ = [Help::getDB()->selectRow('_instance', $this->row->instance_id)];
         }
-        Help::prepareAdminRowForOutput($this->row, 'template', $this->getId());
+        Help::prepareAdminRowForOutput($this->row, 'template', (string)$this->getId());
     }
 
     /**
@@ -403,7 +406,7 @@ class Template extends BaseLogic
                         $this->addHint(strip_tags($function_name) . ' not found');
                         $processed_object = $output_object;
                     }
-                    $html = str_replace('{{' . $tag_name . '|' . $function_name . '}}', $processed_object, $html);
+                    $html = str_replace('{{' . $tag_name . '|' . $function_name . '}}', (string)$processed_object, $html);
                 }
             } else {
                 $output_object = (array)$output_object; // this is a complex element which might contain indexed values that are rows
@@ -466,7 +469,7 @@ class Template extends BaseLogic
                 if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
                     $str_pos = $str_pos + strlen($tag_name) + 5;
                     $equals = strtolower(substr($html, $str_pos, strpos($html, ':', $str_pos) - $str_pos));
-                    $is_false = (false === isset($output->$tag_name) || strtolower($output->$tag_name) !== $equals);
+                    $is_false = (false === isset($output->$tag_name) || strtolower((string)$output->$tag_name) !== $equals);
                     $str_pos = $str_pos + strlen($equals) + 1;
                 } else {
                     $str_pos = $str_pos + strlen($tag_name) + 3;
@@ -880,7 +883,7 @@ class Template extends BaseLogic
         return str_replace('{', '&#123;', $str);
     }
 
-    private function peat_as_float(string $str): string
+    private function peat_as_float(string $str): float
     {
         return Help::getAsFloat($str, 0);
     }

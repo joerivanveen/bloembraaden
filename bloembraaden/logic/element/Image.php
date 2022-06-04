@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Image extends BaseElement
 {
     protected array $sizes;
@@ -123,7 +126,7 @@ class Image extends BaseElement
                     $newHeight = $height;
                 } else {
                     $newWidth = $pixels;
-                    $newHeight = floor($pixels * $height / $width);
+                    $newHeight = (int)floor($pixels * $height / $width);
                 }
             } else {
                 if ($height < $pixels) {
@@ -131,7 +134,7 @@ class Image extends BaseElement
                     $newWidth = $width;
                 } else {
                     $newHeight = $pixels;
-                    $newWidth = floor($pixels * $width / $height);
+                    $newWidth = (int)floor($pixels * $width / $height);
                 }
             }
             // create resized image

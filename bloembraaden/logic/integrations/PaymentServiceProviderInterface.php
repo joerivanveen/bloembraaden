@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 interface PaymentServiceProviderInterface
 {
     public const STATUS_UNPAID = -1;

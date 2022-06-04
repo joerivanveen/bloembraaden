@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 
 class PaymentServiceProvider extends BaseLogic
 {
@@ -20,7 +23,7 @@ class PaymentServiceProvider extends BaseLogic
         return array();
     }
 
-    public function updatePaymentStatus(\stdClass $data): bool
+    public function updatePaymentStatus(\stdClass $payload): bool
     {
         $this->addError('->updatePaymentStatus must be overridden by actual PaymentServiceProvider class');
 
@@ -73,12 +76,12 @@ class PaymentServiceProvider extends BaseLogic
     public function checkPaymentStatusByPaymentId(string $payment_id): int
     {
         $this->handleErrorAndStop('->checkPaymentStatusByPaymentId must be overridden by actual PaymentServiceProvider class');
-        return false;
+        return 0;
     }
 
     protected function logPaymentStatus(\stdClass $payload): int
     {
-        return Help::getDB()->insertRowAndReturnKey('_payment_status_update', array(
+        return (int)Help::getDB()->insertRowAndReturnKey('_payment_status_update', array(
             'instance_id' => Setup::$instance_id,
             'raw' => json_encode($payload),
             'origin' => $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN IP'
@@ -102,6 +105,6 @@ class PaymentServiceProvider extends BaseLogic
     {
         // get the names and values for this psp, so it can be edited
         $this->row->fields = json_encode($this->getFields());
-        Help::prepareAdminRowForOutput($this->row, 'payment_service_provider', $this->getId());
+        Help::prepareAdminRowForOutput($this->row, 'payment_service_provider', (string)$this->getId());
     }
 }

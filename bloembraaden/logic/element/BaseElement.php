@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Peat;
 class BaseElement extends BaseLogic implements Element
@@ -56,6 +57,7 @@ class BaseElement extends BaseLogic implements Element
         if (true === Help::getDB()->updateElement($this->getType(), $data, $this->getId())) {
             if (true === $this->refreshRow()) return true;
             $this->addError('could not refresh row');
+
             return true; // update still ok
         }
 
@@ -94,7 +96,7 @@ class BaseElement extends BaseLogic implements Element
         // TODO the element knows too much, the chain must be automated, like with ReferencingTables
         $arr = array($column_name => $column_value);
         if (isset($arr['product_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('product'), $column_value))) {
+            if (($tmp = Help::getDB()->fetchElementRow(new Type('product'), (int)$column_value))) {
                 if ($serie_id = $tmp->serie_id) {
                     $arr = array_merge($arr, array('serie_id' => $serie_id));
                 } else {
@@ -105,7 +107,7 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         if (isset($arr['serie_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), $column_value))) {
+            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), (int)$column_value))) {
                 if ($brand_id = $tmp->brand_id) {
                     $arr = array_merge($arr, array('brand_id' => $brand_id));
                 } else {
@@ -471,7 +473,7 @@ class BaseElement extends BaseLogic implements Element
 
     /**
      * Returns the full output object like in earlier versions was returned by getOutput
-     * @return mixed|\stdClass
+     * @return \stdClass
      * @since 0.8.0
      */
     public function getOutputFull(): \stdClass
@@ -502,7 +504,6 @@ class BaseElement extends BaseLogic implements Element
         foreach ($properties as $name => $values) {
             if (false === isset($allowed_properties[$name])) unset ($properties[$name]);
         }
-
         $this->properties = $properties;
     }
 
@@ -523,14 +524,15 @@ class BaseElement extends BaseLogic implements Element
 
     /**
      * Gets slug of an element
-     * @return string the slug of the element
+     * @return string|null the slug of the element
      */
     public function getSlug(): ?string
     {
         if (!isset($this->row)) $this->handleErrorAndStop('->getSlug() called with no row present');
+        $slug = $this->row->slug ?? $this->row->order_number ?? null;
+        if (!isset($slug)) $this->addError('->getSlug(): row had no slug');
 
-        // slugs can only be in column 'slug'
-        return $this->row->slug ?? $this->row->order_number ?? $this->addError('->getSlug(): row had no slug');
+        return $slug;
     }
 
     public function getPath(): string

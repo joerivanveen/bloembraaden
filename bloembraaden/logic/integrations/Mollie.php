@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInterface
 {
     public function getFieldNames(): array
@@ -45,7 +48,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 "value": "' . number_format($order->getGrandTotal(), 2, '.', '') . '"
             },
             "description": "' . htmlentities($out->order_number . ' ' . $instance->getName()) . '",
-            "redirectUrl": "' . htmlentities($this->getFieldValue('returnUrl')) . '",
+            "redirectUrl": "' . htmlentities((string)$this->getFieldValue('returnUrl')) . '",
             "webhookUrl": "' . str_replace('/', '\/', $instance->getDomain(true)) . '\/__action__\/payment_status_update",
             "shippingAddress": {
                 "country": "' . htmlentities($out->shipping_address_country_iso2) . '",

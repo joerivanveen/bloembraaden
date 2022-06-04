@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 /**
  * This is a static class with some functions used throughout peatcms
  */
@@ -75,7 +78,7 @@ class Help
     {
         if (null === $var) return '';
 
-        return number_format(Help::floatForHumans($var), Setup::$DECIMAL_DIGITS, Setup::$DECIMAL_SEPARATOR, Setup::$RADIX);
+        return number_format((float)Help::floatForHumans($var), Setup::$DECIMAL_DIGITS, Setup::$DECIMAL_SEPARATOR, Setup::$RADIX);
     }
 
     /**
@@ -106,10 +109,10 @@ class Help
         if ($index = strpos($sunk, '99999')) {
             $sunk = substr($sunk, 0, $index);
             if (substr($sunk, -1) === '.') {
-                $sunk = strval(intval($sunk) + 1);
+                $sunk = (string)((int)$sunk + 1);
             } else {
-                $n = intval(substr($sunk, -1)); // this can never be nine, so you can add 1 safely
-                $sunk = substr($sunk, 0, -1) . strval($n + 1);
+                $n = (int)(substr($sunk, -1)); // this can never be nine, so you can add 1 safely
+                $sunk = substr($sunk, 0, -1) . (string)($n + 1);
             }
         }
 
@@ -396,7 +399,7 @@ class Help
 
             return implode('', $pieces);
         } catch (\Exception $e) {
-            return $e;
+            die('no appropriate source for randomization found');
         }
     }
 
@@ -559,7 +562,7 @@ class Help
      * @param $password String The password
      * @return bool|string|null Returns (string) hash, or false on failure (or null when algorithm is invalid)
      */
-    public static function passwordHash(string $password)
+    public static function passwordHash(string $password): bool|string|null
     {
         return password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 1024, 'time_cost' => 128, 'threads' => 1]);
     }
@@ -733,20 +736,12 @@ class Help
                 foreach ($info->getColumnNames() as $column_index => $column_name) {
                     $sql .= '"' . $column_name . '" ';
                     $col = $info->getColumnByName($column_name);
-                    switch ($col_type = $col->getType()) {
-                        case 'character':
-                            $sql .= 'Character Varying(' . $col->getLength() . ') ';
-                            break;
-                        case 'timestamp':
-                            $sql .= 'Timestamp With Time Zone ';
-                            break;
-                        case 'double':
-                            $sql .= 'float ';
-                            break;
-                        default:
-                            $sql .= $col_type . ' ';
-                            break;
-                    }
+                    $sql .= match ($col_type = $col->getType()) {
+                        'character' => 'Character Varying(' . $col->getLength() . ') ',
+                        'timestamp' => 'Timestamp With Time Zone ',
+                        'double' => 'float ',
+                        default => $col_type . ' ',
+                    };
                     //if (!is_null($col->getDefault())) { // default not necessary in a new table, and specifically, 'serial' leads to an error
                     //    $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
                     //}
@@ -765,20 +760,12 @@ class Help
                     }
                     $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" ADD COLUMN "' . $column_name . '" ';
                     $col = $info->getColumnByName($column_name);
-                    switch ($col_type = $col->getType()) {
-                        case 'character':
-                            $sql .= 'Character Varying(' . $col->getLength() . ') ';
-                            break;
-                        case 'timestamp':
-                            $sql .= 'Timestamp With Time Zone ';
-                            break;
-                        case 'double':
-                            $sql .= 'Double precision ';
-                            break;
-                        default:
-                            $sql .= $col_type . ' ';
-                            break;
-                    }
+                    $sql .= match ($col_type = $col->getType()) {
+                        'character' => 'Character Varying(' . $col->getLength() . ') ',
+                        'timestamp' => 'Timestamp With Time Zone ',
+                        'double' => 'Double precision ',
+                        default => $col_type . ' ',
+                    };
                     if (!is_null($col->getDefault())) {
                         $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
                     }
@@ -918,7 +905,7 @@ class Help
                 var_dump(Help::getMessages());
                 die('Install instance error');
             } else {
-                Define('INSTANCEID', $instance_id);
+                define('INSTANCEID', $instance_id);
             }
             /**
              * insert first page

@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Base
 {
     // NOTE we track whether THIS object has a message or error, but we save and retrieve them all globally (through Help)
@@ -73,7 +76,7 @@ class Base
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
         $error_message = PHP_EOL .
             $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'] . "\t" .
-            date("Y-m-d H:i:s") . "\t" .
+            date('Y-m-d H:i:s') . "\t" .
             $_SERVER['REQUEST_METHOD'] . "\t" .
             $_SERVER['REQUEST_URI'] . "\nFATAL: ";
         $error_message .= $e;

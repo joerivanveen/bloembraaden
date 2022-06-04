@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 // TODO make configurable using config file
 const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
 const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 10;
@@ -69,7 +72,7 @@ if (0 === strpos($interval, 'interval=')) {
 // the work starts here
 $start_timer = microtime(true);
 $db = new DB;
-Define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
+define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
 echo "\r\n" . date('Y-m-d H:i:s') . " JOB $interval:\r\n";
 if ('1' === $interval) { // interval should be '1'
@@ -160,7 +163,7 @@ if ('1' === $interval) { // interval should be '1'
                     ));
                     $out = $mailer->send();
                 }
-                var_dump($out);
+                var_dump($out ?? 'oops');
                 $db->updateColumns('_order', array(
                     'emailed_order_confirmation' => true,
                     'emailed_order_confirmation_success' => $out->success,
@@ -628,7 +631,7 @@ if ('1' === $interval) { // interval should be '1'
     echo 'done... ' . PHP_EOL;
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
-    echo $db->jobPurgeDeleted($interval) . PHP_EOL;
+    echo $db->jobPurgeDeleted((int)$interval) . PHP_EOL;
 //} elseif ('process' === $interval) { // comment this line to use automated image processing each 5 minutes
     // process some images that need processing (date_processed = null)
     $upload = Setup::$UPLOADS;
@@ -698,7 +701,7 @@ if ('1' === $interval) { // interval should be '1'
                     continue;
                 }
                 $timestamp = explode('.', end($pieces))[0];
-                if (($row = $db->fetchInstanceById($instance_id))) {
+                if (($row = $db->fetchInstanceById((int)$instance_id))) {
                     if (strtotime($row->date_published) > $timestamp) {
                         unlink($file_info->getPathname());
                         echo 'Deleted ' . $file_info->getFilename() . PHP_EOL;
@@ -750,7 +753,7 @@ if ('1' === $interval) { // interval should be '1'
                     Help::getAsInteger($return_value->expires_in, $default_expires) : $default_expires;
                 if ($db->updateColumns('_instagram_auth', array(
                     'access_token' => $return_value->access_token,
-                    'access_token_expires' => date("Y-m-d G:i:s.u O", time() + $expires),
+                    'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),
                     'access_granted' => true,
                 ), $row->instagram_auth_id)) {
                     echo 'OK' . PHP_EOL;
@@ -802,7 +805,7 @@ if ('1' === $interval) { // interval should be '1'
     // it has to be uncached as well, or else the image is gone when it’s deleted in the next run...
 }
 $trans->start('report current job');
-echo date("Y-m-d H:i:s") . ' (ended)' . PHP_EOL;
+echo date('Y-m-d H:i:s') . ' (ended)' . PHP_EOL;
 printf("«completed in %s seconds»\r\n", microtime(true) - $start_timer);
 $trans->flush();
 //

@@ -1,7 +1,10 @@
 <?php
+declare(strict_types = 1);
+
 namespace Peat;
+
 //
-Define('CORE', __DIR__ . '/');
+define('CORE', __DIR__ . '/');
 // Data
 require CORE . 'Base.php';
 require CORE . 'data/DB.php';

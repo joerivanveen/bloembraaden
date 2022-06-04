@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 
 class StdOutLogger extends Base implements LoggerInterface
 {

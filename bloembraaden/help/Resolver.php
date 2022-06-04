@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 // if there's one entry in route, just look for that exact match anywhere in slugs
 // if there's two this can be a property name/value (rather unlikely) or brand/series (or anything else really)
 // or two or more: brand/series/product or brand/series/variant or brand/series/variant/productcode
@@ -74,7 +77,7 @@ class Resolver extends BaseLogic
         // since 0.5.10: possibility to render returned element in a different tag than its slug
         if (isset($this->post_data->render_in_tag)) $this->render_in_tag = $this->post_data->render_in_tag;
         // remember for everyone, only needed when output is imminent:
-        if (true === $output_json and false === defined('OUTPUT_JSON')) Define('OUTPUT_JSON', true);
+        if (true === $output_json and false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (isset($this->instructions['action'])) {
             if (count($uri) > 0) {
@@ -301,16 +304,16 @@ class Resolver extends BaseLogic
                     }
                     break;
                 case 'template':
-                    if (isset($terms[1])) {
-                        if (($row = Help::getDB()->getTemplateRow($terms[1], null))) {
+                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                        if (($row = Help::getDB()->getTemplateRow($id, null))) {
                             $element = new Template($row);
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
                         }
                     }
                     break;
                 case 'search_settings':
-                    if (isset($terms[1])) {
-                        if (($element = (new Search())->fetchById($terms[1]))) {
+                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                        if (($element = (new Search())->fetchById($id))) {
                             $element->setForAdmin();
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
                         }
@@ -318,15 +321,16 @@ class Resolver extends BaseLogic
                     break;
                 case 'menu_item':
                     // get the menu_item_id and fetch it
-                    $menu_item_id = $terms[1] ?? null; // assumption the menu_item_id is in there
-                    // menu items are only returned for the current instance
-                    $type = new Type('menu_item');
-                    $element = $type->getElement(Help::getDB()->fetchElementRow($type, $menu_item_id));
+                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                        // menu items are only returned for the current instance
+                        $type = new Type('menu_item');
+                        $element = $type->getElement(Help::getDB()->fetchElementRow($type, $id));
+                    }
                     break;
                 case 'payment_service_provider':
                     // get payment service provider for instance (this is a factory...)
-                    if (isset($terms[1])) {
-                        if (($row = Help::getDB()->getPaymentServiceProviderRow($terms[1], null))) {
+                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                        if (($row = Help::getDB()->getPaymentServiceProviderRow($id, null))) {
                             if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                                 $element = new $class_name($row);
                             } else {

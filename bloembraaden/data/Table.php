@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Type extends Base
 {
     private array $peatcms_types = array(
@@ -149,7 +152,7 @@ class Table extends Base
                     $return_value['values'][] = $value;
                     if (false === $for_update) {
                         // if the value starts and / or ends with %, treat this as a LIKE statement
-                        if (strpos($value, "%") === 0 || strrpos($value, "%") === strlen($value) - 1) $like = true;
+                        if (strpos($value, '%') === 0 || strrpos($value, '%') === strlen($value) - 1) $like = true;
                         // ci_ai and token (_session) are already lower, prevent the table scan here
                         if ('ci_ai' !== $column_name && 'token' !== $column_name) {
                             $column_name = 'lower(' . $column_name . ')';
@@ -388,15 +391,14 @@ class Column
     private string $name, $type;
     private ?string $default;
     private ?int $length;
-    private bool $nullable, $editable;
+    private bool $nullable;
 
     public function __construct(string $name, \stdClass $column)
     {
         $this->name = $name;
         $this->type = explode(' ', $column->type)[0];
-        $this->default = (false === strpos($column->default, 'nextval')) ? $column->default : 'serial';
-        $this->nullable = (0 !== strpos($column->nullable, 'NO'));
-        $this->editable = (bool) $column->editable;
+        $this->default = (false === strpos($column->default ?? '', 'nextval')) ? $column->default : 'serial';
+        $this->nullable = (0 !== strpos($column->nullable ?? '', 'NO'));
         $this->length = $column->length; // for character type columns the maximum number of characters
     }
 

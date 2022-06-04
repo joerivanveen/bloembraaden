@@ -1,9 +1,9 @@
 <?php
 
-NameSpace Peat;
+declare(strict_types = 1);
 
-use Peat\Base;
-use Peat\LoggerInterface;
+namespace Peat;
+
 
 class SseLogger extends Base implements LoggerInterface
 {

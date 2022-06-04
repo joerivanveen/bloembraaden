@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class Order extends BaseElement
 {
     private array $rows, $payments;
@@ -107,7 +110,7 @@ class Order extends BaseElement
         $row->item_count = $item_count;
         // add the shippingcosts and make the grandtotal
         $shipping_costs = (Help::getAsFloat($row->shipping_costs) / 100.0);
-        if ($shipping_costs !== 0) {
+        if ($shipping_costs !== 0.0) {
             $highest_vat = 0;
             foreach ($vat as $percentage_index => $amount) {
                 $percentage = Help::getAsFloat($percentage_index);

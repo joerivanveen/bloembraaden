@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Peat;
 class Handler extends BaseLogic
@@ -250,8 +251,8 @@ class Handler extends BaseLogic
                         $this->addMessage(sprintf(__('%1$s order rows added to %2$s', 'peatcms'), $count, $shoppinglist_name));
                     }
                     $out = array('redirect_uri' => isset($properties['redirect_uri'])
-                            ? htmlentities($properties['redirect_uri'][0])
-                            : '/__shoppinglist__/' . $shoppinglist_name);
+                        ? htmlentities($properties['redirect_uri'][0])
+                        : '/__shoppinglist__/' . $shoppinglist_name);
                 } else {
                     $this->addMessage(__('Order not found', 'peatcms'), 'warn');
                 }
@@ -297,7 +298,7 @@ class Handler extends BaseLogic
                     $sse->log(sprintf(__('Could not process %s, check your logs to know more', 'peatcms'), $slug));
                 }
                 if (method_exists($element, 'process')) {
-                    $level = $props['level'][0] ?? 1;
+                    $level = (int)$props['level'][0] ?? 1;
                     $element->process($sse, $level);
                 } else {
                     $this->addError(sprintf('process_file: element %s has no method ‘process’', $slug));
@@ -472,7 +473,7 @@ class Handler extends BaseLogic
                             if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
                                 $this->addMessage(sprintf(__('‘%s’ is not recognized as a valid email address', 'peatcms'), $post_data->email), 'warn');
                                 $valid = false;
-                            } elseif (null === ($country = Help::getDB()->getCountryById($post_data->shipping_country_id))) {
+                            } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
                                 $this->addMessage(sprintf(__('‘%s’ is not recognized as a country id', 'peatcms'), $post_data->shipping_country_id), 'warn');
                                 $valid = false;
                             }
@@ -1422,7 +1423,8 @@ class Handler extends BaseLogic
     {
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();
-        if (($check_timestamp = $_SERVER['HTTP_X_CACHE_TIMESTAMP'] ?? null)) {
+        if (isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {
+            $check_timestamp = (int)$_SERVER['HTTP_X_CACHE_TIMESTAMP'];
             // check if it’s ok, then just return ok immediately
             if (true === Help::getDB()->cachex($slug, $check_timestamp)) {
                 if ($variant_page > 1) $slug .= '/variant_page' . $variant_page;
@@ -1675,11 +1677,11 @@ class Handler extends BaseLogic
      * @param string $type_name The name of the element
      * @param $data array containing column and value pairs to be updated
      * @param int $id The id of the element
-     * @return BaseElement Returns the updated element when succeeded, null when update failed
+     * @return BaseElement|null Returns the updated element when succeeded, null when update failed
      */
     private function updateElement(string $type_name, array $data, int $id): ?BaseElement
     {
-        // TODO access control permissions based on admin etc. -> is the admin from a client that can handle this instance? And does (s)he have that role?
+        // TODO access control permissions based on admin etc. -> is the admin from a client that can handle this instance? And do they have that role?
         if ($type_name !== 'search') {
             $peat_type = new Type($type_name);
             $el = $peat_type->getElement($this->getElementRow($peat_type, $id));
@@ -1708,19 +1710,17 @@ class Handler extends BaseLogic
         return Help::getDB()->fetchElementRowsWhere(new Type($type_name), array());
     }
 
-    private function getElementRow(string $type_name, int $id = 0): ?\stdClass
+    private function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
     {
-        if ($type_name !== 'search' and $peat_type = new Type($type_name)) {
-            return Help::getDB()->fetchElementRow($peat_type, (int)$id);
-        }
+        if ('search' === $peat_type->typeName()) return null;
 
-        return null;
+        return Help::getDB()->fetchElementRow($peat_type, $id);
     }
 
     private function getElementById(string $type_name, int $id): ?BaseElement
     {
         if ($peat_type = new Type($type_name)) {
-            if ($row = Help::getDB()->fetchElementRow($peat_type, (int)$id)) {
+            if ($row = Help::getDB()->fetchElementRow($peat_type, $id)) {
                 return $peat_type->getElement($row);
             } else {
                 return null;
@@ -1807,7 +1807,6 @@ class Handler extends BaseLogic
 
                             return (object)true;
                         }
-                        break;
                     case '_template':
                         if ($template_id = Help::getDB()->insertTemplate(
                             __('New template', 'peatcms'),
@@ -1819,7 +1818,6 @@ class Handler extends BaseLogic
 
                             return (object)true;
                         }
-                        break;
                     case '_instance_domain':
                         if ($new_instance_domain_key = Help::getDB()->insertInstanceDomain(array(
                             'domain' => 'example.com',
@@ -1831,7 +1829,6 @@ class Handler extends BaseLogic
 
                             return (object)true;
                         }
-                        break;
                     case '_admin':
                         $instance = new Instance(Help::getDB()->selectRow('_instance', $instance_id));
                         if ($client_id = $instance->getClientId()) {
@@ -1857,7 +1854,6 @@ class Handler extends BaseLogic
 
                             return (object)true;
                         }
-                        break;
                     case '_search_settings':
                         Help::getDB()->insertElement(new Type('search'), array(
                             'instance_id' => $instance_id,

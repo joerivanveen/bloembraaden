@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Peat;
+
 class File extends BaseElement
 {
     public function __construct(\stdClass $row = null)
