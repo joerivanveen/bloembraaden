@@ -3663,11 +3663,19 @@ function trim(str, chars) {
 }
 
 PEATCMS.getFormData = function (form) {
-    var elements = form.elements,
-        element, i, len, obj = {}
+    let elements = form.elements,
+        element, value, i, len, obj = {}
     for (i = 0, len = elements.length; i < len; i++) {
         element = elements[i];
-        obj[element.name] = element.value;
+        value = element.value;
+        if (PEATCMS.isInt(value)) {
+            value = parseInt(value);
+        } else if ('true' === value) {
+            value = true;
+        } else if ('false' === value) {
+            value = false;
+        }
+        obj[element.name] = value;
     }
     return obj;
 }
