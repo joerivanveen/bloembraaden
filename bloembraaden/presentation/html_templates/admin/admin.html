@@ -274,6 +274,15 @@
     <h3><a href="/__admin__/instance/{{domain}}">Edit {{name}}</a></h3>
     {%__instances__%}
 
+    <h3>Report</h3>
+    {%__action__/admin_database_report%}
+    <table>
+        {%__rows__%}
+        <tr><td>{{key}}:</td><td>{{value}}</td></tr>
+        {%__rows__%}
+    </table>
+    {%__action__/admin_database_report%}
+
     <p style="font-size:85%;margin-top:2rem;">(Accessing with instance_id: {{instance_id}})</p>
     <form action="/__action__/account_delete_session">
         <input type="submit" value="LOGOUT"/> (this session only)

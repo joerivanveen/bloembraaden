@@ -1375,6 +1375,9 @@ class Handler extends BaseLogic
                     } else {
                         $this->addError(__('You need to be admin and provide X-File-Name header.', 'peatcms'));
                     }
+                } elseif ('admin_database_report' === $action) {
+                    $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
+                    $out['slug'] = 'admin_database_report';
                 }
             } elseif ($action === 'reflect') {
                 $out = $post_data;

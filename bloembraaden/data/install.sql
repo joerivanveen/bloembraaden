@@ -1,8 +1,6 @@
 -- PAY ATTENTION each table must have a primary key column, which is returned upon insert automatically
 -- peatcms crashes if the primary key is missing
 
--- there are no indexes, these have to be created on the production database when it's sufficiently large
-
 BEGIN;
 
 -- CREATE TABLE "_user" ----------------------------------------
@@ -2700,6 +2698,23 @@ BEGIN;
 
 ALTER TABLE "_instance"
     DROP COLUMN if exists "not_found_slug";
+
+COMMIT;
+
+-- version 0.10.9
+
+BEGIN;
+
+/* template retrieval is relatively slow and used a lot, optimize the table for reading a bit more */
+
+DROP INDEX if exists "index_template_instance_id";
+CREATE INDEX if not exists "index_template_instance_id" ON "public"."_template" USING btree ("instance_id" Asc NULLS Last);
+
+DROP INDEX if exists "index_template_name";
+CREATE INDEX if not exists "index_template_name" ON "public"."_template" USING btree ("name" Asc NULLS Last);
+
+DROP INDEX if exists "index_template_element";
+CREATE INDEX if not exists "index_template_element" ON "public"."_template" USING btree ("element" Asc NULLS Last);
 
 COMMIT;
 

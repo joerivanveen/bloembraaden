@@ -629,6 +629,19 @@ class Help
         return ob_get_clean();
     }
 
+    public static function unpackKeyValueRows(array $rows): array
+    {
+        $unpacked = array();
+        foreach ($rows as $key => $value) {
+            $unpacked[] = (object)array(
+                'key' => $key,
+                'value' => $value,
+            );
+        }
+
+        return $unpacked;
+    }
+
     public static function upgrade(DB $db)
     {
         $version = $db->getVersion();

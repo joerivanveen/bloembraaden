@@ -126,6 +126,25 @@ class DB extends Base
         return $this->version;
     }
 
+    public function fetchAdminReport(): array
+    {
+        $rows = array();
+        $statement = $this->conn->prepare('select last_value from _sessionvars_sessionvars_id_seq');
+        $statement->execute();
+        $rows['sessionvars_seq'] = $statement->fetchColumn(0);
+        $statement = $this->conn->prepare('select last_value from _session_session_id_seq');
+        $statement->execute();
+        $rows['session_seq'] = $statement->fetchColumn(0);
+        $statement = $this->conn->prepare('select count(*) from _session');
+        $statement->execute();
+        $rows['number of sessions'] = $statement->fetchColumn(0);
+        $statement = $this->conn->prepare('select count(*) from _shoppinglist');
+        $statement->execute();
+        $rows['number of shoppinglists'] = $statement->fetchColumn(0);
+        $statement = null;
+
+        return $rows;
+    }
     /**
      * @param string $column_name
      * @return string|null
@@ -3193,9 +3212,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             // if you are here we are going to assume it worked
             return $var;
         } else {
-            $statement = $this->conn->prepare('DELETE FROM _sessionvars WHERE session_id = ' .
-                $session_id . ' AND name = ? AND times <= ?;'); // a newer one might have been inserted under the same name
-            $statement->execute(array($name, $var->times));
+            $statement = $this->conn->prepare('DELETE FROM _sessionvars WHERE session_id = ? AND name = ? AND times <= ?;');
+            // a newer one might have been inserted under the same name
+            $statement->execute(array($session_id, $name, $var->times));
             $statement = null;
 
             return null; // success... $var is gone now
