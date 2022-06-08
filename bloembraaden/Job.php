@@ -632,6 +632,12 @@ if ('1' === $interval) { // interval should be '1'
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
     echo $db->jobPurgeDeleted((int)$interval) . PHP_EOL;
+    $trans->start('reverse dns for sessions');
+    $sessions = $db->fetchSessionsWithoutReverseDns();
+    foreach ($sessions as $key => $session) {
+        $reverse_dns = gethostbyaddr($session->ip_address);
+        $db->updateSession($session->token, array('reverse_dns' => $reverse_dns));
+    }
 //} elseif ('process' === $interval) { // comment this line to use automated image processing each 5 minutes
     // process some images that need processing (date_processed = null)
     $upload = Setup::$UPLOADS;

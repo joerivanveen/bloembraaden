@@ -90,7 +90,7 @@ class BaseLogic extends Base
 
     public function getOutput(): \stdClass
     {
-        if (is_null($this->row)) {
+        if (null === $this->row) {
             $this->addError($this->getType()->typeName() . '->getOutput() called while row is NULL');
             $this->row = new \stdClass();
         }

@@ -98,7 +98,7 @@ class Handler extends BaseLogic
             if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
             // get any update since last time, so the admin can fetch it when appropriate
             // this is a get request, without csrf or admin, so don’t give any specific information
-            $out = array('new' => false);
+            $out = array('new' => false, 'is_admin' => ADMIN);
             // todo maybe you still want to die here, for less resources
         } elseif ($action === 'download') {
             if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[1] ?? '')) {
@@ -108,9 +108,28 @@ class Handler extends BaseLogic
                 }
             }
         } elseif ($action === 'account_delete_session') {
-            $this->getSession()->delete();
-            $this->addMessage(__('Session has been deleted', 'peatcms'), 'log');
-            $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass);
+            if (!isset(($terms = $this->resolver->getTerms())[1])) {
+                $this->getSession()->delete();
+                $this->addMessage(__('Session has been deleted', 'peatcms'), 'log');
+                $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass);
+            } else {
+                $session_id = (int)$terms[1];
+                $my_session = $this->getSession();
+                if ($session_id === $my_session->getId()) {
+                    $this->addMessage('You can not destroy your own session this way', 'warn');
+                } elseif (true === $this->getDB()->deleteSessionById(
+                        $session_id,
+                        ($user = $my_session->getUser()) ? $user->getId() : 0,
+                        ($admin = $my_session->getAdmin()) ? $admin->getId() : 0
+                    )) {
+                    $out = array(
+                        'success' => true,
+                        'destroyed_session_id' => $session_id,
+                    );
+                } else {
+                    $this->addMessage('Failed destroying the session', 'error');
+                }
+            }
         } elseif ($action === 'payment_status_update') {
             //header('Access-Control-Allow-Origin: https://apirequest.io'); //TODO this is temp for testing, not necessary for curl
             if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
@@ -949,7 +968,7 @@ class Handler extends BaseLogic
                             $this->addMessage(__('json not recognized', 'peatcms'), 'warn');
                         }
                         if (isset($post_data->re_render)) {
-                            $out = ['re_render' => $post_data->re_render];
+                            $out = array('re_render' => $post_data->re_render);
                         } else {
                             $out = true;
                         }
@@ -1238,27 +1257,46 @@ class Handler extends BaseLogic
                     if (false === $allowed) {
                         $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
                     } else {
+                        $posted_column_name = $post_data->column_name;
+                        $posted_table_name = $post_data->table_name;
+                        $posted_value = $post_data->value;
+                        $posted_id = $post_data->id;
                         // default update array
-                        $update_arr = array($post_data->column_name => $post_data->value);
+                        $update_arr = array($posted_column_name => $posted_value);
                         /**
                          * Some exceptions in the columns are handled first
                          */
-                        if ($post_data->column_name === 'password' and $post_data->value !== '') {
-                            $update_arr = array('password_hash' => Help::passwordHash($post_data->value));
+                        if ($posted_column_name === 'password' and $posted_value !== '') {
+                            $update_arr = array('password_hash' => Help::passwordHash($posted_value));
                         }
-                        if ($post_data->table_name === '_admin'
-                            and $post_data->column_name === 'deleted'
-                            and $post_data->value === true) {
-                            if ((int)$post_data->id === $this->session->getAdmin()->getId()) {
-                                $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself', $post_data->id),
+                        // for admin and user, any change must invalidate all sessions
+                        if ('_admin' === $posted_table_name) {
+                            $admin_id = (int)$posted_id;
+                            $rows = Help::getDB()->fetchAdminSessions($admin_id);
+                            foreach ($rows as $key => $row) {
+                                Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                            }
+                        } elseif ('_user' === $posted_table_name) {
+                            $user_id = (int)$posted_id;
+                            $rows = Help::getDB()->fetchUserSessions($user_id);
+                            foreach ($rows as $key => $row) {
+                                Help::getDB()->deleteSessionById($row->session_id, $user_id, 0);
+                            }
+                        }
+                        //
+                        if ($posted_table_name === '_admin'
+                            and $posted_column_name === 'deleted'
+                            and $posted_value === true) {
+                            if ((int)$posted_id === $this->session->getAdmin()->getId()) {
+                                $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself', $posted_id),
                                     __('You can’t delete yourself', 'peatcms'));
                             }
-                        } elseif ($post_data->column_name === 'domain') {
-                            $value = $post_data->value;
-                            if ($post_data->table_name === '_instance' and ($instance->getDomain() === $value or
-                                    $instance->getId() === (int)$post_data->id)) {
+                        } elseif ($posted_column_name === 'domain') {
+                            $value = $posted_value;
+                            if ($posted_table_name === '_instance' and ($instance->getDomain() === $value or
+                                    $instance->getId() === (int)$posted_id)) {
                                 $this->handleErrorAndStop(
-                                    sprintf('Domain %1$s was blocked for instance %2$s', $value, $post_data->id),
+                                    sprintf('Domain %1$s was blocked for instance %2$s', $value, $posted_id),
                                     __('Manipulating this domain is not allowed.', 'peatcms'));
                             } else { // validate the domain here
                                 // test domain utf-8 characters: όνομα.gr
@@ -1266,16 +1304,16 @@ class Handler extends BaseLogic
                                     $value = idn_to_ascii($value, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
                                 }
                                 if (dns_check_record($value, 'A') or dns_check_record($value, 'AAAA')) {
-                                    $post_data->value = $value; // set the possibly to punycode converted value back
+                                    $posted_value = $value; // set the possibly to punycode converted value back
                                 } else {
                                     $this->handleErrorAndStop(
-                                        sprintf('Domain %1$s was not in DNS for instance %2$s', $value, $post_data->id),
+                                        sprintf('Domain %1$s was not in DNS for instance %2$s', $value, $posted_id),
                                         __('Domain not found, check your input and try again later.', 'peatcms'));
                                 }
                             }
-                        } elseif ($post_data->table_name === '_template') {
-                            if ($post_data->column_name === 'published') {
-                                $temp = new Template(Help::getDB()->getTemplateRow($post_data->id, null));
+                        } elseif ($posted_table_name === '_template') {
+                            if ($posted_column_name === 'published') {
+                                $temp = new Template(Help::getDB()->getTemplateRow($posted_id, null));
                                 if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
                                     // this always sends true as value, attempt to publish the template
                                     $update_arr = array(
@@ -1286,25 +1324,25 @@ class Handler extends BaseLogic
                                 }
                                 unset($temp);
                             }
-                        } elseif ($post_data->column_name === 'to_slug') {
+                        } elseif ($posted_column_name === 'to_slug') {
                             // you don’t have to check if the slug is valid, because this is duplicate by design
                             // but the value must be in the form of a slug or it is useless anyway
-                            $update_arr = array('to_slug' => Help::slugify($post_data->value));
+                            $update_arr = array('to_slug' => Help::slugify($posted_value));
                         }
                         /**
                          * Generic column update statement
                          */
-                        if (Help::getDB()->updateColumns($post_data->table_name, $update_arr, $post_data->id)) {
-                            $out = Help::getDB()->selectRow($post_data->table_name, $post_data->id);
+                        if (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
+                            $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
                         } else {
                             $this->addError(Help::getDB()->getLastError());
                             $this->addMessage(__('Update column failed', 'peatcms'), 'error');
                         }
                         // check published for templates
-                        if ($post_data->table_name === '_template') {
+                        if ($posted_table_name === '_template') {
                             // find the instance this admin is currently working with
-                            if (($row = Help::getDB()->selectRow('_template', $post_data->id))) {
-                                $out->published = $this->updatePublishedForTemplates($row->instance_id, $post_data->id);
+                            if (($row = Help::getDB()->selectRow('_template', $posted_id))) {
+                                $out->published = $this->updatePublishedForTemplates($row->instance_id, $posted_id);
                             }
                         }
                     }
@@ -1487,7 +1525,6 @@ class Handler extends BaseLogic
             // prepare object for admin
             $out->__adminerrors__ = Help::getErrorMessages();
             // @since 0.8.2 admin also uses cache
-            //$type = (isset($out->slugs->$slug) ? $out->slugs->$slug->type : 'search');
             $type = $base_element->type;
             if ('search' !== $type) $out->table_info = $this->getTableInfoForOutput(new Type($type));
         } else {

@@ -900,4 +900,3 @@ class Template extends BaseLogic
         return str_replace('"', '&quot;', $str);
     }
 }
-

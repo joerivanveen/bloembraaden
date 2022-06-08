@@ -1555,6 +1555,13 @@ var PEATCMS_admin = function () {
                 }
             });
         }
+        document.querySelectorAll('.session_destroy').forEach(function(el) {
+            el.addEventListener('peatcms.form_posted', function(e) {
+                if (e.detail.json.success) {
+                    this.innerHTML = 'Marked for destruction';
+                }
+            });
+        });
     }
     document.addEventListener('peatcms.document_ready', activate);
     if (PEAT.document_status > PEAT.status_codes.ready) {
@@ -1671,6 +1678,11 @@ PEATCMS_admin.prototype.pollServer = function () {
     var self = this;
     if (false === document.hasFocus()) return;
     NAV.ajax('/__action__/poll', {peatcms_ajax_config: {track_progress: false}}, function (json) {
+        let el;
+        if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
+            PEATCMS.removeNode(el);
+            PEAT.message('Admin was logged out', 'warn');
+        }
         // repeat...
         clearTimeout(self.poll_timeout);
         self.poll_timeout = setTimeout(CMS_admin.pollServer, CMS_admin.poll_timeout_ms);

@@ -213,7 +213,7 @@ class Session extends BaseLogic
      * @param mixed $value can be of any type, will be jsonencoded by DB class for persistent storage
      * @param int $times @since 0.5.12 default 0: when updating without $times or with 0 the current value is maintained
      */
-    public function setVar(string $name, $value, int $times = 0)
+    public function setVar(string $name, mixed $value, int $times = 0)
     {
         if (isset($this->vars[$name]) && ($var = $this->vars[$name])) {
             if ($var->value === $value) return;
@@ -223,7 +223,7 @@ class Session extends BaseLogic
                 return; // don’t update if the current value is newer
             }
         }
-        // @since 0.5.13 update immediately since __destruct has proven not to work
+        // @since 0.5.13 update immediately TODO update the vars_updated on shutdown...
         $this->vars[$name] = Help::getDB()->updateSessionVar($this->getId(), $name, (object)array('value' => $value, 'times' => $times));
         // @since 0.6.1 remember updated vars to update on the client as well
         $this->vars_updated[] = $name;
@@ -232,7 +232,7 @@ class Session extends BaseLogic
     public function delVar($name)
     {
         if (! isset($this->vars[$name])) return;
-        // @since 0.5.13 update immediately since __destruct has proven not to work
+        // @since 0.5.13 update immediately
         $this->vars[$name]->delete = true;
         if (null === Help::getDB()->updateSessionVar($this->getId(), $name, $this->vars[$name])) {
             unset($this->vars[$name]);
@@ -266,18 +266,19 @@ class Session extends BaseLogic
     public function load(bool $register_access = true): bool
     {
         // get all the stuff from the database
-        if ($s = Help::getDB()->fetchSession($this->token)) {
+        if ($session = Help::getDB()->fetchSession($this->token)) {
+            // TODO check the useragent (must be text field then) and refuse if it is different
             // get user
-            if ($s->user_id > 0) {
-                $this->user = new User($s->user_id);
+            if ($session->user_id > 0) {
+                $this->user = new User($session->user_id);
                 // this user is gone:
                 if ($this->user->getId() === 0) {
                     $this->user = null; // attention this is not auto-updated in the db for this session
                 }
             }
             // get admin
-            if ($s->admin_id > 0) {
-                $this->admin = new Admin($s->admin_id);
+            if ($session->admin_id > 0) {
+                $this->admin = new Admin($session->admin_id);
                 // if admin no longer exists
                 if ($this->admin->getId() === 0) {
                     $this->admin = null; // attention this is not auto-updated in the db for this session
@@ -286,12 +287,12 @@ class Session extends BaseLogic
                 }
             }
             // get vars
-            if (isset($s->vars)) {
-                $this->vars = $s->vars;
+            if (isset($session->vars)) {
+                $this->vars = $session->vars;
             }
-            $this->session_id = $s->session_id; // must always be present, this is NOT the token, just an int for identifying internally
+            $this->session_id = $session->session_id; // must always be present, this is NOT the token, just an int for identifying internally
             if (true === $register_access) {
-                if ($this->ip_address !== $s->ip_address) {
+                if ($this->ip_address !== $session->ip_address) {
                     Help::getDB()->registerSessionAccess($this->token, $this->ip_address);
                 } else {
                     Help::getDB()->registerSessionAccess($this->token);

@@ -2716,6 +2716,9 @@ CREATE INDEX if not exists "index_template_name" ON "public"."_template" USING b
 DROP INDEX if exists "index_template_element";
 CREATE INDEX if not exists "index_template_element" ON "public"."_template" USING btree ("element" Asc NULLS Last);
 
+ALTER TABLE _session
+    ALTER COLUMN user_agent SET DATA TYPE Text;
+
 COMMIT;
 
 -- next version: comments + ratings

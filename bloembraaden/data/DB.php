@@ -2407,9 +2407,77 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return false;
     }
 
-    public function fetchAdminSessions(int $admin_id)
+    public function deleteSessionById(int $session_id, int $user_id, int $admin_id): bool
     {
-        return $this->fetchRows('_session', array('*'), array('admin_id' => $admin_id));
+        if (0 !== $admin_id) {
+            $where = array(
+                'session_id' => $session_id,
+                'instance_id' => null,
+                'admin_id' => $admin_id,
+            );
+        } elseif (0 === $user_id) {
+            $this->addMessage('Anonymous session can not be destroyed', 'warn');
+            $where = array(
+                'session_id' => 0,
+            );
+        } else {
+            $where = array(
+                'session_id' => $session_id,
+                'instance_id' => null,
+                'user_id' => $user_id,
+            );
+        }
+
+        return 1 === $this->deleteRowWhereAndReturnAffected('_session', $where);
+    }
+
+    public function fetchAdminSessions(int $admin_id): array
+    {
+        $statement = $this->conn->prepare('
+SELECT s.session_id, s.reverse_dns, s.date_created, s.date_accessed, s.user_agent, s.deleted, i.domain, i.name, u.nickname as user_name
+FROM _session s 
+    LEFT OUTER JOIN _instance i 
+        ON s.instance_id = i.instance_id
+    LEFT OUTER JOIN _user u
+        ON u.user_id = s.user_id
+WHERE s.admin_id = :admin_id
+');
+        $statement->bindValue(':admin_id', $admin_id);
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+
+        return $this->normalizeRows($rows);
+    }
+
+    // TODO almost the same as fetchAdminSessions :-(
+    public function fetchUserSessions(int $user_id): array
+    {
+        $statement = $this->conn->prepare('
+SELECT s.session_id, s.reverse_dns, s.date_created, s.date_accessed, s.user_agent, s.deleted, i.domain, i.name, u.nickname as user_name
+FROM _session s 
+    LEFT OUTER JOIN _instance i 
+        ON s.instance_id = i.instance_id
+    LEFT OUTER JOIN _user u
+        ON u.user_id = s.user_id
+WHERE s.user_id = :user_id
+');
+        $statement->bindValue(':user_id', $user_id);
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+
+        return $this->normalizeRows($rows);
+    }
+
+    public function fetchSessionsWithoutReverseDns()
+    {
+        $statement = $this->conn->prepare('SELECT token, ip_address FROM _session WHERE reverse_dns IS NULL');
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+
+        return $this->normalizeRows($rows);
     }
 
     public function fetchSession(string $token): ?\stdClass
@@ -3370,7 +3438,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement->execute($where['values']);
         $rows = $statement->fetchAll();
         $statement = null;
-        if ($single) {
+        if (true === $single) {
             if (($count = count($rows)) === 1) {
                 return $this->normalizeRow($rows[0]);
             } else {
@@ -3667,11 +3735,12 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     private function deleteRowWhereAndReturnAffected($table_name, array $where): int
     {
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
-        $rows = $this->fetchRows($table_name, array($table->getInfo()->getIdColumn()->getName()), $where);
+        $primary_key_column = $table->getInfo()->getPrimaryKeyColumn()->getName();
+        $rows = $this->fetchRows($table_name, array($primary_key_column), $where);
         $rows_affected = 0;
         if (count($rows) > 0) {
             foreach ($rows as $key => $row) {
-                if ($this->deleteRowAndReturnSuccess($table_name, $row->id) === true) ++$rows_affected;
+                if ($this->deleteRowAndReturnSuccess($table_name, $row->$primary_key_column) === true) ++$rows_affected;
             }
         }
 
@@ -4242,6 +4311,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $row = $this->fetchRow($table_name, array('*'), array(
             $table_info->getPrimaryKeyColumn()->getName() => $key,
             'deleted' => null, // null means either value is good
+            'instance_id' => null, // null means either value is good
         ));
         if ($row === null) {
             $this->addError(sprintf('->copyRowToHistory() could not get row from %1$s with %2$s = %3$s',

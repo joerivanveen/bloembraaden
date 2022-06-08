@@ -273,6 +273,36 @@
     <!-- for admins that belong to a specific instance: -->
     <h3><a href="/__admin__/instance/{{domain}}">Edit {{name}}</a></h3>
     {%__instances__%}
+    <p>&nbsp;</p>
+    <div class="toggle">
+        <header>
+            <button class="toggle_button" alt="Open / close"></button>
+            Your sessions
+        </header>
+        <section>
+            {%__sessions__%}
+            <table>
+                <tr><td>Instance</td><td>User</td><td>Created</td><td>Last accessed</td></tr>
+                <tr><td colspan="4"><hr/></td></tr>
+                {%__row__%}
+                <tr><td>{{name:<strong>::value::</strong> {{domain}}:not:Not available}}</td><td>{{user_name}}</td><td>{{date_created}}</td><td>{{date_accessed}}</td></tr>
+                <tr><td colspan="3" style="font-size:85%;">{{reverse_dns}}: {{user_agent}}</td><td style="vertical-align: top">
+                    {{deleted:Access denied, will be removed in 5 to 10 minutes:not:
+                    <form action="/__action__/account_delete_session/{{session_id}}" class="session_destroy">
+                        <input type="submit" value="DESTROY"/>
+                    </form>
+                    }}
+                </td></tr>
+                <tr><td colspan="4"><hr/></td></tr>
+                {%__row__%}
+            </table>
+            {%__sessions__%}
+            <p style="font-size:85%;margin-top:2rem;">(Accessing with instance_id: {{instance_id}})</p>
+            <form action="/__action__/account_delete_session">
+                <input type="submit" value="LOGOUT CURRENT SESSION"/>
+            </form>
+        </section>
+    </div>
 
     <h3>Report</h3>
     {%__action__/admin_database_report%}
@@ -282,11 +312,6 @@
         {%__rows__%}
     </table>
     {%__action__/admin_database_report%}
-
-    <p style="font-size:85%;margin-top:2rem;">(Accessing with instance_id: {{instance_id}})</p>
-    <form action="/__action__/account_delete_session">
-        <input type="submit" value="LOGOUT"/> (this session only)
-    </form>
 </div>
 <p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
 </body>
