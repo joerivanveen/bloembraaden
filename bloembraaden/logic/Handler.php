@@ -116,7 +116,7 @@ class Handler extends BaseLogic
                 $session_id = (int)$terms[1];
                 $my_session = $this->getSession();
                 if ($session_id === $my_session->getId()) {
-                    $this->addMessage('You can not destroy your own session this way', 'warn');
+                    $this->addMessage(__('You can not destroy your own session this way', 'peatcms'), 'warn');
                 } elseif (true === $this->getDB()->deleteSessionById(
                         $session_id,
                         ($user = $my_session->getUser()) ? $user->getId() : 0,
@@ -127,7 +127,7 @@ class Handler extends BaseLogic
                         'destroyed_session_id' => $session_id,
                     );
                 } else {
-                    $this->addMessage('Failed destroying the session', 'error');
+                    $this->addMessage(__('Failed destroying the session', 'peatcms'), 'error');
                 }
             }
         } elseif ($action === 'payment_status_update') {
@@ -677,6 +677,14 @@ class Handler extends BaseLogic
                     if (true === isset($out)) {
                         $out['__user__'] = $user->getOutput(); // get a new user
                     }
+                }
+            } elseif ('account_delete_sessions' === $action) {
+                if ((null !== ($user = $this->getSession()->getUser()))) {
+                    $out['success'] = 0 < Help::getDB()->deleteSessionsForUser(
+                            $user->getId(),
+                            $this->getSession()->getId()
+                        );
+                    $out['__user__'] = $this->getSession()->getUser()->getOutput();
                 }
             } elseif (('update_address' === $action or 'delete_address' === $action)
                 and (true === Help::recaptchaVerify($instance, $post_data))
@@ -1437,7 +1445,8 @@ class Handler extends BaseLogic
                 // pass timestamp when available
                 if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
                 // @since 0.6.1 add any changed session vars for update on client
-                $out->session = $this->getSession()->getUpdatedVars();
+                $out->__session__ = $this->getSession()->getUpdatedVars();
+                $out->session = $this->getSession()->getUpdatedVars(); // TODO remove this backwards compatibility from 0.10.9
                 ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
                 unset($out);
@@ -1556,7 +1565,8 @@ class Handler extends BaseLogic
             }
             $out->__messages__ = Help::getMessages();
             // @since 0.6.1 add any changed session vars for update on client
-            $out->session = $this->getSession()->getUpdatedVars();
+            $out->__session__ = $this->getSession()->getUpdatedVars();
+            $out->session = $this->getSession()->getUpdatedVars(); // TODO remove this backwards compatibility from 0.10.9
             ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
             $response = gzencode(json_encode($out), 6);
             unset($out);

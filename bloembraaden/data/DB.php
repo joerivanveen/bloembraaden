@@ -2430,6 +2430,14 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
         return 1 === $this->deleteRowWhereAndReturnAffected('_session', $where);
     }
+    public function deleteSessionsForUser(int $user_id, int $own_session_id): int
+    {
+        return $this->deleteRowWhereAndReturnAffected(
+            '_session',
+            array('user_id' => $user_id),
+            array('session_id' => $own_session_id) // do not remove your own session
+        );
+    }
 
     public function fetchAdminSessions(int $admin_id): array
     {
@@ -2450,24 +2458,21 @@ WHERE s.admin_id = :admin_id
         return $this->normalizeRows($rows);
     }
 
-    // TODO almost the same as fetchAdminSessions :-(
-    public function fetchUserSessions(int $user_id): array
+    public function fetchUserSessionCount(int $user_id): int
     {
         $statement = $this->conn->prepare('
-SELECT s.session_id, s.reverse_dns, s.date_created, s.date_accessed, s.user_agent, s.deleted, i.domain, i.name, u.nickname as user_name
+SELECT COUNT(s.session_id)
 FROM _session s 
-    LEFT OUTER JOIN _instance i 
-        ON s.instance_id = i.instance_id
     LEFT OUTER JOIN _user u
         ON u.user_id = s.user_id
-WHERE s.user_id = :user_id
+WHERE s.user_id = :user_id AND s.deleted = FALSE
 ');
         $statement->bindValue(':user_id', $user_id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $count = (int)$statement->fetchColumn(0);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $count;
     }
 
     public function fetchSessionsWithoutReverseDns()
@@ -2482,14 +2487,13 @@ WHERE s.user_id = :user_id
 
     public function fetchSession(string $token): ?\stdClass
     {
-        // inner join the user for speed?
+        // NOTE sessions are by instance_id
         if (!$row = $this->fetchRow('_session', array(
             'user_id',
             'admin_id',
             'session_id',
             'ip_address',
-        ), array('token' => $token, 'instance_id' => null))) { // remove instance_id
-            // TODO session should be by instance_id, but older sessions can have 0 as instance_id
+        ), array('token' => $token))) {
             $this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
 
             return null;
@@ -3536,8 +3540,8 @@ WHERE s.user_id = :user_id
     }
 
     /**
+     * wrapper for private method updateRowsWhereAndReturnKeys
      *
-     * ‘wrapper for private method updateRowsWhereAndReturnKeys’
      * @param string $table_name
      * @param array $data
      * @param array $where
@@ -3739,14 +3743,18 @@ WHERE s.user_id = :user_id
         return ($row_count === 1);
     }
 
-    private function deleteRowWhereAndReturnAffected($table_name, array $where): int
+    private function deleteRowWhereAndReturnAffected($table_name, array $where, array $where_not = array()): int
     {
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
         $primary_key_column = $table->getInfo()->getPrimaryKeyColumn()->getName();
-        $rows = $this->fetchRows($table_name, array($primary_key_column), $where);
+        $columns_to_select = array_merge(array($primary_key_column), array_keys($where_not));
+        $rows = $this->fetchRows($table_name, $columns_to_select, $where);
         $rows_affected = 0;
         if (count($rows) > 0) {
             foreach ($rows as $key => $row) {
+                foreach ($where_not as $where => $not) {
+                    if (isset($row->$where) && $row->$where === $not) continue 2;
+                }
                 if ($this->deleteRowAndReturnSuccess($table_name, $row->$primary_key_column) === true) ++$rows_affected;
             }
         }

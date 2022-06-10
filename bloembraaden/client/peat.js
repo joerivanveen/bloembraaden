@@ -54,17 +54,16 @@ document.addEventListener('peatcms.form_posted', function (e) {
                         PEAT.setSessionVar('shipping_address', user.__addresses__[0]);
                         PEAT.setSessionVar('billing_address', user.__addresses__[0]);
                     }
+                } else {
+                    PEAT.session = {}; // todo this is a terrible shortcut, we assume current user logged out
                 }
                 // produce an event with relevant details to catch
-                document.dispatchEvent(new CustomEvent('peatcms.account_status_changed', {
+                form.dispatchEvent(new CustomEvent('peatcms.account_status_changed', {
                     bubbles: true,
                     detail: {
                         is_account: is_account,
                     }
                 }));
-            }
-            if (action.indexOf('/account_delete_session') !== -1) {
-                PEAT.session = {}; // todo this is a terrible shortcut
             }
         }
     }
@@ -1169,8 +1168,8 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 // @since 0.6.1 update session variables that were changed on the server
-                if (true === data.hasOwnProperty('session')) {
-                    obj = data.session;
+                if (true === data.hasOwnProperty('__session__')) {
+                    obj = data['__session__'];
                     for (i in obj) {
                         if (obj.hasOwnProperty(i)) PEAT.updateSessionVarClientOnly(i, obj[i]);
                     }
