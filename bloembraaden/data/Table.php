@@ -212,6 +212,9 @@ class Table extends Base
 
     private function isValid(Column $col, $value): bool
     {
+        if (null === $value) {
+            return $col->isNullable();
+        }
         $col_type = $col->getType();
         $col_name = $col->getName();
         if ($col_type === 'boolean') {
