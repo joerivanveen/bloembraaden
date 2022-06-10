@@ -2707,17 +2707,20 @@ BEGIN;
 
 /* template retrieval is relatively slow and used a lot, optimize the table for reading a bit more */
 
-DROP INDEX if exists "index_template_instance_id";
-CREATE INDEX if not exists "index_template_instance_id" ON "public"."_template" USING btree ("instance_id" Asc NULLS Last);
+DROP INDEX if exists "index__template_instance_id";
+CREATE INDEX if not exists "index__template_instance_id" ON "public"."_template" USING btree ("instance_id" Asc NULLS Last);
 
-DROP INDEX if exists "index_template_name";
-CREATE INDEX if not exists "index_template_name" ON "public"."_template" USING btree ("name" Asc NULLS Last);
+DROP INDEX if exists "index__template_name";
+CREATE INDEX if not exists "index__template_name" ON "public"."_template" USING btree ("name" Asc NULLS Last);
 
-DROP INDEX if exists "index_template_element";
-CREATE INDEX if not exists "index_template_element" ON "public"."_template" USING btree ("element" Asc NULLS Last);
+DROP INDEX if exists "index__template_element";
+CREATE INDEX if not exists "index__template_element" ON "public"."_template" USING btree ("element" Asc NULLS Last);
 
 ALTER TABLE _session
     ALTER COLUMN user_agent SET DATA TYPE Text;
+
+DROP INDEX if exists "index__shoppinglist_user_id";
+CREATE INDEX if not exists "index__shoppinglist_user_id" ON "public"."_shoppinglist" USING btree ("user_id" Asc NULLS Last);
 
 COMMIT;
 

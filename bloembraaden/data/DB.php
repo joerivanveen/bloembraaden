@@ -2805,8 +2805,11 @@ WHERE s.user_id = :user_id
      */
     public function jobDeleteOrphanedShoppinglistVariants(): int
     {
+//        $statement = $this->conn->prepare('
+//            DELETE FROM _shoppinglist_variant WHERE shoppinglist_id NOT IN (SELECT shoppinglist_id FROM _shoppinglist);
+//        ');
         $statement = $this->conn->prepare('
-            DELETE FROM _shoppinglist_variant WHERE shoppinglist_id NOT IN (SELECT shoppinglist_id FROM _shoppinglist);
+            DELETE FROM _shoppinglist_variant v WHERE NOT EXISTS(SELECT 1 FROM _shoppinglist l WHERE l.shoppinglist_id = v.shoppinglist_id);
         ');
         $statement->execute();
         $affected = $statement->rowCount();
@@ -2820,8 +2823,11 @@ WHERE s.user_id = :user_id
      */
     public function jobDeleteOrphanedSessionVars(): int
     {
+//        $statement = $this->conn->prepare('
+//            DELETE FROM _sessionvars WHERE session_id NOT IN (SELECT session_id FROM _session);
+//        ');
         $statement = $this->conn->prepare('
-            DELETE FROM _sessionvars WHERE session_id NOT IN (SELECT session_id FROM _session);
+            DELETE FROM _sessionvars v WHERE NOT EXISTS(SELECT 1 FROM _session s WHERE session_id = v.session_id);
         ');
         $statement->execute();
         $affected = $statement->rowCount();
@@ -3167,8 +3173,11 @@ WHERE s.user_id = :user_id
 
     public function jobDeleteOrphanedLists(): int
     {
+//        $statement = $this->conn->prepare('
+//            DELETE FROM _shoppinglist WHERE user_id = 0 AND session_id NOT IN (SELECT session_id FROM _session);
+//        ');
         $statement = $this->conn->prepare('
-            DELETE FROM _shoppinglist WHERE user_id = 0 AND session_id NOT IN (SELECT session_id FROM _session);
+            DELETE FROM _shoppinglist l WHERE l.user_id = 0 AND NOT EXISTS(SELECT 1 FROM _session s WHERE s.session_id = l.session_id);
         ');
         $statement->execute();
         $affected = $statement->rowCount();
@@ -3244,8 +3253,6 @@ WHERE s.user_id = :user_id
     }
 
     /**
-     *
-     *
      * @param int $session_id
      * @param string $name the name of the var
      * @param \stdClass $var must hold ->value and ->times, optional ->delete will remove it

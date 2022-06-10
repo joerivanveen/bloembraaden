@@ -719,16 +719,15 @@ if ('1' === $interval) { // interval should be '1'
 } elseif ('daily' === $interval) {
     $trans->start('clean template folder');
     echo $db->jobCleanTemplateFolder() . PHP_EOL;
-    // @since 0.8.9
-    $trans->start('remove old sessions and shoppinglists');
-    echo $db->jobDeleteOldSessions() . ' and ';
-    echo $db->jobDeleteOrphanedLists() . PHP_EOL;
-    // @since 0.7.9 remove orphaned list variants
-    $trans->start('remove orphaned shoppinglist rows (variants)');
-    echo $db->jobDeleteOrphanedShoppinglistVariants() . PHP_EOL;
-    // @since 0.8.9
+    // @since 0.7.9 & 0.8.9
+    $trans->start('remove old sessions');
+    echo $db->jobDeleteOldSessions() . PHP_EOL;
+    $trans->start('remove old shoppinglists');
     $trans->start('remove orphaned session variables');
     echo $db->jobDeleteOrphanedSessionVars() . PHP_EOL;
+    echo $db->jobDeleteOrphanedLists() . PHP_EOL;
+    $trans->start('remove orphaned shoppinglist rows (variants)');
+    echo $db->jobDeleteOrphanedShoppinglistVariants() . PHP_EOL;
     // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
     $trans->start('refresh instagram access token');
     // @since 0.7.2
