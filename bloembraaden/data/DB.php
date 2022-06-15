@@ -4324,9 +4324,9 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         if (in_array($table_name = $table_info->getTableName(), $this->tables_without_history)) return null;
         // ok continue
         $row = $this->fetchRow($table_name, array('*'), array(
-            $table_info->getPrimaryKeyColumn()->getName() => $key,
             'deleted' => null, // null means either value is good
-            'instance_id' => null, // null means either value is good
+            'instance_id' => null, // will be overwritten by next line if the $key column is actually instance_id
+            $table_info->getPrimaryKeyColumn()->getName() => $key,
         ));
         if ($row === null) {
             $this->addError(sprintf('->copyRowToHistory() could not get row from %1$s with %2$s = %3$s',
