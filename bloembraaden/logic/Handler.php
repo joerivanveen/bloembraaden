@@ -1624,7 +1624,7 @@ class Handler extends BaseLogic
                 $temp->renderConsole($out);
             }
             // set content security policy header (CSP), which can differ between instances
-            $csp = "frame-ancestors 'none';default-src 'self' https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://www.google-analytics.com; img-src 'self' blob: " . Setup::$CDNROOT . " www.googletagmanager.com https://www.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $csp = "frame-ancestors 'none';default-src 'self' https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.google-analytics.com; img-src 'self' blob: " . Setup::$CDNROOT . " *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             // TODO make it flexible using settings for the instance
             header(sprintf('Content-Security-Policy: %s', $csp), true);
             unset($out);
