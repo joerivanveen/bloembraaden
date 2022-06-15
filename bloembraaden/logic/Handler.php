@@ -412,7 +412,7 @@ class Handler extends BaseLogic
                 $src = new Search();
                 // terms can be passed als query string ?terms=term1,term2 etc in the complex tag, as can limit
                 $props = $this->resolver->getProperties();
-                $limit = isset($props['limit']) ? $props['limit'][0] : 8;
+                $limit = isset($props['limit']) ? (int) $props['limit'][0] : 8;
                 $terms = $props['terms'] ?? array();
                 $type_name = $props['type'][0] ?? $post_data->type ?? 'variant';
                 // TODO base it on taxonomy, properties, crosslinked items and stuff
