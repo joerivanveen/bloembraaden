@@ -2152,7 +2152,7 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
                 j.setAttribute('nonce', window.PEATCMS_globals.nonce);
                 f.parentNode.insertBefore(j, f);
             })(window, document, 'script', 'dataLayer', google_tracking_id);
-        } else if (google_tracking_id.indexOf('G-') === 0 || google_tracking_id.indexOf('UA-') === 0) {
+        } else if (google_tracking_id.indexOf('G-') === 0) {
             if (VERBOSE) console.log('Setting up Google analytics gtag with id: ' + google_tracking_id);
             // setup datalayer and MANDATORY gtag function
             window.dataLayer = window.dataLayer || [];
@@ -2160,13 +2160,25 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
                 dataLayer.push(arguments);
             }
             gtag('js', new Date());
-            gtag('config', google_tracking_id, {'send_page_view': false}); // pageview is sent after render()
+            gtag('config', google_tracking_id, {'send_page_view': false}); // pageview is sent on navigation_end
+
+            function do_the_doodoo() {
+                if (NAV.is_navigating) return;
+                if (VERBOSE) console.log('gtag: page_view', decodeURI(document.location.href));
+                gtag('event', 'page_view', {
+                    page_title: document.title,
+                    page_location: decodeURI(document.location.href)
+                });
+            }
+
             // load the gtag script, nonce is necessary because of CSP
             var script = document.createElement('script');
             document.head.appendChild(script);
             script.setAttribute('nonce', window.PEATCMS_globals.nonce);
             script.id = 'google_gtag';
+            //script.addEventListener('load', do_the_doodoo);
             script.src = 'https://www.googletagmanager.com/gtag/js?id=' + google_tracking_id;
+            document.addEventListener('peatcms.navigation_end', do_the_doodoo);
         } else {
             console.error(google_tracking_id + ' not recognized as a Google tracking id');
         }
@@ -2419,25 +2431,8 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
             }
         }
         new_nodes = null; // prevent memory leaks
-        // TODO the vw->px convertor doesn't work if you activate edit without a proper template present
-        // add new body content before admin_console, when present
-        //document.body.insertAdjacentHTML('afterbegin', template.getInnerHtml('body', html));
         this.ajaxifyDOMElements();
-        if (typeof CMS_admin === 'undefined') {
-            // track page view https://developers.google.com/analytics/devguides/collection/gtagjs/pages
-            // document status is rendering here, you can track the page view only ONCE on complete
-            this.addEventListener('peatcms.document_complete', function () {
-                if (typeof gtag === 'function') {
-                    if (VERBOSE) console.log('Sending page view to Google for ‘' + out.slug + '’');
-                    gtag('event', 'page_view', {
-                        page_title: self.title,
-                        page_path: '/' + out.slug,
-                        //send_to: self.google_tracking_id, // should be omitted according to Google
-                        //page_location: window.location.href, // tentative don’t know if that will work
-                    });
-                }
-            }, true);
-        } else {
+        if (typeof CMS_admin !== 'undefined') {
             // hide the edit buttons when current element is not editable (admin cannot use IE)
             document.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(function (el) {
                 el.setAttribute('data-disabled', (element.isEditable()) ? '0' : '1');
@@ -3062,12 +3057,12 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                         }
                         PEAT.render(el, function (el) {
                             if (VERBOSE) console.log('Finished rendering ' + title);
-                            document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                             self.is_navigating = false;
+                            document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                         });
                     } catch (e) {
-                        document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                         self.is_navigating = false;
+                        document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                     }
                 }
             });
