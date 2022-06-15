@@ -217,7 +217,7 @@ class Resolver extends BaseLogic
                             $slug = '__order__/' . $this->getTerms()[0];
                         } else {
                             // all the orders (with paging)
-                            $page = $this->getProperties()['page'][0] ?? 1;
+                            $page = (int) ($this->getProperties()['page'][0] ?? 1);
                             $page_size = 250;
                             $peat_type = new Type('order');
                             $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
