@@ -52,6 +52,7 @@ class Mailer extends Base
                 'Content-Type: application/json'
             ));
             curl_setopt($curl, CURLOPT_POST, true);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         } elseif ($this->active_provider === 'mailgun') {
             curl_setopt($curl, CURLOPT_URL, $this->api_url . $custom_domain . '/messages');
             curl_setopt($curl, CURLOPT_USERPWD, 'api:' . $this->api_key);
@@ -183,7 +184,7 @@ class Mailer extends Base
         $result = curl_exec($this->curl);
         //
         $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE); //get status code
-        $return_value = json_decode($result);
+        $return_value = is_string($result) ? json_decode($result) : $result;
         if (json_last_error() === JSON_ERROR_NONE) {
             // mailchimp / mandrill sends the object in an array...
             if ($this->active_provider === 'mailchimp') {
