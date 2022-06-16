@@ -244,7 +244,7 @@ class Table extends Base
                 }
                 return true;
             }
-        } elseif (strlen($value) > $col->getLength()) {
+        } elseif (strlen((string)$value) > $col->getLength()) {
             $this->addValidationError($col_name, var_export($value, true), 'would be truncated');
 
             return false;
