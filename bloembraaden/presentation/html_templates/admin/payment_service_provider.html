@@ -20,7 +20,6 @@
                                          data-table_name="_payment_service_provider" data-handle="update_column"
                                          data-value="{{provider_name}}">
         <option hidden>choose:</option>
-        <option value="payvision">Payvision</option>
         <option value="mollie">Mollie</option>
     </select>
     </div>
@@ -36,7 +35,8 @@
         <textarea data-peatcms-fields="1" class="PEATCMS_editable" data-column_name="field_values"
                   data-table_name="_payment_service_provider" data-handle="update_column">{{fields}}</textarea>
     </section>
-    <button class="delete">DELETE</button>
+    <input type="button" class="PEATCMS_editable delete" data-table_name="_payment_service_provider"
+           data-peatcms_handle="delete_row" value="DELETE" data-confirm="Delete this PSP?"/>
     <p style="font-size:85%;margin-top:2rem;">(Accessing with instance_id: {{instance_id}})</p>
 </div>
 <p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>

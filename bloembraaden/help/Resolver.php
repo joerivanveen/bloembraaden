@@ -331,7 +331,7 @@ class Resolver extends BaseLogic
                     // get payment service provider for instance (this is a factory...)
                     if (isset($terms[1]) && $id = (int)$terms[1]) {
                         if (($row = Help::getDB()->getPaymentServiceProviderRow($id, null))) {
-                            if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
+                            if (isset($row->provider_name) && class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                                 $element = new $class_name($row);
                             } else {
                                 $element = new PaymentServiceProvider($row); // for admin the neutral version is allowed
