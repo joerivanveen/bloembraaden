@@ -725,12 +725,17 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function addXValueLink(Type $peat_type, int $id, int $property_id, int $property_value_id): \stdClass
     {
-        $key = $this->insertRowAndReturnKey(
-            $peat_type->tableName() . '_x_properties',
+        $x_table_name = $peat_type->tableName() . '_x_properties';
+
+        $o = $this->getHighestO($x_table_name);
+
+        $key = $this->insertRowAndReturnLastId(
+            $x_table_name,
             array(
-                $peat_type->typeName() . '_id' => $id,
+                $peat_type->idColumn() => $id,
                 'property_id' => $property_id,
-                'property_value_id' => $property_value_id
+                'property_value_id' => $property_value_id,
+                'o' => $o
             )
         );
 
@@ -1785,6 +1790,22 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         }
 
         return null;
+    }
+
+
+    /**
+     * @param string $table_name
+     * @return int
+     * @since 0.10.10
+     */
+    private function getHighestO(string $table_name): int
+    {
+        $statement = $this->conn->prepare('SELECT MAX (o) FROM ' . $table_name);
+        $statement->execute();
+        $o = (int)$statement->fetchColumn(0);
+        $statement = null;
+
+        return min(32766, $o) + 1;
     }
 
     /**
