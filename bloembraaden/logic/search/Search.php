@@ -1,12 +1,9 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class Search extends BaseElement
 {
-    // TODO : cache the suggest queries!
     protected bool $admin = false;
     protected int $result_count = 0;
 
@@ -14,8 +11,6 @@ class Search extends BaseElement
     {
         parent::__construct($row);
         $this->type_name = 'search';
-        // there may not be any _search_settings entries, so you may not have any settings
-        // setup row if not done automatically
         if (null === $this->row) $this->row = new \stdClass;
     }
 
@@ -55,11 +50,11 @@ class Search extends BaseElement
         }
         unset($rows);
         // set the url TODO use the slug of the search function only when not default?
-        if (isset($this->row->slug)) {
-            $this->row->slug .= '/' . implode('/', $terms);
-        } else {
-            $this->row->slug = implode('/', $terms);
-        }
+//        if (isset($this->row->slug)) {
+//            $this->row->slug .= '/' . implode('/', $terms);
+//        } else {
+        $this->row->slug = implode('/', $terms);
+//        }
         $this->row->title = htmlentities(implode(' ', $terms));
         $this->log($terms, $this->row->item_count);
     }
@@ -137,12 +132,10 @@ class Search extends BaseElement
     private function getAllVariantIds(array $terms, array $properties): array
     {
         if (0 === count($terms)) return array();
-        // probably when one term is present this is a property or a property_value, it can also be search
+        // probably when one term is present this is a property or a property_value
         if (1 === count($terms)) {
             if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0]))) {
-                if ('search' !== $row->type) {
-                    return Help::getDB()->fetchAllVariantIdsFor($row->type, $row->id, $properties);
-                }
+                return Help::getDB()->fetchAllVariantIdsFor($row->type, $row->id, $properties);
             }
         }
         // use ->findElements
@@ -162,16 +155,6 @@ class Search extends BaseElement
     public function setForAdmin()
     {
         $this->admin = true;
-    }
-
-    /**
-     * @param array $terms
-     * @return array
-     * @deprecated use normal search functionality please
-     */
-    public function suggestTitles(array $terms): array
-    {
-        return Help::getDB()->findTitles($terms);
     }
 
     /**
@@ -306,7 +289,7 @@ class Search extends BaseElement
     {
         if (true === $this->admin) {
             Help::prepareAdminRowForOutput($this->row, 'search_settings', (string)$this->getId());
-             $this->row->template_id = null;
+            $this->row->template_id = null;
             // load the stopwords and alternatives
             // TODO use a meaningful order, maybe in javascript...
             if (($rows = Help::getDB()->fetchSearchAlternatives($this->getId()))) {
@@ -342,13 +325,11 @@ class Search extends BaseElement
         $this->result_count = $quantity;
 
         return; // @since 0.8.10 no logging since we’re not using it anyway yet
-        if (($search_settings_id = $this->getId())) {
-            Help::getDB()->insertRowAndReturnKey('_search_log', array(
-                'search' => implode(', ', $terms),
-                'results' => $quantity,
-                'search_settings_id' => $search_settings_id,
-                'instance_id' => Setup::$instance_id,
-            ));
-        }
+
+        Help::getDB()->insertRowAndReturnKey('_search_log', array(
+            'search' => implode(', ', $terms),
+            'results' => $quantity,
+            'instance_id' => Setup::$instance_id,
+        ));
     }
 }

@@ -239,53 +239,6 @@ class DB extends Base
     }
 
     /**
-     * @param array $terms
-     * @return array
-     * @since 0.6.x
-     */
-    public function findTitles(array $terms): array
-    {
-        $all = array(); // todo cache these results? it’s terrible to have to fetch these all the time
-        foreach (array('cms_variant', 'cms_page', 'cms_product') as $table_index => $table_name) {
-            $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
-            $price_column = ($table_name === 'cms_variant') ? 'price' : 'NULL'; // @since 0.7.9 get the price as well if applicable
-            $order_column = 'date_updated';
-            if ($table_name === 'cms_variant') $order_column = 'date_popvote';
-            if ($table_name === 'cms_page') $order_column = 'date_published';
-            $statement = $this->conn->prepare('SELECT slug, title, \'' . $table_name . '\' AS table_name, ' .
-                $price_column . ' AS price FROM ' . $table_name .
-                ' WHERE instance_id = :instance_id AND deleted = FALSE AND online = TRUE AND ci_ai LIKE :term' .
-                ' ORDER BY ' . $order_column . ' DESC LIMIT 8;');
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            foreach ($terms as $index => $term) {
-                if ('' === $term) continue;
-                $rows = array();
-                $term = '%' . Help::removeAccents($this->toLower($term)) . '%';
-                $statement->bindValue(':term', $term);
-                $statement->execute();
-                foreach ($temp = $statement->fetchAll() as $index_row => $row) {
-                    $rows[$row['slug']] = $row;
-                }
-                unset ($temp);
-                $arr[$term] = $rows;
-            }
-            $intersected = null;
-            foreach ($arr as $index => $term) {
-                if (null === $intersected) {
-                    $intersected = $term;
-                } else {
-                    $intersected = array_intersect_key($term, $intersected);
-                }
-            }
-            $all = array_merge($all, $intersected);
-            $statement = null;
-        }
-        if (count($all) > 8) array_splice($all, 8);
-
-        return $this->normalizeRows(array_values($all));
-    }
-
-    /**
      * @param array $properties
      * @param string $cms_type_name
      * @return array sub queries that filter the type based on the properties
@@ -570,8 +523,6 @@ class DB extends Base
                 SELECT property_id AS id, \'property\' AS type FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
                 SELECT property_value_id AS id, \'property_value\' AS type FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 
-                UNION ALL 
-                SELECT search_settings_id AS id, \'search\' AS type FROM _search_settings WHERE slug = :slug AND instance_id = :instance_id 
                 ;
             ');
             $statement->bindValue(':slug', $slug);

@@ -2724,6 +2724,21 @@ CREATE INDEX if not exists "index__shoppinglist_user_id" ON "public"."_shoppingl
 
 COMMIT;
 
+-- version 0.10.10
+
+BEGIN;
+
+DROP TABLE IF EXISTS _search_stopwords;
+
+DROP TABLE IF EXISTS _search_settings;
+
+ALTER TABLE _search_log
+    DROP COLUMN IF EXISTS search_settings_id;
+
+COMMIT;
+
+
+
 -- next version: comments + ratings
 
 
