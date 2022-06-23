@@ -861,7 +861,7 @@ class Handler extends BaseLogic
                     // TODO integrate updateRef fully into $element->update routine (class BaseElement)
                     if ($element = $this->getElementById($post_data->element, $post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            if ($arr = $element->updateRef($post_data->update_column_name, $post_data->update_column_value)) {
+                            if ($arr = $element->updateRef($post_data->update_column_name, (string) $post_data->update_column_value)) {
                                 if ($element = $this->updateElement($post_data->element, $arr, $post_data->id)) {
                                     $out = $element->row;
                                 } else {
