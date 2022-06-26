@@ -410,9 +410,9 @@ class Parser extends Base
                         if (false === $command['new_line'] || $text[$pointer - 1] === "\n") {
                             // also check if the tags are in the right position when required by allow_space
                             if (true === $command['allow_space'] ||
-                            false === $command['allow_space'] &&
                             ($command['tag'] === $this->getOpenTag()) ?
-                                $text[$pointer - 1] !== ' ' : $text[$pointer + 1] !== ' '
+                                 $text[$pointer - 1] !== ' ' :
+                                ($pointer + 1 < $this->len && $text[$pointer + 1] !== ' ')
                             ) {
                                 $this->log('<strong>found sig</strong>: ' . var_export($sig, true) . ' at: ' . $this->pointer);
                                 unset ($text);
