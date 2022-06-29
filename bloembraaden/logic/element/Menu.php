@@ -49,7 +49,7 @@ class Menu extends BaseElement
     {
         // menu uses an admin template
         $this->row->template_pointer = (object)Array('name' => 'menu', 'admin' => true);
-        // get the children as well TODO caching
+        // get the children as well
         $this->row->__menu__ = array(
             '__item__' => ($menu_items = Help::getDB()->fetchMenuItems($this->getId())),
         );

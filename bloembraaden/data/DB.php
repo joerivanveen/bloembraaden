@@ -2616,7 +2616,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     }
 
     // TODO regarding the menus you (also) need to take into account online and deleted flags
-    public function fetchMenuItems(int $menu_or_menu_item_id, int $nested_level = 0): array
+    public function fetchMenuItems(int $menu_id, int $menu_item_id = 0, int $nested_level = 0): array
     {
         $items = array();
         // for nested_level 0 you get the subitems by menu_id, higher levels are subitems from subitems (obviously)
@@ -2625,14 +2625,16 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                 'FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu x ON i.menu_item_id = x.sub_menu_item_id ' .
                 'WHERE x.menu_id = ? AND i.deleted = FALSE AND x.deleted = FALSE ' .
                 'ORDER BY x.o');
-        } else { // higher levels, get the items by menu_item_id
+            $parameters = array($menu_id);
+        } else { // higher levels, get the items by menu_item_id, for the specific menu_id
             $statement = $this->conn->prepare('SELECT i.menu_item_id, i.act, i.title, i.css_class, i.content, i.online ' .
                 'FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu_item x ON i.menu_item_id = x.sub_menu_item_id ' .
-                'WHERE x.menu_item_id = ? AND i.deleted = FALSE AND x.deleted = FALSE ' .
+                'WHERE x.menu_id = ? AND x.menu_item_id = ? AND i.deleted = FALSE AND x.deleted = FALSE ' .
                 'ORDER BY x.o');
+            $parameters = array($menu_id, $menu_item_id);
         }
         try {
-            $statement->execute(array($menu_or_menu_item_id));
+            $statement->execute($parameters);
         } catch (\Exception $e) {
             $statement = null;
             $this->handleErrorAndStop($e);
@@ -2658,10 +2660,12 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                 //if (isset($act->slug)) $row->slug = $act->slug;
             } catch (\Exception $e) {
             }
-            if ($sub_items = $this->fetchMenuItems($row->menu_item_id, $nested_level)) {
+            if (($sub_items = $this->fetchMenuItems($menu_id, $row->menu_item_id, $nested_level))) {
                 $row->__menu__ = array('__item__' => $sub_items);
+                $row->item_count = count($sub_items);
+                $row->item_index = $key;
             }
-            $row->nested_level = $nested_level;
+            $row->nest_level = $nested_level;
             $items[] = $row;
         }
 
@@ -2684,7 +2688,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         }
 
         return $menus;
-        // TODO cache these somewhere in the db so they are retrieved as a plain text blob of json, probably much faster than going over the rows every time
     }
 
     /**

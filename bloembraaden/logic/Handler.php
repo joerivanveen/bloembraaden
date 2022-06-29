@@ -1085,6 +1085,9 @@ class Handler extends BaseLogic
                                 /** @noinspection PhpPossiblePolymorphicInvocationInspection */ /* we just checked it's a menu */
                                 if (true === $menu->putItem($post_data->dropped_menu_item_id, $post_data->menu_item_id, $post_data->command)) {
                                     $out = $menu->getOutput();
+                                    if (false === Help::getDB()->reCacheWithWarmup($menu->getPath())) {
+                                        Help::addMessage('Cache update of the menu failed', 'warn');
+                                    }
                                 } else {
                                     $this->addError('Could not put item in menu');
                                     $out = true;
