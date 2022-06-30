@@ -11,7 +11,7 @@
 </header>
 <div class="page_content PEATCMS_admin">
     {%__order__%}
-    <h1><a href="/__order__">◀ Orders overview</a></h1>
+    <h1><a href="/__order__">&#x25C0; Orders overview</a></h1>
     <h2>{{order_number_human}} (€ {{amount_grand_total}})</h2>
     <!--<h3>TEST: {{payment_afterwards}} {{payment_afterwards_captured}} {{payment_transaction_id}}</h3>
     <p>{{payment_tracking_id}} {{payment_tracking_text}}
@@ -20,7 +20,7 @@
         <header data-done="{{emailed_order_confirmation_success}}">
             <button class="toggle_button" alt="Open / close"></button>
             {{emailed_order_confirmation:Order confirmation:not:Wait for order confirmation}}
-            {{emailed_order_confirmation_success:✔:not:×}}
+            {{emailed_order_confirmation_success:&#x2713;:not:×}}
         </header>
         <section>
             <textarea class="code">{{emailed_order_confirmation_response}}</textarea>
@@ -29,7 +29,7 @@
     <div class="toggle">
         <header data-done="{{payment_confirmed_bool}}">
             <button class="toggle_button" alt="Open / close"></button>
-            {{payment_confirmed_bool:Paid ✔:not:Not paid}}
+            {{payment_confirmed_bool:Paid &#x2713;:not:Not paid}}
             {{payment_sequential_number:<a target="_blank" href="/__action__/invoice/order_number:{{order_number}}">Invoice: ::value::</a>}}
             {{payment_live_flag::not:(test)}}
             {{payment_confirmed_bool::not:<button id="payment_link" data-href="/__action__/pay/order_number:{{order_number}}">Payment link</button>}}
@@ -53,7 +53,7 @@
         <header data-done="{{emailed_payment_confirmation_success}}">
             <button class="toggle_button" alt="Open / close"></button>
             {{emailed_payment_confirmation:Payment confirmation:not:Wait for payment confirmation}}
-            {{emailed_payment_confirmation_success:✔:not:×}}
+            {{emailed_payment_confirmation_success:&#x2713;:not:×}}
         </header>
         <section>
             <textarea class="code">{{emailed_payment_confirmation_response}}</textarea>

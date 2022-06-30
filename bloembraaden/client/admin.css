@@ -49,7 +49,7 @@
 }
 
 #PEATCMS_admin_page .toggle .toggle_button:after {
-    content: '▶';
+    content: '\25B6';
     font-weight: bold;
     display: inline-block;
 }
@@ -158,7 +158,7 @@
 
 .template.published:after,
 #peatcms_publish.published:before {
-    content: '✔';
+    content: '\2713';
     color: rgb(0, 180, 20);
     font-weight: bold;
     margin-left: .2em;
