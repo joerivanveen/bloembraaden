@@ -4,11 +4,6 @@ declare(strict_types = 1);
 
 namespace Peat;
 
-// if there's one entry in route, just look for that exact match anywhere in slugs
-// if there's two this can be a property name/value (rather unlikely) or brand/series (or anything else really)
-// or two or more: brand/series/product or brand/series/variant or brand/series/variant/productcode
-// or it can be a filter by property: brand/name/value or even brand/series/name/value etc. etc.
-// or even multiple properties name/value/name/value etc. (all items made of wood that are red for instance)
 // there are a couple of standard commands that differ from normal handling:
 // - __admin__
 // - __action__
@@ -63,12 +58,12 @@ class Resolver extends BaseLogic
             }));
         }
         // 0.5.3 / if you change this, check if the templates can still be saved
-        $this->post_data = json_decode(file_get_contents('php://input'));
+        $this->post_data = json_decode(file_get_contents('php://input'), false);
         if (json_last_error() === JSON_ERROR_NONE) {
             $output_json = true; // $this->post_data->json; <- if you receive json you can bet it wants json back
-        } else {
-            $this->post_data = (object)json_decode(json_encode($_POST)); // assume form data
-            if (isset($_POST['json']) and $_POST['json'] === '1') {
+        } else { // this is at least used when files are uploaded and for the login page __admin__
+            $this->post_data = (object)filter_input_array(INPUT_POST); // assume form data
+            if (isset($this->post_data->json) and true === $this->post_data->json) {
                 $output_json = true;
             } else {
                 $output_json = false;

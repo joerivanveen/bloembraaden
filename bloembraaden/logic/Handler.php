@@ -1431,7 +1431,7 @@ class Handler extends BaseLogic
             } elseif ($action === 'reflect') {
                 $out = $post_data;
             }
-        } elseif (count(get_object_vars($post_data)) > 1) { // only add the error if you're not just asking for json
+        } elseif (null !== $post_data && count(get_object_vars($post_data)) > 1) { // only add the error if you're not just asking for json
             $this->addMessage(sprintf(__('%s check failed, please refresh browser', 'peatcms'), 'CSRF'), 'warn');
         }
         if ($out !== null) {
