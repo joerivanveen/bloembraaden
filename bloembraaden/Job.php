@@ -357,6 +357,7 @@ if ('1' === $interval) { // interval should be '1'
             }
             $result = curl_exec($curl);
             //$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
+            if (false === $result) continue;
             $media = json_decode($result);
             if (json_last_error() === JSON_ERROR_NONE) {
                 if (isset($media->media)) $media = $media->media; // apparently this goes in and out at instagram?!
