@@ -25,14 +25,14 @@
         <section>
             <div><label>Instance {{id}}:</label><input type="text" class="PEATCMS_editable" data-column_name="name"
                                                        data-table_name="{{table_name}}"
-                                                       value="{{name|enquote}}" data-peatcms_handle="update_column"/></div>
+                                                       value="{{name|enquote}}" data-peatcms_handle="update_column"/>
+            </div>
             <div><label>Canonical:</label><input type="text" class="PEATCMS_editable" data-column_name="domain"
                                                  data-table_name="{{table_name}}"
                                                  value="{{domain}}" data-handle="update_column"/> <a
                     href="//{{domain}}">Go!</a></div>
-            <div><label>Date published:</label><input type="text" class="PEATCMS_editable" data-column_name="date_published"
-                                                       data-table_name="{{table_name}}"
-                                                       value="{{date_published}}" data-peatcms_handle="update_column"/></div>
+            <div><label>Date published:</label><span>{{date_published}}</span>
+            </div>
             <!--<div><input type="button" class="PEATCMS_editable delete" style="float:right;" value="🗑"
                         data-table_name="_instance" data-peatcms_handle="delete_row" data-confirm="Delete {{name}}?"/>
             </div>-->
@@ -65,15 +65,18 @@
                 <div><label>Admin:</label><input type="text" class="PEATCMS_editable"
                                                  data-column_name="presentation_admin"
                                                  data-table_name="{{table_name}}"
-                                                 value="{{presentation_admin|enquote}}" data-handle="update_column"/></div>
+                                                 value="{{presentation_admin|enquote}}" data-handle="update_column"/>
+                </div>
                 <div><label>Theme:</label><input type="text" class="PEATCMS_editable"
                                                  data-column_name="presentation_theme"
                                                  data-table_name="{{table_name}}"
-                                                 value="{{presentation_theme|enquote}}" data-handle="update_column"/></div>
+                                                 value="{{presentation_theme|enquote}}" data-handle="update_column"/>
+                </div>
                 <div><label>Instance:</label><input type="text" class="PEATCMS_editable"
                                                     data-column_name="presentation_instance"
                                                     data-table_name="{{table_name}}"
-                                                    value="{{presentation_instance|enquote}}" data-handle="update_column"/>
+                                                    value="{{presentation_instance|enquote}}"
+                                                    data-handle="update_column"/>
                 </div>
             </section>
         </div>
@@ -188,7 +191,7 @@
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="mailgun_custom_domain"
                            data-table_name="{{table_name}}"
-                           placeholder="Validated domain Mailgun uses"
+                           placeholder="Verified domain Mailgun uses"
                            value="{{mailgun_custom_domain}}"
                            data-handle="update_column"/>
                 </div>
@@ -196,7 +199,7 @@
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="mail_verified_sender"
                            data-table_name="{{table_name}}"
-                           placeholder="Valid email address as default sender"
+                           placeholder="Verified email address as default sender"
                            value="{{mail_verified_sender}}"
                            data-handle="update_column"/>
                 </div>
@@ -217,17 +220,18 @@
         <div class="toggle">
             <header>
                 <button class="toggle_button" alt="Open / close"></button>
-                Keys and identifiers
+                Google services
             </header>
             <section>
-                <h3>Google analytics:</h3>
+                <p class="info">You must display a cookie banner and the recaptcha disclaimer when you use it.</p>
+                <h3>Analytics:</h3>
                 <div><label>GA-4 or GTM id:</label>
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="google_tracking_id"
                            data-table_name="_instance" value="{{google_tracking_id}}"
                            data-peatcms_handle="update_column"/>
                 </div>
-                <h3>Google recaptcha V3:</h3>
+                <h3>Recaptcha V3:</h3>
                 <div><label>Site key:</label>
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="recaptcha_site_key"
@@ -246,19 +250,6 @@
                            data-table_name="{{table_name}}"
                            value="{{recaptcha_pass_score}}" data-handle="update_column"/>
                     <em>decimal < 1.0</em>
-                </div>
-                <h3>Postcode.nl:</h3>
-                <div><label>Key:</label>
-                    <input type="text" class="PEATCMS_editable"
-                           data-column_name="postcode_nl_key"
-                           data-table_name="{{table_name}}"
-                           value="{{postcode_nl_key}}" data-handle="update_column"/>
-                </div>
-                <div><label>Secret:</label>
-                    <input type="password" class="PEATCMS_editable"
-                           data-column_name="postcode_nl_secret"
-                           data-table_name="{{table_name}}"
-                           value="{{postcode_nl_secret}}" data-handle="update_column"/>
                 </div>
             </section>
         </div>
@@ -282,18 +273,39 @@
         <section>
             {%__sessions__%}
             <table>
-                <tr><td>Instance</td><td>User</td><td>Created</td><td>Last accessed</td></tr>
-                <tr><td colspan="4"><hr/></td></tr>
+                <tr>
+                    <td>Instance</td>
+                    <td>User</td>
+                    <td>Created</td>
+                    <td>Last accessed</td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <hr/>
+                    </td>
+                </tr>
                 {%__row__%}
-                <tr><td>{{name:<strong>::value::</strong> {{domain}}:not:Not available}}</td><td>{{user_name}}</td><td>{{date_created}}</td><td>{{date_accessed}}</td></tr>
-                <tr><td colspan="3" style="font-size:85%;">{{reverse_dns}}: {{user_agent}}</td><td style="vertical-align: top">
-                    {{deleted:Access denied, will be removed in 5 to 10 minutes:not:
-                    <form action="/__action__/account_delete_session/{{session_id}}" class="session_destroy">
-                        <input type="submit" value="DESTROY"/>
-                    </form>
-                    }}
-                </td></tr>
-                <tr><td colspan="4"><hr/></td></tr>
+                <tr>
+                    <td>{{name:<strong>::value::</strong> {{domain}}:not:Not available}}</td>
+                    <td>{{user_name}}</td>
+                    <td>{{date_created}}</td>
+                    <td>{{date_accessed}}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="font-size:85%;">{{reverse_dns}}: {{user_agent}}</td>
+                    <td style="vertical-align: top">
+                        {{deleted:Access denied, will be removed in 5 to 10 minutes:not:
+                        <form action="/__action__/account_delete_session/{{session_id}}" class="session_destroy">
+                            <input type="submit" value="DESTROY"/>
+                        </form>
+                        }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <hr/>
+                    </td>
+                </tr>
                 {%__row__%}
             </table>
             {%__sessions__%}
@@ -308,7 +320,10 @@
     {%__action__/admin_database_report%}
     <table>
         {%__rows__%}
-        <tr><td>{{key}}:</td><td>{{value}}</td></tr>
+        <tr>
+            <td>{{key}}:</td>
+            <td>{{value}}</td>
+        </tr>
         {%__rows__%}
     </table>
     {%__action__/admin_database_report%}

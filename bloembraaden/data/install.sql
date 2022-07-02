@@ -2735,9 +2735,13 @@ DROP TABLE IF EXISTS _search_settings;
 ALTER TABLE _search_log
     DROP COLUMN IF EXISTS search_settings_id;
 
+ALTER TABLE _instance
+    DROP COLUMN IF EXISTS postcode_nl_key;
+
+ALTER TABLE _instance
+    DROP COLUMN IF EXISTS postcode_nl_secret;
+
 COMMIT;
-
-
 
 -- next version: comments + ratings
 

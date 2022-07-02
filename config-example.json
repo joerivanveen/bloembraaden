@@ -38,7 +38,9 @@
       "default_expires": 2500000
     },
     "postcode": {
-      "api_url": "https://api.postcode.eu/nl/v1"
+      "api_url": "https://api.postcode.eu/nl/v1",
+      "api_key": "your_key",
+      "secret": "your_secret"
     },
     "pdfmaker": {
       "api_key": "your_api_key",

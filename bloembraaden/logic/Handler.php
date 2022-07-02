@@ -453,8 +453,8 @@ class Handler extends BaseLogic
                     $addition = $post_data->number_addition ?? null;
                     try {
                         $Postcode = new \PostcodeNl_Api_RestClient(
-                            $instance->getSetting('postcode_nl_key'),
-                            $instance->getSetting('postcode_nl_secret'),
+                            Setup::$POSTCODE->api_key,
+                            Setup::$POSTCODE->secret,
                             Setup::$POSTCODE->api_url
                         );
                         $response = $Postcode->lookupAddress($post_data->postal_code, $post_data->number, $addition);
