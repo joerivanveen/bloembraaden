@@ -76,7 +76,7 @@ class Resolver extends BaseLogic
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (isset($this->instructions['action'])) {
             if (count($uri) > 0) {
-                $this->instructions['action'] = htmlentities($uri[0]); // always escape user generated input
+                $this->instructions['action'] = htmlentities($uri[0]);
             } else {
                 $this->instructions['action'] = 'ok';
             }
@@ -186,7 +186,10 @@ class Resolver extends BaseLogic
                     }
                     break;
                 case 'shoppinglist':
-                    return new Shoppinglist($this->getTerms()[0], $session);
+                    if (count($terms = $this->getTerms()) > 0) {
+                        return new Shoppinglist($terms[0], $session);
+                    }
+                    break;
                 case 'user':
                     if (null === ($user = $session->getUser())) {
                         return new BaseElement((object)array(
