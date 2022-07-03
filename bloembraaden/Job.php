@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 // TODO make configurable using config file
 const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
 const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 10;
@@ -357,7 +355,12 @@ if ('1' === $interval) { // interval should be '1'
             }
             $result = curl_exec($curl);
             //$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-            if (false === $result) continue;
+            if (false === is_string($result)) {
+                Help::addError(new \Exception(sprintf('curl returned \'%s\' for instagram user %s',
+                    var_export($result, true),
+                    $row->user_id)));
+                continue;
+            }
             $media = json_decode($result);
             if (json_last_error() === JSON_ERROR_NONE) {
                 if (isset($media->media)) $media = $media->media; // apparently this goes in and out at instagram?!
