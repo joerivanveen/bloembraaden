@@ -16,9 +16,7 @@ main, section, article, nav, figure, figcaption,
 header, footer, aside, mark, details, summary, time,
 table, caption, tbody, tfoot, thead, tr, th, td {
     border: 0;
-    font-family: Arial, Helvetica, sans-serif;
     font-size: inherit;
-    line-height: 1.6em;
     font-style: inherit;
     font-weight: inherit;
     margin: 0;
@@ -26,6 +24,10 @@ table, caption, tbody, tfoot, thead, tr, th, td {
     padding: 0;
     vertical-align: baseline;
     color: #000;
+}
+html, body {
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6em;
 }
 
 fieldset, legend {
