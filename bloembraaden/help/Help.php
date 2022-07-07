@@ -336,7 +336,7 @@ class Help
     {
         $arr = [];
         foreach ($cache = Help::getErrors() as $key => $e) {
-            $arr[] = htmlspecialchars($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+            $arr[] = $e->getMessage() . PHP_EOL . $e->getTraceAsString();
         }
 
         return $arr;
@@ -345,7 +345,7 @@ class Help
     /**
      * @since 0.6.16
      */
-    public static function logErrorMessages()
+    public static function logErrorMessages(): ?string
     {
         if (count($arr = Help::getErrorMessages()) > 0) {
             if (isset($_SERVER['REMOTE_ADDR'])) {
@@ -359,7 +359,10 @@ class Help
             $message .= "LOG\r\n";
             $message .= implode("\r\n", $arr);
             error_log($message, 3, Setup::$LOGFILE);
+
+            return $message;
         }
+        return null;
     }
 
     /**

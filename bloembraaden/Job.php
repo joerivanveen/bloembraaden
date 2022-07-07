@@ -438,7 +438,7 @@ if ('1' === $interval) { // interval should be '1'
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
         if (200 === $status_code) {
             $media = json_decode($result);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && isset($media->media_url)) {
                 // update the entry
                 if ($db->updateColumns('_instagram_media', array(
                     'caption' => $media->caption ?? '', // (old) instagram posts may have no caption
@@ -453,8 +453,12 @@ if ('1' === $interval) { // interval should be '1'
                     $updated_user_ids[(string)$row->user_id] = true;
                     echo 'OK';
                 } else {
+                    Help::addError(new \Exception('Insta update failed for ' . $media->permalink));
                     echo 'failed';
                 }
+            } else {
+                Help::addError(new \Exception('Insta media error: ' . $result));
+                echo 'error';
             }
         } elseif ($status_code === 400 || $status_code === 403 || $status_code === 404) { // remove this
             // update the entry
@@ -815,7 +819,7 @@ if ('1' === $interval) { // interval should be '1'
 }
 $trans->start('report current job');
 echo date('Y-m-d H:i:s') . ' (ended)' . PHP_EOL;
-printf("«completed in %s seconds»\r\n", microtime(true) - $start_timer);
+printf("«completed in %s seconds»\r\n", number_format(microtime(true) - $start_timer, 2));
 $trans->flush();
 //
 unset($db);
