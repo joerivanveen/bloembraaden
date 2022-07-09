@@ -554,6 +554,8 @@ body .PEATCMS_admin p {
 .PEATCMS_admin .button,
 .PEATCMS_admin button {
     /* reset a button */
+    width: auto;
+    height: auto;
     background-color: #fff;
     border-radius: 0;
     border: none;
@@ -821,7 +823,7 @@ body .PEATCMS_admin p {
     width: calc(100% - .5em);
     max-width: calc(100% - .5em);
 }
-/* why we need teh #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
+/* why we need the #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
 #PEATCMS_admin_page input:focus-visible,
 #PEATCMS_admin_page textarea:focus-visible,
 #PEATCMS_admin_page select:focus-visible,
@@ -843,6 +845,8 @@ body .PEATCMS_admin p {
     outline: solid 1px rgb(48, 63, 123);
     outline-offset: -1px;
     animation: none;
+    width: auto;
+    height: auto;
 }
 .PEATCMS_admin a:focus-visible {
     outline-offset: 0;
