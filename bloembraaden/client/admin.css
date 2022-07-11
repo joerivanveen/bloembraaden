@@ -845,6 +845,12 @@ body .PEATCMS_admin p {
     outline: solid 1px rgb(48, 63, 123);
     outline-offset: -1px;
     animation: none;
+}
+#PEATCMS_admin_page button:focus-visible,
+#PEATCMS_admin_page label:focus-visible,
+.PEATCMS_admin .button:focus-visible,
+.PEATCMS_admin button:focus-visible,
+.PEATCMS_admin label:focus-visible {
     width: auto;
     height: auto;
 }
