@@ -139,9 +139,25 @@ html, body {
 }
 
 /* nice embed https://stackoverflow.com/a/20130011 */
-.embed_wrapper         {width: 100%; height: 100%; margin: 0 auto; background: #CCC}
-.embed_iframe        {position: relative; padding-top: 56%;}
-.embed_iframe iframe {position: absolute; top: 0; left: 0; width: 100%; height: 100%;}
+.embed-wrapper {
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    background: #CCC
+}
+
+.embed-iframe {
+    position: relative;
+    padding-top: 56.25%; /* 16 × 9 */
+}
+
+.embed-iframe iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 
 
 .attention-grabber,
