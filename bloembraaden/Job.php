@@ -716,7 +716,7 @@ if ('1' === $interval) { // interval should be '1'
                 }
                 $timestamp = explode('.', end($pieces))[0];
                 if (($row = $db->fetchInstanceById((int)$instance_id))) {
-                    if (strtotime($row->date_published) > $timestamp) {
+                    if (isset($row->date_published) && strtotime($row->date_published) > $timestamp) {
                         unlink($file_info->getPathname());
                         echo 'Deleted ' . $file_info->getFilename() . PHP_EOL;
                     }
