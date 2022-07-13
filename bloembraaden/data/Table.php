@@ -394,7 +394,7 @@ class Column
     private string $name, $type;
     private ?string $default;
     private ?int $length;
-    private bool $nullable;
+    private bool $nullable, $editable;
 
     public function __construct(string $name, \stdClass $column)
     {
@@ -435,10 +435,15 @@ class Column
         return $this->nullable;
     }
 
-    /*public function isEditable()
+    /**
+     * This function is necessary to legitimate $editable, which is necessary to have non-editable columns in the admin interface
+     * @return bool
+     */
+    public function isEditable()
     {
         return $this->editable;
-    }*/
+    }
+
     public function setEditable(bool $bool): void
     {
         $this->editable = $bool;
