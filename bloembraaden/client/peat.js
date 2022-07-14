@@ -1106,6 +1106,7 @@ PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
     //console.warn(i_progress.toString() + ' / ' + i.toString());
     progress_width = i_progress / i * 100;
     loading_bar.style.width = progress_width.toString() + 'vw';
+    loading_bar.setAttribute('aria-valuenow', progress_width.toString());
     if (progress_width === 100) {
         window.setTimeout(function () {
             loading_bar.style.width = '0';
@@ -2790,8 +2791,12 @@ PEATCMS.prototype.startUp = function () {
     });
     // default of the progressbar
     document.addEventListener('peatcms.navigation_start', function () {
-        var loading_bar;
-        if ((loading_bar = document.getElementById('peatcms_loading_bar'))) loading_bar.style.width = '0';
+        let loading_bar;
+        if ((loading_bar = document.getElementById('peatcms_loading_bar'))) {
+            loading_bar.style.width = '0';
+            loading_bar.setAttribute('aria-valuemin', '0');
+            loading_bar.setAttribute('aria-valuemax', '100');
+        }
     });
     // send one-time peatcms event peatcms.initialize
     if (VERBOSE) console.log('Emitting one-time event peatcms.initialize');
