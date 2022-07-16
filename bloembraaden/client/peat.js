@@ -12,10 +12,8 @@ var peatcms_events = [
     'peatcms.progressive_rendering',
     'peatcms.progressive_ready',
     'peatcms.document_rendering',
-    'peatcms.document_interactive',
     'peatcms.document_ready',
     'peatcms.document_complete',
-    'peatcms.scripts_loaded',
     'peatcms.message',
     'peatcms.form_posting',
     'peatcms.form_posted',
@@ -1356,6 +1354,7 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
         }
         if (elements.length > 0) {
             this.progressive_tags[t] = elements; // remember this for ajax
+            PEAT.loderunner++; // TODO bleeding over to the instantiated object :-(
             // load the templates each time, but if they're already rendered, don't bother getting the objects again
             // TODO make react-like thingie that checks if all the nodes are properly rendered,
             // TODO if not get the object from cache, no need to trip to the server all the time
@@ -1455,6 +1454,7 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     console.error(e);
                 }
             }
+            PEAT.registerAssetLoad(render_in_tag);
         } else {
             console.error('Returned slug ‘' + slug + '’ not found in progressive tags.');
         }
@@ -1467,6 +1467,7 @@ PEATCMS_template.prototype.render = function (out) {
     // master template contains page html broken down in parts
     //console.log(this.template);
     // benchmarking (was: ~380 ms 2020-02-10 with petitclos template)
+    // benchmarking (was: ~18000 ms 2022-07-14 with petitclos template)
     /*console.warn('currently benchmarking with 1000 renders...');
     var hallo = new Date(),
         i;
@@ -1907,15 +1908,13 @@ PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the 
  * site object is called PEATCMS, instantiated later as global PEAT
  */
 var PEATCMS = function () {
-    var session, el, data_set, attr, style, self = this;
+    let session, el, data_set, attr, style, self = this;
     this.eventListeners = {};
     this.status_codes = {
         'loading': 1,
-        'interactive': 2,
-        'rendering': 3,
-        'loaded': 4,
-        'ready': 5,
-        'complete': 6
+        'rendering': 2,
+        'ready': 3,
+        'complete': 4
     };
     this.document_status = this.status_codes.loading;
     this.template_status = '';
@@ -2007,20 +2006,20 @@ var PEATCMS = function () {
         }
     }
 
-    if (this.document_status < this.status_codes.complete) {
-        this.addEventListener('peatcms.document_complete', setupPageOnce, true);
+    if (this.document_status < this.status_codes.ready) {
+        this.addEventListener('peatcms.document_ready', setupPageOnce, true);
     } else {
         setupPageOnce();
         setupAddress();
     }
-    this.addEventListener('peatcms.document_complete', setupAddress);
+    this.addEventListener('peatcms.document_ready', setupAddress);
     // Load the nodes that are in the head to update dynamically
     this.cached_head_nodes = this.loadHeadNodes(document.head.childNodes);
     if (VERBOSE) console.log('... peatcms started');
     // make stylesheet manipulation easier
     style = document.createElement('style');
     // style.setAttribute("media", "screen")
-    // style.setAttribute("media", "only screen and (max-width : 1024px)")
+    // style.setAttribute("media", "only screen and (max-width: 1024px)")
     style.appendChild(document.createTextNode('')); // WebKit hack :(
     style.id = 'peatcms_dynamic_css';
     document.head.appendChild(style);
@@ -2187,7 +2186,7 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
 }
 
 PEATCMS.prototype.render = function (element, callback) {// don't rely on element methods, it could have been serialized
-    var self = this,
+    let self = this,
         out = PEATCMS.cloneShallow(element.state), // break reference (or else the element.state.template_pointer would get changed)
         template_pointer = out.hasOwnProperty('template_pointer') ? out.template_pointer : {
             'name': 'home',
@@ -2264,10 +2263,8 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     if ((html = template.render(out))) {
         this.title = template.getInnerHtml('title', html);
         // html is clean html, you can use that to fill head and body here
-        this.loderunner = 1; // checks loading of all assets
-        this.lodescripts = 0; // checks loading of scripts
+        this.loderunner = 1; // checks loading of all assets, 1 = for document that will be registered as loaded as well
         // start with loading head nodes
-        // title
         document.title = this.title;
         // update the head meta, link, script, style and noscript nodes
         new_nodes = this.loadHeadNodes(template.getChildNodes('head', html));
@@ -2297,15 +2294,12 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
                 if (new_node.nodeName.toLowerCase() === 'script' && new_node.hasAttribute('src')) {
                     // loading of javascripts is different
                     // https://stackoverflow.com/questions/16230886/trying-to-fire-the-onload-event-on-script-tag
-                    self.scripts_loaded = false; // just to be sure to fire the scripts_loaded event
                     self.loderunner++;
-                    self.lodescripts++
-                    var scr = document.createElement('script');
+                    let scr = document.createElement('script');
                     scr.id = new_node.id;
                     scr.className = new_node.className;
                     document.head.appendChild(scr);
                     scr.addEventListener('load', function () {
-                        self.lodescripts--; // loderunner is handled by registerAssetLoad, but not scripts
                         self.registerAssetLoad(this);
                     });
                     scr.setAttribute('src', new_node.getAttribute('src'));
@@ -2439,10 +2433,6 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
                 el.setAttribute('data-disabled', (element.isEditable()) ? '0' : '1');
             });
         }
-        if (this.document_status !== this.status_codes.interactive) {
-            this.document_status = this.status_codes.interactive;
-            document.dispatchEvent(new CustomEvent('peatcms.document_interactive')); // send without detail, does not bubble
-        }
 
         // @since 0.6.11 check if you switched from type of template to initialize the site again
         var temp = template.template;
@@ -2451,29 +2441,13 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         } else if (this.template_status === 'default') {
             this.template_status = '';
             if (VERBOSE) console.warn('Sending initialize event again because of switching template types');
-            document.dispatchEvent(new CustomEvent('peatcms.initialize', {
-                bubbles: false,
-                detail: {
-                    "title": "Currently no details are provided",
-                }
-            }));
-        }
-        // check if images are loaded and if not add them to the queue for peatcms.document_complete
-        var images = document.getElementsByTagName('img');
-        for (i = 0; i < images.length; i++) {
-            if (!images[i].complete) {
-                this.loderunner++;
-                images[i].addEventListener('load', function () {
-                    self.registerAssetLoad(this);
-                });
-            }
+            document.dispatchEvent(new CustomEvent('peatcms.initialize'));
         }
         // callback
         if (typeof callback === 'function') {
             callback(element);
         }
-        // emit event (status loaded could come before ready theoretically)
-        if (this.document_status !== this.status_codes.loaded) this.document_status = this.status_codes.ready;
+        this.document_status = this.status_codes.ready;
         document.dispatchEvent(new CustomEvent('peatcms.document_ready', {
             bubbles: true,
             detail: {
@@ -2482,9 +2456,9 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
                 path: out.path
             }
         }));
-        this.registerAssetLoad(document); // we're loaded!
         // for any remaining tags in the body, render them progressively
         template.renderProgressive(); // document.body.innerHTML
+        this.registerAssetLoad(document); // we're loaded!
     } else {
         console.error('Templator could not render output');
     }
@@ -2501,18 +2475,19 @@ PEATCMS.prototype.renderProgressive = function (tag, slug) // pass the slug to t
     }
 }
 
-PEATCMS.prototype.registerAssetLoad = function (which) {
-    // TODO what if some assets are missing, should we never call document_complete?
-    // TODO it calls complete regardless of whether progressive rendering is still going on...
+PEATCMS.prototype.registerAssetLoad = function () {
+    let self = this;
     this.loderunner--;
-    if (this.loderunner === 0 && this.document_status !== this.status_codes.complete) {
-        this.document_status = this.status_codes.complete;
-        document.dispatchEvent(new CustomEvent('peatcms.document_complete')); // send without detail, does not bubble
-    }
-    if (this.scripts_loaded === false) {
-        if (this.lodescripts === 0) { // emit scripts loaded event
-            this.scripts_loaded = true;
-            document.dispatchEvent(new CustomEvent('peatcms.scripts_loaded')); // send without detail, does not bubble
+    // todo optimise this a bit more, this is a poc
+    if (0 === this.loderunner && this.document_status !== this.status_codes.complete) {
+        if ('complete' === document.readyState) {
+            self.document_status = self.status_codes.complete;
+            document.dispatchEvent(new CustomEvent('peatcms.document_complete')); // send without detail, does not bubble
+        } else {
+            window.addEventListener('load', function() {
+                self.document_status = self.status_codes.complete;
+                document.dispatchEvent(new CustomEvent('peatcms.document_complete')); // send without detail, does not bubble
+           });
         }
     }
 }
@@ -2800,12 +2775,7 @@ PEATCMS.prototype.startUp = function () {
     });
     // send one-time peatcms event peatcms.initialize
     if (VERBOSE) console.log('Emitting one-time event peatcms.initialize');
-    document.dispatchEvent(new CustomEvent('peatcms.initialize', {
-        bubbles: false,
-        detail: {
-            "title": "Currently no details are provided",
-        }
-    }));
+    document.dispatchEvent(new CustomEvent('peatcms.initialize'));
     // record first page in history
     NAV.refresh(); // also Re-renders the page for full use
     // handle messages
