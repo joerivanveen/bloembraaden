@@ -823,6 +823,7 @@ body .PEATCMS_admin p {
     width: calc(100% - .5em);
     max-width: calc(100% - .5em);
     border-radius: 0;
+    text-align: left;
 }
 /* why we need the #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
 #PEATCMS_admin_page input:focus-visible,

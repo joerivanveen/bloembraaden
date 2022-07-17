@@ -345,29 +345,31 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
         el = document.createElement('div'),
         process = document.createElement('div'),
         self = this, filename_saved, button, option;
-    // @since 0.10.0 reprocess option
-    process.classList.add('process_area', 'file');
-    if (null === (filename_saved = self.parent_PEATCMS_element.state.filename_saved)) {
-        process.innerHTML = 'Upload original to process again';
-        process.classList.add('info');
-    } else {
-        option = function (value, text) {
-            var el = document.createElement('option');
-            el.value = value;
-            el.text = text;
-            return el;
+    // @since 0.10.0 reprocess option for image type
+    if ('image' === self.parent_PEATCMS_element.state.type) {
+        process.classList.add('process_area', 'file');
+        if (null === (filename_saved = self.parent_PEATCMS_element.state.filename_saved)) {
+            process.innerHTML = 'Upload original to process again';
+            process.classList.add('info');
+        } else {
+            option = function (value, text) {
+                var el = document.createElement('option');
+                el.value = value;
+                el.text = text;
+                return el;
+            }
+            button = document.createElement('select');
+            button.setAttribute('data-filename_saved', filename_saved);
+            button.addEventListener('change', function () {
+                self.process(this.options[this.selectedIndex].value);
+            });
+            button.classList.add('button', 'process');
+            button.options.add(option(0, '▦ Re-process this image'));
+            button.options.add(option(1, 'Original quality, optimized filesize'));
+            button.options.add(option(2, 'Better quality, slower loading'));
+            button.options.add(option(3, 'Best quality, slowest loading'));
+            process.appendChild(button);
         }
-        button = document.createElement('select');
-        button.setAttribute('data-filename_saved', filename_saved);
-        button.addEventListener('change', function () {
-            self.process(this.options[this.selectedIndex].value);
-        });
-        button.classList.add('button', 'process');
-        button.options.add(option(0, '▦ Re-process this image'));
-        button.options.add(option(1, 'Original quality, optimized filesize'));
-        button.options.add(option(2, 'Better quality, slower loading'));
-        button.options.add(option(3, 'Best quality, slowest loading'));
-        process.appendChild(button);
     }
     // the file upload drop
     drop.addEventListener('dragenter', function (e) {
