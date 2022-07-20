@@ -2940,7 +2940,7 @@ PEATCMS.prototype.scrollTo = function (x, y, element) {
 }
 
 window.onpopstate = function (e) {
-    var pos;
+    var pos, path;
     if (e.state === null || !NAV) {
         if (!NAV) {
             console.error('Navigator not loaded on *pop*.');
@@ -2949,6 +2949,8 @@ window.onpopstate = function (e) {
         }
         //document.location.reload(); // this keeps reloading on safari / iphone
     } else { // e.state holds max 640k so you can't put an element in it, for now it's just the slug and scrolling position
+        path = e.state.path;
+        NAV.signalStartNavigating(path);
         if (VERBOSE) console.log(e);
         // @since 0.7.1 restore scrolling position from history (after rendering)
         if (e.state.hasOwnProperty('scrollY') && (pos = {x: e.state.scrollX, y: e.state.scrollY})) {
@@ -2956,7 +2958,7 @@ window.onpopstate = function (e) {
                 window.scrollTo(pos.x, pos.y);
             }, true); // true means event is only executed once then removed
         }
-        NAV.refresh(e.state.path);
+        NAV.refresh(path);
     }
 };
 
@@ -2995,6 +2997,19 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
     }
     return true;
 }
+PEATCMS_navigator.prototype.signalStartNavigating = function(path) {
+    let slug = path.replace(this.getRoot(true), '');
+    this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
+    if (0 === slug.indexOf('/')) slug = slug.substr(1);
+    document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
+        bubbles: false,
+        detail: {
+            slug: decodeURI(slug),
+        }
+    }));
+
+    return slug;
+}
 PEATCMS_navigator.prototype.go = function (path, local) {
     var slug, self = this;
     if (!local) local = false; // replacing default value which is not supported < ES6
@@ -3002,15 +3017,7 @@ PEATCMS_navigator.prototype.go = function (path, local) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.setState();
         if (path.indexOf(this.getRoot()) === 0 || local === true) { // this is a local link
-            this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
-            slug = path.replace(this.getRoot(true), '');
-            if (0 === slug.indexOf('/')) slug = slug.substr(1);
-            document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
-                bubbles: false,
-                detail: {
-                    slug: decodeURI(slug),
-                }
-            }));
+            slug = this.signalStartNavigating(path);
             new PEATCMS_element(slug, function (el) {
                 var slug, title, path;
                 if (el === false) {
