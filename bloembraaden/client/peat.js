@@ -2714,8 +2714,10 @@ PEATCMS.prototype.currentSlugs = function (element) {
         href = PEATCMS.replace(root, '', decodeURI(a.href)) + '|'; // match the exact slug, not when it’s a part of the link
         if (current_slug === href) {
             a.classList.add('peatcms-current-slug');
+            a.setAttribute('aria-current', 'location');
         } else {
             a.classList.remove('peatcms-current-slug');
+            a.removeAttribute('aria-current');
         }
     }
 }
