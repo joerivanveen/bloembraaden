@@ -2165,7 +2165,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function getPartialTemplates(int $instance_id = -1): array
     {
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
-        $statement = $this->conn->prepare('SELECT * FROM _template WHERE instance_id = ? AND element = \'partial\' ORDER BY element, name;');
+        $statement = $this->conn->prepare('SELECT * FROM _template WHERE instance_id = ? AND element = \'partial\' AND deleted = FALSE ORDER BY element, name;');
         $statement->execute(array($instance_id));
         $rows = $statement->fetchAll();
         $statement = null;

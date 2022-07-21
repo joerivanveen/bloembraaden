@@ -2632,8 +2632,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     for (i = 0, len = forms.length; i < len; i++) {
         form = forms[i];
         if (false === form.hasAttribute('action')) {
-            console.error('This form has no action:');
-            console.log(form);
+            console.error('This form has no action', form);
             continue;
         }
         if (false === form.hasAttribute('data-peatcms_ajaxified')) {
