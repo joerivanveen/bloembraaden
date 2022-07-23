@@ -1359,10 +1359,12 @@ var PEATCMS_admin = function () {
         function (data) {
             if (data.hasOwnProperty('table_name') && data.table_name === '_instance') {
                 self.instance = data;
+
                 // Toggles (may) use instance, so we moved them here
                 function enhanceToggles() {
                     CMS_admin.enhanceToggle(document.querySelectorAll('#PEATCMS_admin_page .toggle_button'));
                 }
+
                 if (PEAT.document_status >= PEAT.status_codes.ready) {
                     enhanceToggles();
                 }
@@ -1557,14 +1559,15 @@ var PEATCMS_admin = function () {
                 }
             });
         }
-        document.querySelectorAll('.session_destroy').forEach(function(el) {
-            el.addEventListener('peatcms.form_posted', function(e) {
+        document.querySelectorAll('.session_destroy').forEach(function (el) {
+            el.addEventListener('peatcms.form_posted', function (e) {
                 if (e.detail.json.success) {
                     this.innerHTML = 'Marked for destruction';
                 }
             });
         });
     }
+
     document.addEventListener('peatcms.document_ready', activate);
     if (PEAT.document_status > PEAT.status_codes.ready) {
         activate();
@@ -1704,7 +1707,8 @@ PEATCMS_admin.prototype.loadEditorConfig = function () {
     return default_config;
 }
 PEATCMS_admin.prototype.getEditorConfig = function (element_name) {
-    var type_config, config = this.editor_config || {};
+    // use structuredClone (deep clone) when available, default to the old JSON hack if it isn't
+    var type_config, config = PEATCMS.cloneStructured(this.editor_config);
     if (config.hasOwnProperty(element_name) && (type_config = config[element_name])) {
         if (type_config.hasOwnProperty('hidden_fields')) {
             config.hidden_fields = Object.assign(config.hidden_fields, type_config.hidden_fields);

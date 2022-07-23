@@ -558,7 +558,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
             config.field_order.push(column_names[i]);
         }
     }
-    //console.log(config);
+    //console.warn(config);
     // add the columns, in the order of field_order, skipping the hidden (and absent) ones...
     for (i = 1, fields = config.field_order, len = fields.length; i < len; ++i) {
         column_name = fields[i];
@@ -3610,6 +3610,13 @@ PEATCMS.isInt = function (value) {
 function isInt(value) {
     console.warn('isInt() is deprecated, use PEATCMS.isInt()');
     return PEATCMS.isInt(value);
+}
+
+PEATCMS.cloneStructured = function(obj) {
+    if (!!window.structuredClone) {
+        return structuredClone(obj);
+    }
+    return JSON.parse(JSON.stringify(obj));
 }
 
 PEATCMS.cloneShallow = function (obj) {
