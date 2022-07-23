@@ -558,7 +558,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
             config.field_order.push(column_names[i]);
         }
     }
-    //console.log(config);
+    //console.warn(config);
     // add the columns, in the order of field_order, skipping the hidden (and absent) ones...
     for (i = 1, fields = config.field_order, len = fields.length; i < len; ++i) {
         column_name = fields[i];

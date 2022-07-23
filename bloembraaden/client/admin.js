@@ -1704,7 +1704,8 @@ PEATCMS_admin.prototype.loadEditorConfig = function () {
     return default_config;
 }
 PEATCMS_admin.prototype.getEditorConfig = function (element_name) {
-    var type_config, config = this.editor_config || {};
+    // use structuredClone (deep clone) when available, default to the old JSON hack if it isn't
+    var type_config, config = structuredClone(this.editor_config) || JSON.parse(JSON.stringify(this.editor_config)) || {};
     if (config.hasOwnProperty(element_name) && (type_config = config[element_name])) {
         if (type_config.hasOwnProperty('hidden_fields')) {
             config.hidden_fields = Object.assign(config.hidden_fields, type_config.hidden_fields);
