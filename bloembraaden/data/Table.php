@@ -51,7 +51,7 @@ class Type extends Base
                 $this->table_name = $type_name; // the supplied string for $type_name turns out to be the table_name
             } else {
                 $this->handleErrorAndStop(
-                    sprintf('‘%s’ is not a recognized type', $type_name),
+                    "$type_name is not a recognized type",
                     sprintf(__('‘%s’ is not a recognized type', 'peatcms'), $type_name)
                 );
             }

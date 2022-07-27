@@ -145,6 +145,7 @@ class DB extends Base
 
         return $rows;
     }
+
     /**
      * @param string $column_name
      * @return string|null
@@ -271,9 +272,8 @@ class DB extends Base
                 }
             }
         }
-        $sub_query_format = 'AND ' . $cms_type_name . '_id IN (SELECT ' .
-            $cms_type_name . '_id FROM cms_' . $cms_type_name . '_x_properties' .
-            ' WHERE property_value_id = %d) ';
+        $sub_query_format = "AND {$cms_type_name}_id IN (SELECT {$cms_type_name }_id
+            FROM cms_{$cms_type_name}_x_properties WHERE property_value_id = %d) ";
         foreach ($property_value_ids as $index => $property_value_id) {
             $sub_queries[] = sprintf($sub_query_format, $property_value_id);
         }
@@ -293,26 +293,24 @@ class DB extends Base
         if (0 === count($terms)) return array();
         $type_name = $type->typeName();
         // TODO make a real search functionality, for now it's simple LIKE stuff
-        $sub_queries = $this->filterProperties($properties, $type_name);
+        $sub_queries = implode(' ', $this->filterProperties($properties, $type_name));
         // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
         $arr = array();
         if ('variant' === $type_name) { // TODO integrate variant search better
             // NOTE you need the deleted = FALSE when searching, or else elements may be cached by getOutput while deleted
-            $statement = $this->conn->prepare(
-                'SELECT *, variant_id AS id, \'cms_variant\' AS table_name FROM cms_variant ' .
-                'WHERE (instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term ' .
-                'OR product_id IN (SELECT product_id FROM cms_product WHERE deleted = FALSE AND instance_id = :instance_id AND ci_ai LIKE :term))' .
-                implode(' ', $sub_queries) . ';'
-            );
+            $statement = $this->conn->prepare("
+                SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
+                WHERE instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term $sub_queries;
+            ");
             $statement->bindValue(':instance_id', Setup::$instance_id);
             //var_dump($statement->queryString);
             foreach ($terms as $index => $term) {
                 $rows = array();
                 if ('price_from' === $term) { // select only variants that have a from price
-                    $statement2 = $this->conn->prepare('SELECT *, variant_id AS id, \'cms_variant\' AS table_name FROM cms_variant ' .
-                        'WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> \'\'' .
-                        implode(' ', $sub_queries) . ';'
-                    );
+                    $statement2 = $this->conn->prepare("
+                        SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $sub_queries;
+                    ");
                     $statement2->bindValue(':instance_id', Setup::$instance_id);
                     $statement2->execute();
                     $temp = $statement2->fetchAll();
@@ -324,10 +322,10 @@ class DB extends Base
                     $arr['price_from'] = $rows;
                     continue;
                 } else if ('not_online' === $term) { // select only variants that are not online (for admins...)
-                    $statement2 = $this->conn->prepare('SELECT *, variant_id AS id, \'cms_variant\' AS table_name FROM cms_variant ' .
-                        'WHERE instance_id = :instance_id AND deleted = FALSE AND online = FALSE ' .
-                        implode(' ', $sub_queries) . ';'
-                    );
+                    $statement2 = $this->conn->prepare("
+                        SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND online = FALSE $sub_queries;
+                    ");
                     $statement2->bindValue(':instance_id', Setup::$instance_id);
                     $statement2->execute();
                     $temp = $statement2->fetchAll();
@@ -370,11 +368,10 @@ class DB extends Base
             return array_values($intersected);
         }
         // NOTE you need the deleted = FALSE when searching, or else elements may be cached by getOutput while deleted
-        $statement = $this->conn->prepare(
-            'SELECT *, ' . $type_name . '_id AS id, \'cms_' . $type_name . '\' AS table_name FROM cms_' . $type_name . ' ' .
-            'WHERE (instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term) ' .
-            implode(' ', $sub_queries) . ';'
-        );
+        $statement = $this->conn->prepare("
+            SELECT *, {$type_name}_id AS id, 'cms_$type_name' AS table_name FROM cms_$type_name 
+            WHERE instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term $sub_queries;
+        ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         //var_dump($statement->queryString);
         foreach ($terms as $index => $term) {
@@ -410,17 +407,15 @@ class DB extends Base
     }
 
     /**
-     * @param int $search_settings_id
      * @param int $limit
      * @return array
      * @since 0.7.0
      */
-    public function fetchSearchLog(int $search_settings_id, int $limit = 500): array
+    public function fetchSearchLog(int $limit = 500): array
     {
         $statement = $this->conn->prepare('SELECT * FROM _search_log WHERE instance_id = :instance_id' .
-            ' AND search_settings_id = :search_settings_id AND deleted = FALSE ORDER BY date_updated DESC LIMIT ' . $limit);
+            ' AND deleted = FALSE ORDER BY date_updated DESC LIMIT ' . $limit);
         $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->bindValue(':search_settings_id', $search_settings_id);
         $rows = $statement->fetchAll();
         $statement = null;
 
@@ -677,9 +672,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function addXValueLink(Type $peat_type, int $id, int $property_id, int $property_value_id): \stdClass
     {
         $x_table_name = $peat_type->tableName() . '_x_properties';
-
         $o = $this->getHighestO($x_table_name);
-
         $key = $this->insertRowAndReturnLastId(
             $x_table_name,
             array(
@@ -1743,7 +1736,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return null;
     }
 
-
     /**
      * @param string $table_name
      * @return int
@@ -1880,57 +1872,21 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return $this->normalizeRows($rows);
     }
 
-    /**
-     * Updates ci_ai when it is NULL (e.g. after an update)
-     * @since 0.7.0
-     */
-    public function jobSearchUpdateIndexColumn(): void
+    public function updateSearchIndexColumn(BaseLogic $element): bool
     {
-        // get all tables that have a template_id column
-        $statement = $this->conn->prepare('
-            SELECT t.table_name FROM information_schema.tables t
-            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
-            WHERE c.column_name = \'ci_ai\' AND t.table_schema = :schema AND t.table_type = \'BASE TABLE\'
-        ');
-        $statement->bindValue(':schema', $this->db_schema);
+        $peat_type = $element->getType();
+        $table_name = $peat_type->tableName();
+        if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return false;
+        $id_column = $peat_type->idColumn();
+        $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($element->getOutput())));
+        $statement = $this->conn->prepare("UPDATE $table_name SET ci_ai = :src WHERE $id_column = :id;");
+        $statement->bindValue(':src', $ci_ai);
+        $statement->bindValue(':id', $element->getId());
         $statement->execute();
-        $r_tables = $this->normalizeRows($statement->fetchAll());
+        $success = (1 === $statement->rowCount());
         $statement = null;
-        foreach ($r_tables as $key => $r_table) {
-            if (in_array(($table_name = $r_table->table_name), array('cms_image', 'cms_embed', 'cms_file'))) {
-                $column = 'CONCAT(title, \' \', excerpt, \' \', description)';
-            } else {
-                $column = 'CONCAT(title, \' \', excerpt, \' \', content)';
-            }
-            echo "$table_name\t";
-            $type = new Type($table_name);
-            // now for each table get the entries that do not have their search index (ci_ai) column filled
-            // NOTE (ci_ai = \'\') IS NOT FALSE checks for the ci_ai column being NULL or empty
-            // https://stackoverflow.com/questions/23766084/best-way-to-check-for-empty-or-null-value
-            $statement = $this->conn->prepare(
-                'SELECT slug, LOWER(' . $column . ') AS search_column, ' . $type->idColumn() . ' AS id, date_updated FROM ' .
-                $table_name . ' WHERE (ci_ai = \'\') IS NOT FALSE AND deleted = FALSE;');
-            $statement->execute();
-            echo $statement->rowCount() . ' rows eligible ';
-            $rows = $this->normalizeRows($statement->fetchAll());
-            // date_updated is used in case one of the columns is updated while this query is running
-            // in that case you should hold off filling the ci_ai column until the next round, selecting
-            // the row anew (it is actually untested, TODO how can I test this?)
-            $count = 0;
-            foreach ($rows as $key2 => $row) {
-                $statement = $this->conn->prepare('UPDATE ' . $table_name .
-                    ' SET ci_ai = :src WHERE ' . $type->idColumn() . ' = :id AND date_updated = :date;');
-                $statement->bindValue(':src', Help::removeAccents($row->search_column));
-                $statement->bindValue(':id', $row->id);
-                $statement->bindValue(':date', $row->date_updated);
-                $statement->execute();
-                $count += $statement->rowCount();
-            }
-            echo $count . ' done' . PHP_EOL;
-        }
-        $statement = null;
-        $r_tables = null;
-        $type = null;
+
+        return $success;
     }
 
     public function jobFetchImagesForCleanup(int $more_than_days = 365, int $how_many = 15): array
@@ -2334,10 +2290,10 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             if ($to_item_id > 0) {
                 // insert into the menu items cross table
                 return 0 !== $this->insertRowAndReturnLastId('cms_menu_item_x_menu_item', array_merge($where, array(
-                    'menu_item_id' => $to_item_id,
-                    'online' => true,
-                    'deleted' => false,
-                )));
+                        'menu_item_id' => $to_item_id,
+                        'online' => true,
+                        'deleted' => false,
+                    )));
             }
         }
 
@@ -2402,6 +2358,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
         return 1 === $this->deleteRowWhereAndReturnAffected('_session', $where);
     }
+
     public function deleteSessionsForUser(int $user_id, int $own_session_id): int
     {
         return $this->deleteRowWhereAndReturnAffected(
@@ -3621,18 +3578,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             $this->addError($e);
         }
         $row_count = $statement->rowCount();
-        // (fts) search trigger: changes to title, excerpt, content and description fields must update the ci_ai as well
-        if (
-            $table_info->hasCiAiColumn()
-            && count(array_intersect($data['columns'], array('title', 'excerpt', 'content', 'description'))) !== 0
-        ) {
-            $statement = $this->conn->prepare('UPDATE ' . $table_name . ' SET ci_ai = NULL WHERE ' . $key_column_name . ' = ?;');
-            try {
-                $statement->execute(array($key));
-            } catch (\PDOException $e) {
-                $this->addError($e);
-            }
-        }
         // ok done
         $statement = null;
         if ($row_count === 1) {
@@ -3659,8 +3604,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
 
             return true;
         } else {
-            $this->addError(sprintf('DB->updateRowAndReturnSuccess resulted in a rowcount of %1$d for key %2$d on table %3$s',
-                $row_count, $key, $table_name));
+            $this->addError("DB->updateRowAndReturnSuccess resulted in a rowcount of $row_count for key $key on table $table_name");
         }
         $table = null;
         $old_row = null;
@@ -4389,5 +4333,34 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         // TODO check the sql? Can it be injected somewhere?
         return Setup::getHistoryDatabaseConnection()->exec($sql);
+    }
+
+    private function getMeaningfulSearchString(\stdClass $out): string // todo poc
+    {
+        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
+        ob_start();
+        if (true === isset($out->title)) { echo $out->title; echo ' '; }
+        if (true === isset($out->__x_values__)) {
+            foreach ($out->__x_values__ as $key => $x) {
+                if (false === is_int($key)) continue; // not a row
+                echo $x->title;
+                echo ' ';
+                echo $x->x_value;
+                echo ' ';
+            }
+        }
+        if (true === isset($out->__products__)) {
+            foreach ($out->__products__ as $key => $x) {
+                if (false === is_int($key)) continue; // not a row
+                if (isset($x->__ref)) $x = $GLOBALS['slugs']->{$x->__ref};
+                echo $x->title;
+                echo ' ';
+            }
+        }
+        if (true === isset($out->excerpt)) { echo $out->excerpt; echo ' '; }
+        if (true === isset($out->content)) { echo $out->content; echo ' '; }
+        if (true === isset($out->description)) { echo $out->description; echo ' '; }
+
+        return ob_get_clean();
     }
 }

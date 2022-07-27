@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class BaseLogic extends Base
 {
     private DB $db;
@@ -140,6 +138,7 @@ class BaseLogic extends Base
         $out = $this->getOutputObject();
         // cache the slug if it’s not a dynamic one (containing ‘__’)
         if (isset($out->__ref) and false === strpos($out->__ref, '__')) {
+            $db = Help::getDB();
             // update slug...
             $slug = $out->__ref;
             // for elements with no results, drop the cache
@@ -149,7 +148,7 @@ class BaseLogic extends Base
                 return ($returnOutputObject) ? $this->getOutputObject() : null;
             }
             // cache the first page always
-            Help::getDB()->cache($out, $this->getTypeName(), $this->getId(), 1);
+            $db->cache($out, $this->getTypeName(), $this->getId(), 1);
             $this->variant_page_counter = 2; // go on to the next page
             // loop through all the variant_pages to cache these separately and remember the paging as well in the out element
             // remove all the variants and add the next page of variants
@@ -157,12 +156,12 @@ class BaseLogic extends Base
                 $out = $this->getOutput();
                 $out->slugs = $GLOBALS['slugs'];
                 $out->variant_page = $this->variant_page_counter;
-                Help::getDB()->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
+                $db->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
                 $this->variant_page_counter++;
                 if ($this->variant_page_counter > 60) break; // no more than 60 pages forget it
             }
             // remove any lingering pages
-            Help::getDB()->deleteFromCache($slug, $this->variant_page_counter);
+            $db->deleteFromCache($slug, $this->variant_page_counter);
             // add the variant paging for template when appropriate
             if ($this->variant_page_counter > 2) {
                 $count = $this->variant_page_counter - 1;
@@ -174,15 +173,19 @@ class BaseLogic extends Base
                 $json = json_encode($pages);
                 $pages = null;
                 if ($count !== ($affected = Help::getDB()->updateVariantPageJsonInCache($slug, $json))) {
-                    $this->addError('Updated '. $affected . ' rows in cache for ' . $slug);
+                    $this->addError("Updated $affected rows in cache for $slug");
                 }
+            }
+            // update ci_ai
+            if (false === $db->updateSearchIndexColumn($this)) {
+                $this->addError("could not update search index column for $slug");
             }
             // when the cache is built during this request, sorry you can only get the first page back for now
             // this may return null sometimes on the first try...
             if ($returnOutputObject) {
-                if (null === ($out = Help::getDB()->cached($slug, 1))) {
+                if (null === ($out = $db->cached($slug, 1))) {
                     usleep(387); // wait for the database to get ready an arbitrary number of milliseconds
-                    if (null === ($out = Help::getDB()->cached($slug, 1))) {
+                    if (null === ($out = $db->cached($slug, 1))) {
                         $this->handleErrorAndStop('Could not read cache after creating it', __('Cache error, please try again', 'peatcms'));
                     }
                 }

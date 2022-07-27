@@ -89,6 +89,7 @@ class Search extends BaseElement
     /**
      * Based on the path this will load all possible property values
      * meanwhile, for each path this is cached
+     *
      * @param string $path
      * @param int|null $instance_id
      * @param bool $rewrite

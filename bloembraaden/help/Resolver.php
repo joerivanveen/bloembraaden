@@ -289,7 +289,7 @@ class Resolver extends BaseLogic
 
     private function getAdminElement(Session $session, array $terms): ?BaseLogic
     {
-        if (isset($terms[0]) and $go = $terms[0]) {
+        if (isset($terms[0]) && $go = $terms[0]) {
             switch ($go) {
                 case 'admin':
                     $element = $session->getAdmin();

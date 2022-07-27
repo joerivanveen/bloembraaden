@@ -546,17 +546,14 @@ if ('1' === $interval) { // interval should be '1'
 } elseif ('warmup' === $interval) { // interval should be ‘warmup’
     $max_running_seconds = 50;
     set_time_limit($max_running_seconds);
-    // @since 0.7.0 update ci_ai column, the column each element has for search purposes
-    $trans->start('update ci_ai');
-    echo $db->jobSearchUpdateIndexColumn() . PHP_EOL;
-    // handle cache, NOTE some pages may depend on the ci_ai (that should not be NULL)
+    // @since 0.7.0 update ci_ai column for searching, @since 0.10.11 this is part of caching
     $total_count = 0;
     $done = array();
     $stove = new Warmup();
     $rows = $db->jobStaleCacheRows(60);
     $trans->start('warmup stale (elements) cache');
     foreach ($rows as $key => $row) {
-        // warmup can take very long, this job starts every minute, so terminate it before that
+        // warmup can take very long, this job starts every minute, so terminate it before the next start
         if (microtime(true) - $start_timer > $max_running_seconds) {
             echo 'Stopped for time';
             echo PHP_EOL;
