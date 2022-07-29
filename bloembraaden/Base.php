@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class Base
 {
     // NOTE we track whether THIS object has a message or error, but we save and retrieve them all globally (through Help)
@@ -74,11 +72,13 @@ class Base
     {
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
-        $error_message = PHP_EOL .
-            $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'] . "\t" .
-            date('Y-m-d H:i:s') . "\t" .
-            $_SERVER['REQUEST_METHOD'] . "\t" .
-            $_SERVER['REQUEST_URI'] . "\nFATAL: ";
+        $error_message = sprintf(
+            "\n%s\t%s\t%s\t%s\nFATAL: ",
+            ($_SERVER['REMOTE_ADDR'] ?? 'INTERNAL'),
+            date('Y-m-d H:i:s'),
+            ($_SERVER['REQUEST_METHOD'] ?? 'NON-WEB'),
+            ($_SERVER['REQUEST_URI'] ?? '')
+        );
         $error_message .= $e;
         try { // TODO these error messages are a bit much, but leaving them out is a bit scarce, what to do?
             $error_message .= PHP_EOL . var_export(Help::getErrorMessages(), true);
