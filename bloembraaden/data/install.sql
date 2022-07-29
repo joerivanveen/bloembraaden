@@ -2743,6 +2743,22 @@ ALTER TABLE _instance
 
 COMMIT;
 
+-- version 0.10.11
+
+BEGIN;
+
+CREATE TABLE "public"."_search_settings"
+(
+    "search_settings_id" SERIAL PRIMARY KEY,
+    "instance_id"        Integer                                  NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT now()   NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT now()   NOT NULL,
+    "deleted"            Boolean                  DEFAULT false   NOT NULL,
+    CONSTRAINT "unique_search_settings_id" UNIQUE ("search_settings_id")
+);
+
+COMMIT;
+
 -- next version: comments + ratings
 
 

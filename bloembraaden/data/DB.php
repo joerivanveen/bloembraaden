@@ -423,38 +423,6 @@ class DB extends Base
     }
 
     /**
-     * @param string $slug slug to look for
-     * @return \stdClass
-     * @since 0.7.0
-     */
-    public function fetchSearchSettingsBySlug(string $slug): \stdClass
-    {
-        // to be certain make $slug lower in database
-        $slug = $this->toLower($slug);
-        // get it from search settings
-        $statement = $this->conn->prepare('SELECT * FROM _search_settings WHERE slug = :slug AND instance_id = :instance_id AND deleted = FALSE;');
-        $statement->bindValue(':slug', $slug);
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->execute();
-        $rows = $statement->fetchAll();
-        $statement = null;
-        if (count($rows) === 1) {
-            return $this->normalizeRow($rows[0])->search_settings_id;
-        } else { // get default TODO this is not very optimal, all the db round trips
-            $statement = $this->conn->prepare('SELECT * FROM _search_settings WHERE instance_id = :instance_id AND deleted = FALSE ORDER BY "name" DESC LIMIT 1;');
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->execute();
-            $rows = $statement->fetchAll();
-            $statement = null;
-            if (count($rows) === 1) {
-                return $this->normalizeRow($rows[0]);
-            } else { // no search settings available
-                return (object)array('search_settings_id' => 0);
-            }
-        }
-    }
-
-    /**
      * @param string $path
      * @return \stdClass|null
      * @since 0.8.11
@@ -1351,23 +1319,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             'given_name' => $name,
             'instance_id' => $instance_id,
         ));
-    }
-
-    /**
-     * Returns the search settings that belong to a specific instance
-     * @param int $instance_id defaults to the current instance
-     * @return array|null indexed array of \stdClass (row) objects
-     * @since 0.7.0
-     */
-    public function getSearchSettings(int $instance_id = -1): ?array
-    {
-        if ($instance_id === -1) $instance_id = Setup::$instance_id;
-
-        return $this->fetchRows(
-            '_search_settings',
-            array('search_settings_id', 'name', 'slug', 'use_fts', 'fts_language', 'template_id', 'o'),
-            array('instance_id' => $instance_id)
-        );
     }
 
     /**

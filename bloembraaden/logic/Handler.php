@@ -1907,13 +1907,6 @@ class Handler extends BaseLogic
 
                             return (object)true;
                         }
-                    case '_search_settings':
-                        Help::getDB()->insertElement(new Type('search'), array(
-                            'instance_id' => $instance_id,
-                            'name' => __('search', 'peatcms'),
-                            'slug' => 'search',
-                        ));
-                        break;
                     case '_redirect':
                         Help::getDB()->insertRowAndReturnKey('_redirect', array(
                             'instance_id' => $instance_id,
