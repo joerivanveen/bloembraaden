@@ -2747,6 +2747,7 @@ COMMIT;
 
 BEGIN;
 
+DROP TABLE IF EXISTS _search_settings;
 CREATE TABLE "public"."_search_settings"
 (
     "search_settings_id" SERIAL PRIMARY KEY,
