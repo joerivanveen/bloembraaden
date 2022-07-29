@@ -2374,7 +2374,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             'session_id',
             'ip_address',
         ), array('token' => $token))) {
-            $this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
+            //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
 
             return null;
         }

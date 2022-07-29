@@ -1143,6 +1143,13 @@ class Handler extends BaseLogic
                                 '__authorizations__' => Help::getDB()->getInstagramAuthorizations($instance_id),
                                 'slug' => 'admin_instagram',
                             );
+                            // @since 0.10.11: allow media to be used directly in admin
+                            foreach($out['__feeds__'] as $key => $feed) {
+                                if (isset($feed->feed)) {
+                                    $feed->__media__ = json_decode($feed->feed);
+                                    unset($feed->feed);
+                                }
+                            }
                         }
                     }
                 } elseif ($action === 'admin_redirect') {

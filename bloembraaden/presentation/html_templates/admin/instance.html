@@ -35,25 +35,32 @@
         </div>
         {%__row__%}
         {%__action__/templates%}
-        <table style="margin:14px 0;"><tr><td>
-            <input type="button" class="PEATCMS_editable" data-table_parent="instance"
-               data-table_parent_id="{{instance_id}}"
-               data-table_name="_template" data-peatcms_handle="new_row" value="New template"/>
-        </td><td>
-            <span>&nbsp;</span>json holding all templates:
-        </td><td>
-            <form action="/__action__/admin_export_templates_by_name">
-                <input type="submit" value="Export" title="Export all templates for this instance by name"/>
-                <input type="hidden" name="instance_id" value="{{instance_id}}"/>
-            </form>
-        </td><td>
-            <form action="/__action__/admin_import_templates_by_name" style="min-width:300px;">
-                <textarea name="template_json" placeholder="Paste your json here" class="as-input"></textarea>
-                <input type="submit" value="Import" title="Import all templates for this instance by name"/>
-                <input type="hidden" name="instance_id" value="{{instance_id}}"/>
-                <input type="hidden" name="re_render" value="__action__/templates"/>
-            </form>
-        </td></tr></table>
+        <table style="margin:14px 0;">
+            <tr>
+                <td>
+                    <input type="button" class="PEATCMS_editable" data-table_parent="instance"
+                           data-table_parent_id="{{instance_id}}"
+                           data-table_name="_template" data-peatcms_handle="new_row" value="New template"/>
+                </td>
+                <td>
+                    <span>&nbsp;</span>json holding all templates:
+                </td>
+                <td>
+                    <form action="/__action__/admin_export_templates_by_name">
+                        <input type="submit" value="Export" title="Export all templates for this instance by name"/>
+                        <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+                    </form>
+                </td>
+                <td>
+                    <form action="/__action__/admin_import_templates_by_name" style="min-width:300px;">
+                        <textarea name="template_json" placeholder="Paste your json here" class="as-input"></textarea>
+                        <input type="submit" value="Import" title="Import all templates for this instance by name"/>
+                        <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+                        <input type="hidden" name="re_render" value="__action__/templates"/>
+                    </form>
+                </td>
+            </tr>
+        </table>
         <div><label>Order confirmation: </label>
             <select class="PEATCMS_editable" data-column_name="template_id_order_confirmation"
                     data-table_name="_instance" data-handle="update_column"
@@ -194,7 +201,8 @@
               data-table_name="_instagram_feed"></span>
         <div>
             <!--<strong>{{instagram_auth_id}} / {{instagram_feed_id}}</strong>-->
-            <div class="info"><em>NOTE: changes may take up to 5 minutes to become visible or start manifesting at all.</em></div>
+            <div class="info"><em>NOTE: changes may take up to 5 minutes to become visible or start manifesting at
+                all.</em></div>
             <input type="text" class="PEATCMS_editable medium" data-column_name="feed_name"
                    data-table_name="_instagram_feed" placeholder="Feed name"
                    title="Choose a feed name to load this feed"
@@ -215,6 +223,13 @@
             <input type="button" class="PEATCMS_editable delete" data-table_name="_instagram_feed"
                    data-peatcms_handle="delete_row" value="🗑" data-confirm="Delete feed?"/>
             summon: {&shy;%__action__/instagram/feed/{{feed_name}}%&shy;}
+            <section>
+                {%__media__%}
+                <a href="{{permalink}}" title="{{caption|clean}}" class="{{media_type}}" style="display:inline-block;background-image:url('{{src_small}}');
+        background-size:cover;width:100px;height:100px;"></a>
+                {%__media__%}
+            </section>
+
         </div>
         {%__feeds__%}
         {%__authorizations__%}
@@ -235,13 +250,6 @@
         <p>Add Instagram accounts by (re-)authorizing Bloembraaden with the appropriate user:
             <a class="button" href="/__action__/instagram/authorize/">Authorize Bloembraaden</a></p>
         <p>Authorization is extended automagically approx 5 days before it expires.</p>
-        {%__action__/instagram/feed/default-feed%}
-        <h2>{{feed_name}} {{instagram_username:@::value::}} {{instagram_hashtag:#::value::}}</h2>
-        {%__media__%}
-        <a href="{{permalink}}" title="{{caption|clean}}" class="{{media_type}}" style="display:inline-block;background-image:url('{{src_small}}');
-        background-size:cover;width:100px;height:100px;"></a>
-        {%__media__%}
-        {%__action__/instagram/feed/default-feed%}
     </section>
     <section class="toggle">
         <header>
