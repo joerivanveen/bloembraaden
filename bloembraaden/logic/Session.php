@@ -267,7 +267,6 @@ class Session extends BaseLogic
     {
         // get all the stuff from the database
         if ($session = Help::getDB()->fetchSession($this->token)) {
-            // TODO check the useragent (must be text field then) and refuse if it is different
             // get user
             if ($session->user_id > 0) {
                 $this->user = new User($session->user_id);
@@ -301,7 +300,7 @@ class Session extends BaseLogic
 
             return true;
         } else {
-            $this->addError('Session->load(): Could not get session from Database.');
+            //$this->addError('Session->load(): Could not get session from Database.');
 
             return false;
         }

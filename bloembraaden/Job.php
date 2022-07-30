@@ -48,6 +48,9 @@ class jobTransaction
     public function flush(bool $with_log = true)
     {
         $this->message .= ob_get_clean();
+        if (true === $this->useNewRelic) {
+            newrelic_end_transaction(); // stop recording the current transaction
+        }
         if ($with_log) {
             error_log($this->message, 3, Setup::$LOGFILE);
         }

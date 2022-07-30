@@ -1827,7 +1827,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         $peat_type = $element->getType();
         $table_name = $peat_type->tableName();
-        if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return false;
+        if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true; // success, we do not need to update
         $id_column = $peat_type->idColumn();
         $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($element->getOutput())));
         $statement = $this->conn->prepare("UPDATE $table_name SET ci_ai = :src WHERE $id_column = :id;");
