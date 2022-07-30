@@ -2375,7 +2375,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             'ip_address',
         ), array('token' => $token))) {
             //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
-
             return null;
         }
         // get session vars
@@ -4141,9 +4140,10 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobOldCacheRows(int $interval = 600, int $limit = 60): array
     {
-        $statement = $this->conn->prepare('
-            SELECT DISTINCT slug, instance_id, since FROM _cache WHERE since < NOW() - interval \'' .
-            $interval . ' minutes\' ORDER BY since DESC LIMIT ' . $limit . ';');
+        $statement = $this->conn->prepare("
+            SELECT DISTINCT slug, instance_id, since FROM _cache 
+            WHERE since < NOW() - interval '$interval minutes' ORDER BY since ASC LIMIT $limit;
+            ");
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $this->normalizeRows($statement->fetchAll());
@@ -4290,7 +4290,10 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
         ob_start();
-        if (true === isset($out->title)) { echo $out->title; echo ' '; }
+        if (true === isset($out->title)) {
+            echo $out->title;
+            echo ' ';
+        }
         if (true === isset($out->__x_values__)) {
             foreach ($out->__x_values__ as $key => $x) {
                 if (false === is_int($key)) continue; // not a row
@@ -4308,9 +4311,18 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                 echo ' ';
             }
         }
-        if (true === isset($out->excerpt)) { echo $out->excerpt; echo ' '; }
-        if (true === isset($out->content)) { echo $out->content; echo ' '; }
-        if (true === isset($out->description)) { echo $out->description; echo ' '; }
+        if (true === isset($out->excerpt)) {
+            echo $out->excerpt;
+            echo ' ';
+        }
+        if (true === isset($out->content)) {
+            echo $out->content;
+            echo ' ';
+        }
+        if (true === isset($out->description)) {
+            echo $out->description;
+            echo ' ';
+        }
 
         return ob_get_clean();
     }
