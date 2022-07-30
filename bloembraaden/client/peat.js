@@ -3018,9 +3018,9 @@ PEATCMS_navigator.prototype.go = function (path, local) {
         if (path.indexOf(this.getRoot()) === 0 || local === true) { // this is a local link
             slug = this.signalStartNavigating(path);
             new PEATCMS_element(slug, function (el) {
-                var slug, title, path;
+                let title, path;
                 if (el === false) {
-                    console.error('The slug ‘' + slug + '’ is not an element');
+                    console.warn('The slug ‘' + slug + '’ is not an element');
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                     self.is_navigating = false;
                 } else {
