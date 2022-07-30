@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class Shoppinglist extends BaseLogic
 {
     // TODO it's a bit wonky, with the 'rows' variable holding the rows
@@ -19,7 +17,10 @@ class Shoppinglist extends BaseLogic
         $this->type_name = 'shoppinglist';
         // get the list from db
         $this->row = Help::getDB()->getShoppingList(
-            $name, $session->getId(), (null === ($user = $session->getUser())) ? 0 : $user->getId());
+            $name,
+            $session->getId(),
+            (null === ($user = $session->getUser())) ? 0 : $user->getId()
+        );
         $this->rows = Help::getDB()->getShoppingListRows($this->getId());
         // remember the state so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
@@ -51,10 +52,10 @@ class Shoppinglist extends BaseLogic
         $variant_id = $variant->getId();
         foreach ($rows as $index => $row) {
             if ($row->variant_id === $variant_id) {
-                $this->rows[$index]->quantity += $quantity;
+                $row->quantity += $quantity;
                 // prices should always be updated
-                $this->rows[$index]->price = $variant->getPrice();
-                $this->rows[$index]->price_from = $variant->getPriceFrom();
+                $row->price = $variant->getPrice();
+                $row->price_from = $variant->getPriceFrom();
 
                 return true;
             }
@@ -80,7 +81,6 @@ class Shoppinglist extends BaseLogic
      */
     public function removeVariant(Variant $variant): bool
     {
-        // todo make generic functionality to get the right row and update it
         $rows = $this->rows;
         $variant_id = $variant->getId();
         foreach ($rows as $index => $row) {
@@ -207,7 +207,6 @@ class Shoppinglist extends BaseLogic
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
         // set template_id to default template, if it exists
         $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
-
         $this->row = $output_object;
     }
 

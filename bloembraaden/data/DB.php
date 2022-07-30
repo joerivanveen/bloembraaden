@@ -2691,9 +2691,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobDeleteOrphanedShoppinglistVariants(): int
     {
-//        $statement = $this->conn->prepare('
-//            DELETE FROM _shoppinglist_variant WHERE shoppinglist_id NOT IN (SELECT shoppinglist_id FROM _shoppinglist);
-//        ');
         $statement = $this->conn->prepare('
             DELETE FROM _shoppinglist_variant v WHERE NOT EXISTS(SELECT 1 FROM _shoppinglist l WHERE l.shoppinglist_id = v.shoppinglist_id);
         ');
@@ -2709,9 +2706,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobDeleteOrphanedSessionVars(): int
     {
-//        $statement = $this->conn->prepare('
-//            DELETE FROM _sessionvars WHERE session_id NOT IN (SELECT session_id FROM _session);
-//        ');
         $statement = $this->conn->prepare('
             DELETE FROM _sessionvars v WHERE NOT EXISTS(SELECT 1 FROM _session s WHERE session_id = v.session_id);
         ');
@@ -2978,9 +2972,9 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // find all tables that have a column 'deleted'
         // those tables must also have the standard columns (date_updated, etc.)
         $statement = $this->conn->prepare("
-            SELECT t.table_name FROM information_schema.tables t
-            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
-            WHERE c.column_name = 'deleted' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+            SELECT t . table_name FROM information_schema . tables t
+            INNER JOIN information_schema . columns c ON c . table_name = t . table_name and c . table_schema = :schema
+            WHERE c . column_name = 'deleted' and t . table_schema = :schema and t . table_type = 'BASE TABLE'
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
@@ -3048,7 +3042,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     public function jobDeleteOldSessions(int $interval_in_days = 30): int
     {
         $statement = $this->conn->prepare("
-            DELETE FROM _session WHERE admin_id = 0 AND user_id = 0 AND date_accessed < NOW() - interval '$interval_in_days days';
+            DELETE FROM _session WHERE admin_id = 0 and user_id = 0 and date_accessed < NOW() - interval '$interval_in_days days';
         ");
         $statement->execute();
         $affected = $statement->rowCount();
@@ -3637,7 +3631,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $where = $table->formatColumnsAndData($where, true);
         $where_string = implode(' AND ', $where['parameterized']);
         $statement = $this->conn->prepare("
-            SELECT EXISTS (SELECT 1 FROM $table_name WHERE $where_string);
+            SELECT EXISTS(SELECT 1 FROM $table_name WHERE $where_string);
         ");
         $statement->execute($where['values']);
         $return_value = (bool)$statement->fetchColumn(0);
@@ -3763,9 +3757,9 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // those tables must also have the standard columns (data_updated, etc.)
         // TODO this seems incredibly slow but can also be somewhere else, looking up a slug from history :-(
         $statement = Setup::getHistoryDatabaseConnection()->prepare("
-            SELECT t.table_name FROM information_schema.tables t
-            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
-            WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+            SELECT t . table_name FROM information_schema . tables t
+            INNER JOIN information_schema . columns c ON c . table_name = t . table_name and c . table_schema = :schema
+            WHERE c . column_name = 'slug' and t . table_schema = :schema and t . table_type = 'BASE TABLE'
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
@@ -3777,8 +3771,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             if (false === strpos($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
             if (ob_get_length()) echo 'UNION ALL ';
             $element_name = str_replace('cms_', '', $row->table_name);
-            echo "SELECT {$element_name}_id AS id, '$element_name' AS type, date_updated 
-                FROM cms_$element_name WHERE slug = :slug AND instance_id = :instance_id AND deleted = false ";
+            echo "SELECT {$element_name}_id as id, '$element_name' as type, date_updated 
+                FROM cms_$element_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
         }
         echo 'ORDER BY date_updated DESC LIMIT 1;';
         $statement = Setup::getHistoryDatabaseConnection()->prepare(ob_get_clean());
@@ -4288,7 +4282,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
 
     private function getMeaningfulSearchString(\stdClass $out): string // todo poc
     {
-        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
+        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{
+        $out->__ref};
         ob_start();
         if (true === isset($out->title)) {
             echo $out->title;
@@ -4306,7 +4301,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         if (true === isset($out->__products__)) {
             foreach ($out->__products__ as $key => $x) {
                 if (false === is_int($key)) continue; // not a row
-                if (isset($x->__ref)) $x = $GLOBALS['slugs']->{$x->__ref};
+                if (isset($x->__ref)) $x = $GLOBALS['slugs']->{
+                $x->__ref};
                 echo $x->title;
                 echo ' ';
             }
