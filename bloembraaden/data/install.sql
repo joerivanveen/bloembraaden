@@ -2760,6 +2760,17 @@ CREATE TABLE "public"."_search_settings"
 
 COMMIT;
 
+-- version 0.10.12
+
+BEGIN;
+
+ALTER TABLE _shoppinglist_variant
+    DROP CONSTRAINT IF EXISTS "unique__shoppinglist_variant_variant_id";
+
+CREATE INDEX "index_shoppinglist_id_shoppinglist_variant" ON "public"."_shoppinglist_variant" USING btree ("shoppinglist_id" Asc NULLS Last);
+
+COMMIT;
+
 -- next version: comments + ratings
 
 

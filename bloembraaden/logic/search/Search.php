@@ -204,7 +204,7 @@ class Search extends BaseElement
      */
     public function getRelatedForShoppinglist(int $shoppinglist_id, int $quantity = 8): array
     {
-        $list = Help::getDB()->getShoppingListRows($shoppinglist_id); // ordered from old to new by default
+        $list = Help::getDB()->fetchShoppingListRows($shoppinglist_id); // ordered from old to new by default
         // walk in reverse so the newest item gets the most attention
         $index = count($list);
         $variant_ids_collect = array();

@@ -1582,7 +1582,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function placeOrder(Shoppinglist $shoppinglist, Session $session, array $vars): ?string
     {
         // we need specific vars for the ordering process, validation process has run, if something misses you should throw an error
-        //count($order_rows = $this->getShoppingListRows($shoppinglist_id)) > 0
+        //count($order_rows = $this->fetchShoppingListRows($shoppinglist_id)) > 0
         if (count($order_rows = $shoppinglist->getRows()) > 0) {
             // TODO we need the session_id and the user_id (if exists) from that session as well...
             if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
@@ -1594,7 +1594,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             $shipping_costs = 0;
             $quantity_total = 0; // @since 0.7.6. also count the quantity, maybe there are only empty rows, you can’t order those
             $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0(Setup::$instance_id);
-            //$order_rows = $this->getShoppingListRows($shoppinglist_id); (already in if clause)
+            //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if clause)
             foreach ($order_rows as $index => $row) {
                 $amount_row_total += Help::getAsFloat($row->price) * $row->quantity;
                 $quantity_total += $row->quantity;
@@ -2637,13 +2637,28 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     /**
      * @param int $shoppinglist_id
      * @return array with \stdClass row objects containing the column values from _list_variant
-     * @since 0.5.1
+     * @since 0.5.1 @improved 0.10.12
      */
-    public function getShoppingListRows(int $shoppinglist_id): array
+    public function fetchShoppingListRows(int $shoppinglist_id): array
     {
-        return $this->fetchRows('_shoppinglist_variant', array(
-            'variant_id', 'quantity', 'price', 'price_from', 'o', 'deleted'
-        ), array('shoppinglist_id' => $shoppinglist_id));
+        $statement = $this->conn->prepare('
+            SELECT variant_id, quantity, price, price_from, o, deleted
+            FROM _shoppinglist_variant WHERE shoppinglist_id = ?
+            ORDER BY o, shoppinglist_variant_id DESC
+        ');
+        $statement->execute(array($shoppinglist_id));
+        $rows = $this->normalizeRows($statement->fetchAll());
+        $variant_ids = array();
+        // the rows can be double when they are just being updated, keep the most recent for each variant_id
+        foreach ($rows as $key => $row) {
+            if (true === in_array($row->variant_id, $variant_ids, true)) {
+                unset($rows[$key]);
+            } else {
+                $variant_ids[] = $row->variant_id;
+            }
+        }
+
+        return $rows; // array_filter?
     }
 
     /**
@@ -2652,36 +2667,35 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function upsertShoppingListRows(int $shoppinglist_id, array $rows)
     {
-        // TODO how to do with locking, you don't want to lock the table, just the rows with this id, etc.
-        $this->conn->beginTransaction();
-        // delete the rows
-        $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant WHERE shoppinglist_id = ?');
-        $statement->execute(array($shoppinglist_id));
-        // insert them all
-        if (count($rows) > 0) {
-            // insert current rows
-            $placeholders = array();
-            $values = array();
-            foreach ($rows as $index => $row) {
-                if (false === $row->deleted) {
-                    $placeholders[] = '(?, ?, ?, ?, ?, ?)'; // shoppinglist_id, variant_id, quantity, price, price_from, o
-                    $values[] = $shoppinglist_id;
-                    $values[] = $row->variant_id;
-                    $values[] = $row->quantity;
-                    $values[] = $row->price;
-                    $values[] = $row->price_from;
-                    $values[] = $index;
-                }
-            }
-            if (count($placeholders) > 0) {
-                $statement = $this->conn->prepare(
-                    'INSERT INTO _shoppinglist_variant ("shoppinglist_id", "variant_id", "quantity", "price", "price_from", "o") VALUES ' .
-                    implode(', ', $placeholders));
-                $statement->execute($values);
+        // insert current rows
+        $placeholders = array();
+        $values = array();
+        foreach ($rows as $index => $row) {
+            if (false === $row->deleted) {
+                $placeholders[] = '(?, ?, ?, ?, ?, ?)'; // shoppinglist_id, variant_id, quantity, price, price_from, o
+                $values[] = $shoppinglist_id;
+                $values[] = $row->variant_id;
+                $values[] = $row->quantity;
+                $values[] = $row->price;
+                $values[] = $row->price_from;
+                $values[] = $index;
             }
         }
+        if (count($placeholders) > 0) {
+            $statement = $this->conn->prepare('INSERT INTO _shoppinglist_variant ("shoppinglist_id", "variant_id", "quantity", "price", "price_from", "o") VALUES ' .
+                implode(', ', $placeholders) . ' RETURNING shoppinglist_variant_id;');
+            $statement->execute($values);
+            if (($shoppinglist_variant_id = $statement->fetchColumn(0))) {
+                // delete older rows
+                $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant WHERE shoppinglist_id = ? AND shoppinglist_variant_id < ?;');
+                $statement->execute(array($shoppinglist_id, $shoppinglist_variant_id));
+            }
+        } else {
+            // delete any lingering rows
+            $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant WHERE shoppinglist_id = ?;');
+            $statement->execute(array($shoppinglist_id));
+        }
         // ok done
-        $this->conn->commit();
         $statement = null;
     }
 
@@ -2691,9 +2705,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobDeleteOrphanedShoppinglistVariants(): int
     {
-        $statement = $this->conn->prepare('
-            DELETE FROM _shoppinglist_variant v WHERE NOT EXISTS(SELECT 1 FROM _shoppinglist l WHERE l.shoppinglist_id = v.shoppinglist_id);
-        ');
+        $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant v WHERE NOT EXISTS(SELECT 1 FROM _shoppinglist l WHERE l.shoppinglist_id = v.shoppinglist_id);');
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
