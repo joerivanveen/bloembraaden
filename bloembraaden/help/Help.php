@@ -687,14 +687,17 @@ class Help
         // (you can't start with the newly requested version only 'cause maybe you're upgrading multiple versions)
         $sql = substr($sql, $starting_position_of_upgrade_sql);
         //$sql = substr($sql, strpos($sql, '-- version'));
-        if (\strrpos($sql, '-- wipe history')) {
-            Help::wipeHistoryDatabase(new DB());
-        }
+//        if (\strrpos($sql, '-- wipe history')) {
+//            Help::wipeHistoryDatabase(new DB());
+//        }
         //
         try {
             $db->run($sql);
         } catch (\PDOException $e) {
-            echo $e->getMessage();
+            $db->resetConnection();
+            echo date(DATE_ATOM);
+            echo PHP_EOL;
+            echo $e;
             Help::addError(new \Exception('Install flag switched on, but failing'));
 
             return;
@@ -730,7 +733,7 @@ class Help
             echo 'This update wiped the history database' . PHP_EOL;
         } catch (\Exception $e) {
             echo $e->getMessage();
-            echo '<br/>';
+            echo PHP_EOL;
         }
     }
 

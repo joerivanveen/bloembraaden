@@ -32,6 +32,13 @@ class DB extends Base
         $this->db_schema = 'public';
     }
 
+    public function resetConnection()
+    {
+        if ($this->conn->inTransaction()) {
+            $this->conn->rollBack();
+        }
+    }
+
     /**
      * These are tables linked by crosslink tables (_x_-tables), returns the relations both ways:
      * element_name=>'child' or element_name=>'parent'
