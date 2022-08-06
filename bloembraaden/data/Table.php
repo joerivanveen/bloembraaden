@@ -20,6 +20,7 @@ class Type extends Base
         'variant' => 'cms_variant',
         'property' => 'cms_property',
         'property_value' => 'cms_property_value',
+        'comment' => 'cms_comment',
         'search' => '_search_settings',
         'client' => '_client',
         'instance' => '_instance',

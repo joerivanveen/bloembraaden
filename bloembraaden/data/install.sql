@@ -2515,7 +2515,9 @@ COMMIT;
 
 BEGIN;
 
-update _order set emailed_payment_confirmation = TRUE, emailed_payment_confirmation_success = FALSE;
+update _order
+set emailed_payment_confirmation         = TRUE,
+    emailed_payment_confirmation_success = FALSE;
 
 COMMIT;
 
@@ -2730,8 +2732,6 @@ BEGIN;
 
 DROP TABLE IF EXISTS _search_stopwords;
 
-DROP TABLE IF EXISTS _search_settings;
-
 ALTER TABLE _search_log
     DROP COLUMN IF EXISTS search_settings_id;
 
@@ -2751,10 +2751,10 @@ DROP TABLE IF EXISTS _search_settings;
 CREATE TABLE "public"."_search_settings"
 (
     "search_settings_id" SERIAL PRIMARY KEY,
-    "instance_id"        Integer                                  NOT NULL,
-    "date_created"       Timestamp With Time Zone DEFAULT now()   NOT NULL,
-    "date_updated"       Timestamp With Time Zone DEFAULT now()   NOT NULL,
-    "deleted"            Boolean                  DEFAULT false   NOT NULL,
+    "instance_id"        Integer                                NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "deleted"            Boolean                  DEFAULT false NOT NULL,
     CONSTRAINT "unique_search_settings_id" UNIQUE ("search_settings_id")
 );
 
@@ -2767,11 +2767,146 @@ BEGIN;
 ALTER TABLE _shoppinglist_variant
     DROP CONSTRAINT IF EXISTS "unique__shoppinglist_variant_variant_id";
 
+DROP INDEX if exists "index_shoppinglist_id_shoppinglist_variant";
 CREATE INDEX "index_shoppinglist_id_shoppinglist_variant" ON "public"."_shoppinglist_variant" USING btree ("shoppinglist_id" Asc NULLS Last);
 
 COMMIT;
 
--- next version: comments + ratings
+-- version 0.11.0
+
+BEGIN;
+
+-- comments and ratings...
+
+DROP TABLE IF EXISTS cms_comment;
+CREATE TABLE "public"."cms_comment"
+(
+    "comment_id"   SERIAL PRIMARY KEY,
+    "reply_to_id"  Integer,
+    "instance_id"  Integer                                NOT NULL,
+    "user_id"      Integer                  default 0     NOT NULL,
+    "admin_id"     Integer                  default 0     NOT NULL,
+    "ip_address"   Character Varying(45),
+    "reverse_dns"  Character Varying(255),
+    "user_agent"   Text,
+    "nickname"     Character Varying(255),
+    "email"        Character Varying(255),
+    "title"        Text,
+    "content"      Text,
+    "rating"       float,
+    "date_created" Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "date_updated" Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "online"       Boolean                  DEFAULT false NOT NULL,
+    "deleted"      Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_id" UNIQUE ("comment_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_brand";
+CREATE TABLE "public"."cms_comment_x_brand"
+(
+    "comment_x_brand_id" Serial PRIMARY KEY,
+    "sub_comment_id"     Integer                                NOT NULL,
+    "brand_id"           Integer                                NOT NULL,
+    "o"                  SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"              SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"             Boolean                  DEFAULT false NOT NULL,
+    "deleted"            Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_brand_comment_x_brand_id" UNIQUE ("comment_x_brand_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_page";
+CREATE TABLE "public"."cms_comment_x_page"
+(
+    "comment_x_page_id" Serial PRIMARY KEY,
+    "sub_comment_id"    Integer                                NOT NULL,
+    "page_id"           Integer                                NOT NULL,
+    "o"                 SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"             SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"      Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"      Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"            Boolean                  DEFAULT false NOT NULL,
+    "deleted"           Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_page_comment_x_page_id" UNIQUE ("comment_x_page_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_product";
+CREATE TABLE "public"."cms_comment_x_product"
+(
+    "comment_x_product_id" Serial PRIMARY KEY,
+    "sub_comment_id"       Integer                                NOT NULL,
+    "product_id"           Integer                                NOT NULL,
+    "o"                    SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"                SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"         Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"         Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"               Boolean                  DEFAULT false NOT NULL,
+    "deleted"              Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_product_comment_x_product_id" UNIQUE ("comment_x_product_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_serie";
+CREATE TABLE "public"."cms_comment_x_serie"
+(
+    "comment_x_serie_id" Serial PRIMARY KEY,
+    "sub_comment_id"     Integer                                NOT NULL,
+    "serie_id"           Integer                                NOT NULL,
+    "o"                  SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"              SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"             Boolean                  DEFAULT false NOT NULL,
+    "deleted"            Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_serie_comment_x_serie_id" UNIQUE ("comment_x_serie_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_variant";
+CREATE TABLE "public"."cms_comment_x_variant"
+(
+    "comment_x_variant_id" Serial PRIMARY KEY,
+    "sub_comment_id"       Integer                                NOT NULL,
+    "variant_id"           Integer                                NOT NULL,
+    "o"                    SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"                SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"         Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"         Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"               Boolean                  DEFAULT false NOT NULL,
+    "deleted"              Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_variant_comment_x_variant_id" UNIQUE ("comment_x_variant_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_image";
+CREATE TABLE "public"."cms_comment_x_image"
+(
+    "comment_x_image_id" Serial PRIMARY KEY,
+    "sub_comment_id"     Integer                                NOT NULL,
+    "image_id"           Integer                                NOT NULL,
+    "o"                  SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"              SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"             Boolean                  DEFAULT false NOT NULL,
+    "deleted"            Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_image_comment_x_image_id" UNIQUE ("comment_x_image_id")
+);
+
+DROP TABLE IF EXISTS "public"."cms_comment_x_embed";
+CREATE TABLE "public"."cms_comment_x_embed"
+(
+    "comment_x_embed_id" Serial PRIMARY KEY,
+    "sub_comment_id"     Integer                                NOT NULL,
+    "embed_id"           Integer                                NOT NULL,
+    "o"                  SmallInt                 DEFAULT 1     NOT NULL,
+    "sub_o"              SmallInt                 DEFAULT 1     NOT NULL,
+    "date_created"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "date_updated"       Timestamp With Time Zone DEFAULT NOW() NOT NULL,
+    "online"             Boolean                  DEFAULT false NOT NULL,
+    "deleted"            Boolean                  DEFAULT false NOT NULL,
+    CONSTRAINT "unique_cms_comment_x_embed_comment_x_embed_id" UNIQUE ("comment_x_embed_id")
+);
+
+COMMIT;
 
 
 

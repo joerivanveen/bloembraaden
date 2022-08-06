@@ -412,7 +412,7 @@ class Handler extends BaseLogic
                 $src = new Search();
                 // terms can be passed als query string ?terms=term1,term2 etc in the complex tag, as can limit
                 $props = $this->resolver->getProperties();
-                $limit = isset($props['limit']) ? (int) $props['limit'][0] : 8;
+                $limit = isset($props['limit']) ? (int)$props['limit'][0] : 8;
                 $terms = $props['terms'] ?? array();
                 $type_name = $props['type'][0] ?? $post_data->type ?? 'variant';
                 // TODO base it on taxonomy, properties, crosslinked items and stuff
@@ -444,6 +444,82 @@ class Handler extends BaseLogic
                 // times keeps track of how many times this var is (being) updated
                 $this->getSession()->setVar($name, $post_data->value, $post_data->times);
                 $out = true; //array($name => $this->getSession()->getVar($name)); // the var object including value and times properties is returned
+            } elseif ($action === 'post_comment' and (true === Help::recaptchaVerify($instance, $post_data))) {
+                $post_data = $this->resolver->escape($post_data);
+                $valid = true;
+                // validation process
+                if (isset($post_data->email)) {
+                    if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
+                        $this->addMessage(sprintf(__('‘%s’ is not recognized as a valid email address', 'peatcms'), $post_data->email), 'warn');
+                        $valid = false;
+                    }
+                } else {
+                    $post_data->email = 'N/A';
+                }
+                if (true === $valid) {
+                    // check the other mandatory fields
+                    foreach ([
+                                 'nickname',
+                                 'content',
+                             ] as $index => $field_name) {
+                        if (false === isset($post_data->$field_name) or trim($post_data->$field_name) === '') {
+                            $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
+                            $valid = false;
+                        }
+                    }
+                }
+                if (true === $valid) {
+                    $session =& $this->session; // point to this session
+                    $this->getDB()->insertElement(new Type('comment'), array(
+                        'email' => $post_data->email,
+                        'nickname' => $post_data->nickname,
+                        'title' => $post_data->title ?? 'title',
+                        'content' => $post_data->content,
+                        'rating' => $post_data->rating, // todo normalize for 0 - 1
+                        'reply_to_id' => $post_data->reply_to_id ?? null,
+                        'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
+                        'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
+                        'ip_address' => $session->getIpAddress(),
+                        'user_agent' => $session->getUserAgent(),
+                        'online' => false,
+                    ));
+                }
+            } elseif ($action === 'sendmail' and (true === Help::recaptchaVerify($instance, $post_data))) {
+                $post_data = $this->resolver->escape($post_data);
+                if (true === isset($post_data->from_email) and strpos($post_data->from_email, '@')) {
+                    if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                        $temp = new Template($template_row);
+                        $body = $temp->renderObject($post_data);
+                    }
+                    if (false === isset($body)) {
+                        $body = \var_export($post_data, true);
+                    }
+                    $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
+                    $mail->set(array(
+                        'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
+                        'from' => $instance->getSetting('mail_verified_sender'),
+                        'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
+                        'text' => Help::html_to_text($body),
+                        'html' => $body,
+                    ));
+                    $out = $mail->send();
+                    if (false === $out->success) {
+                        if (isset($post_data->failure_message)) {
+                            $this->addMessage($post_data->failure_message, 'error');
+                        } else {
+                            $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
+                        }
+                    } elseif (isset($post_data->success_message)) {
+                        $this->addMessage($post_data->success_message);
+                    }
+                } else {
+                    $this->addError('‘from_email’ is missing or not an e-mailaddress');
+                    if (isset($post_data->failure_message)) {
+                        $this->addMessage($post_data->failure_message, 'error');
+                    } else {
+                        $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
+                    }
+                }
             } elseif ($action === 'countries') {
                 $out = array('__rows__' => Help::getDB()->getCountries());
                 $out['slug'] = 'countries';
@@ -482,6 +558,7 @@ class Handler extends BaseLogic
                 }
             } elseif ('order' === $action) {
                 if (true === Help::recaptchaVerify($instance, $post_data)) {
+                    $post_data = $this->resolver->escape($post_data);
                     if (false === isset($post_data->shoppinglist)) {
                         $this->addError('Shoppinglist is not set for order action');
                         $out = true;
@@ -689,6 +766,7 @@ class Handler extends BaseLogic
             } elseif (('update_address' === $action or 'delete_address' === $action)
                 and (true === Help::recaptchaVerify($instance, $post_data))
             ) {
+                $post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = $this->getSession()->getUser())) and isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
                     if ($action === 'delete_address') $post_data->deleted = true;
@@ -719,6 +797,7 @@ class Handler extends BaseLogic
                 }
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ($action === 'create_address' and (true === Help::recaptchaVerify($instance, $post_data))) {
+                $post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = $this->getSession()->getUser()))) {
                     if (null !== ($address_id = Help::getDB()->insertElement(
                             new Type('address'),
@@ -730,41 +809,6 @@ class Handler extends BaseLogic
                     $this->addMessage(__('You need to be logged in to manage addresses', 'peatcms'), 'warn');
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ($action === 'sendmail' and (true === Help::recaptchaVerify($instance, $post_data))) {
-                if (true === isset($post_data->from_email) and strpos($post_data->from_email, '@')) {
-                    if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
-                        $temp = new Template($template_row);
-                        $body = $temp->renderObject($post_data);
-                    }
-                    if (false === isset($body)) {
-                        $body = \var_export($post_data, true);
-                    }
-                    $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
-                    $mail->set(array(
-                        'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
-                        'from' => $instance->getSetting('mail_verified_sender'),
-                        'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
-                        'text' => Help::html_to_text($body),
-                        'html' => $body,
-                    ));
-                    $out = $mail->send();
-                    if (false === $out->success) {
-                        if (isset($post_data->failure_message)) {
-                            $this->addMessage($post_data->failure_message, 'error');
-                        } else {
-                            $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
-                        }
-                    } elseif (isset($post_data->success_message)) {
-                        $this->addMessage($post_data->success_message);
-                    }
-                } else {
-                    $this->addError('‘from_email’ is missing or not an e-mailaddress');
-                    if (isset($post_data->failure_message)) {
-                        $this->addMessage($post_data->failure_message, 'error');
-                    } else {
-                        $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
-                    }
-                }
             } elseif ($action === 'detail' and $this->resolver->hasInstruction('order')) {
                 // TODO get it by order number (in the url) ONLY FOR logged in users that actually OWN that order_number
                 // TODO or you can check if the order requested was actually placed by the session id, to show the whole thing
@@ -861,7 +905,7 @@ class Handler extends BaseLogic
                     // TODO integrate updateRef fully into $element->update routine (class BaseElement)
                     if ($element = $this->getElementById($post_data->element, $post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            if ($arr = $element->updateRef($post_data->update_column_name, (string) $post_data->update_column_value)) {
+                            if ($arr = $element->updateRef($post_data->update_column_name, (string)$post_data->update_column_value)) {
                                 if ($element = $this->updateElement($post_data->element, $arr, $post_data->id)) {
                                     $out = $element->row;
                                 } else {
@@ -1144,7 +1188,7 @@ class Handler extends BaseLogic
                                 'slug' => 'admin_instagram',
                             );
                             // @since 0.10.11: allow media to be used directly in admin
-                            foreach($out['__feeds__'] as $key => $feed) {
+                            foreach ($out['__feeds__'] as $key => $feed) {
                                 if (isset($feed->feed)) {
                                     $feed->__media__ = json_decode($feed->feed);
                                     unset($feed->feed);

@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 // there are a couple of standard commands that differ from normal handling:
 // - __admin__
 // - __action__
@@ -58,19 +56,19 @@ class Resolver extends BaseLogic
             }));
         }
         // 0.5.3 / if you change this, check if the templates can still be saved
-        $this->post_data = json_decode(file_get_contents('php://input'), false);
+        $post_data = json_decode(file_get_contents('php://input'), false);
         if (json_last_error() === JSON_ERROR_NONE) {
-            $output_json = true; // $this->post_data->json; <- if you receive json you can bet it wants json back
+            $output_json = true; // $post_data->json; <- if you receive json you can bet it wants json back
         } else { // this is at least used when files are uploaded and for the login page __admin__
-            $this->post_data = (object)filter_input_array(INPUT_POST); // assume form data
-            if (isset($this->post_data->json) and true === $this->post_data->json) {
+            $post_data = (object)filter_input_array(INPUT_POST); // assume form data
+            if (isset($post_data->json) and true === $post_data->json) {
                 $output_json = true;
             } else {
                 $output_json = false;
             }
         }
         // since 0.5.10: possibility to render returned element in a different tag than its slug
-        if (isset($this->post_data->render_in_tag)) $this->render_in_tag = $this->post_data->render_in_tag;
+        if (isset($post_data->render_in_tag)) $this->render_in_tag = $post_data->render_in_tag;
         // remember for everyone, only needed when output is imminent:
         if (true === $output_json and false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
@@ -80,15 +78,16 @@ class Resolver extends BaseLogic
             } else {
                 $this->instructions['action'] = 'ok';
             }
-        } elseif (isset($this->post_data->action)) {
-            $this->instructions['action'] = htmlentities($this->post_data->action);
+        } elseif (isset($post_data->action)) {
+            $this->instructions['action'] = $post_data->action;
         }
         // for fileupload...
-        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) $this->post_data->csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN']);
+        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) $post_data->csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN']);
+        //
+        $this->post_data = $post_data;
         // cleanup terms and properties
         $this->properties = array();
         // $src holds the properties (filters), and possibly other things from the query string,
-        // normalize it
         foreach ($src as $key => $value) {
             $values = explode('=', $value);
             if (isset($values[1])) $this->addProperty($values[0], explode(',', $values[1]));
@@ -112,6 +111,14 @@ class Resolver extends BaseLogic
     public function getPostData()
     {
         return $this->post_data;
+    }
+
+    public function escape(\stdClass $post_data): \stdClass
+    {
+        foreach ($post_data as $key => $value) {
+            if (true === is_string($value)) $post_data->$key = htmlspecialchars($value, ENT_QUOTES);
+        }
+        return $post_data;
     }
 
     public function getAction(): ?string
@@ -215,7 +222,7 @@ class Resolver extends BaseLogic
                             $slug = '__order__/' . $this->getTerms()[0];
                         } else {
                             // all the orders (with paging)
-                            $page = (int) ($this->getProperties()['page'][0] ?? 1);
+                            $page = (int)($this->getProperties()['page'][0] ?? 1);
                             $page_size = 250;
                             $peat_type = new Type('order');
                             $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);

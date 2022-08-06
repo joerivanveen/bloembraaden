@@ -52,33 +52,36 @@ class DB extends Base
         if ('variant' === $type_name) {
             $arr = array('x_value' => 'properties', 'image' => 'cross_parent', 'embed' => 'cross_parent',
                 'file' => 'cross_parent', 'product' => 'direct_child', 'serie' => 'direct_child',
-                'brand' => 'direct_child', 'page' => 'cross_child');
+                'brand' => 'direct_child', 'page' => 'cross_child', 'comment' => 'cross_parent');
         } elseif ('page' === $type_name) {
             $arr = array('x_value' => 'properties', 'page' => 'cross_parent', 'image' => 'cross_parent',
-                'embed' => 'cross_parent', 'file' => 'cross_parent', 'variant' => 'cross_parent');
+                'embed' => 'cross_parent', 'file' => 'cross_parent', 'variant' => 'cross_parent', 'comment' => 'cross_parent');
         } elseif ('file' === $type_name) {
             $arr = array('image' => 'cross_parent', 'page' => 'cross_child', 'brand' => 'cross_child',
                 'serie' => 'cross_child', 'product' => 'cross_child', 'variant' => 'cross_child');
         } elseif ('image' === $type_name) {
             $arr = array('page' => 'cross_child', 'brand' => 'cross_child', 'serie' => 'cross_child',
-                'product' => 'cross_child', 'variant' => 'cross_child', 'embed' => 'cross_child');
+                'product' => 'cross_child', 'variant' => 'cross_child', 'embed' => 'cross_child', 'comment' => 'cross_parent');
         } elseif ('embed' === $type_name) {
             $arr = array('image' => 'cross_parent', 'page' => 'cross_child', 'brand' => 'cross_child',
-                'serie' => 'cross_child', 'product' => 'cross_child', 'variant' => 'cross_child');
+                'serie' => 'cross_child', 'product' => 'cross_child', 'variant' => 'cross_child', 'comment' => 'cross_parent');
         } elseif ('product' === $type_name) {
             $arr = array('image' => 'cross_parent', 'embed' => 'cross_parent', 'file' => 'cross_parent',
-                'serie' => 'direct_child', 'brand' => 'direct_child', 'variant' => 'direct_parent');
+                'serie' => 'direct_child', 'brand' => 'direct_child', 'variant' => 'direct_parent', 'comment' => 'cross_parent');
         } elseif ('serie' === $type_name) {
             $arr = array('image' => 'cross_parent', 'embed' => 'cross_parent', 'file' => 'cross_parent',
-                'brand' => 'direct_child', 'product' => 'direct_parent', 'variant' => 'direct_parent');
+                'brand' => 'direct_child', 'product' => 'direct_parent', 'variant' => 'direct_parent', 'comment' => 'cross_parent');
         } elseif ('brand' === $type_name) {
             $arr = array('image' => 'cross_parent', 'embed' => 'cross_parent', 'file' => 'cross_parent',
-                'serie' => 'direct_parent', 'product' => 'direct_parent', 'variant' => 'direct_parent');
+                'serie' => 'direct_parent', 'product' => 'direct_parent', 'variant' => 'direct_parent', 'comment' => 'cross_parent');
         } elseif ('property_value' === $type_name) {
             $arr = array('property' => 'cross_parent', 'x_value' => array('variant', 'page'),
                 'image' => 'cross_parent', 'embed' => 'cross_parent', 'file' => 'cross_parent');
         } elseif ('property' === $type_name) {
             $arr = array('property_value' => 'cross_child', 'x_value' => array('variant', 'page'));
+        } elseif ('comment' === $type_name) {
+            $arr = array('brand' => 'cross_child', 'embed' => 'cross_child', 'image' => 'cross_child',
+                'page' => 'cross_child', 'product' => 'cross_child', 'serie' => 'cross_child', 'variant' => 'cross_child');
         }
 
         return (object)$arr; // convert to object for json which does not accept named arrays

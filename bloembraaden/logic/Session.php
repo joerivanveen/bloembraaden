@@ -249,6 +249,16 @@ class Session extends BaseLogic
         return $this->admin;
     }
 
+    public function getIpAddress(): string
+    {
+        return $this->ip_address;
+    }
+
+    public function getUserAgent(): string
+    {
+        return $this->user_agent;
+    }
+
     public function getInstance(): Instance
     {
         return $this->instance;
