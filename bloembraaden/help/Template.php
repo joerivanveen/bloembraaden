@@ -307,7 +307,8 @@ class Template extends BaseLogic
     public function renderObject(\stdClass $output): string
     {
         if (false === isset($this->row)) {
-            $this->handleErrorAndStop('Template must be set / initialized before calling ->renderObject');
+            $this->addError('Template must be set / initialized before calling ->renderObject');
+            return '';
         }
         if (ADMIN) {
             $obj = json_decode($this->getFreshJson());
@@ -317,7 +318,7 @@ class Template extends BaseLogic
         if (null !== $obj) { // probably null if never published or id's changed in the database
             return $this->convertTagsRemaining($this->renderOutput($output, (array)$obj));
         }
-        $this->handleErrorAndStop('Template not published or accessible during ->renderObject');
+        $this->addError('Template not published or accessible during ->renderObject');
 
         return '';
     }
