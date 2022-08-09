@@ -1168,13 +1168,6 @@ class Handler extends BaseLogic
                             $this->addMessage(__('No vat categories found', 'peatcms'), 'warn');
                         }
                     }
-                } elseif ($action === 'admin_search') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array('__rows__' => Help::getDB()->getSearchSettings($instance_id));
-                            $out['slug'] = 'admin_search';
-                        }
-                    }
                 } elseif ($action === 'search_log') {
                     // only shows log of the current instance
                     $rows = Help::getDB()->fetchSearchLog();
