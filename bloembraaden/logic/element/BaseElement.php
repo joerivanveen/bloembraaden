@@ -529,10 +529,8 @@ class BaseElement extends BaseLogic implements Element
     public function getSlug(): ?string
     {
         if (!isset($this->row)) $this->handleErrorAndStop('->getSlug() called with no row present');
-        $slug = $this->row->slug ?? $this->row->order_number ?? null;
-        if (!isset($slug)) $this->addError('->getSlug(): row had no slug');
 
-        return $slug;
+        return $this->row->slug ?? $this->row->order_number ?? null;
     }
 
     public function getPath(): string

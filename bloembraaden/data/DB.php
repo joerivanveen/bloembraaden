@@ -3980,9 +3980,9 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // children must be caught (later) in batches by jobOldCacheRows
         // get all the slugs we need to warmup for this element
         $element_row = $this->fetchElementIdAndTypeBySlug($slug);
-        if (!$element_row) return false;
+        if (null === $element_row) return false;
         $element = (new Type($element_row->type))->getElement()->fetchById($element_row->id);
-        if (!$element) return false;
+        if (null === $element) return false;
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
         foreach ($linked_types as $type => $relation) {
