@@ -1340,10 +1340,7 @@ class Handler extends BaseLogic
                             }
                         } elseif ('_user' === $posted_table_name) {
                             $user_id = (int)$posted_id;
-                            $rows = Help::getDB()->fetchUserSessions($user_id);
-                            foreach ($rows as $key => $row) {
-                                Help::getDB()->deleteSessionById($row->session_id, $user_id, 0);
-                            }
+                            Help::getDB()->deleteSessionsForUser($user_id, 0);
                         }
                         //
                         if ($posted_table_name === '_admin'
