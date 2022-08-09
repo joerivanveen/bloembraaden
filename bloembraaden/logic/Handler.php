@@ -456,6 +456,18 @@ class Handler extends BaseLogic
                 } else {
                     $post_data->email = 'N/A';
                 }
+                if (isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
+                    $post_data->referer = end($url_parts);
+                    if (null === ($element_row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->referer))) {
+                        $this->addError(sprintf('Commented with unknown referer %s', $post_data->referer));
+                        $this->addMessage(__('This page does not accept comments', 'peatcms'), 'warn');
+                        $valid = false;
+                    }
+                } else {
+                    $this->addError('No referer when posting a comment');
+                    $this->addMessage(__('To post a comment your browser must also send a referer', 'peatcms'), 'error');
+                    $valid = false;
+                }
                 if (true === $valid) {
                     // check the other mandatory fields
                     foreach ([
@@ -470,19 +482,34 @@ class Handler extends BaseLogic
                 }
                 if (true === $valid) {
                     $session =& $this->session; // point to this session
-                    $this->getDB()->insertElement(new Type('comment'), array(
-                        'email' => $post_data->email,
-                        'nickname' => $post_data->nickname,
-                        'title' => $post_data->title ?? 'title',
-                        'content' => $post_data->content,
-                        'rating' => $post_data->rating, // todo normalize for 0 - 1
-                        'reply_to_id' => $post_data->reply_to_id ?? null,
-                        'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
-                        'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
-                        'ip_address' => $session->getIpAddress(),
-                        'user_agent' => $session->getUserAgent(),
-                        'online' => false,
-                    ));
+                    $peat_type = new Type('comment');
+                    if (null !== ($comment_id = $this->getDB()->insertElement($peat_type, array(
+                            'referer' => $post_data->referer,
+                            'email' => $post_data->email,
+                            'nickname' => $post_data->nickname,
+                            'title' => $post_data->title ?? 'title',
+                            'content' => $post_data->content,
+                            'rating' => $post_data->rating ?? null, // todo normalize for 0 - 1
+                            'reply_to_id' => $post_data->reply_to_id ?? null,
+                            'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
+                            'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
+                            'ip_address' => $session->getIpAddress(),
+                            'user_agent' => $session->getUserAgent(),
+                            'online' => false,
+                        )))) {
+                        $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
+                        if (true === $comment->link($element_row->type, $element_row->id)) {
+                            $out = $comment->getOutput();
+                            $out->success = true;
+                        } else {
+                            $this->addError(sprintf('Comment could not be linked to %s as %s', $post_data->referer, var_export($element_row, true)));
+                            $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
+                            $this->addMessage('make it so that you can exclude an element from cache, like a comment, but it will still markStaleTheParents :-)', 'note');
+                        }
+                    } else {
+                        $this->addError(sprintf('Comment not added with data %s', var_export($post_data, true)));
+                        $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
+                    }
                 }
             } elseif ($action === 'sendmail' and (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);

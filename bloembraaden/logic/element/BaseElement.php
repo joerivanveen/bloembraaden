@@ -514,8 +514,8 @@ class BaseElement extends BaseLogic implements Element
 
     public function getInstanceId(): int
     {
-        if (isset($this->getRow()->instance_id)) {
-            return $this->getRow()->instance_id;
+        if (isset(($row = $this->getRow())->instance_id)) {
+            return $row->instance_id;
         }
         $this->addError(sprintf('getInstanceId() on type ‘%s’ called while there was none', $this->type_name));
 

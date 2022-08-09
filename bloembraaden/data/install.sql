@@ -2794,6 +2794,7 @@ CREATE TABLE "public"."cms_comment"
     "title"        Text,
     "content"      Text,
     "rating"       float,
+    "referer"      Character Varying(127),
     "date_created" Timestamp With Time Zone DEFAULT now() NOT NULL,
     "date_updated" Timestamp With Time Zone DEFAULT now() NOT NULL,
     "online"       Boolean                  DEFAULT false NOT NULL,

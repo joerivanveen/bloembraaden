@@ -25,6 +25,7 @@ require CORE . 'logic/element/Page.php';
 require CORE . 'logic/element/Image.php';
 require CORE . 'logic/element/Embed.php';
 require CORE . 'logic/element/File.php';
+require CORE . 'logic/element/Comment.php';
 require CORE . 'logic/element/Menu.php';
 require CORE . 'logic/element/MenuItem.php';
 // integrations
