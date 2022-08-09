@@ -168,7 +168,7 @@ class Table extends Base
                 $return_value['discarded'][] = $column_name;
             }
         }
-        if (isset($return_value['discarded']) and count($return_value['discarded']) > 0) {
+        if (Setup::$VERBOSE && isset($return_value['discarded']) and count($return_value['discarded']) > 0) {
             $this->addError('Discarded columns in statement: ' . var_export($return_value['discarded'], true));
         }
 
