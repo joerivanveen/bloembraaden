@@ -493,6 +493,8 @@ class DB extends Base
                 UNION ALL 
                 SELECT variant_id AS id, \'variant\' AS type FROM cms_variant WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
+                SELECT comment_id AS id, \'comment\' AS type FROM cms_comment WHERE slug = :slug AND instance_id = :instance_id 
+                UNION ALL 
                 SELECT property_id AS id, \'property\' AS type FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
                 SELECT property_value_id AS id, \'property_value\' AS type FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 

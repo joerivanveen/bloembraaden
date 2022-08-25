@@ -592,6 +592,17 @@ class Help
         return trim($string, '-');
     }
 
+    public static function summarize(int $length, ...$parts): string
+    {
+        $string = trim(implode(' ', $parts));
+
+        if ($length >= strlen($string)) return $string;
+
+        $string = substr($string, 0, $length - 3);
+
+        return "$string...";
+    }
+
     /**
      * @param array $terms
      * @param array $properties

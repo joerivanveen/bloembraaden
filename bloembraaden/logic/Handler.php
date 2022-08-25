@@ -474,7 +474,7 @@ class Handler extends BaseLogic
                                  'nickname',
                                  'content',
                              ] as $index => $field_name) {
-                        if (false === isset($post_data->$field_name) or trim($post_data->$field_name) === '') {
+                        if (false === isset($post_data->$field_name) or trim((string) $post_data->$field_name) === '') {
                             $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                             $valid = false;
                         }
@@ -483,11 +483,14 @@ class Handler extends BaseLogic
                 if (true === $valid) {
                     $session =& $this->session; // point to this session
                     $peat_type = new Type('comment');
+                    $title = Help::summarize(127, $post_data->title ?? '', $post_data->content);
+                    $slug = $post_data->referer . ' ' . Help::slugify($title);
                     if (null !== ($comment_id = $this->getDB()->insertElement($peat_type, array(
                             'referer' => $post_data->referer,
+                            'slug' => $slug,
                             'email' => $post_data->email,
                             'nickname' => $post_data->nickname,
-                            'title' => $post_data->title ?? 'title',
+                            'title' => $title,
                             'content' => $post_data->content,
                             'rating' => $post_data->rating ?? null, // todo normalize for 0 - 1
                             'reply_to_id' => $post_data->reply_to_id ?? null,
@@ -504,7 +507,6 @@ class Handler extends BaseLogic
                         } else {
                             $this->addError(sprintf('Comment could not be linked to %s as %s', $post_data->referer, var_export($element_row, true)));
                             $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
-                            $this->addMessage('make it so that you can exclude an element from cache, like a comment, but it will still markStaleTheParents :-)', 'note');
                         }
                     } else {
                         $this->addError(sprintf('Comment not added with data %s', var_export($post_data, true)));

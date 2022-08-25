@@ -16,7 +16,7 @@ class Shoppinglist extends BaseLogic
         $this->session = $session;
         $this->type_name = 'shoppinglist';
         // get the list from db
-        $this->row = Help::getDB()->getShoppingList(
+        $this->row = Help::getDB()->fetchShoppingList(
             $name,
             $session->getId(),
             (null === ($user = $session->getUser())) ? 0 : $user->getId()
