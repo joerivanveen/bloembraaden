@@ -140,7 +140,7 @@ class Instance extends BaseLogic
                 die();
             } else {
                 // @since 0.10.2 no more error reporting for these kinds of requests
-                $this->addError('No instance found for domain ' . $domain);
+               if (Setup::$VERBOSE) $this->addError('No instance found for domain ' . $domain);
                 die('<pre style="font-family:Courier,monospace">' . Setup::FLOWER . '</pre>');
             }
         }
