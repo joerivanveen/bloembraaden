@@ -2616,7 +2616,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      * @return \stdClass the row from the _list
      * @since 0.5.1
      */
-    public function getShoppingList(string $name, int $session_id, int $user_id = 0): \stdClass
+    public function fetchShoppingList(string $name, int $session_id, int $user_id = 0): \stdClass
     {
         if ($user_id !== 0) $session_id = 0; // @since 0.7.9 get shoppinglist either by session or by user
         $data = array(
@@ -3236,29 +3236,22 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             // make it lowercase (multibyte)
             $slug = $this->toLower($slug);
         }
-        // get all tables that contain a slug column, except cache of course, they are always duplicate
-        $statement = $this->conn->prepare('
-            SELECT t.table_name FROM information_schema.tables t
-            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
-            WHERE c.column_name = \'slug\' AND t.table_schema = :schema AND t.table_type = \'BASE TABLE\'
-            AND t.table_name <> \'_cache\' AND t.table_name <> \'_stale\'
-        ');
-        $statement->bindValue(':schema', $this->db_schema);
-        $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
-        $statement = null;
+        $slug = substr($slug, 0, 127);
+        $rows = $this->getTablesWithSlugs();
         $found = false;
         $instance_id = Setup::$instance_id;
         // loop through the tables to see if any exist that have this slug (that are not this $element and $id)
         foreach ($rows as $key => $row) {
-            if ($row->table_name !== $element->tableName()) {
-                if ($this->rowExists($row->table_name, array('slug' => $slug, 'instance_id' => $instance_id))) $found = true;
+            $table_name = $row->table_name;
+            if ($table_name !== $element->tableName()) {
+                if ($this->rowExists($table_name, array('slug' => $slug, 'instance_id' => $instance_id))) $found = true;
             } else { // find out if this slug belongs to this id, because if it doesn't, it's also $found
-                $table = new Table($this->getTableInfo($row->table_name));
-                $id_column = $table->getInfo()->getIdColumn();
-                $statement = $this->conn->prepare('SELECT ' .
-                    $id_column->getName() . ' AS id FROM ' .
-                    $row->table_name . ' WHERE slug = ? AND instance_id = ' . $instance_id . ';');
+                $table = new Table($this->getTableInfo($table_name));
+                $column_name = $table->getInfo()->getIdColumn()->getName();
+                $statement = $this->conn->prepare("
+                    SELECT $column_name AS id FROM $table_name 
+                    WHERE slug = ? AND instance_id = $instance_id;
+                ");
                 $statement->execute(array($slug));
                 $rows2 = $statement->fetchAll();
                 $statement = null;
@@ -3273,19 +3266,38 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         if ($found === true) {
             // update slug to slug-1 (slug-2 etc) and check again
             if ($depth === 0) {
-                return $this->clearSlug($slug . '-1', $element, $id, 1);
+                return $this->clearSlug("1-$slug", $element, $id, 1);
             } else {
                 if ($depth === 100) $this->handleErrorAndStop('Clear slug loops >100, probably error');
-                // remove current trailing depth number
-                $slug = substr($slug, 0, -1 * (strlen((string)$depth) + 1));
+                // remove current depth number
+                $slug = substr($slug, (strlen((string)$depth) + 1));
                 ++$depth; // increase depth to try again
 
-                return $this->clearSlug($slug . '-' . (string)$depth, $element, $id, $depth);
+                return $this->clearSlug("$depth-$slug", $element, $id, $depth);
             }
         }
 
         // return the cleared slug, since it hasn't been $found apparently
         return $slug;
+    }
+
+    private function getTablesWithSlugs(): array
+    {
+        if (false === isset($this->tables_with_slugs)) {
+            // get all tables that contain a slug column, except cache of course, they are always duplicate
+            $statement = $this->conn->prepare("
+            SELECT t.table_name FROM information_schema.tables t
+            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
+            WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+            AND t.table_name <> '_cache' AND t.table_name <> '_stale'
+        ");
+            $statement->bindValue(':schema', $this->db_schema);
+            $statement->execute();
+            $this->tables_with_slugs = $this->normalizeRows($statement->fetchAll());
+            $statement = null;
+        }
+
+        return $this->tables_with_slugs;
     }
 
     /**
