@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} | Bloembraaden default</title>
+    <meta name="description" content="{{excerpt_parsed|clean}}"/>
+    <link rel="canonical" href="{{root}}/{{slug}}"/>
+    <meta property="og:url" content="{{root}}/{{slug}}"/>
+    <meta property="og:site_name" content="Peatcms default"/>
+    <meta property="og:title" content="{{title|clean}}"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:description" content="{{excerpt_parsed|clean}}"/>
+</head>
+<body class="{{css_class}} file" data-online="{{online}}">
+<div role="main">
+    <header>
+        <!-- branding -->
+        <h2>Bloembraaden welcomes you</h2>
+        <p>This is a default template, rather scant at that. <em>Just to confirm it works.</em> You should create your
+            own templates and content in the admin interface. Download manuals and watch how-to video’s on <a href="https://bloembraaden.io">bloembraaden.io</a>.</p>
+    </header>
+    <h1>{{title}}</h1>
+    {{reply_to_id:<p>is reply</p>}}
+    {{rating:<p>rating: ::value::</p>}}
+    {{content_parsed}}
+    <p><em>(posted on <a href="/{{referer}}">{{referer}}</a>)</em></p>
+    <aside>
+        <h3>Used by</h3>
+        {%__pages__%}
+        <h4>Pages:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__pages__%}
+        {%__images__%}
+        <h4>Images:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__images__%}
+        {%__embeds__%}
+        <h4>Embeds:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__embeds__%}
+        {%__brands__%}
+        <h4>Brands:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__brands__%}
+        {%__series__%}
+        <h4>series:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__series__%}
+        {%__products__%}
+        <h4>Products:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__products__%}
+        {%__variants__%}
+        <h4>Variants:</h4>
+        <ul>{%__row__%}<li><a href="/{{slug}}">{{title}}</a></li>{%__row__%}</ul>
+        {%__variants__%}
+    </aside>
+</div>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden, we’ve got your backend</p>
+</body>
+</html>

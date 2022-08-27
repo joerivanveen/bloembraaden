@@ -475,7 +475,7 @@ class Template extends BaseLogic
                     $str_pos = $str_pos + strlen($equals) + 1;
                 } else {
                     $str_pos = $str_pos + strlen($tag_name) + 3;
-                    $is_false = ('' === $output_object || 'false' === $output_object);
+                    $is_false = (! $output_object || 'false' === $output_object);
                     $equals = null;
                 }
                 $end_pos = strpos($html, '}}', $str_pos);

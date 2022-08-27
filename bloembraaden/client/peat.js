@@ -3647,7 +3647,7 @@ function trim(str, chars) {
 }
 
 PEATCMS.getFormData = function (form) {
-    let elements = form.elements,
+    let elements = form.elements, data = form.dataset,
         element, value, i, len, obj = {}
     for (i = 0, len = elements.length; i < len; i++) {
         element = elements[i];
@@ -3660,6 +3660,21 @@ PEATCMS.getFormData = function (form) {
             value = false;
         }
         obj[element.name] = value;
+    }
+    // @since 0.11.0 dataset will be posted as well
+    for (i in data) {
+        if (! data.hasOwnProperty(i)) continue;
+        if ('peatcms_ajaxified' === i) continue;
+        if ('submitting' === i) continue;
+        value = data[i];
+        if (PEATCMS.isInt(value)) {
+            value = parseInt(value);
+        } else if ('true' === value) {
+            value = true;
+        } else if ('false' === value) {
+            value = false;
+        }
+        obj[i] = value;
     }
     return obj;
 }

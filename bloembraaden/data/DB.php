@@ -465,6 +465,7 @@ class DB extends Base
         // to be certain make $slug lower in database
         $slug = $this->toLower($slug);
         // find appropriate item in database
+        $rows = array();
         // @since 0.6.0 check the cache first
         if (false === $no_cache) {
             $statement = $this->conn->prepare('SELECT id, type_name as type FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
@@ -473,7 +474,7 @@ class DB extends Base
             $statement->execute(); // error handling necessary?
             $rows = $statement->fetchAll();
         }
-        if (count($rows ?? []) === 0) {
+        if (count($rows) === 0) {
             $statement = $this->conn->prepare('
                 SELECT page_id AS id, \'page\' AS type FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
@@ -1113,6 +1114,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      * Fetches the linked items as specified by $linked_type according to the structure of the
      * cross-links tables respecting the order therein as well as the ordering within the types themselves when relevant
      * In case of variants, it will use the page size and page number supplied
+     *
      * @param Type $peat_type
      * @param int $id
      * @param Type $linked_type
@@ -1701,12 +1703,13 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
 
     /**
      * @param string $table_name
+     * @param string $column_name default o, can also be sub_o when available
      * @return int
      * @since 0.10.10
      */
-    private function getHighestO(string $table_name): int
+    private function getHighestO(string $table_name, string $column_name = 'o'): int
     {
-        $statement = $this->conn->prepare('SELECT MAX (o) FROM ' . $table_name);
+        $statement = $this->conn->prepare("SELECT MAX ($column_name) FROM $table_name");
         $statement->execute();
         $o = (int)$statement->fetchColumn(0);
         $statement = null;
@@ -2263,6 +2266,54 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return (bool)$num_deleted;
     }
 
+    public function orderAfterId(Type $type, int $id, Type $sub_type, int $sub_id, int $after_id): bool
+    {
+        $type_name = $type->typeName();
+        $sub_type_name = $sub_type->typeName();
+        $link_table = "cms_{$sub_type_name}_x_$type_name";
+        $id_column = "{$sub_type_name}_x_{$type_name}_id";
+        $keep_order = 0;
+        $statement = $this->conn->prepare("
+        SELECT $id_column AS table_id, sub_{$sub_type_name}_id AS sub_id, o
+        FROM $link_table WHERE deleted = FALSE AND {$type_name}_id = :id ORDER BY o
+        ");
+        $statement->bindValue(':id', $id);
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = $this->conn->prepare("
+        UPDATE $link_table SET date_updated = NOW(), o = :o WHERE $id_column = :table_id
+        ");
+        $relocating_table_id = null;
+        $relocating_o = null;
+        foreach ($rows as $index => $row) {
+            if ($sub_id === $row['sub_id']) {
+                $relocating_table_id = $row['table_id'];
+                continue; // skip the one we are relocating
+            }
+            $keep_order++;
+            if ($keep_order !== $row['o']) { // update order so it will count nicely from 1 onwards
+                $statement->bindValue(':o', $keep_order);
+                $statement->bindValue(':table_id', $row['table_id']);
+                $statement->execute();
+            }
+            if ($after_id === $row['sub_id']) {
+                // after the current id we want the row we are relocating
+                $keep_order++;
+                $relocating_o = $keep_order;
+            }
+        }
+        if ($relocating_table_id && $relocating_o) {
+            $statement->bindValue(':o', $relocating_o);
+            $statement->bindValue(':table_id', $relocating_table_id);
+            $success = $statement->execute();
+        } else {
+            $success = false;
+        }
+        $statement = null;
+
+        return $success;
+    }
+
     public function upsertLinked(Type $type, int $id, Type $sub_type, int $sub_id, bool $delete = false, int $order = 0): bool
     {
         $type_name = $type->typeName();
@@ -2276,24 +2327,23 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
                 Help::swapVariables($id, $sub_id);
                 $order_column = 'sub_o';
             }
-            $link_table = 'cms_' . $sub_type_name . '_x_' . $type_name;
-            $id_column = $sub_type_name . '_x_' . $type_name . '_id';
+            $link_table = "cms_{$sub_type_name}_x_$type_name";
+            $id_column = "{$sub_type_name}_x_{$type_name}_id";
             $where = array(
-                $type_name . '_id' => $id,
-                'sub_' . $sub_type_name . '_id' => $sub_id,
+                "{$type_name}_id" => $id,
+                "sub_{$sub_type_name}_id" => $sub_id,
             );
             if ($order === 0) {
-                $update_array = array('deleted' => $delete);
-            } else { // only update order column if required
-                $update_array = array('deleted' => $delete, $order_column => $order);
+                $order = $this->getHighestO($link_table, $order_column); // @since 0.11.0 always add at the end
             }
+            $update_array = array('deleted' => $delete, $order_column => $order);
             if ($row = $this->fetchRow($link_table, array($id_column), $where)) { // update
                 return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->$id_column);
             } else { // insert
                 return 0 !== $this->insertRowAndReturnLastId($link_table, array_merge($where, $update_array));
             }
         }
-        $this->addError('->upsertLinked failed, no link table found for ' . $type_name . ' and ' . $sub_type_name);
+        $this->addError("->upsertLinked failed, no link table found for $type_name and $sub_type_name");
 
         return false;
     }

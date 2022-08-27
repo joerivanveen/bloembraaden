@@ -315,12 +315,12 @@ class BaseElement extends BaseLogic implements Element
         }
 
         return $this->refreshLinked($linkable_type_name, $full_feedback);
-        //return $this->getLinked()[$linkable_type_name];
     }
 
     /**
      * Returns an updated array of the supplied $linkable_type_name taking advantage of the
      * fetchLinked() method that only gets the missing items from db
+     *
      * @param string $linkable_type_name
      * @param bool $full_feedback
      * @return array
@@ -348,7 +348,7 @@ class BaseElement extends BaseLogic implements Element
                 $this->variant_page_counter
             ) ?: array();
         }
-        if ($this->fetchLinked()) {
+        if (true === $this->fetchLinked()) {
             return $this->getLinked()[$linkable_type_name];
         } else {
             $this->addError(sprintf('->fetchLinked fail for %s', $linkable_type_name));

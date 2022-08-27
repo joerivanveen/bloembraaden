@@ -474,7 +474,7 @@ class Handler extends BaseLogic
                                  'nickname',
                                  'content',
                              ] as $index => $field_name) {
-                        if (false === isset($post_data->$field_name) or trim((string) $post_data->$field_name) === '') {
+                        if (false === isset($post_data->$field_name) or trim((string)$post_data->$field_name) === '') {
                             $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                             $valid = false;
                         }
@@ -483,17 +483,20 @@ class Handler extends BaseLogic
                 if (true === $valid) {
                     $session =& $this->session; // point to this session
                     $peat_type = new Type('comment');
-                    $title = Help::summarize(127, $post_data->title ?? '', $post_data->content);
-                    $slug = $post_data->referer . ' ' . Help::slugify($title);
+                    $title = Help::summarize(127, $post_data->title ?? '');
+                    if ('' === $title) $title = Help::summarize(127, $post_data->content);
+                    $referer = $post_data->referer;
+                    $slug = Help::slugify("$referer $title");
+                    $reply_to_id = $post_data->reply_to_id ?? null;
                     if (null !== ($comment_id = $this->getDB()->insertElement($peat_type, array(
-                            'referer' => $post_data->referer,
+                            'referer' => $referer,
                             'slug' => $slug,
                             'email' => $post_data->email,
                             'nickname' => $post_data->nickname,
                             'title' => $title,
                             'content' => $post_data->content,
                             'rating' => $post_data->rating ?? null, // todo normalize for 0 - 1
-                            'reply_to_id' => $post_data->reply_to_id ?? null,
+                            'reply_to_id' => $reply_to_id,
                             'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
                             'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
                             'ip_address' => $session->getIpAddress(),
@@ -501,7 +504,16 @@ class Handler extends BaseLogic
                             'online' => false,
                         )))) {
                         $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
-                        if (true === $comment->link($element_row->type, $element_row->id)) {
+                        // note: link the comment to the element (not the other way around) to get the correct order
+                        $element_type = new Type($element_row->type);
+                        $element_id = $element_row->id;
+                        $element = ($element_type)->getElement()->fetchById($element_id);
+                        if (true === $element->link('comment', $comment_id)) {
+                            if (null !== $reply_to_id) {
+                                if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_to_id)) {
+                                    $this->addMessage(__('Comment added to end', 'peatcms'), 'warn');
+                                }
+                            }
                             $out = $comment->getOutput();
                             $out->success = true;
                         } else {
