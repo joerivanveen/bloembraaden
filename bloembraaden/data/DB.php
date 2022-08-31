@@ -4032,7 +4032,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     }
 
     /**
-     * Parents of the supplied slug are put in the _stale table so the cron job that warms up cache can pick them up
+     * Relations of the supplied slug are put in the _stale table so the job that warms up cache can pick them up
      * @param string $slug
      * @return bool
      * @since 0.8.8
@@ -4040,8 +4040,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function markStaleTheParents(string $slug): bool
     {
-        // from 0.8.8 we only warmup parents through their linked tables
-        // children must be caught (later) in batches by jobOldCacheRows
         // get all the slugs we need to warmup for this element
         $element_row = $this->fetchElementIdAndTypeBySlug($slug);
         if (null === $element_row) return false;
@@ -4057,7 +4055,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                     $this->markStale($row->property_slug);
                     $this->markStale($row->slug); // meaning property value slug
                 }
-            } elseif (in_array($relation, array('direct_child', 'cross_child'))) {
+            } elseif (in_array($relation, array('direct_child', 'cross_child', 'cross_parent'))) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
                     if (false === is_int($index)) continue;
