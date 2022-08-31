@@ -100,6 +100,29 @@ class Image extends BaseElement
         }
         if (false === isset($image)) return false; // to satisfy phpstorm regarding '$image might not be defined'
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
+        // rotate and flip if necessary @since 0.11.1
+        $exif = exif_read_data($path);
+        if (!empty($exif['Orientation'])) {
+            $orientation = $exif['Orientation'];
+            $angle = 0;
+            if (in_array($orientation, [3, 4])) {
+                $angle = 180;
+            } elseif (in_array($orientation, [5, 6])) {
+                $angle = -90;
+                Help::swapVariables($width, $height);
+            } elseif (in_array($orientation, [7, 8])) {
+                $angle = 90;
+                Help::swapVariables($width, $height);
+            }
+            if (0 !== $angle) {
+                $image = imagerotate($image, $angle, 0);
+                $logger->log("Rotated image $angle degrees");
+            }
+            if (in_array($orientation, [2, 5, 7, 4])) {
+                imageflip($image, IMG_FLIP_HORIZONTAL);
+                $logger->log('Image flipped as well');
+            }
+        }
         // define necessary paths
         $src = $this->getSlug() . '.webp'; // we save as webp by default with jpg fallback
         $my_path = Setup::$CDNPATH . $this->getInstanceId() . '/';
