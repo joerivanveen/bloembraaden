@@ -516,6 +516,11 @@ class Handler extends BaseLogic
                             }
                             $out = $comment->getOutput();
                             $out->success = true;
+                            // TODO it should be a setting and new comments must also be visible / obvious in the admin panels
+                            if (! isset($post_data->from_email)) $post_data->from_email = $instance->getSetting('mail_verified_sender');
+                            $post_data->slug = $slug;
+                            $post_data->title = $title;
+                            $this->sendMail($instance, $post_data);
                         } else {
                             $this->addError(sprintf('Comment could not be linked to %s as %s', $post_data->referer, var_export($element_row, true)));
                             $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
@@ -527,40 +532,7 @@ class Handler extends BaseLogic
                 }
             } elseif ($action === 'sendmail' and (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
-                if (true === isset($post_data->from_email) and strpos($post_data->from_email, '@')) {
-                    if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
-                        $temp = new Template($template_row);
-                        $body = $temp->renderObject($post_data);
-                    }
-                    if (false === isset($body)) {
-                        $body = \var_export($post_data, true);
-                    }
-                    $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
-                    $mail->set(array(
-                        'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
-                        'from' => $instance->getSetting('mail_verified_sender'),
-                        'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
-                        'text' => Help::html_to_text($body),
-                        'html' => $body,
-                    ));
-                    $out = $mail->send();
-                    if (false === $out->success) {
-                        if (isset($post_data->failure_message)) {
-                            $this->addMessage($post_data->failure_message, 'error');
-                        } else {
-                            $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
-                        }
-                    } elseif (isset($post_data->success_message)) {
-                        $this->addMessage($post_data->success_message);
-                    }
-                } else {
-                    $this->addError('‘from_email’ is missing or not an e-mailaddress');
-                    if (isset($post_data->failure_message)) {
-                        $this->addMessage($post_data->failure_message, 'error');
-                    } else {
-                        $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
-                    }
-                }
+                $out = $this->sendMail($instance, $post_data);
             } elseif ($action === 'countries') {
                 $out = array('__rows__' => Help::getDB()->getCountries());
                 $out['slug'] = 'countries';
@@ -1735,6 +1707,48 @@ class Handler extends BaseLogic
          * echo 'preg_replace 2: ' . preg_replace('/[^\p{L}\p{N}\p{M}\s]/u','',$str) . '<br/>';
          * echo 'DB()->slugify(): ' . Help::getDB()->slugify($str);
          */
+    }
+
+    private function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
+    {
+        $out = null;
+
+        if (true === isset($post_data->from_email) and strpos($post_data->from_email, '@')) {
+            if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                $temp = new Template($template_row);
+                $body = $temp->renderObject($post_data);
+            }
+            if (false === isset($body)) {
+                $body = \var_export($post_data, true);
+            }
+            $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
+            $mail->set(array(
+                'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
+                'from' => $instance->getSetting('mail_verified_sender'),
+                'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
+                'text' => Help::html_to_text($body),
+                'html' => $body,
+            ));
+            $out = $mail->send();
+            if (false === $out->success) {
+                if (isset($post_data->failure_message)) {
+                    $this->addMessage($post_data->failure_message, 'error');
+                } else {
+                    $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
+                }
+            } elseif (isset($post_data->success_message)) {
+                $this->addMessage($post_data->success_message);
+            }
+        } else {
+            $this->addError('‘from_email’ is missing or not an e-mailaddress');
+            if (isset($post_data->failure_message)) {
+                $this->addMessage($post_data->failure_message, 'error');
+            } else {
+                $this->addMessage(__('Failed to send mail', 'peatcms'), 'error');
+            }
+        }
+
+        return $out;
     }
 
     /**
