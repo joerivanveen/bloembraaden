@@ -267,6 +267,11 @@ class BaseElement extends BaseLogic implements Element
         unset($this->linked_types); // these are possibly changed
         if (($sub_type = new Type($sub_element_name))) {
             if (Help::getDB()->upsertLinked($this->getType(), $this->getId(), $sub_type, $sub_id, $unlink)) {
+                // todo special case for the element unlinked is really not nice
+                if (true === $unlink) {
+                    $element = $sub_type->getElement()->fetchById($sub_id);
+                    return $element->reCache();
+                }
                 return $this->reCache();
             }
         } else {
