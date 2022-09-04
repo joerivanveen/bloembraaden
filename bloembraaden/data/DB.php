@@ -2699,7 +2699,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     /**
      * @param int $shoppinglist_id
      * @return array with \stdClass row objects containing the column values from _list_variant
-     * @since 0.5.1 @improved 0.10.12
+     * @since 0.5.1 @improved 0.11.0
      */
     public function fetchShoppingListRows(int $shoppinglist_id): array
     {

@@ -100,7 +100,7 @@ class Image extends BaseElement
         }
         if (false === isset($image)) return false; // to satisfy phpstorm regarding '$image might not be defined'
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
-        // rotate and flip if necessary @since 0.11.1
+        // rotate and flip if necessary @since 0.11.0
         $exif = exif_read_data($path);
         if (!empty($exif['Orientation'])) {
             $orientation = $exif['Orientation'];

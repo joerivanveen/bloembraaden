@@ -1727,7 +1727,7 @@ class Handler extends BaseLogic
                 'from' => $instance->getSetting('mail_verified_sender'),
                 'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
                 'text' => Help::html_to_text($body),
-                'html' => $body,
+                'html' => str_replace("\n", '<br/>', $body),
             ));
             $out = $mail->send();
             if (false === $out->success) {
