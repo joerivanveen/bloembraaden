@@ -101,8 +101,9 @@ class Image extends BaseElement
         if (false === isset($image)) return false; // to satisfy phpstorm regarding '$image might not be defined'
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
         // rotate and flip if necessary @since 0.11.0
-        $exif = exif_read_data($path);
-        if (!empty($exif['Orientation'])) {
+        // https://stackoverflow.com/questions/52174789/warning-exif-read-dataphp3kladx-file-not-supported-in-home-i-public-html-ori
+        $exif = @exif_read_data($path);
+        if ($exif && !empty($exif['Orientation'])) {
             $orientation = $exif['Orientation'];
             $angle = 0;
             if (in_array($orientation, [3, 4])) {
