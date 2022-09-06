@@ -6,6 +6,7 @@ class Search extends BaseElement
 {
     protected bool $admin = false;
     protected int $result_count = 0;
+    public const MIN_TERM_LENGTH = 3;
 
     public function __construct(\stdClass $row = null)
     {
@@ -83,7 +84,9 @@ class Search extends BaseElement
                 return ($a < $b) ? -1 : 1;
         });
 
-        return $terms;
+        return array_values(array_filter($terms, static function ($term) {
+            return strlen($term) >= self::MIN_TERM_LENGTH;
+        }));
     }
 
     /**
@@ -326,7 +329,6 @@ class Search extends BaseElement
         $this->result_count = $quantity;
 
         return; // @since 0.8.10 no logging since we’re not using it anyway yet
-
         Help::getDB()->insertRowAndReturnKey('_search_log', array(
             'search' => implode(', ', $terms),
             'results' => $quantity,
