@@ -371,7 +371,7 @@ class DB extends Base
             usort($intersected, function ($a, $b) {
                 //$a_date = \DateTime::createFromFormat('Y-m-d H:i:s.uP', $a['date_popvote']);
                 //$b_date = \DateTime::createFromFormat('Y-m-d H:i:s.uP', $b['date_popvote']);
-                return ($a->date_popvote < $b->date_popvote);
+                return ($a->date_popvote < $b->date_popvote) ? -1 : 1;
             });
 
             // now make it a regular numerically indexed array again and return it as rows
@@ -407,9 +407,9 @@ class DB extends Base
         }
         // order by date published
         usort($intersected, function ($a, $b) {
-            if (!isset($a->date_published)) return false;
+            if (!isset($a->date_published)) return 0;
 
-            return ($a->date_published < $b->date_published);
+            return ($a->date_published < $b->date_published) ? -1 : 1;
         });
 
         // now make it a regular numerically indexed array again and return it as rows
