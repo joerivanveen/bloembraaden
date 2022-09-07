@@ -79,6 +79,7 @@
     letter-spacing: 0;
 }
 
+.dark-mode .edit-area *,
 .edit-area * {
     color: rgb(44, 44, 52);
 }

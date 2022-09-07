@@ -1697,11 +1697,16 @@ PEATCMS_admin.prototype.pollServer = function () {
  * Editor Configuration
  */
 PEATCMS_admin.prototype.loadEditorConfig = function () {
-    var default_config = {};
+    var default_config = {}, custom_config;
     if ('undefined' !== typeof peatcms_editor_config && peatcms_editor_config.hasOwnProperty('editor')) {
         default_config = peatcms_editor_config.editor;
         if ('undefined' !== typeof peatcms_editor_config_custom && peatcms_editor_config_custom.hasOwnProperty('editor')) {
-            default_config = Object.assign(default_config, peatcms_editor_config_custom.editor);
+            custom_config = peatcms_editor_config_custom.editor;
+            // merge hidden fields first, because the ones in the default config should be preserved @since 0.11.1
+            if (custom_config.hasOwnProperty('hidden_fields') && default_config.hasOwnProperty('hidden_fields')) {
+                custom_config.hidden_fields = Object.assign(custom_config.hidden_fields, default_config.hidden_fields);
+            }
+            default_config = Object.assign(default_config, custom_config);
         }
     }
     return default_config;
