@@ -19,4 +19,12 @@ class Comment extends BaseElement
         Help::addMessage(__('Cannot ‘create’ a comment element', 'peatcms'), 'warn');
         return null;
     }
+
+    public function completeRowForOutput(): void
+    {
+        unset($this->row->ip_address);
+        unset($this->row->reverse_dns);
+        unset($this->row->email);
+        unset($this->row->user_agent);
+    }
 }
