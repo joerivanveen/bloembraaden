@@ -2722,7 +2722,8 @@ PEATCMS.prototype.currentSlugs = function (element) {
 }
 
 PEATCMS.prototype.startUp = function () {
-    var i, len, self = this;
+    let i, len, self = this;
+    this.currentY = 0;
     this.html_node = document.getElementsByTagName('html')[0];
     //var IE11 = !!window.msCrypto;
     //console.error('startUp short circuited for now');
@@ -2793,13 +2794,22 @@ PEATCMS.prototype.startUp = function () {
     });
 }
 
+/* help styles with scrolling and stuff */
 PEATCMS.prototype.setScrolledStatus = function () {
-    /* help styles with scrolling and stuff */
-    if (window.pageYOffset > 4) { /* consider the page scrolled */
-        this.html_node.setAttribute('data-peatcms-scrolled', '1');
+    let y = window.pageYOffset,
+        has_scrolled = this.html_node.hasAttribute('data-peatcms-scrolled'),
+        has_down = this.html_node.hasAttribute('data-peatcms-scrolled-down');
+    if (y > 4) { /* consider the page scrolled */
+        if (false === has_scrolled) this.html_node.setAttribute('data-peatcms-scrolled', '1');
     } else {
-        this.html_node.removeAttribute('data-peatcms-scrolled');
+        if (true === has_scrolled) this.html_node.removeAttribute('data-peatcms-scrolled');
     }
+    if (y > this.currentY) {
+        if (false === has_down) this.html_node.setAttribute('data-peatcms-scrolled-down', '1');
+    } else {
+        if (true === has_down) this.html_node.removeAttribute('data-peatcms-scrolled-down');
+    }
+    this.currentY = y;
 }
 /**
  *

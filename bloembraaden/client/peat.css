@@ -35,10 +35,6 @@ fieldset, legend {
     vertical-align: top;
 }
 
-:focus { /* remember to define focus styles! */
-    outline: 0;
-}
-
 img {
     display: block;
     line-height: 0;
@@ -203,7 +199,7 @@ html, body {
     padding: 5px;
     border-radius: 5px;
     background-color: #fff;
- box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .28);
+    box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .28);
 }
 
 .log {

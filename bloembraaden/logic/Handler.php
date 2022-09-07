@@ -1494,7 +1494,7 @@ class Handler extends BaseLogic
             if ($tag = $this->resolver->getRenderInTag()) $out->render_in_tag = $tag;
             // TODO make it generic / some fields can never be output
             if (isset($out->password_hash)) unset($out->password_hash);
-            if (false === ADMIN) if (isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
+            if (false === ADMIN && isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
             if (defined('OUTPUT_JSON')) {
                 // add messages and errors
                 $out->__messages__ = Help::getMessages();
@@ -1610,6 +1610,7 @@ class Handler extends BaseLogic
         // @since 0.7.9 load the properties in the out object as well
         $out->__query_properties__ = $this->resolver->getProperties();
         $out->template_published = strtotime($instance->getSetting('date_updated'));
+        $out->is_admin = ADMIN;
         // TODO make it generic / some fields can never be output
         if (isset($out->password_hash)) unset($out->password_hash);
         if (isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
