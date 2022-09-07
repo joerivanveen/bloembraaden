@@ -405,7 +405,10 @@ if ('1' === $interval) { // interval should be '1'
                     }
                 }
             } else {
-                Help::addError(new \JsonException(json_last_error()));
+                Help::addError(new \Exception(sprintf('json error %s for instagram user %s, result: %s',
+                    json_last_error(),
+                    $row->user_id,
+                    var_export($result, true))));
             }
         }
     }
