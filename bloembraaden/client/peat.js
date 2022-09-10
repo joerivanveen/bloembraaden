@@ -2804,7 +2804,7 @@ PEATCMS.prototype.setScrolledStatus = function () {
     } else {
         if (true === has_scrolled) this.html_node.removeAttribute('data-peatcms-scrolled');
     }
-    if (y > this.currentY) {
+    if (y > this.currentY && y > 25) { // for iOs safari back to top scroll reaction when address bar (dis)appears
         if (false === has_down) this.html_node.setAttribute('data-peatcms-scrolled-down', '1');
     } else {
         if (true === has_down) this.html_node.removeAttribute('data-peatcms-scrolled-down');
