@@ -177,7 +177,7 @@ class BaseLogic extends Base
                 }
             }
             // update ci_ai
-            if (false === $db->updateSearchIndexColumn($this)) {
+            if (false === $db->updateSearchIndex($this)) {
                 $this->addError("could not update search index column for $slug");
             }
             // when the cache is built during this request, sorry you can only get the first page back for now

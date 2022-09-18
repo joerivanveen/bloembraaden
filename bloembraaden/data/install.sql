@@ -2924,6 +2924,20 @@ ALTER TABLE "public"."_system"
 ALTER TABLE "public"."_system"
     ADD COLUMN IF NOT EXISTS "daemon_last_alive" Timestamp With Time Zone;
 
+DROP TABLE IF EXISTS "public"."_ci_ai";
+CREATE TABLE "public"."_ci_ai"
+(
+    "ci_ai_id"    Serial PRIMARY KEY,
+    "instance_id" Integer                NOT NULL,
+    "ci_ai"       Text                   NOT NULL,
+    "title"       Character Varying(127) NOT NULL,
+    "slug"        Character Varying(127) NOT NULL,
+    "type_name"   Character Varying(127) NOT NULL,
+    "id"          Integer                NOT NULL,
+    CONSTRAINT "unique__ci_ai_ci_ai_id" UNIQUE ("ci_ai_id")
+);
+
+CREATE INDEX "index__ci_ai_instance_id" ON "public"."_ci_ai" USING btree ("instance_id" Asc NULLS Last);
 
 COMMIT;
 

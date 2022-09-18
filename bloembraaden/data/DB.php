@@ -22,6 +22,18 @@ class DB extends Base
         '_instagram_feed',
         '_instagram_media',
     );
+    public const TABLES_WITH_CI_AI = array(
+        'cms_brand',
+        'cms_embed',
+        'cms_file',
+        'cms_image',
+        'cms_page',
+        'cms_product',
+        'cms_property',
+        'cms_property_value',
+        'cms_serie',
+        'cms_variant',
+    );
 
     public function __construct()
     {
@@ -1838,18 +1850,51 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return $this->normalizeRows($rows);
     }
 
-    public function updateSearchIndexColumn(BaseLogic $element): bool
+    public function deleteSearchIndex(string $slug): bool
     {
+        $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE instance_id = :instance_id AND slug = :slug;');
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':slug', $slug);
+        $statement->execute();
+        $success = (1 === $statement->rowCount());
+        $statement = null;
+
+        return $success;
+    }
+
+    public function updateSearchIndex(BaseLogic $element): bool
+    {
+        if (false === $element instanceof BaseElement) return true;
         $peat_type = $element->getType();
         $table_name = $peat_type->tableName();
-        if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true; // success, we do not need to update
+        if (false == in_array($table_name, self::TABLES_WITH_CI_AI)) return true; // success, we do not need to update
+        //if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true;
         $id_column = $peat_type->idColumn();
-        $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($element->getOutput())));
+        if (false === $element->isOnline()) {
+            return ($this->deleteSearchIndex($element->getSlug()));
+        }
+        $out = $element->getOutputFull();
+        $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($out)));
+        // todo remove when migrated to separate _ci_ai table
         $statement = $this->conn->prepare("UPDATE $table_name SET ci_ai = :src WHERE $id_column = :id;");
         $statement->bindValue(':src', $ci_ai);
         $statement->bindValue(':id', $element->getId());
         $statement->execute();
         $success = (1 === $statement->rowCount());
+        $statement = null;
+        // @since 0.11.2 maintain _ci_ai table
+        $statement = $this->conn->prepare('
+            INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id)
+            VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id)
+        ');
+        $statement->bindValue(':instance_id', $out->instance_id);
+        $statement->bindValue(':ci_ai', $ci_ai);
+        $statement->bindValue(':title', $out->title);
+        $statement->bindValue(':slug', $out->slug);
+        $statement->bindValue(':type_name', $element->getTypeName());
+        $statement->bindValue(':id', $out->id);
+        $statement->execute();
+        $success = $success && (1 === $statement->rowCount());
         $statement = null;
 
         return $success;
@@ -3596,10 +3641,10 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // push current entry to history
         $old_row = $this->copyRowToHistory($table, $key); // returns the copied (now old) row, can be null
         // update entry
+        $columns_list = implode(', ', $data['parameterized']);
+        $columns_date = ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '');
         $statement = $this->conn->prepare(
-            'UPDATE ' . $table_name . ' SET ' . implode(', ', $data['parameterized']) . ' 
-            ' . ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '') . '
-            WHERE ' . $key_column_name . ' = ?;'
+            "UPDATE $table_name SET $columns_list$columns_date WHERE $key_column_name = ?;"
         );
         $data['values'][] = $key; // key must be added as last value for the where clause
         try {
@@ -3610,7 +3655,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $row_count = $statement->rowCount();
         // ok done
         $statement = null;
-        if ($row_count === 1) {
+        if (1 === $row_count) {
             // TODO this can be more solid, but test it thoroughly...
             // reCacheWithWarmup the new slug (as it may be used for a search page)
             if (isset($new_slug)) {
