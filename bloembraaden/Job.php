@@ -2,9 +2,6 @@
 declare(strict_types=1);
 
 namespace Peat;
-// TODO make configurable using config file
-const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
-const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 10;
 //
 if (extension_loaded('newrelic')) {
     newrelic_name_transaction('Job start');
@@ -15,53 +12,10 @@ if (extension_loaded('newrelic')) {
  * File called by cron job to perform maintenance tasks
  * @since 0.5.7
  */
-class jobTransaction
-{
-    private bool $useNewRelic = false;
-    private string $newRelicApp = '';
-    private string $message = '';
-
-    public function __construct()
-    {
-        if (extension_loaded('newrelic')) {
-            $this->useNewRelic = true;
-            $this->newRelicApp = ini_get('newrelic.appname');
-        }
-    }
-
-    public function start(string $name): void
-    {
-        $this->message .= ob_get_clean();
-        if (true === $this->useNewRelic) {
-            newrelic_end_transaction(); // stop recording the current transaction
-            newrelic_start_transaction($this->newRelicApp); // start recording a new transaction
-            newrelic_background_job(true);
-            newrelic_name_transaction($name);
-        }
-        ob_start(); // ob_get_clean also STOPS output buffering :-P
-        echo '=== ';
-        echo $name;
-        echo ' ===';
-        echo PHP_EOL;
-    }
-
-    public function flush(bool $with_log = true)
-    {
-        $this->message .= ob_get_clean();
-        if (true === $this->useNewRelic) {
-            newrelic_end_transaction(); // stop recording the current transaction
-        }
-        if ($with_log) {
-            error_log($this->message, 3, Setup::$LOGFILE);
-        }
-        echo $this->message;
-    }
-}
-
-$trans = new jobTransaction();
 require __DIR__ . '/Require.php';
+$trans = new jobTransaction();
 // to test from cli / as a cron job, run it as follows:
-// # /path/to/php /path/to/bloembraaden/Job.php interval_value (eg: warmup, or 1)
+// # /path/to/php /path/to/bloembraaden/Job.php interval_value (eg: 5)
 $interval = $_GET['interval'] ?? $argv[1];
 if (!$interval) {
     die('interval needed');
@@ -549,97 +503,6 @@ if ('1' === $interval) { // interval should be '1'
     echo 'Updating feeds that are outdated... ' . PHP_EOL;
     $feeds = $db->getInstagramFeedSpecsOutdated();
     $update_feeds($feeds);
-} elseif ('warmup' === $interval) { // interval should be ‘warmup’
-    $max_running_seconds = 50;
-    set_time_limit($max_running_seconds);
-    // @since 0.7.0 update ci_ai column for searching, @since 0.10.11 this is part of caching
-    $total_count = 0;
-    $done = array();
-    $stove = new Warmup();
-    $rows = $db->jobStaleCacheRows(60);
-    $trans->start('warmup stale (elements) cache');
-    foreach ($rows as $key => $row) {
-        // warmup can take very long, this job starts every minute, so terminate it before the next start
-        if (microtime(true) - $start_timer > $max_running_seconds) {
-            echo 'Stopped for time';
-            echo PHP_EOL;
-            break;
-        }
-        $stale_slug = (string)$row->slug;
-        if (isset($done[$stale_slug])) continue;
-        // todo make switching instance id a method so you can handle it better
-        $instance_id = $row->instance_id;
-        if (isset($row->in_cache)) { // only warmup rows already in cache
-            $done[$stale_slug] = $instance_id;
-            $stove->Warmup($stale_slug, $instance_id);
-            $total_count++;
-        }
-        // delete the slug when we’re done
-        $db->deleteFromStale($stale_slug, $instance_id);
-    }
-    echo $total_count;
-    echo ' done' . PHP_EOL;
-    echo 'remove duplicates from cache: ';
-    echo $db->removeDuplicatesFromCache();
-    echo PHP_EOL;
-    $trans->start('warmup old (elements) cache');
-    $rows = $db->jobOldCacheRows(MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
-    $total_count = 0;
-    foreach ($rows as $key => $row) {
-        // warmup can take very long, this job starts every minute, so terminate it before that
-        if (microtime(true) - $start_timer > $max_running_seconds) {
-            echo 'Stopped for time';
-            echo PHP_EOL;
-            break;
-        }
-        echo 'Warming up ';
-        echo $row->slug;
-        echo ': ';
-        echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
-        echo PHP_EOL;
-        $total_count += 1;
-    }
-    echo $total_count;
-    echo ' done' . PHP_EOL;
-    // refresh the json files for the filters as well
-    $trans->start('handle properties filters cache');
-    $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
-    // get the cache pointer to resume where we left off, if present
-    $cache_pointer_filter_filename = $db->getSystemValue('cache_pointer_filter_filename');
-    $filename_for_cache = null;
-    foreach ($dir as $index => $file_info) {
-        if ($file_info->isDir()) {
-            if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
-            echo 'Filters for instance ' . $instance_id . PHP_EOL;
-            $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
-            foreach ($filter_dir as $index2 => $filter_file_info) {
-                if ('serialized' === $filter_file_info->getExtension()) {
-                    $age = (int)Setup::getNow() - $filter_file_info->getMTime();
-                    if ($age < 60 * MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
-                    $filename = $filter_file_info->getFilename();
-                    $filename_for_cache = $instance_id . '/' . $filename;
-                    if (microtime(true) - $start_timer > $max_running_seconds) {
-                        echo 'Stopped for time, filter age being ' . $age . ' seconds';
-                        echo PHP_EOL;
-                        // remember we left off here, to resume next run
-                        $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
-                        break 2;
-                    }
-                    if ($filename_for_cache === $cache_pointer_filter_filename) $cache_pointer_filter_filename = null;
-                    if (null !== $cache_pointer_filter_filename) continue;
-                    // -11 to remove .serialized extension
-                    $path = urldecode(substr($filename, 0, -11));
-                    $src = new Search();
-                    $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
-                    echo 'Refreshed ' . $path . PHP_EOL;
-                }
-            }
-        }
-    }
-    if (null !== $cache_pointer_filter_filename && null === $filename_for_cache) {
-        $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
-    }
-    echo 'done... ' . PHP_EOL;
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('purge deleted');
     echo $db->jobPurgeDeleted((int)$interval) . PHP_EOL;

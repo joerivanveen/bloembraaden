@@ -113,13 +113,13 @@ Noindex: /__action__
 ```
 
 ### Async operations
-Many operations such as mailing and refreshing object cache are performed asynchronously. These are handled by the file `Job.php`.
+Many operations such as mailing and refreshing object cache are performed asynchronously. These are handled by the files `Daemon.php` and `Job.php`.
 Please setup a crontab for the web user (e.g. nginx) like so:
 `crontab -e -u nginx`
 And put in the five lines that are currently needed for Bloembraaden:
 ```
+*/1 * * * * php /path/to/bloembraaden/Deamon.php 0 > /dev/null 2>&1
 */1 * * * * php /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
-*/1 * * * * php /path/to/bloembraaden/Job.php interval=warmup > /dev/null 2>&1
 */5 * * * * php /path/to/bloembraaden/Job.php interval=5 > /dev/null 2>&1
 4 * * * * php /path/to/bloembraaden/Job.php interval=hourly > /dev/null 2>&1
 0 3 * * * php /path/to/bloembraaden/Job.php interval=daily > /dev/null 2/&1

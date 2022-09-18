@@ -47,14 +47,18 @@ Create your next website with bloembraaden.io
                 self::abandonDatabaseConnection(self::$DB_MAIN_CONN);
                 self::abandonDatabaseConnection(self::$DB_HIST_CONN);
                 // also log any serious errors
-                $error_messages = Help::logErrorMessages();
-                // newrelic reporting
-                if (extension_loaded('newrelic')) {
-                    if (isset($error_messages)) newrelic_notice_error($error_messages);
-                    newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN ?? 'unknown');
-                    newrelic_add_custom_parameter('bloembraaden_output_json', defined('OUTPUT_JSON') && true === OUTPUT_JSON);
-                }
+                self::logErrors();
             });
+    }
+
+    public static function logErrors():void {
+        $error_messages = Help::logErrorMessages();
+        // newrelic reporting
+        if (extension_loaded('newrelic')) {
+            if (isset($error_messages)) newrelic_notice_error($error_messages);
+            newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN ?? 'unknown');
+            newrelic_add_custom_parameter('bloembraaden_output_json', defined('OUTPUT_JSON') && true === OUTPUT_JSON);
+        }
     }
 
     public static function getNow(): string
@@ -109,7 +113,11 @@ Create your next website with bloembraaden.io
     {
         if (true === isset($connection)) {
             if ($connection->inTransaction()) {
-                $connection->rollBack();
+                try {
+                    $connection->rollBack();
+                } catch(\Exception $e) {
+                    Help::addError($e);
+                }
             }
             //$connection = null; // trying out persistent now <- transaction time reduced by 30%
         }

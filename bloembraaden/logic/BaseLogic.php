@@ -143,7 +143,7 @@ class BaseLogic extends Base
             $slug = $out->__ref;
             // for elements with no results, drop the cache
             if (0 === $this->getResultCount()) {
-                Help::getDB()->deleteFromCache($slug);
+                $db->deleteFromCache($slug);
 
                 return ($returnOutputObject) ? $this->getOutputObject() : null;
             }
@@ -172,7 +172,7 @@ class BaseLogic extends Base
                 }
                 $json = json_encode($pages);
                 $pages = null;
-                if ($count !== ($affected = Help::getDB()->updateVariantPageJsonInCache($slug, $json))) {
+                if ($count !== ($affected = $db->updateVariantPageJsonInCache($slug, $json))) {
                     $this->addError("Updated $affected rows in cache for $slug");
                 }
             }
@@ -276,6 +276,9 @@ class BaseLogic extends Base
      */
     public function isOnline(): bool
     {
+        if (true === $this->row->deleted) return false;
+        $this->getOutput();
+        if (isset($this->row->is_published) && false === $this->row->is_published) return false;
         // if the column is absent, the element can only be online
         return $this->row->online ?? true;
     }

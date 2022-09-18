@@ -2910,5 +2910,22 @@ CREATE TABLE "public"."cms_comment_x_embed"
 
 COMMIT;
 
+-- version 0.11.1
+
+BEGIN;
+COMMIT;
+
+-- version 0.12.0
+
+BEGIN;
+
+ALTER TABLE "public"."_system"
+    ADD COLUMN IF NOT EXISTS "daemon_did" Character Varying(10);
+ALTER TABLE "public"."_system"
+    ADD COLUMN IF NOT EXISTS "daemon_last_alive" Timestamp With Time Zone;
+
+
+COMMIT;
+
 
 
