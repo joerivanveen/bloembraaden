@@ -1856,7 +1856,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
-        $success = (1 === $statement->rowCount());
+        $success = (2 > $statement->rowCount());
         $statement = null;
 
         return $success;

@@ -29,7 +29,7 @@ $start_timer = microtime(true);
 $db = new DB;
 define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
-echo "\r\n" . date('Y-m-d H:i:s') . " JOB $interval:\r\n";
+echo "\n" . date('Y-m-d H:i:s') . " JOB $interval:\n";
 if ('1' === $interval) { // interval should be '1'
     $trans->start('mail order confirmations');
     // @since 0.5.16: mail order confirmation to client
@@ -684,8 +684,9 @@ if ('1' === $interval) { // interval should be '1'
     // it has to be uncached as well, or else the image is gone when it’s deleted in the next run...
 }
 $trans->start('report current job');
-echo date('Y-m-d H:i:s') . ' (ended)' . PHP_EOL;
-printf("«completed in %s seconds»\r\n", number_format(microtime(true) - $start_timer, 2));
+echo date('Y-m-d H:i:s');
+echo " (ended)\n";
+printf("Job completed in %s seconds\n", number_format(microtime(true) - $start_timer, 2));
 $trans->flush();
 //
 unset($db);

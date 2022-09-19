@@ -32,7 +32,8 @@ class Base
     public function addError($e): void
     {
         if (is_string($e)) {
-            Help::addError(new \Exception($e));
+            $domain = Setup::$INSTANCE_DOMAIN;
+            Help::addError(new \Exception("$e [$domain]"));
         } elseif ($e instanceof \Exception) {
             Help::addError($e);
         } else {

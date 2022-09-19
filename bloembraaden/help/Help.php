@@ -335,7 +335,8 @@ class Help
     public static function getErrorMessages(): array
     {
         $arr = [];
-        foreach ($cache = Help::getErrors() as $key => $e) {
+        $errors = Help::getErrors();
+        foreach ($errors as $key => $e) {
             $arr[] = $e->getMessage() . PHP_EOL . $e->getTraceAsString();
         }
 

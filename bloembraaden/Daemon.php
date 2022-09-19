@@ -35,7 +35,6 @@ class Daemon
     {
         $trans = new jobTransaction();
         $db = Help::getDB();
-        $stove = new Warmup();
         while (true) {
             // check if we’re still the one and only
             try {
@@ -51,6 +50,7 @@ class Daemon
             Help::getDB()->setSystemValue('daemon_last_alive', 'NOW()');
             // start the actual work
             $total_count = 0;
+            $stove = new Warmup();
             $done = array();
             $start_timer = microtime(true);
             $rows = $db->jobStaleCacheRows(200);
@@ -73,6 +73,7 @@ class Daemon
             echo 'remove duplicates from cache: ';
             echo $db->removeDuplicatesFromCache();
             echo PHP_EOL;
+            if (0 === $total_count) ob_clean();
             $trans->start('warmup old (elements) cache');
             $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
             $total_count = 0;
@@ -86,7 +87,8 @@ class Daemon
             }
             echo $total_count;
             echo " done\n";
-            // refresh the json files for the filters as well
+            if (0 === $total_count) ob_clean();
+            // refresh the json files for the filters as well TODO maybe move to a more appropriate place (job)
             $trans->start('handle properties filters cache');
             $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
             // get the cache pointer to resume where we left off, if present
@@ -99,7 +101,7 @@ class Daemon
                     $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
                     foreach ($filter_dir as $index2 => $filter_file_info) {
                         if ('serialized' === $filter_file_info->getExtension()) {
-                            $age = (int)Setup::getNow() - $filter_file_info->getMTime();
+                            $age = strtotime(date('Y-m-d H:i:s')) - $filter_file_info->getMTime();
                             if ($age < 60 * self::MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
                             $filename = $filter_file_info->getFilename();
                             $filename_for_cache = "$instance_id/$filename";
@@ -125,10 +127,10 @@ class Daemon
                 $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
             }
             echo "done... \n";
+            if (null === $filename_for_cache) ob_clean();
             /* */
-            $trans->start('report current cycle');
             $total_time = microtime(true) - $start_timer;
-            printf("«completed in %s seconds»\n", number_format($total_time, 2));
+            printf("DAEMON completed in %s seconds (%s)\n", number_format($total_time, 2), date('Y-m-d H:i:s'));
             $trans->flush();
             Setup::logErrors();
             /* */
