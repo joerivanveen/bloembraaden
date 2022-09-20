@@ -60,6 +60,11 @@ class Search extends BaseElement
         $this->log($terms, $this->row->item_count);
     }
 
+    public function suggestTitles(array $terms, int $limit = 8): array
+    {
+        return $this->getDB()->findCiAi($terms, $limit);
+    }
+
     public function pageVariants(int $variant_page): int
     {
         // search does not do paging at all

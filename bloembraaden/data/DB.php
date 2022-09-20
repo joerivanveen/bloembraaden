@@ -428,6 +428,59 @@ class DB extends Base
         return array_values($intersected);
     }
 
+    public function findCiAi(array $terms, int $limit): array
+    {
+        $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
+        $statement = $this->conn->prepare('
+            SELECT DISTINCT ci_ai, title, slug, type_name FROM _ci_ai WHERE instance_id = :instance_id AND ci_ai LIKE lower(:term);
+        ');
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        foreach ($terms as $index => $term) {
+            if ('' === $term) continue;
+            $rows = array();
+            $term = Help::removeAccents($term);
+            $statement->bindValue(':term', "%$term%");
+            $statement->execute();
+            foreach ($temp = $statement->fetchAll() as $index_row => $row) {
+                $rows[$row['slug']] = $this->normalizeRow($row);
+            }
+            unset ($temp);
+            $arr[$term] = $rows;
+        }
+        $intersected = null;
+        $statement = null;
+        foreach ($arr as $index => $term) {
+            if (null === $intersected) {
+                $intersected = $term;
+            } else {
+                $intersected = array_intersect_key($term, $intersected);
+            }
+        }
+        // calculate the weights
+        foreach ($intersected as $index => $row) {
+            $row->weight = $this->getWeight($row->ci_ai, $terms);
+            unset($row->ci_ai);
+        }
+        // order by weight
+        usort($intersected, function ($a, $b) {
+            return ($a->weight < $b->weight) ? 1 : -1;
+        });
+
+        return array_values($intersected);
+    }
+    private function getWeight(string $haystack, array $needles): float // todo move to a better place
+    {
+        $weight = 0.0;
+        foreach ($needles as $index => $needle) {
+            $one = count(explode($needle, $haystack));
+            $two = strpos($haystack, $needle) + 1;
+
+            $weight += $one * strlen($haystack) / $two;
+        }
+
+        return $weight;
+    }
+
     /**
      * @param int $limit
      * @return array

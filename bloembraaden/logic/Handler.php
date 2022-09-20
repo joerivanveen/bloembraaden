@@ -431,6 +431,8 @@ class Handler extends BaseLogic
                     } else {
                         $out = array('__pages__' => $src->suggestPages($terms, $limit));
                     }
+                } else {
+                    $out = $src->suggestTitles($terms, $limit);
                 }
                 if (isset($out)) {
                     $out['slug'] = 'suggest';
