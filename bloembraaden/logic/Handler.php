@@ -432,13 +432,12 @@ class Handler extends BaseLogic
                         $out = array('__pages__' => $src->suggestPages($terms, $limit));
                     }
                 } else {
-                    $out = $src->suggestTitles($terms, $limit);
+                    $src->find($terms, (int)($props['hydrate_until'][0] ?? 8));
+                    $out = $src->getOutput();
                 }
-                if (isset($out)) {
+                $src = null;
+                if (is_array($out)) {
                     $out['slug'] = 'suggest';
-                } else {
-                    $this->addMessage('No suggestions found', 'warn');
-                    $out = false;
                 }
                 //$out = array('__variants__' => $variants, 'slug' => 'suggest');
             } elseif ($action === 'set_session_var') {

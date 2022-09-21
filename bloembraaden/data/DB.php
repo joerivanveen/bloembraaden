@@ -428,11 +428,11 @@ class DB extends Base
         return array_values($intersected);
     }
 
-    public function findCiAi(array $terms, int $limit): array
+    public function findCiAi(array $terms, callable $getWeight): array
     {
         $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
         $statement = $this->conn->prepare('
-            SELECT DISTINCT ci_ai, title, slug, type_name FROM _ci_ai WHERE instance_id = :instance_id AND ci_ai LIKE lower(:term);
+            SELECT DISTINCT ci_ai, title, slug, type_name, id FROM _ci_ai WHERE instance_id = :instance_id AND ci_ai LIKE lower(:term);
         ');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         foreach ($terms as $index => $term) {
@@ -458,7 +458,7 @@ class DB extends Base
         }
         // calculate the weights
         foreach ($intersected as $index => $row) {
-            $row->weight = $this->getWeight($row->ci_ai, $terms);
+            $row->weight = $getWeight($row->ci_ai, $terms);
             unset($row->ci_ai);
         }
         // order by weight
@@ -467,18 +467,6 @@ class DB extends Base
         });
 
         return array_values($intersected);
-    }
-    private function getWeight(string $haystack, array $needles): float // todo move to a better place
-    {
-        $weight = 0.0;
-        foreach ($needles as $index => $needle) {
-            $one = count(explode($needle, $haystack));
-            $two = strpos($haystack, $needle) + 1;
-
-            $weight += $one * strlen($haystack) / $two;
-        }
-
-        return $weight;
     }
 
     /**

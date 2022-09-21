@@ -22,48 +22,103 @@ class Search extends BaseElement
 
     /**
      * @param array $terms
+     * @param int|null $hydrate_until null means hydrate all, else hydrate only if less than $hydrate_until items are found
      */
-    public function find(array $terms): void
+    public function find(array $terms, ?int $hydrate_until = null): void
     {
-        // search queries are also cached by path!
+        // search queries are also cached by path! when result_count > 0.
         $terms = $this->cleanTerms($terms);
         $properties = $this->getProperties();
-        $types = array('variant', 'page', 'product', 'serie', 'property_value');
         $this->row->item_count = 0;
-        $this->row->content = 'PEATCMS PERFORMED A SEARCH WITH THESE TERMS: ```' . var_export($terms, true) .
-            PHP_EOL . '``` AND THESE PROPERTIES: ```' . var_export($properties, true) . '```';
+        $this->row->content = 'Bloembraaden searched for these terms: ```' . var_export($terms, true) .
+            PHP_EOL . '``` and these properties: ```' . var_export($properties, true) . '```';
         // set template_id to default search template, if necessary (and if it exists)
         if (!isset($this->row->template_id)) {
             $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('search');
         }
         $template_settings = $this->getAndSetTemplateSettings();
-        // TODO limit the elements / types searched for with the profile
-        foreach ($types as $index => $type_name) {
-            $plural = '__' . $type_name . 's__';
-            // fill the row object with nice stuff, that will be returned by getOutput()
-            $type = new Type($type_name);
-            $rows = Help::getDB()->findElements($type, $terms, $properties);
-            // limit number of results to pagesize of the current template
-            $rows = array_chunk($rows, $template_settings->variant_page_size)[0] ?? array();
-            // now you have the single ones, make objects from them
-            $this->row->$plural = $this->outputRows($rows);
-            $this->row->item_count += count($rows);
+        // @since 0.12.0 get results from ci_ai table
+        $results = $this->getResults($terms, $template_settings->variant_page_size);
+        $this->row->__results__ = $results;
+        $item_count = count($results);
+        if (null === $hydrate_until || $item_count <= $hydrate_until) {
+            // make elements from results
+            foreach ($results as $i => $result) {
+                $type_name = $result->type_name;
+                if (!($element = (new Type($type_name))->getElement()->fetchById($result->id))) continue;
+                $output = $element->getOutputFull();
+                // only include if all properties are present
+                $all_properties_present = true;
+                if (true === isset($output->__x_values__)) {
+                    foreach ($properties as $property => $property_values) {
+                        foreach ($property_values as $index => $value) {
+                            foreach ($output->__x_values__ as $x_i => $x_value) {
+                                if (false === is_int($x_i)) continue; // not a row
+                                if ($x_value->property_slug === $property && $x_value->slug === $value) {
+                                    continue 2;
+                                }
+                            }
+                            $all_properties_present = false;
+                            break 2;
+                        }
+                    }
+                }
+                $output = null;
+                if ($all_properties_present) {
+                    $plural = '__' . $type_name . 's__';
+                    if (false === isset($this->row->$plural)) $this->row->$plural = array();
+                    $this->row->{$plural}[] = $element->getOutput();
+                    $this->row->item_count += 1;
+                }
+            }
+            $this->result_count = $this->row->item_count; // means it will be cached if > 0
+        } else {
+            $this->row->item_count = $item_count;
         }
-        unset($rows);
-        // set the url TODO use the slug of the search function only when not default?
-//        if (isset($this->row->slug)) {
-//            $this->row->slug .= '/' . implode('/', $terms);
-//        } else {
-        $this->row->slug = implode('/', $terms);
+//        foreach ($types as $index => $type_name) {
+//            $plural = '__' . $type_name . 's__';
+//            // fill the row object with nice stuff, that will be returned by getOutput()
+//            $type = new Type($type_name);
+//            $rows = Help::getDB()->findElements($type, $terms, $properties);
+//            // limit number of results to pagesize of the current template
+//            $rows = array_chunk($rows, $template_settings->variant_page_size)[0] ?? array();
+//            // now you have the single ones, make objects from them
+//            $this->row->$plural = $this->outputRows($rows, $type_name);
+//            $this->row->item_count += count($rows);
 //        }
+//        unset($rows);
+        $this->row->slug = implode('/', $terms);
         $this->row->title = htmlentities(implode(' ', $terms));
-        $this->log($terms, $this->row->item_count);
     }
 
-    public function suggestTitles(array $terms, int $limit = 8): array
+    private function getResults(array $terms, int $limit): array
     {
-        return $this->getDB()->findCiAi($terms, $limit);
+        return array_chunk($this->getDB()->findCiAi($terms, static function(string $haystack, array $needles): float {
+                $weight = 0.0;
+                foreach ($needles as $index => $needle) {
+                    $one = count(explode($needle, $haystack));
+                    $two = strpos($haystack, $needle) + 1;
+
+                    $weight += $one / $two;
+                }
+
+                return $weight;
+            }), $limit)[0] ?? array();
     }
+
+    private function getWeight(string $haystack, array $needles): float
+    {
+        $weight = 0.0;
+        foreach ($needles as $index => $needle) {
+            $one = count(explode($needle, $haystack));
+            $two = strpos($haystack, $needle) + 1;
+
+            $weight += $one / $two;
+        }
+
+        return $weight;
+    }
+
 
     public function pageVariants(int $variant_page): int
     {
@@ -177,7 +232,7 @@ class Search extends BaseElement
         // exclude the variant itself
         $variant_ids_show = array_values(array_diff($variant_ids_collect, array($variant_id)));
         if (count($variant_ids_show) === 0) {
-            return $this->outputRows(Help::getDB()->listVariants($quantity, array($variant_id)));
+            return $this->outputRows(Help::getDB()->listVariants($quantity, array($variant_id)), 'variant');
         }
 
         return $this->getVariantsByIds($variant_ids_show, $variant_ids_collect, $quantity);
@@ -201,7 +256,7 @@ class Search extends BaseElement
         $linked_pages = null;
         $rows = Help::getDB()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, 3);
 
-        return $this->outputRows($rows);
+        return $this->outputRows($rows, 'page');
     }
 
     /**
@@ -251,7 +306,7 @@ class Search extends BaseElement
         }
         if ($fixed_quantity > 0) array_splice($rows, $fixed_quantity); // $quantity > 0 means you want to cutoff the results there
 
-        return $this->outputRows($rows);
+        return $this->outputRows($rows, 'variant');
     }
 
     /**
@@ -270,7 +325,7 @@ class Search extends BaseElement
         }
         if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cutoff the results there
 
-        return $this->outputRows($rows);
+        return $this->outputRows($rows, 'variant');
     }
 
     public function suggestPages(array $terms = array(), int $limit = 8): array
@@ -279,16 +334,16 @@ class Search extends BaseElement
         $rows = Help::getDB()->fetchElementRowsWhere(new Type('page'), array('online' => true));
         if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cutoff the results there
 
-        return $this->outputRows($rows);
+        return $this->outputRows($rows, 'page');
     }
 
-    private function outputRows(array $rows): array
+    private function outputRows(array $rows, string $type_name): array
     {
         if (count($rows) === 0) return array();
-        $type = new Type($rows[0]->table_name);
+        $peat_type = new Type($type_name);
         // now you have the single ones, make objects from them
         foreach ($rows as $index => $row) {
-            $rows[$index] = $type->getElement($row)->getOutput();
+            $rows[$index] = $peat_type->getElement($row)->getOutput();
         }
 
         return $rows;
@@ -322,22 +377,5 @@ class Search extends BaseElement
     public function getTableInfoForOutput(): ?\stdClass
     {
         return null; // search doesn't have table_info
-    }
-
-    /**
-     * @param array $terms words that were looked for
-     * @param int $quantity the number of results found
-     * @since 0.7.0
-     */
-    public function log(array $terms, int $quantity)
-    {
-        $this->result_count = $quantity;
-
-        return; // @since 0.8.10 no logging since we’re not using it anyway yet
-        Help::getDB()->insertRowAndReturnKey('_search_log', array(
-            'search' => implode(', ', $terms),
-            'results' => $quantity,
-            'instance_id' => Setup::$instance_id,
-        ));
     }
 }
