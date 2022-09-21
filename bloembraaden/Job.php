@@ -7,7 +7,6 @@ if (extension_loaded('newrelic')) {
     newrelic_name_transaction('Job start');
     newrelic_background_job(true);
 }
-
 /**
  * File called by cron job to perform maintenance tasks
  * @since 0.5.7
@@ -279,6 +278,25 @@ if ('1' === $interval) { // interval should be '1'
         }
     }
     unset($mailer);
+    $trans->start('create missing search index records');
+    $limit = 250;
+    foreach ($db::TYPES_WITH_CI_AI as $index => $type_name) {
+        $rows = $db->fetchElementsMissingCiAi($type_name, $limit);
+        foreach ($rows as $row_index => $row) {
+            $element = (new Type($type_name))->getElement($row);
+            echo $element->getSlug();
+            echo $db->updateSearchIndex($element) ? "\tOK" : "\tFAIL";
+            echo PHP_EOL;
+            $limit--;
+            if (0 === $limit) {
+                echo "MAX reached\n";
+                break 2;
+            }
+        }
+    }
+    $trans->start('delete orphaned search index records');
+    echo $db->jobDeleteOrphanedCiAi();
+    echo "\n";
     $trans->start('empty expired lockers');
     echo $db->jobEmptyExpiredLockers() . PHP_EOL;
     // Refresh Instagram media
@@ -596,9 +614,9 @@ if ('1' === $interval) { // interval should be '1'
     // @since 0.7.9 & 0.8.9
     $trans->start('remove old sessions');
     echo $db->jobDeleteOldSessions() . PHP_EOL;
-    $trans->start('remove old shoppinglists');
     $trans->start('remove orphaned session variables');
     echo $db->jobDeleteOrphanedSessionVars() . PHP_EOL;
+    $trans->start('remove old shoppinglists');
     echo $db->jobDeleteOrphanedLists() . PHP_EOL;
     $trans->start('remove orphaned shoppinglist rows (variants)');
     echo $db->jobDeleteOrphanedShoppinglistVariants() . PHP_EOL;

@@ -22,17 +22,17 @@ class DB extends Base
         '_instagram_feed',
         '_instagram_media',
     );
-    public const TABLES_WITH_CI_AI = array(
-        'cms_brand',
-        'cms_embed',
-        'cms_file',
-        'cms_image',
-        'cms_page',
-        'cms_product',
-        'cms_property',
-        'cms_property_value',
-        'cms_serie',
-        'cms_variant',
+    public const TYPES_WITH_CI_AI = array(
+        'brand',
+        'embed',
+        'file',
+        'image',
+        'page',
+        'product',
+        'property',
+        'property_value',
+        'serie',
+        'variant',
     );
 
     public function __construct()
@@ -1908,7 +1908,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         if (false === $element instanceof BaseElement) return true;
         $peat_type = $element->getType();
         $table_name = $peat_type->tableName();
-        if (false == in_array($table_name, self::TABLES_WITH_CI_AI)) return true; // success, we do not need to update
+        if (false == in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
         //if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true;
         $id_column = $peat_type->idColumn();
         if (false === $element->isOnline()) {
@@ -1923,7 +1923,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement->execute();
         $success = (1 === $statement->rowCount());
         $statement = null;
-        // @since 0.11.2 maintain _ci_ai table
+        // @since 0.12.0 maintain _ci_ai table
         $statement = $this->conn->prepare('
             INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id)
             VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id)
@@ -1939,6 +1939,20 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement = null;
 
         return $success;
+    }
+
+    public function fetchElementsMissingCiAi(string $type_name, int $limit): array
+    {
+        $statement = $this->conn->prepare("
+            SELECT *, {$type_name}_id AS id, 'cms_$type_name' AS table_name FROM cms_$type_name c 
+            WHERE NOT EXISTS(SELECT FROM _ci_ai WHERE type_name = '$type_name' AND id = c.{$type_name}_id) 
+            LIMIT $limit;
+        ");
+        $statement->execute();
+        $rows = $this->normalizeRows($statement->fetchAll());
+        $statement = null;
+
+        return $rows;
     }
 
     public function jobFetchImagesForCleanup(int $more_than_days = 365, int $how_many = 15): array
@@ -3213,14 +3227,28 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
 
     public function jobDeleteOrphanedLists(): int
     {
-//        $statement = $this->conn->prepare('
-//            DELETE FROM _shoppinglist WHERE user_id = 0 AND session_id NOT IN (SELECT session_id FROM _session);
-//        ');
         $statement = $this->conn->prepare('
             DELETE FROM _shoppinglist l WHERE l.user_id = 0 AND NOT EXISTS(SELECT 1 FROM _session s WHERE s.session_id = l.session_id);
         ');
         $statement->execute();
         $affected = $statement->rowCount();
+        $statement = null;
+
+        return $affected;
+    }
+
+    public function jobDeleteOrphanedCiAi(): int
+    {
+        $affected = 0;
+        foreach (self::TYPES_WITH_CI_AI as $index => $type_name) {
+            $statement = $this->conn->prepare("
+                DELETE FROM _ci_ai 
+                WHERE type_name = '$type_name' 
+                  AND NOT EXISTS(SELECT 1 FROM cms_$type_name WHERE {$type_name}_id = _ci_ai.id);
+            ");
+            $statement->execute();
+            $affected += $statement->rowCount();
+        }
         $statement = null;
 
         return $affected;
@@ -4222,6 +4250,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
 
         return $affected;
     }
+
     public function removeDuplicatesFromCiAi(): int
     {
         // https://stackoverflow.com/a/12963112
