@@ -113,12 +113,12 @@ Noindex: /__action__
 ```
 
 ### Async operations
-Many operations such as mailing and refreshing object cache are performed asynchronously. These are handled by the files `Daemon.php` and `Job.php`.
+Many operations such as mailing and database cleaning are performed asynchronously. These are handled by the files `Daemon.php` and `Job.php`.
 Please setup a crontab for the web user (e.g. nginx) like so:
 `crontab -e -u nginx`
 And put in the five lines that are currently needed for Bloembraaden:
 ```
-*/1 * * * * php /path/to/bloembraaden/Deamon.php 0 > /dev/null 2>&1
+*/1 * * * * php /path/to/bloembraaden/Daemon.php 0 > /dev/null 2>&1
 */1 * * * * php /path/to/bloembraaden/Job.php interval=1 > /dev/null 2>&1
 */5 * * * * php /path/to/bloembraaden/Job.php interval=5 > /dev/null 2>&1
 4 * * * * php /path/to/bloembraaden/Job.php interval=hourly > /dev/null 2>&1
@@ -127,6 +127,13 @@ And put in the five lines that are currently needed for Bloembraaden:
 Regarding the ‘interval’: on CentOS the interval=1 is magically translated into $_GET, on Debian / Ubuntu it is not,
 on those systems just fill in the value, the Job.php file will interpret it as the interval value.
 Ensure that `php` works for you, put in the path to the php executable otherwise.
+
+#### Daemon
+The daemon script will run continuously to handle cache and such.
+You can force the start of a daemon to watch the output live (it is logged as well) by issuing a command:
+`php /path/to/bloembraaden/Daemon.php force`
+Note the ‘force’ command, without it the daemon will stop and do nothing because you already have one running, presumably.
+Should multiple daemons be running at the same time for whatever reason, the older ones will notice this within a few seconds and commit suicide.
 
 ### Clients’ websites
 Your clients’ websites’ assets will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
