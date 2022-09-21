@@ -432,7 +432,8 @@ class Handler extends BaseLogic
                         $out = array('__pages__' => $src->suggestPages($terms, $limit));
                     }
                 } else {
-                    $src->find($terms, (int)($props['hydrate_until'][0] ?? 8));
+                    $hydrate_until = (isset($props['hydrate_until'][0])) ? (int)($props['hydrate_until'][0]) : null;
+                    $src->find($terms, $hydrate_until);
                     $out = $src->getOutput();
                 }
                 $src = null;
