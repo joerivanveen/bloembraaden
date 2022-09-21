@@ -176,10 +176,6 @@ class BaseLogic extends Base
                     $this->addError("Updated $affected rows in cache for $slug");
                 }
             }
-            // update ci_ai
-            if (false === $db->updateSearchIndex($this)) {
-                $this->addError("could not update search index column for $slug");
-            }
             // when the cache is built during this request, sorry you can only get the first page back for now
             // this may return null sometimes on the first try...
             if ($returnOutputObject) {
@@ -276,7 +272,7 @@ class BaseLogic extends Base
      */
     public function isOnline(): bool
     {
-        if (true === $this->row->deleted) return false;
+        if (isset($this->row->deleted) && true === $this->row->deleted) return false;
         $this->getOutput();
         if (isset($this->row->is_published) && false === $this->row->is_published) return false;
         // if the column is absent, the element can only be online

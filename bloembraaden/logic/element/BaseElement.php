@@ -30,16 +30,14 @@ class BaseElement extends BaseLogic implements Element
 
     private function refreshRow(): bool
     {
-        if (($id = $this->getId()) && ($type = $this->getType())) {
-            if (($row = Help::getDB()->fetchElementRow($type, $id))) {
-                // update the row with fresh values (leave everything else alone)
-                foreach ($row as $column_name => $value) {
-                    $this->row->$column_name = $value;
-                }
-                $row = null;
-
-                return true;
+        if (($row = Help::getDB()->fetchElementRow($this->getType(), $this->getId()))) {
+            // update the row with fresh values (leave everything else alone)
+            foreach ($row as $column_name => $value) {
+                $this->row->$column_name = $value;
             }
+            $row = null;
+
+            return true;
         }
 
         return false;
@@ -55,10 +53,14 @@ class BaseElement extends BaseLogic implements Element
     public function update(array $data): bool
     {
         if (true === Help::getDB()->updateElement($this->getType(), $data, $this->getId())) {
-            if (true === $this->refreshRow()) return true;
-            $this->addError('could not refresh row');
+            // get a fresh row straight from the database, if that fails, the element is deleted, or otherwise gone
+            $this->row->deleted = ! $this->refreshRow();
+            // update ci_ai
+            if (false === Help::getDB()->updateSearchIndex($this)) {
+                $this->addError('could not update search index column');
+            }
 
-            return true; // update still ok
+            return true;
         }
 
         return false;
@@ -70,7 +72,7 @@ class BaseElement extends BaseLogic implements Element
      */
     public function delete(): bool
     {
-        return Help::getDB()->deleteElement($this->getType(), $this->getId());
+        return $this->update(array('deleted' => true));
     }
 
     public function updateRef(string $column_name, string $column_value): ?array
@@ -270,8 +272,10 @@ class BaseElement extends BaseLogic implements Element
                 // todo special case for the element unlinked is really not nice
                 if (true === $unlink) {
                     $element = $sub_type->getElement()->fetchById($sub_id);
+
                     return $element->reCache();
                 }
+
                 return $this->reCache();
             }
         } else {

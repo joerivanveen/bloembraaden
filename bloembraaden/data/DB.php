@@ -1891,11 +1891,11 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return $this->normalizeRows($rows);
     }
 
-    public function deleteSearchIndex(string $slug): bool
+    public function deleteSearchIndex(BaseElement $element): bool
     {
-        $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE instance_id = :instance_id AND slug = :slug;');
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->bindValue(':slug', $slug);
+        $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE type_name = :type AND id = :id;');
+        $statement->bindValue(':type', $element->getTypeName());
+        $statement->bindValue(':id', $element->getId());
         $statement->execute();
         $success = (2 > $statement->rowCount());
         $statement = null;
@@ -1912,11 +1912,11 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         //if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true;
         $id_column = $peat_type->idColumn();
         if (false === $element->isOnline()) {
-            return ($this->deleteSearchIndex($element->getSlug()));
+            return ($this->deleteSearchIndex($element));
         }
         $out = $element->getOutputFull();
         $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($out)));
-        // todo remove when migrated to separate _ci_ai table
+        // todo remove when fully migrated to separate _ci_ai table
         $statement = $this->conn->prepare("UPDATE $table_name SET ci_ai = :src WHERE $id_column = :id;");
         $statement->bindValue(':src', $ci_ai);
         $statement->bindValue(':id', $element->getId());
@@ -3227,17 +3227,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     }
 
     /**
-     * @param Type $which
-     * @param int $id
-     * @return bool
-     * @since 0.5.7
-     */
-    public function deleteElement(Type $which, int $id): bool
-    {
-        return $this->deleteRowAndReturnSuccess($which->tableName(), $id);
-    }
-
-    /**
      * @param Type $which must be a valid element type
      * @param array $data one or more key=>value pairs that are the columns with their data to insert
      * @param int $id the id of the element
@@ -3698,7 +3687,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $statement = null;
         if (1 === $row_count) {
             // TODO this can be more solid, but test it thoroughly...
-            // reCacheWithWarmup the new slug (as it may be used for a search page)
+            // reCacheWithWarmup the new slug (as it may already be used for a search page)
             if (isset($new_slug)) {
                 $this->reCacheWithWarmup($new_slug);
             }

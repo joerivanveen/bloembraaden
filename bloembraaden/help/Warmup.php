@@ -28,7 +28,6 @@ class Warmup extends BaseLogic
         // if the cached element now has a different slug, you can remove the old version safely
         if ($from_history || $element instanceof BaseElement && $slug !== $element->getPath()) {
             Help::getDB()->deleteFromCache($slug);
-            Help::getDB()->deleteSearchIndex($slug);
         }
 
         return null === $element->cacheOutputObject(false);
