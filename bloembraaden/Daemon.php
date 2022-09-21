@@ -7,6 +7,7 @@ set_time_limit(0);
 //
 new Daemon();
 // NOTE you can force a new daemon from cli by adding force as parameter (current daemon will self-destruct)
+// php path/to/bloembraaden/Daemon.php force
 //
 class Daemon
 {
@@ -87,6 +88,9 @@ class Daemon
             }
             echo $total_count;
             echo " done\n";
+            echo 'remove duplicates from search index: ';
+            echo $db->removeDuplicatesFromCiAi();
+            echo PHP_EOL;
             if (0 === $total_count) ob_clean();
             // refresh the json files for the filters as well TODO maybe move to a more appropriate place (job)
             $trans->start('handle properties filters cache');
