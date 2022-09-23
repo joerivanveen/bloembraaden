@@ -132,7 +132,7 @@ Ensure that `php` works for you, put in the path to the php executable otherwise
 The daemon script will run continuously to handle cache and such.
 You can force the start of a daemon to watch the output live (it is logged as well) by issuing a command:
 `php /path/to/bloembraaden/Daemon.php force`
-Note the ‘force’ command, without it the daemon will stop and do nothing because you already have one running, presumably.
+Note the ‘force’ parameter, without it the daemon will stop and do nothing because you already have one running, presumably.
 Should multiple daemons be running at the same time for whatever reason, the older ones will notice this within a few seconds and commit suicide.
 
 ### Clients’ websites

@@ -345,10 +345,6 @@ class Handler extends BaseLogic
                             }
                         }
                         $filename = Setup::$DBCACHE . 'templates/' . $template_id . '.gz';
-                        // TODO temp fallback remove when all templates are regenerated anew 0.10.5
-                        if (false === file_exists($filename)) {
-                            $filename = CORE . 'presentation/templates/' . $template_id . '.gz';
-                        }
                         if (true === file_exists($filename)) {
                             header('Content-Type: application/json');
                             header('Content-Encoding: gzip');

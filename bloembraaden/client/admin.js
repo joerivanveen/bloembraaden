@@ -492,7 +492,7 @@ PEATCMS_actor.prototype.changedTo = function (value) {
 PEATCMS_actor.prototype.update = function (value, callback_method) {
     var self = this;
     if (!this.hasChanged()) {
-        if (VERBOSE) console.log('Not saving unchanged value');
+        if (VERBOSE) console.log('Not saving unchanged value for ' + this.column['name']);
         return;
     }
     NAV.invalidateCache(); // throw away the cache now to be on the safe side
