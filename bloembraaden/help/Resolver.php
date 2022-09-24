@@ -287,7 +287,7 @@ class Resolver extends BaseLogic
         $element->setProperties($this->getProperties());
         // if it’s a search go do that
         if ($element instanceof Search) {
-            $element->find($this->getTerms());
+            $element->findWeighted($this->getTerms());
         }
 
         //$this->element = $element;

@@ -24,7 +24,7 @@ class Search extends BaseElement
      * @param array $terms
      * @param int|null $hydrate_until null means hydrate all, else hydrate only if less than $hydrate_until items are found
      */
-    public function find(array $terms, ?int $hydrate_until = null): void
+    public function findWeighted(array $terms, ?int $hydrate_until = null): void
     {
         // search queries are also cached by path! when result_count > 0.
         $terms = $this->cleanTerms($terms);
@@ -38,19 +38,42 @@ class Search extends BaseElement
         }
         $template_settings = $this->getAndSetTemplateSettings();
         // @since 0.12.0 get results from ci_ai table
-        $results = $this->getResults($terms, $template_settings->variant_page_size);
+        $results = $this->getResults($terms);
         $this->row->__results__ = $results;
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until) {
             // make elements from results
             foreach ($results as $i => $result) {
                 $type_name = $result->type_name;
+                if ('variant' === $type_name // TODO implement page size for other than variants
+                    && isset($this->row->__variants__)
+                    && count($this->row->__variants__) > $template_settings->variant_page_size) {
+                    continue;
+                }
                 if (!($element = (new Type($type_name))->getElement()->fetchById($result->id))) continue;
                 $output = $element->getOutputFull();
                 // only include if all properties are present
                 $all_properties_present = true;
                 if (true === isset($output->__x_values__)) {
                     foreach ($properties as $property => $property_values) {
+                        if ('price_max' === $property && isset($property_values[0])) {
+                            if (true === isset($output->price) &&
+                                Help::getAsFloat($property_values[0]) < Help::getAsFloat($output->price)
+                            ) {
+                                $all_properties_present = false;
+                                break;
+                            }
+                            continue;
+                        }
+                        if ('price_min' === $property && isset($property_values[0])) {
+                            if (true === isset($output->price) &&
+                                Help::getAsFloat($output->price) < Help::getAsFloat($property_values[0])
+                            ) {
+                                $all_properties_present = false;
+                                break;
+                            }
+                            continue;
+                        }
                         foreach ($property_values as $index => $value) {
                             foreach ($output->__x_values__ as $x_i => $x_value) {
                                 if (false === is_int($x_i)) continue; // not a row
@@ -75,50 +98,30 @@ class Search extends BaseElement
         } else {
             $this->row->item_count = $item_count;
         }
-//        foreach ($types as $index => $type_name) {
-//            $plural = '__' . $type_name . 's__';
-//            // fill the row object with nice stuff, that will be returned by getOutput()
-//            $type = new Type($type_name);
-//            $rows = Help::getDB()->findElements($type, $terms, $properties);
-//            // limit number of results to pagesize of the current template
-//            $rows = array_chunk($rows, $template_settings->variant_page_size)[0] ?? array();
-//            // now you have the single ones, make objects from them
-//            $this->row->$plural = $this->outputRows($rows, $type_name);
-//            $this->row->item_count += count($rows);
-//        }
-//        unset($rows);
         $this->row->slug = implode('/', $terms);
         $this->row->title = htmlentities(implode(' ', $terms));
     }
 
-    private function getResults(array $terms, int $limit): array
+    private function getResults(array $clean_terms): array
     {
-        return array_chunk($this->getDB()->findCiAi($terms, static function(string $haystack, array $needles): float {
+        // unfortunately special cases:
+        if (isset($clean_terms[0]) && ('not_online' === $clean_terms[0] || 'price_from' === $clean_terms[0])) {
+            // todo unset other terms?
+            return Help::getDB()->findSpecialVariants($clean_terms[0]);
+        }
+
+        return Help::getDB()->findCiAi($clean_terms, static function (string $haystack, array $needles): float {
+                // the getWeight function
                 $weight = 0.0;
                 foreach ($needles as $index => $needle) {
                     $one = count(explode($needle, $haystack));
                     $two = strpos($haystack, $needle) + 1;
-
                     $weight += $one / $two;
                 }
 
                 return $weight;
-            }), $limit)[0] ?? array();
+            }) ?? array();
     }
-
-    private function getWeight(string $haystack, array $needles): float
-    {
-        $weight = 0.0;
-        foreach ($needles as $index => $needle) {
-            $one = count(explode($needle, $haystack));
-            $two = strpos($haystack, $needle) + 1;
-
-            $weight += $one / $two;
-        }
-
-        return $weight;
-    }
-
 
     public function pageVariants(int $variant_page): int
     {
@@ -144,9 +147,11 @@ class Search extends BaseElement
                 return ($a < $b) ? -1 : 1;
         });
 
-        return array_values(array_filter($terms, static function ($term) {
+        return array_values(array_map(static function($term) {
+            return Help::removeAccents($term);
+        }, array_filter($terms, static function ($term) {
             return strlen($term) >= self::MIN_TERM_LENGTH;
-        }));
+        })));
     }
 
     /**
@@ -173,9 +178,9 @@ class Search extends BaseElement
         }
         //
         $resolver = new Resolver($path, $instance_id);
-        $terms = $resolver->getTerms();
-        $props = $resolver->getProperties();
-        $variant_ids = $this->getAllVariantIds($terms, $props);
+        // @since 0.12.0
+        $this->setProperties($resolver->getProperties());
+        $variant_ids = $this->getAllVariantIds($resolver->getTerms());
         $return_arr = array();
         // with all the variant_ids -> get all the appropriate property values that may be shown and return them
         $return_arr['property_values'] = Help::getDB()->fetchAllPossiblePropertyValues($variant_ids);
@@ -189,27 +194,27 @@ class Search extends BaseElement
 
     /**
      * @param array $terms
-     * @param array $properties
      * @return array
      * @since 0.8.12
      */
-    private function getAllVariantIds(array $terms, array $properties): array
+    private function getAllVariantIds(array $terms): array
     {
         if (0 === count($terms)) return array();
         // probably when one term is present this is a property or a property_value
         if (1 === count($terms)) {
-            if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0]))) {
-                return Help::getDB()->fetchAllVariantIdsFor($row->type, $row->id, $properties);
+            if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0])) && 'search' !== $row->type) {
+                // only when we definitely found an element for this slug, try to get all attached variants
+                return Help::getDB()->fetchAllVariantIdsFor($row->type, $row->id, $this->getProperties());
             }
         }
-        // use ->findElements
-        $rows = Help::getDB()->findElements(new Type('variant'), $terms, $properties);
-        $variant_ids = array();
-        foreach ($rows as $index => $row) {
-            $variant_ids[] = $row->variant_id;
-        }
-
-        return $variant_ids;
+        return Help::getDB()->findElementIds('variant', $terms, $this->getProperties());
+//        $rows = Help::getDB()->findElements('variant', $terms, $this->getProperties());
+//        $variant_ids = array();
+//        foreach ($rows as $index => $row) {
+//            $variant_ids[] = $row->variant_id;
+//        }
+//
+//        return $variant_ids;
     }
 
     /**
@@ -319,7 +324,9 @@ class Search extends BaseElement
     {
         if (count($terms) > 0) {
             // fill the row object with nice stuff, that will be returned by getOutput()
-            $rows = Help::getDB()->findElements(new Type('variant'), $terms);
+            $this->findWeighted($this->cleanTerms($terms), $limit);
+            $rows = $this->row->__variants__;
+            //$rows = Help::getDB()->findElements('variant', $terms);
         } else {
             $rows = Help::getDB()->listVariants($limit);
         }

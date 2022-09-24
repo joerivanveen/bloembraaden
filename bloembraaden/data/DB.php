@@ -192,7 +192,7 @@ class DB extends Base
     }
 
     /**
-     * put expiring info in a locker, receive a key to open it once with emptyLocker
+     * Put expiring info in a locker, receive a key to open it once with emptyLocker
      * which will return the info and the instance_id
      * @param int $key_type not used at the moment, may be used to specify complexity or length of the key
      * @param object|null $information optional info you want associated with the key, will be returned by emptyLocker
@@ -267,7 +267,7 @@ class DB extends Base
      * @return array sub queries that filter the type based on the properties
      * @since 0.9.0
      */
-    private function filterProperties(array $properties, string $cms_type_name): array
+    private function queriesProperties(array $properties, string $cms_type_name): array
     {
         if (false === in_array($cms_type_name, array('variant', 'page'))) return array();
         // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
@@ -304,109 +304,37 @@ class DB extends Base
     }
 
     /**
-     * @param Type $type
-     * @param array $terms
-     * @param array $properties @since 0.8.10
+     * Returns all element ids in random order of a specific $type_name found using $terms and $properties
+     *
+     * @param string $type_name
+     * @param array $clean_terms
+     * @param array $properties
      * @return array
-     * @since 0.6
+     * @since 0.12.0
      */
-    public function findElements(Type $type, array $terms, array $properties = array()): array
+    public function findElementIds(string $type_name, array $clean_terms, array $properties = array()): array
     {
-        if (0 === count($terms)) return array();
-        $type_name = $type->typeName();
-        // TODO make a real search functionality, for now it's simple LIKE stuff
-        $sub_queries = implode(' ', $this->filterProperties($properties, $type_name));
-        // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
-        $arr = array();
-        if ('variant' === $type_name) { // TODO integrate variant search better
-            // NOTE you need the deleted = FALSE when searching, or else elements may be cached by getOutput while deleted
-            $statement = $this->conn->prepare("
-                SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
-                WHERE instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term $sub_queries;
-            ");
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            //var_dump($statement->queryString);
-            foreach ($terms as $index => $term) {
-                $rows = array();
-                if ('price_from' === $term) { // select only variants that have a from price
-                    $statement2 = $this->conn->prepare("
-                        SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
-                        WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $sub_queries;
-                    ");
-                    $statement2->bindValue(':instance_id', Setup::$instance_id);
-                    $statement2->execute();
-                    $temp = $statement2->fetchAll();
-                    foreach ($temp as $index_row => $row) {
-                        $rows[$row['slug']] = $this->normalizeRow($row);
-                    }
-                    $temp = null;
-                    $statement2 = null;
-                    $arr['price_from'] = $rows;
-                    continue;
-                } else if ('not_online' === $term) { // select only variants that are not online (for admins...)
-                    $statement2 = $this->conn->prepare("
-                        SELECT *, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant 
-                        WHERE instance_id = :instance_id AND deleted = FALSE AND online = FALSE $sub_queries;
-                    ");
-                    $statement2->bindValue(':instance_id', Setup::$instance_id);
-                    $statement2->execute();
-                    $temp = $statement2->fetchAll();
-                    foreach ($temp as $index_row => $row) {
-                        $rows[$row['slug']] = $this->normalizeRow($row);
-                    }
-                    $temp = null;
-                    $statement2 = null;
-                    $arr['not_online'] = $rows;
-                    continue;
-                }
-                //Help::removeAccents($term)
-                $term = '%' . Help::removeAccents($this->toLower($term)) . '%';
-                $statement->bindValue(':term', $term);
-                $statement->execute();
-                $temp = $statement->fetchAll();
-                foreach ($temp as $index_row => $row) {
-                    $rows[$row['slug']] = $this->normalizeRow($row);
-                }
-                $temp = null;
-                $arr[$term] = $rows;
-            }
-            $intersected = null;
-            $statement = null;
-            foreach ($arr as $index => $term) {
-                if (null === $intersected) {
-                    $intersected = $term;
-                } else {
-                    $intersected = array_intersect_key($term, $intersected);
-                }
-            }
-            // order by pop_vote / date_popvote
-            usort($intersected, function ($a, $b) {
-                //$a_date = \DateTime::createFromFormat('Y-m-d H:i:s.uP', $a['date_popvote']);
-                //$b_date = \DateTime::createFromFormat('Y-m-d H:i:s.uP', $b['date_popvote']);
-                return ($a->date_popvote < $b->date_popvote) ? -1 : 1;
-            });
-
-            // now make it a regular numerically indexed array again and return it as rows
-            return array_values($intersected);
+        if (0 === count($clean_terms)) return array();
+        if (false === in_array($type_name, self::TYPES_WITH_CI_AI)) {
+            $this->handleErrorAndStop("$type_name is not a type with ci_ai, cannot find element ids");
         }
-        // NOTE you need the deleted = FALSE when searching, or else elements may be cached by getOutput while deleted
-        $statement = $this->conn->prepare("
-            SELECT *, {$type_name}_id AS id, 'cms_$type_name' AS table_name FROM cms_$type_name 
-            WHERE instance_id = :instance_id AND deleted = FALSE AND ci_ai LIKE :term $sub_queries;
-        ");
+        // get the id's from the _ci_ai table
+        $statement = $this->conn->prepare('
+            SELECT id FROM _ci_ai 
+            WHERE instance_id = :instance_id AND type_name = :type_name AND ci_ai LIKE lower(:term);
+        ');
+        $arr = array();
         $statement->bindValue(':instance_id', Setup::$instance_id);
-        //var_dump($statement->queryString);
-        foreach ($terms as $index => $term) {
-            $rows = array();
-            $term = '%' . Help::removeAccents($this->toLower($term)) . '%';
-            $statement->bindValue(':term', $term);
+        $statement->bindValue(':type_name', $type_name);
+        foreach ($clean_terms as $index => $term) {
+            $statement->bindValue(':term', "%$term%");
             $statement->execute();
-            $temp = $statement->fetchAll();
-            foreach ($temp as $index_row => $row) {
-                $rows[$row['slug']] = $this->normalizeRow($row);
+            $rows = $statement->fetchAll();
+            $ids = array();
+            foreach ($rows as $key => $row) {
+                $ids[$row[0]] = $row[0]; // since we're doing array_intersect_key later, the id must be the key also
             }
-            $temp = null;
-            $arr[$term] = $rows;
+            $arr[$term] = $ids;
         }
         $intersected = null;
         $statement = null;
@@ -417,28 +345,44 @@ class DB extends Base
                 $intersected = array_intersect_key($term, $intersected);
             }
         }
-        // order by date published
-        usort($intersected, function ($a, $b) {
-            if (!isset($a->date_published)) return 0;
+        if (0 === count($properties)) return $intersected;
+        // filter by properties before returning:
+        $sub_queries = implode(' ', $this->queriesProperties($properties, $type_name));
+        $ids_as_string = implode(',', $intersected);
+        $statement = $this->conn->prepare("
+            SELECT {$type_name}_id AS id FROM cms_$type_name 
+            WHERE {$type_name}_id IN ($ids_as_string) $sub_queries;
+        ");
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+        $ids = array();
+        foreach ($rows as $key => $row) {
+            $ids[] = $row[0];
+        }
 
-            return ($a->date_published < $b->date_published) ? -1 : 1;
-        });
-
-        // now make it a regular numerically indexed array again and return it as rows
-        return array_values($intersected);
+        return $ids;
     }
 
-    public function findCiAi(array $terms, callable $getWeight): array
+    /**
+     * Finds results (title, slug, type_name, id) in ci_ai based on $terms (must be cleaned of accented characters)
+     *
+     * @param array $clean_terms
+     * @param callable $getWeight must accept two parameters: string $text, string $needle, to assign weight
+     * @return array
+     * @since 0.12.0
+     */
+    public function findCiAi(array $clean_terms, callable $getWeight): array
     {
         $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
         $statement = $this->conn->prepare('
             SELECT DISTINCT ci_ai, title, slug, type_name, id FROM _ci_ai WHERE instance_id = :instance_id AND ci_ai LIKE lower(:term);
         ');
         $statement->bindValue(':instance_id', Setup::$instance_id);
-        foreach ($terms as $index => $term) {
+        foreach ($clean_terms as $index => $term) {
             if ('' === $term) continue;
             $rows = array();
-            $term = Help::removeAccents($term);
+            //$term = Help::removeAccents($term); // already done when terms are clean
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
             foreach ($temp = $statement->fetchAll() as $index_row => $row) {
@@ -447,8 +391,8 @@ class DB extends Base
             unset ($temp);
             $arr[$term] = $rows;
         }
-        $intersected = null;
         $statement = null;
+        $intersected = null;
         foreach ($arr as $index => $term) {
             if (null === $intersected) {
                 $intersected = $term;
@@ -456,9 +400,10 @@ class DB extends Base
                 $intersected = array_intersect_key($term, $intersected);
             }
         }
+        if (null === $intersected) return array(); // nothing found
         // calculate the weights
         foreach ($intersected as $index => $row) {
-            $row->weight = $getWeight($row->ci_ai, $terms);
+            $row->weight = $getWeight($row->ci_ai, $clean_terms);
             unset($row->ci_ai);
         }
         // order by weight
@@ -467,6 +412,42 @@ class DB extends Base
         });
 
         return array_values($intersected);
+    }
+
+    /**
+     * For cases 'price_from' and 'not_online' returns the variants
+     *
+     * @param string $case
+     * @return array
+     * @since 0.12.0
+     */
+    public function findSpecialVariants(string $case): array
+    {
+        if ('price_from' === $case) { // select only variants that have a from price
+            $statement = $this->conn->prepare("
+                        SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> ''
+                        ORDER BY date_popvote DESC;
+                    ");
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->execute();
+            $rows = $statement->fetchAll();
+            $statement = null;
+            return $this->normalizeRows($rows);
+        }
+        if ('not_online' === $case) { // select only variants that are not online (for admins...)
+            $statement = $this->conn->prepare("
+                        SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND online = FALSE
+                        ORDER BY date_updated DESC;
+                    ");
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->execute();
+            $rows = $statement->fetchAll();
+            $statement = null;
+            return $this->normalizeRows($rows);
+        }
+        return array();
     }
 
     /**
@@ -483,26 +464,6 @@ class DB extends Base
         $statement = null;
 
         return $this->normalizeRows($rows);
-    }
-
-    /**
-     * @param string $path
-     * @return \stdClass|null
-     * @since 0.8.11
-     */
-    public function fetchElementIdAndTypeFromCache(string $path): ?\stdClass
-    {
-        $statement = $this->conn->prepare('SELECT id, type_name as type FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
-        $statement->bindValue(':slug', $path);
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->execute(); // error handling necessary?
-        $rows = $statement->fetchAll();
-        $statement = null;
-        if (count($rows) === 0) {
-            return null;
-        }
-
-        return $this->normalizeRow($rows[0]);
     }
 
     /**
@@ -745,27 +706,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     }
 
     /**
-     * @return array
-     * @since 0.8.0
-     */
-    public function fetchPropertySlugArrayById(): array
-    {
-        $statement = $this->conn->prepare(
-            'SELECT property_id, slug FROM cms_property WHERE instance_id = ' . Setup::$instance_id
-        );
-        $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
-        $statement = null;
-        $return = array();
-        foreach ($rows as $index => $row) {
-            $return[$row->property_id] = $row->slug;
-        }
-        $rows = null;
-
-        return $return;
-    }
-
-    /**
      * Standard way to list variants ordered by popvote desc, the expected order
      *
      * @param int $limit the max number of variants returned, 0 for all
@@ -827,6 +767,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function fetchAllVariantIdsFor(string $type_name, int $id, array $properties): array
     {
         if ('property_value' !== $type_name && 'property' !== $type_name) return array();
+        // TODO also get the attached (x-table) variants for eg page?
         $type = new Type($type_name);
         $sub_queries = array();
         // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
@@ -859,16 +800,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
                 $property_value_id
             );
         }
-        /*if (0 !== count($property_values)) {
-            $statement = $this->conn->prepare('SELECT property_value_id FROM cms_property_value WHERE slug = :slug');
-            foreach ($property_values as $index => $slug) {
-                $statement->bindValue(':slug', $slug);
-                $statement->execute();
-                if (($row = $statement->fetchAll())) {
-                    $sub_queries[] = ' AND variant_id IN (SELECT variant_id FROM cms_variant_x_properties WHERE property_value_id = ' . $row[0][0] . ')';
-                }
-            }
-        }*/
         $statement = $this->conn->prepare('
             SELECT DISTINCT x.variant_id FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
@@ -4489,8 +4420,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
 
     private function getMeaningfulSearchString(\stdClass $out): string // todo poc
     {
-        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{
-        $out->__ref};
+        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
         ob_start();
         if (true === isset($out->title)) {
             echo $out->title;

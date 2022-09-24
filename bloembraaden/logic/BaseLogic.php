@@ -45,19 +45,6 @@ class BaseLogic extends Base
     }
 
     /**
-     * @return DB
-     * @since 0.0.0
-     */
-    public function getDB(): DB
-    {
-        if (false === isset($this->db)) {
-            $this->db = new DB();
-        }
-
-        return $this->db;
-    }
-
-    /**
      * @return int|null the instance_id this element belongs to, if mentioned in the row, null otherwise
      * @since 0.6.2
      */

@@ -117,7 +117,7 @@ class Handler extends BaseLogic
                 $my_session = $this->getSession();
                 if ($session_id === $my_session->getId()) {
                     $this->addMessage(__('You can not destroy your own session this way', 'peatcms'), 'warn');
-                } elseif (true === $this->getDB()->deleteSessionById(
+                } elseif (true === Help::getDB()->deleteSessionById(
                         $session_id,
                         ($user = $my_session->getUser()) ? $user->getId() : 0,
                         ($admin = $my_session->getAdmin()) ? $admin->getId() : 0
@@ -429,7 +429,7 @@ class Handler extends BaseLogic
                     }
                 } else {
                     $hydrate_until = (isset($props['hydrate_until'][0])) ? (int)($props['hydrate_until'][0]) : null;
-                    $src->find($terms, $hydrate_until);
+                    $src->findWeighted($terms, $hydrate_until);
                     $out = $src->getOutput();
                 }
                 $src = null;
@@ -486,7 +486,7 @@ class Handler extends BaseLogic
                     $referer = $post_data->referer;
                     $slug = Help::slugify("$referer $title");
                     $reply_to_id = $post_data->reply_to_id ?? null;
-                    if (null !== ($comment_id = $this->getDB()->insertElement($peat_type, array(
+                    if (null !== ($comment_id = Help::getDB()->insertElement($peat_type, array(
                             'referer' => $referer,
                             'slug' => $slug,
                             'email' => $post_data->email,
@@ -1599,7 +1599,7 @@ class Handler extends BaseLogic
                 || (isset($base_element->is_published) and false === $base_element->is_published)
             ) {
                 $element = new Search();
-                $element->find(array($base_element->title));
+                $element->findWeighted(array($base_element->title));
                 $out = $element->getOutputObject();
                 if (null !== $render_in_tag) $out->render_in_tag = $render_in_tag;
             }
