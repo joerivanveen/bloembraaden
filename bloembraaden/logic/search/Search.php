@@ -301,7 +301,7 @@ class Search extends BaseElement
                 Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $not_in, true)
             );
         }
-        if ($fixed_quantity > 0) array_splice($rows, $fixed_quantity); // $quantity > 0 means you want to cutoff the results there
+        if ($fixed_quantity > 0) array_splice($rows, $fixed_quantity); // $quantity > 0 means you want to cut off the results there
 
         return $this->outputRows($rows, 'variant');
     }
@@ -322,7 +322,7 @@ class Search extends BaseElement
         } else {
             $rows = Help::getDB()->listVariants($limit);
         }
-        if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cutoff the results there
+        if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cut off the results there
 
         return $this->outputRows($rows, 'variant');
     }
@@ -331,7 +331,7 @@ class Search extends BaseElement
     {
         // for now make it just so something is returned:
         $rows = Help::getDB()->fetchElementRowsWhere(new Type('page'), array('online' => true));
-        if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cutoff the results there
+        if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cut off the results there
 
         return $this->outputRows($rows, 'page');
     }

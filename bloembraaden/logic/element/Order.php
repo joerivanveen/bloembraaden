@@ -90,12 +90,12 @@ class Order extends BaseElement
             $row_price_from = Help::getAsFloat($list_row->price_from);
             $row_total = $list_row->quantity * $row_price;
             $percentage_index = (string)$list_row->vat_percentage;
-            $list_rows[$index]->total = Help::asMoney($row_total);
-            $list_rows[$index]->price = Help::asMoney($row_price);
+            $list_row->total = Help::asMoney($row_total);
+            $list_row->price = Help::asMoney($row_price);
             if ($row_price_from > $row_price) {
-                $list_rows[$index]->price_from = Help::asMoney($row_price_from);
+                $list_row->price_from = Help::asMoney($row_price_from);
             } else {
-                $list_rows[$index]->price_from = '';
+                $list_row->price_from = '';
             }
             $vat[$percentage_index] = $row_total + ($vat[$percentage_index] ?? 0);
             $amount_row_total += $row_total;

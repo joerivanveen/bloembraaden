@@ -26,7 +26,6 @@ class Resolver extends BaseLogic
         $GLOBALS['slugs'] = new \stdClass;
         // urldecode means get utf-8 characters of requested path + querystring
         // remove uppercase through db
-        // TODO: if we are certain slugs / urls are always (correct) lowercase, we can remove the conversion from DB methods
         $request_uri = Help::getDB()->toLower(strip_tags(urldecode($request_uri)));
         // deconstruct path + querystring
         $uri = (array)explode('?', $request_uri);
@@ -61,16 +60,12 @@ class Resolver extends BaseLogic
             $output_json = true; // $post_data->json; <- if you receive json you can bet it wants json back
         } else { // this is at least used when files are uploaded and for the login page __admin__
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
-            if (isset($post_data->json) and true === $post_data->json) {
-                $output_json = true;
-            } else {
-                $output_json = false;
-            }
+            $output_json = isset($post_data->json) && true === $post_data->json;
         }
         // since 0.5.10: possibility to render returned element in a different tag than its slug
         if (isset($post_data->render_in_tag)) $this->render_in_tag = $post_data->render_in_tag;
         // remember for everyone, only needed when output is imminent:
-        if (true === $output_json and false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+        if (true === $output_json && false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (isset($this->instructions['action'])) {
             if (count($uri) > 0) {
@@ -94,18 +89,12 @@ class Resolver extends BaseLogic
         }
         // remove properties (filters) from path and add them to query
         foreach ($uri as $index => $value) {
-            if (strpos($value, ':') === false) continue;
+            if (false === strpos($value, ':')) continue;
             $values = explode(':', $value);
             $this->addProperty($values[0], explode(',', $values[1]));
             unset($uri[$index]);
         }
         $this->terms = array_values($uri); // $terms are the (now lowercase) uri parts separated by / (forward slash)
-    }
-
-    public function __destruct()
-    {
-        parent::__destruct();
-        unset($this->post_data);
     }
 
     public function getPostData()
@@ -123,8 +112,9 @@ class Resolver extends BaseLogic
 
     public function getAction(): ?string
     {
-        if (isset($this->instructions['action']))
+        if (isset($this->instructions['action'])) {
             return $this->instructions['action'];
+        }
 
         return null;
     }
@@ -170,7 +160,6 @@ class Resolver extends BaseLogic
     public function getElement(?bool &$from_history, ?Session $session = null, ?bool $no_cache = false): BaseLogic
     {
         $from_history = false;
-        //if (isset($this->element)) return $this->element; // caching is unneeded, only called once per request
         // TODO it is a bad sign that session has to be sent to this method
         // TODO optimize this, probably move it to its own method
         // run over the instructions (skipped for regular urls)
@@ -290,7 +279,6 @@ class Resolver extends BaseLogic
             $element->findWeighted($this->getTerms());
         }
 
-        //$this->element = $element;
         return $element;
     }
 

@@ -777,15 +777,15 @@ class Handler extends BaseLogic
             } elseif (('update_address' === $action or 'delete_address' === $action)
                 and (true === Help::recaptchaVerify($instance, $post_data))
             ) {
-                $post_data = $this->resolver->escape($post_data);
+                //$post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = $this->getSession()->getUser())) and isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
                     if ($action === 'delete_address') $post_data->deleted = true;
-                    if (1 === ($affected = Help::getDB()->updateColumnsWhere(
+                    if (1 === Help::getDB()->updateColumnsWhere(
                             '_address',
                             (array)$post_data,
                             array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
-                        ))) {
+                        )) {
                         $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
                         if ($action === 'delete_address') {
                             $out = array('success' => true);
