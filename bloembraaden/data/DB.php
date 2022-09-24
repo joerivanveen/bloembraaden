@@ -609,15 +609,17 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function fetchProperties(string $for): array
     {
         if ('page' !== $for) $for = 'variant';
-        $statement = $this->conn->prepare(
-            'SELECT DISTINCT p.slug property_slug, p.title property_title, pv.slug, pv.title, pxv.sub_o ' .
-            'FROM cms_property p ' .
-            'INNER JOIN cms_' . $for . '_x_properties xp ON p.property_id = xp.property_id ' .
-            'INNER JOIN cms_property_value pv ON pv.property_value_id = xp.property_value_id ' .
-            'INNER JOIN cms_property_x_property_value pxv ON pxv.property_value_id = xp.property_value_id ' .
-            'WHERE p.instance_id = :instance_id AND p.deleted = FALSE AND pv.deleted = FALSE AND pxv.deleted = FALSE ' .
-            'ORDER BY p.title, pxv.sub_o, pv.title'
-        );
+        $statement = $this->conn->prepare("
+            SELECT DISTINCT p.slug property_slug, p.title property_title, pv.slug, pv.title, pxv.sub_o
+            FROM cms_property p
+            INNER JOIN cms_{$for}_x_properties xp ON p.property_id = xp.property_id
+            INNER JOIN cms_$for el ON el.{$for}_id = xp.{$for}_id
+            INNER JOIN cms_property_value pv ON pv.property_value_id = xp.property_value_id
+            INNER JOIN cms_property_x_property_value pxv ON pxv.property_value_id = xp.property_value_id
+            WHERE p.instance_id = :instance_id AND p.deleted = FALSE AND pv.deleted = FALSE AND pxv.deleted = FALSE
+            AND el.online = TRUE AND pv.online = TRUE
+            ORDER BY p.title, pxv.sub_o, pv.title
+        ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
