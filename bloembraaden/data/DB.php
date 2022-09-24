@@ -794,22 +794,20 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             }
         }
         foreach ($property_value_ids as $index => $property_value_id) {
-            $sub_queries[] = sprintf(
-                'AND x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties' .
-                ' WHERE property_value_id = %d) ',
-                $property_value_id
-            );
+            $sub_queries[] =
+                "AND x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties WHERE property_value_id = $property_value_id)";
         }
-        $statement = $this->conn->prepare('
+        $id_column = $type->idColumn();
+        $imploded_sub_queries = implode(' ', $sub_queries);
+        $statement = $this->conn->prepare("
             SELECT DISTINCT x.variant_id FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
-            WHERE x.' . $type->idColumn() . ' = :id AND x.deleted = FALSE AND v.deleted = FALSE ' .
-            implode(' ', $sub_queries)
-        );
+            WHERE x.$id_column = :id AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
+        ");
         $statement->bindValue(':id', $id);
         $statement->execute();
         $fetched_array = $statement->fetchAll();
-        //echo 'executed sql string: ' . str_replace(':id', $id, $statement->queryString);
+        //echo 'executed sql string: ' . str_replace(':id', (string)$id, $statement->queryString);
         $statement = null;
         $return_array = array();
         // todo make this a helper function or something?

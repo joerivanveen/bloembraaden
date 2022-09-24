@@ -94,7 +94,7 @@ class Search extends BaseElement
                     $this->row->item_count += 1;
                 }
             }
-            $this->result_count = $this->row->item_count; // means it will be cached if > 0
+            if ('not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
         } else {
             $this->row->item_count = $item_count;
         }
@@ -105,9 +105,8 @@ class Search extends BaseElement
     private function getResults(array $clean_terms): array
     {
         // unfortunately special cases:
-        if (isset($clean_terms[0]) && ('not_online' === $clean_terms[0] || 'price_from' === $clean_terms[0])) {
-            // todo unset other terms?
-            return Help::getDB()->findSpecialVariants($clean_terms[0]);
+        if (isset($clean_terms[0]) && ('not_online' === ($term = $clean_terms[0]) || 'price_from' === $term)) {
+            return Help::getDB()->findSpecialVariants($term);
         }
 
         return Help::getDB()->findCiAi($clean_terms, static function (string $haystack, array $needles): float {
@@ -208,13 +207,6 @@ class Search extends BaseElement
             }
         }
         return Help::getDB()->findElementIds('variant', $terms, $this->getProperties());
-//        $rows = Help::getDB()->findElements('variant', $terms, $this->getProperties());
-//        $variant_ids = array();
-//        foreach ($rows as $index => $row) {
-//            $variant_ids[] = $row->variant_id;
-//        }
-//
-//        return $variant_ids;
     }
 
     /**
