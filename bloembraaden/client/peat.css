@@ -295,8 +295,6 @@ input[type="submit"] {
     padding: .25em .5em;
 }
 
-/*TODO FOCUS STYLES*/
-
 /**
  * Pretty checkboxes
  */
@@ -436,3 +434,13 @@ body select::-ms-expand {
 #peatcms-next-slide {
     right: 0;
 }
+
+/* src sets */
+[data-srcset] {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    opacity: 0; /* will be set to 1 by javascript */
+    transition: opacity .4s ease;
+}
+
