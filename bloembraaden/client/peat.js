@@ -3809,6 +3809,63 @@ document.addEventListener('peatcms.document_complete', function () {
 });
 
 /**
+ * The carousels you can swipe
+ */
+PEATCMS.setupCarousels = function() {
+    const setupCarousel = function(car) {
+        let slides, slide, i, len;
+        if (car.hasAttribute('data-already_setup_as_carousel')) return;
+        car.setAttribute('data-already_setup_as_carousel', '1');
+        car.bb_scrollX = 0;
+        car.bb_mouseX = 0;
+        car.has_moved = false;
+        slides = car.getElementsByClassName('slide');
+        if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
+            PEATCMS.opacityNode(car.querySelector('.right'), 0);
+        } else {
+            PEATCMS.opacityNode(car.querySelector('.right'), 1);
+        }
+        for (i = 0, len = slides.length; i < len; ++i) {
+            slide = slides[i];
+            slide.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                car.bb_mouseX = e.clientX;
+                car.has_moved = false;
+                PEATCMS.opacityNode(car.querySelector('.right'), 0);
+            });
+            slide.addEventListener('touchstart', function () {
+                car.has_moved = false;
+                PEATCMS.opacityNode(car.querySelector('.right'), 0);
+            }, {passive: true});
+            slide.addEventListener('mouseup', function (e) {
+                e.preventDefault();
+                car.removeAttribute('data-mouse-is-down');
+            });
+            slide.addEventListener('mousemove', function (e) {
+                let delta, xPos;
+                e.preventDefault();
+                car.has_moved = true;
+                if (e.buttons > 0) {
+                    car.setAttribute('data-mouse-is-down', '1');
+                    delta = car.bb_mouseX - (xPos = e.clientX);
+                    car.bb_mouseX = xPos;
+                    car.scrollBy(delta, 0);
+                } else {
+                    car.removeAttribute('data-mouse-is-down');
+                }
+            });
+        }
+    }
+    let elements, i, len;
+    /* carousel slides when present */
+    if ((elements = document.getElementsByClassName('carousel'))) {
+        for (len = elements.length, i = 0; i < len; i++) {
+            setupCarousel(elements[i]);
+        }
+    }
+}
+
+/**
  * startup peatcms object
  */
 function peatcms_start() {
