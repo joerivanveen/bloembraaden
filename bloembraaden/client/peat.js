@@ -2954,7 +2954,7 @@ window.onpopstate = function (e) {
  * The navigator object, instantiated later as global NAV
  */
 //class PEATCMS_navigator extends PEATCMS_ajax(PEATCMS_base) {
-var PEATCMS_navigator = function (root) {
+let PEATCMS_navigator = function (root) {
     this.root = root; // the root is served without trailing slash
     this.element = false; // will load currently displayed element
     this.last_navigate = null; // remember if we went somewhere
@@ -2971,7 +2971,7 @@ PEATCMS_navigator.prototype.tagsCache = function (tag, json) {
     this.tags_in_cache[tag] = json;
 }
 PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) {
-    var navigated_parts, current_parts, i;
+    let navigated_parts, current_parts, i;
     if (navigated_to) {
         this.last_navigate = navigated_to
     } else if (null === this.last_navigate) {
@@ -2999,7 +2999,8 @@ PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
     return slug;
 }
 PEATCMS_navigator.prototype.go = function (path, local) {
-    var slug, self = this;
+    const self = this;
+    let slug;
     if (!local) local = false; // replacing default value which is not supported < ES6
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
@@ -3076,7 +3077,8 @@ PEATCMS_navigator.prototype.reloadThenRefresh = function (tag) {
 }
 
 PEATCMS_navigator.prototype.refresh = function (path) {
-    var self = this, globals = window.PEATCMS_globals, slug;
+    const self = this, globals = window.PEATCMS_globals
+    let slug;
     if (!path) path = this.getCurrentPath(); // replacing default value which is not supported < ES6
     if (window.history && window.history.pushState) {
         if (globals.hasOwnProperty('slug')) { // move the first page’s slug into the cache
@@ -3117,9 +3119,9 @@ PEATCMS_navigator.prototype.refresh = function (path) {
  * @since 0.7.1
  */
 PEATCMS_navigator.prototype.setState = function () {
-    var el;
+    const el = this.element;
     if (window.history && window.history.pushState) {
-        if ((el = this.element)) {
+        if (el) {
             window.history.replaceState({
                 path: el.state.path,
                 title: el.state.title,
@@ -3139,8 +3141,7 @@ PEATCMS_navigator.prototype.getRoot = function (trailingSlash) {
 }
 
 PEATCMS_navigator.prototype.getCurrentPath = function () { // returned path uri is clean, no extra slashes
-    //return (document.location.href.replace(this.getRoot(true), '') + '/').replace(/\/\//g, '/'); // ensure uri always ends in a slash
-    var href = decodeURIComponent(document.location.href.replace(this.getRoot(true), '')),
+    let href = decodeURIComponent(document.location.href.replace(this.getRoot(true), '')),
         len;
     if (href.indexOf('?') !== -1) href = href.split('?')[0];
     if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.substr(0, len);
@@ -3150,8 +3151,8 @@ PEATCMS_navigator.prototype.getCurrentUri = function () {
     return (PEATCMS_globals.root || '') + '/' + this.getCurrentPath();
 }
 PEATCMS_navigator.prototype.getCurrentSlug = function () {
-    var slugs = this.getCurrentPath().split('/'),
-        i;
+    const slugs = this.getCurrentPath().split('/');
+    let i;
     if (slugs.length === 1) {
         return decodeURIComponent(slugs[0]);
     } else {
@@ -3207,19 +3208,13 @@ PEATCMS_navigator.prototype.postData = function () {
     //
 }
 PEATCMS_navigator.prototype.submitData = function (slug, data, callback) {
-    var self = this;
+    const self = this;
     self.addRecaptchaToData(data, function (data) {
         self.ajax(slug, data, callback);
     });
 }
-/**
- * Use submitForm(HTMLElement form)
- */
-PEATCMS_navigator.prototype.postForm = function () {
-    //
-}
 PEATCMS_navigator.prototype.submitForm = function (form) {
-    var self = this, data = PEATCMS.getFormData(form);
+    const self = this, data = PEATCMS.getFormData(form);
     // handle recaptcha if we’re not talking shoppinglist
     if (form.getAttribute('action').substr(0, 17) !== '/__shoppinglist__') {
         self.addRecaptchaToData(data, function (data) {
@@ -3231,7 +3226,7 @@ PEATCMS_navigator.prototype.submitForm = function (form) {
 }
 PEATCMS_navigator.prototype.submitFormData = function (form, data) {
     this.ajax(form.getAttribute('action'), data, function (json) {
-        var slug = data.hasOwnProperty('slug') ? data.slug : PEATCMS.trim(form.getAttribute('action'), '/'),
+        const slug = data.hasOwnProperty('slug') ? data.slug : PEATCMS.trim(form.getAttribute('action'), '/'),
             event_data = { // nice data for the event after the form is posted
                 bubbles: true,
                 detail: {
@@ -3811,8 +3806,8 @@ document.addEventListener('peatcms.document_complete', function () {
 /**
  * The carousels you can swipe
  */
-PEATCMS.setupCarousels = function() {
-    const setupCarousel = function(car) {
+PEATCMS.setupCarousels = function () {
+    const setupCarousel = function (car) {
         let slides, slide, i, len;
         if (car.hasAttribute('data-already_setup_as_carousel')) return;
         car.setAttribute('data-already_setup_as_carousel', '1');
@@ -3853,6 +3848,15 @@ PEATCMS.setupCarousels = function() {
                 } else {
                     car.removeAttribute('data-mouse-is-down');
                 }
+            });
+            slide.querySelectorAll('img').forEach(function (el) {
+                el.addEventListener('click', function (e) {
+                    // @since 0.12.0 prevent images from triggering clicks when used for moving
+                    if (car.has_moved) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                })
             });
         }
     }
