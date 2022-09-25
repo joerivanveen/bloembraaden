@@ -4,9 +4,9 @@
 // TODO in template don't remove single spaces, see review / image_link class problem in feelactive.nl
 if (VERBOSE) console.log('peat.js loaded');
 // declare global objects
-var PEAT, NAV;
+let PEAT, NAV;
 // we have the following events:
-var peatcms_events = [
+const peatcms_events = [
     'peatcms.navigation_start',
     'peatcms.navigation_end',
     'peatcms.progressive_rendering',
@@ -26,7 +26,7 @@ var peatcms_events = [
  * @since 0.7.9
  */
 document.addEventListener('peatcms.form_posted', function (e) {
-    var form, json, arr, i, len, is_account, user, action;
+    let form, json, arr, i, len, is_account, user, action;
     if (e.detail && (form = e.detail.form) && form.hasAttribute('action')) {
         if ((form.action.indexOf && (action = form.action).indexOf('/__action__/account_') !== -1)
             || (form.action.value && (action = form.action.value).indexOf('/__action__/account_') !== -1)
@@ -69,7 +69,7 @@ document.addEventListener('peatcms.form_posted', function (e) {
 
 // TODO have a setting to choose between scroll down first then stick, or stick first then scroll down, or something
 function PeatStickyColumns(leftColumn, rightColumn, spaceOnTop) {
-    var self = this;
+    const self = this;
     if (!leftColumn || !rightColumn) return;
     // set style margin top to 0 now, so we don’t have to waste resources finding out if it has been set
     leftColumn.style.marginTop = '0px';
@@ -89,7 +89,7 @@ function PeatStickyColumns(leftColumn, rightColumn, spaceOnTop) {
 }
 
 PeatStickyColumns.prototype.handleEvent = function () {
-    var left = this.left,
+    const left = this.left,
         right = this.right,
         left_rect = left.getBoundingClientRect(),
         right_rect = right.getBoundingClientRect(),
@@ -112,10 +112,8 @@ PeatStickyColumns.prototype.doTheMargins = function (tall, short, difference, ta
 
 
 function Address_getAllUserAddresses() {
-    var user;
-    if ((user = PEATCMS_globals.__user__)) {
-        if (user.hasOwnProperty('__addresses__')) return user.__addresses__;
-    }
+    const user = PEATCMS_globals.__user__;
+    if (user && user.hasOwnProperty('__addresses__')) return user.__addresses__;
     return {};
 }
 
@@ -135,7 +133,8 @@ function Address_getEmptyFields() {
 }
 
 function Address(wrapper) {
-    var i, len, inputs = wrapper.querySelectorAll('input');
+    let i, len;
+    const inputs = wrapper.querySelectorAll('input');
     this.wrapper = wrapper;
     this.inputs = inputs;
     this.postcode_nl_fields = {};
@@ -147,7 +146,7 @@ function Address(wrapper) {
 }
 
 Address.prototype.enhanceWrapper = function () {
-    var wrapper = this.wrapper, user_addresses, fields = this.getFields(), next, prev, reset;
+    let wrapper = this.wrapper, user_addresses, fields = this.getFields(), next, prev, reset;
     wrapper.setAttribute('data-paging', '0');
     // a wrapper that is not an individual user address can page through user addresses, if available
     // so the user can select a shipping_ and billing_ address easily
@@ -158,7 +157,7 @@ Address.prototype.enhanceWrapper = function () {
             wrapper.setAttribute('data-paging-index', '1');
             if ((next = wrapper.querySelector('.paging.next'))) {
                 next.addEventListener('click', function () {
-                    var index = 1 + parseInt(wrapper.getAttribute('data-paging-index')),
+                    let index = 1 + parseInt(wrapper.getAttribute('data-paging-index')),
                         fields = Address_getEmptyFields(); // default to empty
                     if (index > user_addresses.length) {
                         index = 0; // the empty address
@@ -172,7 +171,7 @@ Address.prototype.enhanceWrapper = function () {
             }
             if ((prev = wrapper.querySelector('.paging.prev'))) {
                 prev.addEventListener('click', function () {
-                    var index = -1 + parseInt(wrapper.getAttribute('data-paging-index')),
+                    let index = -1 + parseInt(wrapper.getAttribute('data-paging-index')),
                         fields = Address_getEmptyFields(); // default to empty
                     if (index !== 0) {
                         if (index < 0) index = user_addresses.length; // the empty address
@@ -185,7 +184,7 @@ Address.prototype.enhanceWrapper = function () {
             }
             if ((reset = wrapper.querySelector('.paging.reset'))) {
                 reset.addEventListener('click', function () {
-                    var index = 0, fields = Address_getEmptyFields();
+                    let index = 0, fields = Address_getEmptyFields();
                     wrapper.setAttribute('data-paging-index', index);
                     wrapper.Address.save(fields, true);
                     wrapper.Address.checkPostcodeFirst(null, fields);
@@ -211,16 +210,17 @@ Address.prototype.enhanceInput = function (input) {
     });
 }
 Address.prototype.enhanceCountryList = function () {
-    var self = this, select_list;
-    if ((select_list = this.wrapper.querySelector('select[data-field=country]'))) {
+    const self = this, select_list = this.wrapper.querySelector('select[data-field=country]');
+    if (select_list) {
         select_list.addEventListener('change', function () {
             self.send(this);
         });
     }
 }
 Address.prototype.enhanceLists = function () {
-    var self = this, select_lists, i, len;
-    if ((select_lists = this.wrapper.querySelectorAll('select'))) {
+    const self = this, select_lists = this.wrapper.querySelectorAll('select');
+    let i, len;
+    if (select_lists) {
         for (i = 0, len = select_lists.length; i < len; ++i) {
             select_lists[i].addEventListener('change', function () {
                 self.send(this);
@@ -229,14 +229,14 @@ Address.prototype.enhanceLists = function () {
     }
 }
 Address.prototype.send = function (input) {
-    var self = this;
+    const self = this;
     // send will save the address and also check postcode.nl if relevant
     self.checkPostcodeFirst(input, self.getFields(), function (input, fields) {
         self.save(fields);
     });
 }
 Address.prototype.save = function (fields, in_session_only) {
-    var self = this, wrapper = self.wrapper;
+    const self = this, wrapper = self.wrapper;
     wrapper.setAttribute('data-updating', '1');
     if (fields.hasOwnProperty('address_id') && !in_session_only) {
         NAV.submitData('/__action__/update_address', fields, function (json) {
@@ -966,7 +966,7 @@ PEATCMS_element.prototype.refreshOrGo = function (slug) {
 }
 
 PEATCMS_element.prototype.getTableInfo = function () {
-    return (typeof this.state.table_info === 'undefined') ? null : this.state.table_info;
+    return (typeof this.state.table_info === 'undefined') ? [] : this.state.table_info;
 }
 
 PEATCMS_element.prototype.getColumns = function () {
@@ -2428,7 +2428,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         new_nodes = null; // prevent memory leaks
         this.ajaxifyDOMElements();
         if (typeof CMS_admin !== 'undefined') {
-            // hide the edit buttons when current element is not editable (admin cannot use IE)
+            // hide the edit buttons when current element is not editable
             document.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(function (el) {
                 el.setAttribute('data-disabled', (element.isEditable()) ? '0' : '1');
             });
@@ -2484,10 +2484,10 @@ PEATCMS.prototype.registerAssetLoad = function () {
             self.document_status = self.status_codes.complete;
             document.dispatchEvent(new CustomEvent('peatcms.document_complete')); // send without detail, does not bubble
         } else {
-            window.addEventListener('load', function() {
+            window.addEventListener('load', function () {
                 self.document_status = self.status_codes.complete;
                 document.dispatchEvent(new CustomEvent('peatcms.document_complete')); // send without detail, does not bubble
-           });
+            });
         }
     }
 }
@@ -2553,7 +2553,7 @@ PEATCMS.prototype.swipifyDOMElement = function (el, on_swipe_left, on_swipe_righ
                 on_swipe_right(e);
             }
         } else {
-            window.scrollBy(diffY);
+            window.scrollBy(0, diffY);
         }
         initialX = null;
         initialY = null;
@@ -3006,7 +3006,7 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
     }
     return true;
 }
-PEATCMS_navigator.prototype.signalStartNavigating = function(path) {
+PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
     let slug = path.replace(this.getRoot(true), '');
     this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
     if (0 === slug.indexOf('/')) slug = slug.substr(1);
@@ -3586,11 +3586,8 @@ PEATCMS.cleanUpNumber = function (nr) {
 };
 
 PEATCMS.removeNode = function (node) {
-    var parent_node;
-    if (null === node) return;
-    // there are edgeCases (e.g. with the PEATCMS_edit_button) where the parentNode === null
-    // you do not have to remove the node then, since it’s not attached to the DOM anyway, it will be garbage collected
-    if (null !== (parent_node = node.parentNode)) parent_node.removeChild(node);
+    console.warn('ponyfill removeNode is unnecessary, use node.remove()');
+    node.remove();
 }
 
 function removeNode(node) {
@@ -3622,7 +3619,7 @@ function isInt(value) {
     return PEATCMS.isInt(value);
 }
 
-PEATCMS.cloneStructured = function(obj) {
+PEATCMS.cloneStructured = function (obj) {
     if (!!window.structuredClone) {
         return structuredClone(obj);
     }
@@ -3673,7 +3670,7 @@ PEATCMS.getFormData = function (form) {
     }
     // @since 0.11.0 dataset will be posted as well
     for (i in data) {
-        if (! data.hasOwnProperty(i)) continue;
+        if (!data.hasOwnProperty(i)) continue;
         if ('peatcms_ajaxified' === i) continue;
         if ('submitting' === i) continue;
         value = data[i];

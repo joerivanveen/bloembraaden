@@ -2,10 +2,10 @@
 try {
     if (VERBOSE) console.log('admin.js loaded');
 } catch (e) {
-    var VERBOSE = false
+    window.VERBOSE = false; // todo better scoping...
 }
 // declare global admin
-var CMS_admin = true;
+window.CMS_admin = true;
 
 
 /**
@@ -32,11 +32,11 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
  * @returns {HTMLDivElement|void|*|undefined|HTMLSelectElement|HTMLLabelElement|HTMLInputElement}
  */
 PEATCMS_actor.prototype.create_DOMElement = function () {
-    var column = this.column,
+    const column = this.column,
         type = column.type;
     column.actor = this;
     if (false === column['editable']) {
-        var el = document.createElement('input');
+        const el = document.createElement('input');
         el.classList.add('uneditable');
         el.title = column.name;
         el.setAttribute('disabled', 'disabled');
@@ -62,7 +62,7 @@ PEATCMS_actor.prototype.create_DOMElement = function () {
 }
 
 PEATCMS_actor.prototype.create_as_checkbox = function (column) {
-    var el = document.createElement('input'),
+    const el = document.createElement('input'),
         lbl = document.createElement('label'),
         span = document.createElement('span'),
         self = this;
@@ -89,11 +89,11 @@ PEATCMS_actor.prototype.create_as_checkbox = function (column) {
 
 PEATCMS_actor.prototype.create_as_select = function (column) {
     if (!column.hasOwnProperty('constrained_values')) return;
-    var el = document.createElement('select'),
-        option_index,
-        option_value,
-        option,
+    const el = document.createElement('select'),
         self = this;
+    let option_index,
+        option_value,
+        option;
     for (option_index in column.constrained_values) {
         if (column.constrained_values.hasOwnProperty(option_index)) {
             option_value = column.constrained_values[option_index];
@@ -112,7 +112,7 @@ PEATCMS_actor.prototype.create_as_select = function (column) {
 
 PEATCMS_actor.prototype.create_as_date = function (column) {
     if (column.name === 'date_popvote') { // the ‘date_upvoted’ gets a special interface at the top of the edit bar
-        var self = this,
+        const self = this,
             el = document.createElement('div'),
             up = document.createElement('button'),
             down = document.createElement('button');
@@ -147,7 +147,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
         });
         return el;
     } else { // make a date thingie
-        el = this.create_as_input(column);
+        const el = this.create_as_input(column);
         if (el.value === '') {
             this.update('NOW()', 'set')
         }
@@ -155,16 +155,16 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
     }
 }
 PEATCMS_actor.prototype.showPopVote = function (json) {
-    var vote;
     if (json.hasOwnProperty('pop_vote')) { // pop_vote is a float between 0 (most popular) and 1 (least...)
-        vote = json.pop_vote;
+        const vote = json.pop_vote;
         this.DOMElement.style.backgroundColor = 'rgba(48,63,123,' + (1 - vote) + ')';
         this.DOMElement.title = vote;
     }
 }
 
 PEATCMS_actor.prototype.create_as_input = function (column) {
-    var el, self = this;
+    const self = this;
+    let el;
     if (column.length > 127) {
         el = document.createElement('textarea');
     } else {
@@ -193,12 +193,12 @@ PEATCMS_actor.prototype.create_as_input = function (column) {
 }
 
 PEATCMS_actor.prototype.create_as_numeric = function (column) {
-    var el, element_name, column_names, option,
-        self = this, column_name = column.name,
+    const self = this, column_name = column.name,
         selectlist_actions = {
             template_id: '/__action__/admin_get_templates',
             vat_category_id: '/__action__/admin_get_vat_categories'
         };
+    let el, element_name, column_names, option
     // this can actually be a numeric field,
     // but it can also be one of the id's, in that case create a searchbox to connect with (parent) element(s)
     if (this.pretty_id_column_names.includes(column_name)) {
@@ -248,8 +248,8 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
         el.setAttribute('data-peatcms_value', this.server_value);
         // load the options and on return update the select list
         NAV.ajax(selectlist_actions[column_name], {for: this.parent_PEATCMS_element.state.type}, function (json) {
-            var el = self.DOMElement,
-                i, option, temp;
+            const el = self.DOMElement;
+            let i, option, temp;
             for (i in json) {
                 if (json.hasOwnProperty(i) && (temp = json[i]) && temp.hasOwnProperty(column_name)) {
                     option = document.createElement('option');
@@ -285,17 +285,17 @@ PEATCMS_actor.prototype.setParent = function (id) {
 }
 
 PEATCMS_actor.prototype.prettyParent = function (id) {
-    var list_el,
-        element_name = this.column.name.replace('_id', ''),
+    const element_name = this.column.name.replace('_id', ''),
+        list_el = document.getElementById('PEATCMS_suggestions_' + element_name),
         self = this;
-    if ((list_el = document.getElementById('PEATCMS_suggestions_' + element_name))) {
-        list_el.remove(); // admin cannot use IE
+    if (list_el) {
+        list_el.remove();
     }
     NAV.ajax('/__action__/admin_get_element', {
         'element': element_name,
         'id': id
     }, function (data) {
-        var el = self.DOMElement;
+        const el = self.DOMElement;
         if (data.hasOwnProperty('title')) {
             el.value = data.title;
             el.placeholder = data.title;
@@ -307,30 +307,32 @@ PEATCMS_actor.prototype.prettyParent = function (id) {
 }
 
 PEATCMS_actor.prototype.suggestParent = function (element_name) {
-    var list_el,
-        el = this.DOMElement,
+    const el = this.DOMElement,
         self = this;
     NAV.ajax('/__action__/admin_get_element_suggestions', {
         'element': element_name,
         'src': el.value
     }, function (data) {
+        let element = data.element,
+            list_el = document.getElementById('PEATCMS_suggestions_' + element),
+            i, len, div, row, rows;
         if (data.hasOwnProperty('rows')) {
             // remove the current suggestions and add new ones
-            if ((list_el = document.getElementById('PEATCMS_suggestions_' + element_name))) {
+            if (list_el) {
                 list_el.innerHTML = '';
             } else {
                 list_el = document.createElement('div');
-                list_el.id = 'PEATCMS_suggestions_' + element_name;
-                list_el.classList.add('suggestions', element_name);
+                list_el.id = 'PEATCMS_suggestions_' + element;
+                list_el.classList.add('suggestions', element);
                 el.insertAdjacentElement('afterend', list_el);
             }
-            var i, len, div, row, rows = data.rows;
+            rows = data.rows;
             for (i = 0, len = rows.length; i < len; ++i) {
                 row = rows[i];
                 div = document.createElement('div');
                 div.innerHTML = row['title'];
                 div.className = row['online'] ? 'online' : 'offline';
-                div.setAttribute('data-id', row[element_name + '_id']);
+                div.setAttribute('data-id', row[element + '_id']);
                 div.onclick = function () {
                     self.setParent(this.getAttribute('data-id'));
                 };
@@ -341,10 +343,11 @@ PEATCMS_actor.prototype.suggestParent = function (element_name) {
 }
 
 PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a drop area with handlers that save the dropped file and update server side
-    var drop = document.createElement('div'),
+    const drop = document.createElement('div'),
         el = document.createElement('div'),
         process = document.createElement('div'),
-        self = this, filename_saved, button, option;
+        self = this;
+    let filename_saved, button, option;
     // @since 0.10.0 reprocess option for image type
     if ('image' === self.parent_PEATCMS_element.state.type) {
         process.classList.add('process_area', 'file');
@@ -353,7 +356,7 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
             process.classList.add('info');
         } else {
             option = function (value, text) {
-                var el = document.createElement('option');
+                const el = document.createElement('option');
                 el.value = value;
                 el.text = text;
                 return el;
@@ -395,15 +398,15 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
     }, false);
     drop.classList.add('drop_area', 'file');
     self.sse_log = function (msg) {
-        var el = self.DOMElement.querySelector('.progress') || self.DOMElement.querySelector('.drop_area') || self.DOMElement;
+        let el = self.DOMElement.querySelector('.progress') || self.DOMElement.querySelector('.drop_area') || self.DOMElement;
         el.innerHTML = msg + '<br/>' + el.innerHTML;
         console.warn(msg);
     }
     self.process = function (level) {
-        var source = new EventSource('/__action__/process_file/sse:true/level:' + (level || 1) + '/slug:' + self.parent_PEATCMS_element.state.slug);
+        const source = new EventSource('/__action__/process_file/sse:true/level:' + (level || 1) + '/slug:' + self.parent_PEATCMS_element.state.slug);
         source.onmessage = function (event) {
-            var data = JSON.parse(event.data),
-                slug;
+            const data = JSON.parse(event.data);
+            let slug;
             if (data.hasOwnProperty('message')) {
                 self.sse_log(data.message);
             }
@@ -426,11 +429,12 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
 }
 
 PEATCMS_actor.prototype.dropFile = function (event) {
-    var dt = event.dataTransfer,
+    const dt = event.dataTransfer,
         files = dt.files,
         el = this.parent_PEATCMS_element,
-        slug = el.state.slug,
-        i, self = this;
+        self = this;
+    let slug = el.state.slug,
+        i;
     for (i in [files]) {
         // TODO it seems only one file can be dropped at the moment, others are ignored? don't know why
         if (i === '1') { // only add the file to this file element the first time, for other elements, keep adding and linking
@@ -490,8 +494,8 @@ PEATCMS_actor.prototype.changedTo = function (value) {
  * @param callback_method function or string the name of the method (of PEATCMS_actor) that needs to run, data is passed as argument
  */
 PEATCMS_actor.prototype.update = function (value, callback_method) {
-    var self = this;
-    if (!this.hasChanged()) {
+    const self = this;
+    if (false === this.hasChanged()) {
         if (VERBOSE) console.log('Not saving unchanged value for ' + this.column['name']);
         return;
     }
@@ -502,7 +506,7 @@ PEATCMS_actor.prototype.update = function (value, callback_method) {
         'column_name': this.column['name'],
         'column_value': value
     }, function (data) {
-        var p, table_info;
+        let p, table_info;
         if (typeof callback_method === 'function') {
             callback_method(data);
         } else if (typeof self.parent_PEATCMS_element[callback_method] === 'function') {
@@ -526,7 +530,7 @@ PEATCMS_actor.prototype.update = function (value, callback_method) {
  * @param data
  */
 PEATCMS_actor.prototype.set = function (data) {
-    var el = this.parent_PEATCMS_element,
+    const el = this.parent_PEATCMS_element,
         column_name = this.column['name'],
         column_value = data[column_name],
         type = el.getElementName();
@@ -556,7 +560,8 @@ PEATCMS_actor.prototype.set = function (data) {
 }
 
 PEATCMS_actor.prototype.hasChanged = function () {
-    var DOMElement = this.DOMElement, el, current_value = '';
+    const DOMElement = this.DOMElement;
+    let el, current_value = '';
     if ('undefined' === typeof DOMElement) return false;
     if ('undefined' !== typeof DOMElement.selectedIndex) {
         // select lists always return option value as string
@@ -587,9 +592,10 @@ PEATCMS_actor.prototype.reflectChanged = function () {
     }
 }
 
-var PEATCMS_x_value = function (row, parent_element) { // contains property / property_value x_value triple cross table
-    var el = document.createElement('div'),
-        self = this, btn, input;
+const PEATCMS_x_value = function (row, parent_element) { // contains property / property_value x_value triple cross table
+    const el = document.createElement('div'),
+        self = this;
+    let btn, input;
     this.row = row;
     this.parent_element = parent_element;
     //this.property = window.PEATCMS_globals.slugs[row.__property__.__ref];
@@ -661,8 +667,8 @@ var PEATCMS_x_value = function (row, parent_element) { // contains property / pr
         this.classList.remove('dragover');
     });
     el.addEventListener('drop', function (event) {
+        const dropped_x_value_id = parseInt(event.dataTransfer.getData('x_value_id'));
         this.classList.remove('dragover');
-        var dropped_x_value_id = parseInt(event.dataTransfer.getData('x_value_id'));
         NAV.ajax('/__action__/admin_x_value_order/', {
             'element': self.parent_element.getElementName(),
             'id': self.parent_element.getElementId(),
@@ -682,8 +688,8 @@ var PEATCMS_x_value = function (row, parent_element) { // contains property / pr
     this.DOMElement = el;
 }
 
-var PEATCMS_linkable = function (name, row, parent_element) {
-    var el = document.createElement('div'),
+const PEATCMS_linkable = function (name, row, parent_element) {
+    const el = document.createElement('div'),
         self = this;
     this.name = name;
     this.row = row;
@@ -706,7 +712,7 @@ var PEATCMS_linkable = function (name, row, parent_element) {
         this.classList.remove('dragover');
     });
     el.addEventListener('drop', function (event) {
-        var dropped_slug = event.dataTransfer.getData('slug');
+        const dropped_slug = event.dataTransfer.getData('slug');
         this.classList.remove('dragover');
         this.parentNode.classList.add('peatcms_loading');
         NAV.ajax('/__action__/admin_linkable_order/', {
@@ -731,7 +737,7 @@ var PEATCMS_linkable = function (name, row, parent_element) {
 
 PEATCMS_linkable.prototype.getLinkButton = function () {
     if (!this.DOMLinkButton) {
-        var self = this,
+        const self = this,
             el = document.createElement('button');
         el.addEventListener('click', function () {
             self.toggleLink();
@@ -742,7 +748,7 @@ PEATCMS_linkable.prototype.getLinkButton = function () {
 }
 
 PEATCMS_linkable.prototype.toggleLink = function () {
-    var self = this;
+    const self = this;
     NAV.ajax('/__action__/admin_linkable_link/', {
         'element': this.parent_element.getElementName(),
         'id': this.parent_element.getElementId(),
@@ -764,10 +770,10 @@ PEATCMS_linkable.prototype.isLinked = function () {
     return this.parent_element.hasLinked(this.name, this.getId());
 }
 
-var PEATCMS_searchable = function (name, parent_element) {
+const PEATCMS_searchable = function (name, parent_element) {
+    const el = document.createElement('input');
     this.name = name;
     this.parent_element = parent_element;
-    var el = document.createElement('input');
     //el.id = 'searchable_' + name;
     el.actor = this;
     el.type = 'text';
@@ -787,8 +793,8 @@ PEATCMS_searchable.prototype.type = function () {
 }
 
 PEATCMS_searchable.prototype.search = function (src) {
-    var this_parent_element = this.parent_element;
-    var self = this;
+    const this_parent_element = this.parent_element,
+        self = this;
     clearTimeout(this.search_timeout); // THROTTLE
     this.search_timeout = setTimeout(function () {
         self.timestamp = Date.now();
@@ -816,9 +822,9 @@ PEATCMS_searchable.prototype.search = function (src) {
 // TODO edit mechanism is now: open the sidebar panel and load the page, which will load the edit fields if the sidebar is open, but that's not robust
 
 // build a standard recursive ul -> li menu using menu and menu_item that an admin can edit
-var PEATCMS_admin_menu_item = function (row, droppable = false) {
-    var el = document.createElement('li'),
-        menu, btn;
+const PEATCMS_admin_menu_item = function (row, droppable = false) {
+    const el = document.createElement('li');
+    let menu, btn;
     if (row.hasOwnProperty('menu_item_id')) {
         el.menu_item = row;
         el.setAttribute('data-menu_item_id', row.menu_item_id);
@@ -853,13 +859,13 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
              * and you have two drop zones: to create a child and to simply order the items
              */
             el.addEventListener('dragover', function (event) {
+                let div;
                 event.preventDefault();
                 event.stopPropagation(); // for child items, don't dragover the parent as well
-                var div;
                 // if the active-for-drop item is not the current dragover item, reset it
                 if ((div = document.getElementById('sub_menu_item_drop'))) {
                     if (div.getAttribute('data-menu_item_id') !== this.getAttribute('data-menu_item_id')) {
-                        div.remove(); // admin cannot use IE
+                        div.remove();
                         document.querySelectorAll('.dragover').forEach(function (el) {
                             el.classList.remove('dragover');
                         });
@@ -874,7 +880,7 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
                     div.id = 'sub_menu_item_drop';
                     div.setAttribute('data-menu_item_id', this.getAttribute('data-menu_item_id'));
                     div.addEventListener('drop', function (event) {
-                        var dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
+                        const dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
                         // send to server
                         // noinspection JSPotentiallyInvalidUsageOfThis
                         CMS_admin.putMenuItem({
@@ -909,7 +915,7 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
             });
             // drop here for ordering the items
             el.addEventListener('drop', function (event) {
-                var dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
+                const dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
                 // send to server
                 CMS_admin.putMenuItem({
                     menu_item_id: parseInt(this.getAttribute('data-menu_item_id')),
@@ -929,7 +935,7 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
             el.addEventListener('mouseout', function () {
                 this.classList.remove('dragover');
                 try {
-                    document.getElementById('sub_menu_item_drop').remove(); // admin cannot use IE
+                    document.getElementById('sub_menu_item_drop').remove();
                 } catch (e) {
                 }
             });
@@ -941,9 +947,9 @@ var PEATCMS_admin_menu_item = function (row, droppable = false) {
     }
     this.DOMElement = el;
 }
-var PEATCMS_admin_menu = function (menu) {
-    var el = document.createElement('ul'),
-        i, len, items;
+const PEATCMS_admin_menu = function (menu) {
+    const el = document.createElement('ul');
+    let i, len, items;
     if (menu.hasOwnProperty('__item__')) {
         items = menu.__item__;
         for (i = 0, len = items.length; i < len; ++i) {
@@ -957,8 +963,8 @@ var PEATCMS_admin_menu = function (menu) {
 
 // TODO a lot of duplicate code from PEATCMS_actor, I think they can eventually be merged into something more universal
 // TODO maybe create a class with most of the functionality they both can extend
-var PEATCMS_column_updater = function (DOMElement, PEATElement) {
-    var value, i, len;
+const PEATCMS_column_updater = function (DOMElement, PEATElement) {
+    let value, i, len;
     this.DOMElement = DOMElement;
     this.DOMElement.actor = this;
     this.parent_element = PEATElement || null;
@@ -1015,9 +1021,9 @@ var PEATCMS_column_updater = function (DOMElement, PEATElement) {
         });
     } else if (DOMElement.type === 'button') {
         DOMElement.addEventListener('click', function () {
-            var msg = this.getAttribute('data-confirm'),
-                handle = this.getAttribute('data-peatcms_handle'),
-                do_it = true;
+            const msg = this.getAttribute('data-confirm'),
+                handle = this.getAttribute('data-peatcms_handle');
+            let do_it = true;
             if (msg !== null) {
                 do_it = confirm(msg);
             }
@@ -1077,7 +1083,7 @@ PEATCMS_column_updater.prototype.blur = function () {
 }
 
 PEATCMS_column_updater.prototype.update = function (value) {
-    var self = this,
+    const self = this,
         data = {
             'table_name': this.table_name,
             'column_name': this.column_name,
@@ -1087,7 +1093,9 @@ PEATCMS_column_updater.prototype.update = function (value) {
     this.reflectChanged();
     this.DOMElement.classList.add('peatcms_loading');
     NAV.ajax('/__action__/update_column', data, function (data) {
-        var el = self.DOMElement, msg, parent_element;
+        const el = self.DOMElement,
+            pub = document.getElementById('peatcms_publish');
+        let msg, parent_element;
         if ((parent_element = self.parent_element)) {
             NAV.admin_uncache_slug(parent_element.state.slug, true); // @since 0.10.4
         }
@@ -1104,18 +1112,18 @@ PEATCMS_column_updater.prototype.update = function (value) {
             //self.set('');
         }
         // update published status when relevant TODO maybe needs to be more robust
-        if ((el = document.getElementById('peatcms_publish'))) {
+        if (pub) {
             if (data['published'] === true) {
-                el.classList.add('published');
+                pub.classList.add('published');
             } else {
-                el.classList.remove('published');
+                pub.classList.remove('published');
             }
         }
     });
 }
 
 PEATCMS_column_updater.prototype.delete = function () {
-    var data = {
+    const data = {
         'table_name': this.table_name,
         'column_name': 'deleted',
         'id': this.id,
@@ -1134,7 +1142,7 @@ PEATCMS_column_updater.prototype.delete = function () {
 }
 
 PEATCMS_column_updater.prototype.new = function () {
-    var table_parent = this.DOMElement.getAttribute('data-table_parent'),
+    const table_parent = this.DOMElement.getAttribute('data-table_parent'),
         table_parent_id = this.DOMElement.getAttribute('data-table_parent_id'),
         data = {
             'handle': 'insert_row',
@@ -1152,7 +1160,7 @@ PEATCMS_column_updater.prototype.new = function () {
 }
 
 PEATCMS_column_updater.prototype.reflectChanged = function () { // TODO integrate with reflectChanged in peat.js
-    var el = this.DOMElement;
+    const el = this.DOMElement;
     if (el.type === 'submit') return;
     if (el.type === 'select-one') {
         if (el.options[el.selectedIndex].value === el.getAttribute('data-value')) {
@@ -1170,7 +1178,7 @@ PEATCMS_column_updater.prototype.reflectChanged = function () { // TODO integrat
 }
 
 PEATCMS_column_updater.prototype.set = function (value) {
-    var el = this.DOMElement;
+    const el = this.DOMElement;
     // TODO the select-one and checkbox types are not really well implemented
     if (['select-one', 'checkbox'].includes(el.type)) {
         el.setAttribute('data-value', value);
@@ -1181,8 +1189,8 @@ PEATCMS_column_updater.prototype.set = function (value) {
     this.reflectChanged();
 }
 
-var PEATCMS_panel = function (name, resetStyles) {
-    var DOMPanel, DOMEditElement;
+const PEATCMS_panel = function (name, resetStyles) {
+    let DOMPanel, DOMEditElement;
     this.name = name; // currently names can be console and sidebar
     // check DOMElement and checkbox TODO you can probably create these yourself as well, when not present
     if ((this.DOMCheckbox = document.getElementById('admin_' + name + '_checkbox')) === null) {
@@ -1196,7 +1204,7 @@ var PEATCMS_panel = function (name, resetStyles) {
     }
     if (DOMPanel.querySelectorAll('.edit-area').length > 0) {
         DOMPanel.querySelectorAll('.edit-area').forEach(function (el) {
-            el.remove(); // admin cannot use IE
+            el.remove();
         });
     }
     DOMEditElement = document.createElement('div');
@@ -1230,8 +1238,8 @@ PEATCMS_panel.prototype.getName = function () {
 }
 
 PEATCMS_panel.prototype.getSlug = function () {
-    var el;
-    if ((el = this.DOMEditElement.querySelector('#admin_slug'))) {
+    const el = this.DOMEditElement.querySelector('#admin_slug');
+    if (el) {
         if (el.value) {
             return el.value;
         } else {
@@ -1244,8 +1252,8 @@ PEATCMS_panel.prototype.getSlug = function () {
     return null;
 }
 
-var PEATCMS_panels = function () {
-    var i, panel_name;
+const PEATCMS_panels = function () {
+    let i, panel_name;
     // in the arguments are the panels provided, these rely on a certain standard id + checkbox convention
     // initialize each one as well as some standard properties
     this.panels = {};
@@ -1259,7 +1267,8 @@ var PEATCMS_panels = function () {
 }
 
 PEATCMS_panels.prototype.open = function (name) {
-    for (var panel_name in this.panels) {
+    let panel_name;
+    for (panel_name in this.panels) {
         if (panel_name === name) {
             this.panels[panel_name].open();
         } else {
@@ -1278,24 +1287,24 @@ PEATCMS_panels.prototype.close = function (name = '', withPreserve = false) {
     }
 }
 
-PEATCMS_panels.prototype.preserve = function () { // stores state of panels
-    var state = {}, panel, panel_name;
-    for (panel_name in this.panels) {
-        panel = this.panels[panel_name];
-        state[panel_name] = {'open': panel.isOpen(), 'slug': panel.getSlug(),};
-    }
-    console.log(JSON.stringify(state));
-    PEAT.setSessionVar('admin_panels', JSON.stringify(state));
-}
-
-PEATCMS_panels.prototype.restore = function () { // sets panels to previously saved state
-    var state = PEAT.getSessionVar('admin_panels');
-    console.warn(state);
-}
+// PEATCMS_panels.prototype.preserve = function () { // stores state of panels
+//     let state = {}, panel, panel_name;
+//     for (panel_name in this.panels) {
+//         panel = this.panels[panel_name];
+//         state[panel_name] = {'open': panel.isOpen(), 'slug': panel.getSlug(),};
+//     }
+//     console.log(JSON.stringify(state));
+//     PEAT.setSessionVar('admin_panels', JSON.stringify(state));
+// }
+//
+// PEATCMS_panels.prototype.restore = function () { // sets panels to previously saved state
+//     const state = PEAT.getSessionVar('admin_panels');
+//     console.warn(state);
+// }
 
 PEATCMS_panels.prototype.toggle = function (name = '') {
-    var panel;
-    if ((panel = this.panels[name])) {
+    const panel = this.panels[name];
+    if (panel) {
         if (panel.isOpen()) {
             panel.close();
         } else {
@@ -1305,7 +1314,8 @@ PEATCMS_panels.prototype.toggle = function (name = '') {
 }
 
 PEATCMS_panels.prototype.current = function () {
-    for (var panel in this.panels) {
+    let panel;
+    for (panel in this.panels) {
         if (this[panel].isOpen()) return panel;
     }
 }
@@ -1323,16 +1333,16 @@ PEATCMS_panels.prototype.get = function (panel_name) {
 PEATCMS_panels.prototype.resetTools = function () { // make sure the panels are shown
     if (typeof CMS_admin === 'object') {
         CMS_admin.toggleTools(true);
-        CMS_admin.setStylesheet();
+        //CMS_admin.setStylesheet();
     }
 }
 
 /**
  * PEATCMS_admin object
  */
-var PEATCMS_admin = function () {
-    var self = this,
-        nodes, node, i, len, element_name, cell, hidden_cells, style;
+let PEATCMS_admin = function () {
+    const self = this;
+    let nodes, node, i, len, element_name, cell, hidden_cells, style;
     this.elements = {};
     this.instance = null;
     this.orders = {};
@@ -1370,8 +1380,9 @@ var PEATCMS_admin = function () {
                 }
                 document.addEventListener('peatcms.document_ready', enhanceToggles);
                 document.addEventListener('peatcms.progressive_ready', function (e) {
-                    var detail, el;
-                    if ((detail = e.detail).hasOwnProperty('slug')) {
+                    const detail = e.detail;
+                    let el;
+                    if (detail.hasOwnProperty('slug')) {
                         if (detail.hasOwnProperty('parent_element') && (el = detail.parent_element)) {
                             CMS_admin.enhanceToggle(el.querySelectorAll('.toggle_button'));
                         }
@@ -1559,7 +1570,7 @@ var PEATCMS_admin = function () {
         });
         if ((el = document.getElementById('payment_link'))) {
             el.addEventListener('click', function () {
-                var payment_link = NAV.root + PEATCMS.replace(' ', '', this.getAttribute('data-href'));
+                const payment_link = NAV.root + PEATCMS.replace(' ', '', this.getAttribute('data-href'));
                 if (PEAT.copyToClipboard(payment_link)) {
                     PEAT.message('Link copied to clipboard');
                 }
@@ -1588,7 +1599,7 @@ var PEATCMS_admin = function () {
                     instance_id: NAV.instance_id
                 }, function (json) {
                     document.querySelectorAll('select[data-column_name="template_id"]').forEach(function (el) {
-                        var i, option, temp, current_template_id = parseInt(el.getAttribute('data-value') || 0);
+                        let i, option, temp, current_template_id = parseInt(el.getAttribute('data-value') || 0);
                         for (i in json) {
                             if (json.hasOwnProperty(i) && (temp = json[i]) && temp.hasOwnProperty('template_id')) {
                                 option = document.createElement('option');
@@ -1611,7 +1622,7 @@ var PEATCMS_admin = function () {
                 if (document.querySelector(str)) {
                     document.querySelectorAll(str).forEach(function (el) {
                         //console.log(el); // TODO this is looped through too often, you need to call the event on the element
-                        var i, option, current_template_id = el.getAttribute('data-value') || '0';
+                        let i, option, current_template_id = el.getAttribute('data-value') || '0';
                         if (!el.getAttribute('data-peatcms_ajaxified')) return;
                         for (i in el.options) {
                             if (!el.options.hasOwnProperty(i)) continue;
@@ -1628,7 +1639,7 @@ var PEATCMS_admin = function () {
         }
     });
     window.addEventListener('keyup', function (event) {
-        var els;
+        let els;
         if (event.key === 'Control') {
             if ((els = document.querySelectorAll('.peatcms_ctrl_key_tip'))) {
                 els.forEach(function (el) {
@@ -1638,14 +1649,13 @@ var PEATCMS_admin = function () {
         }
     });
     window.addEventListener('keydown', function (event) {
-        var els;
+        let els;
         // ctrl+, = toggle edit, ctrl+. = toggle console, ctrl+/ = show / hide tools
         if (event.key === 'Control') {
             if (0 < document.getElementsByClassName('peatcms_ctrl_key_tip').length) return;
             if ((els = document.querySelectorAll('[data-ctrl_key]'))) {
                 els.forEach(function (el) {
-                    var tip;
-                    tip = document.createElement('div');
+                    const tip = document.createElement('div');
                     tip.className = 'peatcms_ctrl_key_tip';
                     tip.appendChild(document.createTextNode(el.getAttribute('data-ctrl_key')));
                     el.insertAdjacentElement('afterbegin', tip);
@@ -1659,7 +1669,7 @@ var PEATCMS_admin = function () {
             if (event.key === '/') {
                 self.toggleTools();
             } else if (event.key === ',') {
-                var path = NAV.getCurrentPath();
+                const path = NAV.getCurrentPath();
                 if (path === self.panels.get('sidebar').getSlug()) {
                     self.panels.toggle('sidebar');
                 } else {
@@ -1680,13 +1690,12 @@ var PEATCMS_admin = function () {
     //if (PEAT.getSessionVar('editing') === true) self.edit();
     // THIS IS A TEST / PRELIMINARY STUFF for editing things like menus / forms / etc.
     document.addEventListener('peatcms.document_ready', function (e) {
-        var el;
-        if ((el = document.getElementById('PEATCMS_admin_menu_editor')))
-            self.startMenuEditor(el);
+        const el = document.getElementById('PEATCMS_admin_menu_editor');
+        if (el) self.startMenuEditor(el);
     });
 }
 PEATCMS_admin.prototype.pollServer = function () {
-    var self = this;
+    const self = this;
     if (false === document.hasFocus()) return;
     NAV.ajax('/__action__/poll', {peatcms_ajax_config: {track_progress: false}}, function (json) {
         let el;
@@ -1703,7 +1712,7 @@ PEATCMS_admin.prototype.pollServer = function () {
  * Editor Configuration
  */
 PEATCMS_admin.prototype.loadEditorConfig = function () {
-    var default_config = {}, custom_config;
+    let default_config = {}, custom_config;
     if ('undefined' !== typeof peatcms_editor_config && peatcms_editor_config.hasOwnProperty('editor')) {
         default_config = peatcms_editor_config.editor;
         if ('undefined' !== typeof peatcms_editor_config_custom && peatcms_editor_config_custom.hasOwnProperty('editor')) {
@@ -1718,8 +1727,8 @@ PEATCMS_admin.prototype.loadEditorConfig = function () {
     return default_config;
 }
 PEATCMS_admin.prototype.getEditorConfig = function (element_name) {
-    // use structuredClone (deep clone) when available, default to the old JSON hack if it isn't
-    var type_config, config = PEATCMS.cloneStructured(this.editor_config);
+    const config = PEATCMS.cloneStructured(this.editor_config);
+    let type_config;
     if (config.hasOwnProperty(element_name) && (type_config = config[element_name])) {
         if (type_config.hasOwnProperty('hidden_fields')) {
             config.hidden_fields = Object.assign(config.hidden_fields, type_config.hidden_fields);
@@ -1737,7 +1746,7 @@ PEATCMS_admin.prototype.getEditorConfig = function (element_name) {
  * @param open boolean: force open (true) or close (false) state
  */
 PEATCMS_admin.prototype.toggleTools = function (open = null) {
-    var display_value = 'none',
+    let display_value = 'none',
         current_value = (this.stylesheet.getCurrentValue('.' + this.CSSClass, 'display'));
     if (open === true) {
         display_value = 'inherit';
@@ -1749,40 +1758,6 @@ PEATCMS_admin.prototype.toggleTools = function (open = null) {
     }
 }
 
-PEATCMS_admin.prototype.setStylesheet = function () {
-    return;
-    // fix the stylesheet to take into account the panels...
-    // TODO we concern ourselves only with the sidebar first
-    console.warn('setStylesheet processing');
-    var sidebar = this.panels.get('sidebar'),
-        rect, side_bar_width, reported_width, i;
-    if (sidebar.isOpen() && (sidebar = sidebar.getDOMElement())) {
-        rect = sidebar.getBoundingClientRect();
-        side_bar_width = rect.right;
-        this.stylesheet.upsertRules({
-            'html': 'padding-left: ' + side_bar_width + 'px;',
-        });
-        reported_width = window.innerWidth - side_bar_width; // todo cross browser
-        //((window.innerWidth - this.side_bar_width) / 100)
-        this.stylesheet.upsertRules(this.stylesheet.convertRulesByUnit(
-            'vw', 'px', (reported_width / 100), this.getInstanceCSSRules()));
-        // get media query specific rules and add them as well, and at last also with calculated values
-        var styles = this.getMediaStyles(reported_width);
-        for (i in styles) {
-            if (!styles.hasOwnProperty(i)) continue;
-            //console.warn(styles[i]);
-            this.stylesheet.upsertRules(styles[i].cssRules); // store the styles locally
-            // and update the ones that use vw values...
-            this.stylesheet.upsertRules(this.stylesheet.convertRulesByUnit(
-                'vw', 'px', (reported_width / 100), styles[i].cssRules));
-        }
-    } else {
-        // TODO we should not keep updating all the time, only when necessary
-        this.stylesheet.clearRules().upsertRules({
-            'html': 'padding-left: 0;',
-        });
-    }
-}
 PEATCMS_admin.prototype.setStyleRule = function (selector, rule) {
     this.stylesheet.upsertRule(selector, rule);
 }
@@ -1791,7 +1766,7 @@ PEATCMS_admin.prototype.setStyleRule = function (selector, rule) {
  * set the current element as homepage
  */
 PEATCMS_admin.prototype.setHomepage = function () {
-    var self = this;
+    const self = this;
     NAV.ajax(
         '/__action__/admin_set_homepage',
         {slug: NAV.getCurrentSlug()},
@@ -1812,7 +1787,7 @@ PEATCMS_admin.prototype.setHomepage = function () {
  * reads the page and determines whether it is the homepage, if so sets the status of the buttons to linked
  */
 PEATCMS_admin.prototype.setHomepageButtonStatus = function () {
-    var el = NAV.getCurrentElement(), instance = this.instance, self = this;
+    const el = NAV.getCurrentElement(), instance = this.instance, self = this;
     if (!instance || null === el || false === el.hasOwnProperty('state')) {
         PEAT.addEventListener('peatcms.navigation_end', function () {
             self.setHomepageButtonStatus();
@@ -1839,9 +1814,9 @@ PEATCMS_admin.prototype.setHomepageButtonStatus = function () {
  * @param DOMElement
  */
 PEATCMS_admin.prototype.showEditMenu = function (DOMElement) {
-    var rect = DOMElement.getBoundingClientRect(),
-        self = this,
-        menu;
+    const rect = DOMElement.getBoundingClientRect(),
+        self = this;
+    let menu;
     if (!(menu = document.getElementById('PEATCMS_edit_menu'))) {
         menu = document.createElement('div');
         menu.id = 'PEATCMS_edit_menu';
@@ -1857,7 +1832,7 @@ PEATCMS_admin.prototype.showEditMenu = function (DOMElement) {
 }
 
 PEATCMS_admin.prototype.edit = function (slug) {
-    var self = this, el = NAV.getCurrentElement();
+    const self = this, el = NAV.getCurrentElement();
     //console.error(slug +' vs. '+ el.state.slug);
     if (!slug) {
         if (null === el || false === el.isEditable()) {
@@ -1867,7 +1842,7 @@ PEATCMS_admin.prototype.edit = function (slug) {
         slug = el.state.slug;
     }
     new PEATCMS_element(slug, function (el) {
-        var p = self.panels.get('sidebar'); // el = ‘self’, the PEATCMS_element
+        const p = self.panels.get('sidebar'); // el = ‘self’, the PEATCMS_element
         if (el !== false) {
             //self.elements[slug] = el;
             el.edit(p.getDOMElement(), function () {
@@ -1878,7 +1853,7 @@ PEATCMS_admin.prototype.edit = function (slug) {
 }
 
 PEATCMS_admin.prototype.createElement = function (type) {
-    var self = this;
+    const self = this;
     NAV.ajax(
         '/__action__/create_element/',
         {element: type},
@@ -1894,77 +1869,12 @@ PEATCMS_admin.prototype.createElement = function (type) {
         });
 }
 
-PEATCMS_admin.prototype.cacheInstanceStyles = function () {
-    // TODO if this is cached on e.g. image.html which has less / different styles than say page.html, it never caches those
-    // loads the cssRules into the document, so they are mutable, and creates separate sheets for media queries
-    // adding the .PEATCMS_the_admin_is_present body class to target all elements more specifically than the original
-    var array_stylesheets = document.querySelectorAll('link[href^="/instance/"]'),
-        array_media, rules, condition_text, i,
-        style = document.createElement('style'),
-        ii;
-    this.instanceStylesheets = {};
-    // setup the caching of instance stylesheet, and the media query versions
-    style.appendChild(document.createTextNode('')); // WebKit hack :(
-    style.id = 'peatcms_cached_css_base';
-    // TODO make this.stylesheet also expose its DOMElement so you don't have to getElementById
-    document.head.insertBefore(style, document.getElementById('peatcms_dynamic_css'));
-    this.instanceStylesheets.base = new PEAT_style(style);
-    // media queried versions:
-    this.instanceStylesheets.media_condition_rules = {};
-    // todo refactor more efficient / maintainable, this is copy-paste shizzle
-    /*for (ii in array_stylesheets) {
-        if (!array_stylesheets.hasOwnProperty(ii)) continue;
-        rules = array_stylesheets[ii].sheet.cssRules;
-        for (i = 0; i < rules.length; ++i) { // don't reverse order! style will fall apart since it relies on order for precedence
-            if ((condition_text = rules[i].conditionText)) {
-                if ((array_media = this.instanceStylesheets.media_condition_rules[condition_text])) {
-                    this.instanceStylesheets.media_condition_rules[condition_text] = array_media.concat(rules[i].cssRules);
-                } else {
-                    this.instanceStylesheets.media_condition_rules[condition_text] = rules[i].cssRules;
-                }
-            } else { // just add the rule to the base instance stylesheet
-                //this.instanceStylesheets.base.upsertCSSRule(rules[i], 'ADMIN'); // returns the cssText
-                this.instanceStylesheets.base.upsertCSSRule(rules[i]); // returns the cssText
-            }
-        }
-    }*/
-}
-
-PEATCMS_admin.prototype.getInstanceCSSRules = function () {
-    if (!this.instanceStylesheets) this.cacheInstanceStyles();
-    return this.instanceStylesheets.base.rules;
-}
-
-PEATCMS_admin.prototype.getMediaStyles = function (width) {
-    // currently we're only working with width TODO (maybe) make admin_sidebar dockable to other sides than left
-    var condition_text, condition_value, index, media, media_precision, styles = {};
-    width = parseInt(width);
-    if (isNaN(width)) return null;
-    if (!this.instanceStylesheets) this.cacheInstanceStyles();
-    for (condition_text in (media = this.instanceStylesheets.media_condition_rules)) {
-        if (!media.hasOwnProperty(condition_text)) continue;
-        // calculate a precision based on max-width, order rules by less precision to more precision
-        if ((index = condition_text.indexOf('max-width')) > -1) {
-            condition_value = parseInt(condition_text.substring(condition_text.indexOf(':', index) + 1));
-            if ((media_precision = condition_value - width) >= 0) {
-                // check if min-width doesn't invalidate this media selection
-                if ((index = condition_text.indexOf('min-width')) > -1) {
-                    condition_value = parseInt(condition_text.substring(condition_text.indexOf(':', index) + 1));
-                    if (width < condition_value) continue; // invalid, continue looking
-                }
-                while (styles.hasOwnProperty(media_precision)) --media_precision;
-                styles[media_precision] = media[condition_text];
-            }
-        }
-    }
-    return styles;
-}
-
 // TODO these depend on this page being a menu page etc., this is not very stable and should be refactored entirely
 PEATCMS_admin.prototype.startMenuEditor = function (el) {
     if (el.id === 'PEATCMS_admin_menu_editor') {
-        var div = document.createElement('div'),
-            findr, self = this;
+        const div = document.createElement('div'),
+            self = this;
+        let findr;
         if (el.hasAttribute('data-peatcms-ajaxified')) return;
         el.setAttribute('data-peatcms-ajaxified', '1');
         NAV.ajax('/' + NAV.getCurrentSlug(), false, function (json) {
@@ -1979,7 +1889,7 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
         div.className = 'toggle drop_area';
         div.innerText = 'Drop item here to toggle on / off from this menu';
         div.addEventListener('drop', function (event) {
-            var dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
+            const dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
             this.classList.remove('dragover');
             // send to server
             self.putMenuItem({
@@ -2007,22 +1917,22 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
         el.insertAdjacentElement('beforeend', div);
         // startup the finder where you can locate all the available items
         if ((findr = document.getElementById('PEATCMS_admin_menu_finder'))) {
-            var list_el = document.createElement('ul');
+            const list_el = document.createElement('ul'),
+                node = document.createElement('button');
             list_el.id = 'PEATCMS_menu_item_finder';
             list_el.className = 'results';
             findr.insertAdjacentElement('afterbegin', list_el);
             // TODO this is very similar to the console search box
             findr.insertAdjacentElement('afterbegin', new PEATCMS_searchable('menu_item', function (element, rows) {
                 // remove the children, and add the returned rows as children (as links)...
-                var list_el = document.getElementById('PEATCMS_menu_item_finder'),
-                    i, len;
+                const list_el = document.getElementById('PEATCMS_menu_item_finder');
+                 let   i, len;
                 list_el.innerHTML = '';
                 for (i = 0, len = rows.length; i < len; ++i) {
                     list_el.insertAdjacentElement('beforeend', new PEATCMS_admin_menu_item(rows[i]).DOMElement);
                 }
             }).DOMElement);
-            // new button: (TODO slightly duplicate code, it can be better)
-            var node = document.createElement('button');
+            // new button:
             node.innerHTML = '+';
             node.addEventListener('mouseup', function () {
                 NAV.ajax(
@@ -2049,8 +1959,8 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
 PEATCMS_admin.prototype.putMenuItem = function (menu_item_data) {
     NAV.ajax('/__action__/admin_put_menu_item/', menu_item_data, function (json) { // it expects the current menu back
         if (json.hasOwnProperty('slug') && json.slug === NAV.getCurrentSlug()) {
-            var div; // TODO maybe you shouldn't have to know how this div is called...
-            if (json.hasOwnProperty('__menu__') && (div = document.getElementById('PEATCMS_admin_menu_editor'))) {
+            const div = document.getElementById('PEATCMS_admin_menu_editor'); // TODO maybe you shouldn't have to know how this div is called...
+            if (json.hasOwnProperty('__menu__') && div) {
                 div.querySelectorAll('ul')[0].remove(); // remove current menu
                 div.insertAdjacentElement('afterbegin', new PEATCMS_admin_menu(json.__menu__).DOMElement);
             } else {
@@ -2068,7 +1978,7 @@ PEATCMS_admin.prototype.putMenuItem = function (menu_item_data) {
  * @since 0.6.8
  */
 PEATCMS_admin.prototype.enhanceToggle = function (elements) {
-    let self = this;
+    const self = this;
     if (!self.instance) {
         console.error('enhanceToggle cannot be called before instance is fetched');
         return;
@@ -2110,7 +2020,7 @@ function peatcms_admin_start() {
 }
 
 function peatcms_admin_setup() {
-    var i, len;
+    let i, len;
     if (CMS_admin !== true) { // already setup, or being set up
         if (VERBOSE) console.log('... admin already started!');
         return;
