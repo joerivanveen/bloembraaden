@@ -3457,52 +3457,6 @@ if (![].includes) {
         return false;
     };
 }
-/**
- * Object.assign() polyfill for IE11
- * @see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign>
- *     https://gist.github.com/jrrio/4dd2bec652dd642517a390172be27da2
- */
-if (typeof Object.assign != "function") {
-    Object.defineProperty(Object, "assign", {
-        value: function assign(target, varArgs) {
-            "use strict";
-            if (target == null) {
-                throw new TypeError("Cannot convert undefined or null to object");
-            }
-            var to = Object(target);
-            for (var index = 1; index < arguments.length; index++) {
-                var nextSource = arguments[index];
-                if (nextSource != null) {
-                    for (var nextKey in nextSource) {
-                        if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-                            to[nextKey] = nextSource[nextKey];
-                        }
-                    }
-                }
-            }
-            return to;
-        },
-        writable: true,
-        configurable: true
-    });
-}
-
-// custom event dispatching for IE11
-// https://stackoverflow.com/questions/26596123/internet-explorer-9-10-11-event-constructor-doesnt-work
-(function () {
-    if (typeof window.CustomEvent === "function") return false; //If not IE
-
-    CustomEvent = function (event, params) {
-        params = params || {bubbles: false, cancelable: false, detail: undefined};
-        var evt = document.createEvent('CustomEvent');
-        evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-        return evt;
-    }
-
-    CustomEvent.prototype = window.Event.prototype;
-
-    window.CustomEvent = CustomEvent;
-})();
 
 /**
  * ponyfills are static methods of PEATCMS :-)
