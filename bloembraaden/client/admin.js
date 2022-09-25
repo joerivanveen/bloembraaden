@@ -1401,7 +1401,8 @@ var PEATCMS_admin = function () {
     hidden_cells = (this.getEditorConfig('console')).hidden_fields || {};
 
     function activate_cell() {
-        var el = this.querySelectorAll('.results')[0];
+        const el = this.querySelectorAll('.results')[0];
+        if (this.classList.contains('active')) return;
         // while we're at it, set the height for the results div now so it can scroll properly
         el.style.height = (window.innerHeight - el.getBoundingClientRect().top) + 'px';
         // remove the .active from all harmonicas
@@ -1439,8 +1440,8 @@ var PEATCMS_admin = function () {
                 node.getAttribute('data-element_name'),
                 function (element, rows) {
                     // remove the children, and add the returned rows as children (as links)...
-                    var list_el = document.getElementById('PEATCMS_console_search_' + element),
-                        row_i, row, row_len, el, btn;
+                    const list_el = document.getElementById('PEATCMS_console_search_' + element);
+                    let row_i, row, row_len, el, btn;
                     list_el.innerHTML = '';
                     for (row_i = 0, row_len = rows.length; row_i < row_len; ++row_i) {
                         if (rows.hasOwnProperty(row_i)) {
@@ -1449,15 +1450,20 @@ var PEATCMS_admin = function () {
                             el.classList.add('peatcms-link', row.online ? 'online' : 'offline');
                             el.setAttribute('data-href', '/' + row.slug);
                             el.insertAdjacentText('afterbegin', row.title);
-                            el.onclick = function () {
-                                NAV.go(this.getAttribute('data-href'), true);
+                            el.onclick = function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (e.ctrlKey) {
+                                    window.open(this.getAttribute('data-href'));
+                                } else {
+                                    NAV.go(this.getAttribute('data-href'), true);
+                                }
                             };
                             btn = document.createElement('button');
                             btn.className = 'edit';
                             btn.insertAdjacentHTML('afterbegin', 'E');
                             btn.onclick = function (event) {
                                 self.panels.open('sidebar'); // the occuring navigation will then trigger edit
-                                //self.edit(this.parentNode.getAttribute('data-href'));
                             };
                             el.insertAdjacentElement('afterbegin', btn);
                             list_el.insertAdjacentElement('beforeend', el);
@@ -1467,7 +1473,7 @@ var PEATCMS_admin = function () {
     }
 
     function activate() {
-        var el, inputs, style;
+        let el, inputs, style;
         // set homepage button
         document.querySelectorAll('button[data-peatcms_handle="set_homepage"]').forEach(
             function (btn) { //, key, parent) {
