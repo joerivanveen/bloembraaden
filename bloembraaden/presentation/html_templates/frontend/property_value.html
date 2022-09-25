@@ -26,12 +26,15 @@
     </header>
     <h1>{{title}}</h1>
     {{content_parsed}}
-    <p>TODO: add the property this value belongs to as well...</p>
+    <aside>Property: <a href="{{property:slug}}">{{property:title}}</a></aside>
     <aside><h2>Using</h2>
         <ul>
             {%__variants__%}
-            <li><a href="/{{slug}}">{{title}}</a></li>
+            <li><a href="/{{slug}}">{{title}}</a> (variant)</li>
             {%__variants__%}
+            {%__pages__%}
+            <li><a href="/{{slug}}">{{title}}</a> (page)</li>
+            {%__pages__%}
         </ul>
     </aside>
 </div>
