@@ -444,3 +444,10 @@ body select::-ms-expand {
     transition: opacity .4s ease;
 }
 
+/* carousel */
+.carousel .slide {
+    cursor: grab;
+}
+.carousel[data-mouse-is-down] .slide {
+    cursor: grabbing;
+}

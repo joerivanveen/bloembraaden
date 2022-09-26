@@ -3849,9 +3849,9 @@ PEATCMS.setupCarousels = function () {
                     car.removeAttribute('data-mouse-is-down');
                 }
             });
-            slide.querySelectorAll('img').forEach(function (el) {
+            slide.querySelectorAll('.slide a > *').forEach(function (el) {
                 el.addEventListener('click', function (e) {
-                    // @since 0.12.0 prevent images from triggering clicks when used for moving
+                    // @since 0.12.0 prevent links and such from triggering clicks when used for moving
                     if (car.has_moved) {
                         e.preventDefault();
                         e.stopPropagation();
