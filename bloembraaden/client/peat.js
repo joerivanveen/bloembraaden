@@ -3870,6 +3870,47 @@ PEATCMS.setupCarousels = function () {
 }
 
 /**
+ * Damn fine lazy loader (stolen from Nonstockphoto)
+ */
+PEATCMS.lazyLoader = function() {
+    const elements = document.querySelectorAll('[data-src]');
+    const lazyLoad = function (lazyEl) {
+        if (!lazyEl.dataset.src) return;
+        if ('img' === lazyEl.tagName.toLowerCase()) {
+            lazyEl.src = lazyEl.dataset.src;
+            //lazyEl.srcset = lazyEl.dataset.srcset;
+        } else {
+            lazyEl.style.backgroundImage = 'url("' + lazyEl.dataset.src + '")';
+        }
+        lazyEl.removeAttribute('data-src');
+    };
+    let i, len, el;
+    if (elements) {
+        if ('IntersectionObserver' in window) {
+            const lazyImageObserver = new IntersectionObserver(function (entries, observer) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        let lazyImage = entry.target;
+                        lazyLoad(lazyImage);
+                        lazyImageObserver.unobserve(lazyImage);
+                    }
+                });
+            });
+            elements.forEach(function (lazyImage) {
+                lazyImageObserver.observe(lazyImage);
+            });
+        } else {
+            // load them immediately
+            for (i = 0, len = elements.length; i < len; ++i) {
+                if ((el = elements[i])) {
+                    lazyLoad(el);
+                }
+            }
+        }
+    }
+}
+
+/**
  * startup peatcms object
  */
 function peatcms_start() {
