@@ -92,6 +92,7 @@
     width: 100%;
     max-width: 100%;
     margin: auto;
+    background-color: #fff;
 }
 
 /**
@@ -725,7 +726,7 @@ body .PEATCMS_admin p {
 #admin_sidebar .edit-area {
     position: absolute;
     top: 0;
-    height: calc(100vh - 4em); /* TODO maybe calc is not absolutely necessary, since padding bottom has no effect... */
+    height: calc(100vh - 4em);
     margin-right: 3px; /* the width of the positioner */
     padding: 2em 8px;
     overflow-y: auto;
@@ -778,20 +779,24 @@ body .PEATCMS_admin p {
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible {
     float: right;
     display: block;
-    width: .6rem;
-    height: .6rem;
-    background-color: #eee;
-    transform: rotateZ(45deg);
+    width: 0;
+    height: 0;
+    border-left: solid .32rem transparent;
+    border-right: solid .32rem transparent;
+    border-top: solid .43rem rgb(83, 83, 83);
+    background-color: transparent;
+    cursor: pointer;
 }
-
 .PEATCMS_admin .edit-area input[type="text"].flexible {
     display: none;
 }
-
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked + input[type="text"].flexible {
     display: block;
 }
-
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked {
+    transform: rotate(180deg);
+}
+/**/
 .edit-area #admin_date_popvote button {
     background-color: transparent;
     box-shadow: none;
