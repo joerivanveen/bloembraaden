@@ -3808,12 +3808,16 @@ document.addEventListener('peatcms.document_complete', function () {
  */
 PEATCMS.setupCarousels = function () {
     const setupCarousel = function (car) {
-        let slides, slide, i, len;
-        if (car.hasAttribute('data-already_setup_as_carousel')) return;
-        car.setAttribute('data-already_setup_as_carousel', '1');
+        let el, slides, slide, i, len;
+        const identifier = PEATCMS.numericHashFromString(car.innerText),
+            x = localStorage.getItem(identifier) || 0;
+        car.scrollTo(x, 0);
+        car.identifier = identifier;
         car.bb_scrollX = 0;
         car.bb_mouseX = 0;
         car.has_moved = false;
+        if (car.hasAttribute('data-already_setup_as_carousel')) return;
+        car.setAttribute('data-already_setup_as_carousel', '1');
         slides = car.getElementsByClassName('slide');
         if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
             PEATCMS.opacityNode(car.querySelector('.right'), 0);
@@ -3835,6 +3839,8 @@ PEATCMS.setupCarousels = function () {
             slide.addEventListener('mouseup', function (e) {
                 e.preventDefault();
                 car.removeAttribute('data-mouse-is-down');
+                // remember scroll position
+                localStorage.setItem(car.identifier, car.scrollLeft);
             });
             slide.addEventListener('mousemove', function (e) {
                 let delta, xPos;
@@ -3857,6 +3863,22 @@ PEATCMS.setupCarousels = function () {
                         e.stopPropagation();
                     }
                 })
+            });
+        }
+        /* nav buttons */
+        if ((el = car.querySelector('.close'))) {
+            el.addEventListener('click', function () {
+                NAV.go('/', true);
+            });
+        }
+        if ((el = car.querySelector('.right'))) {
+            el.addEventListener('click', function () {
+                car.scrollBy((window.innerWidth - 20), 0);
+            });
+        }
+        if ((el = car.querySelector('.left'))) {
+            el.addEventListener('click', function () {
+                car.scrollBy(-1 * (window.innerWidth - 20), 0);
             });
         }
     }
