@@ -264,7 +264,7 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
                 if (self.server_value === 0) { // select first one by default
                     self.changedTo(el.options[1].value);
                 }
-                PEATCMS.removeNode(el.options[0]); // remove nonsense option
+                el.options[0].remove(); // remove nonsense option
             }
         });
         el.addEventListener('change', function () {
@@ -1103,7 +1103,7 @@ PEATCMS_column_updater.prototype.update = function (value) {
         if (el.type.toLowerCase() === 'button') {
             msg = el.hasAttribute('data-success') ? el.getAttribute('data-success') : 'OK';
             el.insertAdjacentHTML('afterend', msg);
-            PEATCMS.removeNode(el);
+            el.remove();
         } else if (typeof (value = data[self.column_name]) !== 'undefined') { // it returns the whole row, just grab the right column
             self.set(value);
         } else if (el.type.toLowerCase() === 'password') {
@@ -1438,7 +1438,7 @@ let PEATCMS_admin = function () {
         if (node.hasAttribute('data-element_name')
             && hidden_cells.hasOwnProperty(node.getAttribute('data-element_name'))
         ) {
-            PEATCMS.removeNode(cell);
+            cell.remove();
             continue;
         }
         cell.classList.add('harmonica');
@@ -1643,7 +1643,7 @@ let PEATCMS_admin = function () {
         if (event.key === 'Control') {
             if ((els = document.querySelectorAll('.peatcms_ctrl_key_tip'))) {
                 els.forEach(function (el) {
-                    PEATCMS.removeNode(el);
+                    el.remove();
                 });
             }
         }
@@ -1700,7 +1700,7 @@ PEATCMS_admin.prototype.pollServer = function () {
     NAV.ajax('/__action__/poll', {peatcms_ajax_config: {track_progress: false}}, function (json) {
         let el;
         if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
-            PEATCMS.removeNode(el);
+            el.remove();
             PEAT.message('Admin was logged out', 'warn');
         }
         // repeat...

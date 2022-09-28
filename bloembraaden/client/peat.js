@@ -723,7 +723,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
     ++i; // do not remove the actual last element... :-P
     // remove remaining / no longer valid
     while ((el = linkable_area.childNodes[i]) && !el.classList.contains('searchable')) {
-        PEATCMS.removeNode(el);
+        el.remove();
     }
     if (!linkable_area.querySelector('.searchable')) {
         linkable_area.appendChild(new PEATCMS_searchable(type, this).DOMElement);
@@ -731,7 +731,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
     if (suggestions) {
         children = linkable_area.getElementsByClassName('suggestion');
         for (i = children.length - 1; i >= 0; --i) {
-            PEATCMS.removeNode(children[i]);
+            children[i].remove();
         }
         for (i = 0, len = suggestions.length; i < len; ++i) {
             suggestion = suggestions[i];
@@ -782,7 +782,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
             linkable_area.appendChild(el); // move to the end (again)
         }
         el.querySelectorAll('div').forEach(function (el) {
-            PEATCMS.removeNode(el);
+            el.remove();
         });
         var title = linkable_area.querySelector('.searchable').value;
         for (i = 0, props = self.x_properties, len = props.length; i < len; ++i) { // an array
@@ -813,7 +813,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
             el.insertAdjacentElement('beforeend', n)
         }
     } else {
-        if ((el = document.getElementById('property-create-new-inline'))) PEATCMS.removeNode(el);
+        if ((el = document.getElementById('property-create-new-inline'))) el.remove();
     }
     linkable_area.classList.remove('peatcms_loading');
 }
@@ -1430,7 +1430,7 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     if ((nodes = window.cached_nodes[cache_name]) && el) {
                         //if (VERBOSE) console.log('Removing previously rendered nodes:');
                         for (nodes_i = 0, nodes_len = nodes.length; nodes_i < nodes_len; ++nodes_i) {
-                            PEATCMS.removeNode(nodes[nodes_i]);
+                            nodes[nodes_i].remove();
                         }
                     }
                     window.cached_nodes[cache_name] = cached_nodes; // the new nodes are cached from now on
@@ -1448,8 +1448,8 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     // @since 0.7.2: for non-dynamic tags, load only once, remove placeholder so it is skipped from now on
                     // TODO make it more logical which ones can stay and which ones can’t
                     //console.error(render_in_tag + ' will remove node? ' + (render_in_tag.indexOf('__') !== 0));
-                    if (render_in_tag.indexOf('__') !== 0) PEATCMS.removeNode(el);
-                    if (render_in_tag.indexOf('/instagram/feed/') !== -1) PEATCMS.removeNode(el);
+                    if (render_in_tag.indexOf('__') !== 0) el.remove();
+                    if (render_in_tag.indexOf('/instagram/feed/') !== -1) el.remove();
                 } catch (e) {
                     console.error(e);
                 }
@@ -1929,7 +1929,7 @@ var PEATCMS = function () {
                 window.PEATCMS_globals[attr] = JSON.parse(data_set[attr]);
             }
         }
-        PEATCMS.removeNode(el);
+        el.remove();
         console.log('Globals are loaded');
         //console.warn(window.PEATCMS_globals);
     } else {
@@ -2731,12 +2731,12 @@ PEATCMS.prototype.startUp = function () {
         closeButton.classList.add('button');
         closeButton.classList.add('close');
         closeButton.onclick = function () {
-            PEATCMS.removeNode(this.parentNode);
+            this.parentNode.remove();
         };
         el.appendChild(closeButton);
         if (el.classList.contains('log')) { // log messages disappear soon
             window.setTimeout(function (el) {
-                PEATCMS.removeNode(el);
+                el.remove();
             }, 3000, el);
         }
     });
@@ -3519,8 +3519,8 @@ PEATCMS.removeNode = function (node) {
 }
 
 function removeNode(node) {
-    console.warn('removeNode() is deprecated, use PEATCMS.removeNode()');
-    return PEATCMS.removeNode(node);
+    console.warn('removeNode() is deprecated, use node.remove()');
+    return node.remove();
 }
 
 PEATCMS.opacityNode = function (node, opacity) {
@@ -3530,7 +3530,7 @@ PEATCMS.opacityNode = function (node, opacity) {
 
 function opacityNode(node, opacity) {
     console.warn('opacityNode() is deprecated, use PEATCMS.opacityNode()');
-    return PEATCMS.removeNode(node, opacity);
+    return PEATCMS.opacityNode(node, opacity);
 }
 
 PEATCMS.isInt = function (value) {
@@ -3776,7 +3776,7 @@ document.addEventListener('peatcms.document_complete', function () {
             if (typeof CMS_admin === 'undefined') {
                 for (i = slides.length - 1; i >= 0; --i) {
                     if (slides[i].hasAttribute('data-online') && slides[i].getAttribute('data-online') === 'false') {
-                        PEATCMS.removeNode(slides[i]);
+                        slides[i].remove();
                         slideCount--;
                     }
                 }
