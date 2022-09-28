@@ -3816,13 +3816,14 @@ PEATCMS.setupCarousels = function () {
         car.bb_scrollX = 0;
         car.bb_mouseX = 0;
         car.has_moved = false;
-        if (car.hasAttribute('data-already_setup_as_carousel')) return;
-        car.setAttribute('data-already_setup_as_carousel', '1');
+        if (car.hasAttribute('data-carousel-setup')) return;
+        car.setAttribute('data-carousel-setup', '0');
         slides = car.getElementsByClassName('slide');
-        if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
-            PEATCMS.opacityNode(car.querySelector('.right'), 0);
+        //if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
+        if (!(car.scrollWidth > car.offsetWidth)) {
+            PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
         } else {
-            PEATCMS.opacityNode(car.querySelector('.right'), 1);
+            PEATCMS.opacityNode(car.querySelector('.carousel-right'), 1);
         }
         for (i = 0, len = slides.length; i < len; ++i) {
             slide = slides[i];
@@ -3830,11 +3831,11 @@ PEATCMS.setupCarousels = function () {
                 e.preventDefault();
                 car.bb_mouseX = e.clientX;
                 car.has_moved = false;
-                PEATCMS.opacityNode(car.querySelector('.right'), 0);
+                PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
             });
             slide.addEventListener('touchstart', function () {
                 car.has_moved = false;
-                PEATCMS.opacityNode(car.querySelector('.right'), 0);
+                PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
             }, {passive: true});
             slide.addEventListener('mouseup', function (e) {
                 e.preventDefault();
@@ -3866,21 +3867,23 @@ PEATCMS.setupCarousels = function () {
             });
         }
         /* nav buttons */
-        if ((el = car.querySelector('.close'))) {
+        if ((el = car.querySelector('.carousel-close'))) {
             el.addEventListener('click', function () {
                 NAV.go('/', true);
             });
         }
-        if ((el = car.querySelector('.right'))) {
+        if ((el = car.querySelector('.carousel-right'))) {
             el.addEventListener('click', function () {
                 car.scrollBy((window.innerWidth - 20), 0);
             });
         }
-        if ((el = car.querySelector('.left'))) {
+        if ((el = car.querySelector('.carousel-left'))) {
             el.addEventListener('click', function () {
                 car.scrollBy(-1 * (window.innerWidth - 20), 0);
             });
         }
+        // signal done, maybe you want to target this in css
+        car.setAttribute('data-carousel-setup', '1');
     }
     let elements, i, len;
     /* carousel slides when present */
