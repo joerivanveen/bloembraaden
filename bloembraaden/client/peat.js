@@ -1325,9 +1325,9 @@ var PEATCMS_template = function (obj) {
 }
 PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     // get the remaining tags to render them progressively
-    var tags = this.progressive_tags,
-        self = this,
-        t, i, len, progressor, el, elements;
+    const tags = this.progressive_tags,
+        self = this;
+    let t, i, len, progressor, el, elements;
     if (!slug) slug = tag; // default to the same, @since 0.5.15 you can specify a different slug to render in the tag
     // since 0.5.2 option to render the parts specific to one slug only, e.g. for updating of shoppinglist
     // TODO since this can only be called after all the tags have been rendered once, make a mechanism so it doesn't fail
@@ -1365,7 +1365,7 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     }
 }
 PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
-    var el, self = this, data = {render_in_tag: tag}; // Send info to the server to let it know where the request comes from
+    let el, self = this, data = {render_in_tag: tag}; // Send info to the server to let it know where the request comes from
     if (null === (el = NAV.getCurrentElement())) {
         console.warn('Couldn’t get element to send as originator during template.renderProgressive');
     } else {
@@ -1375,6 +1375,11 @@ PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
     if ((tag = NAV.tagsCache(slug))) {
         self.renderProgressiveTag(tag);
     } else {
+        if (0 === slug.indexOf('__') && -1 === slug.indexOf('/')) {
+            console.warn(slug, 'cannot be rendered progressive');
+            PEAT.registerAssetLoad(slug);
+            return;
+        }
         NAV.ajax('/' + slug, data, function (json) {
             self.renderProgressiveTag(json);
         });
@@ -2466,7 +2471,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
 }
 PEATCMS.prototype.renderProgressive = function (tag, slug) // pass the slug to the currently active template to render, if applicable
 {
-    var template;
+    let template;
     if (!slug) slug = tag; // @since 0.5.15 you can render a different slug in a tag progressively
     if (this.hasOwnProperty('template_cache_name') && (template = this.templates[this.template_cache_name])) {
         template.renderProgressive(tag, slug);
