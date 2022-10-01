@@ -3676,6 +3676,13 @@ document.addEventListener('peatcms.document_complete', function () {
     const loadSrcSets = function () {
         let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
         const elements = document.querySelectorAll('[data-srcset]');
+        const setImage = function(el, source) {
+            PEATCMS.preloadImage(source.src, function() {
+                el.style.backgroundImage = 'url(' + source.src + ')';
+                el.style.opacity = '1';
+                el.current_source = source;
+            });
+        }
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i];
             rect = el.getBoundingClientRect();
@@ -3691,20 +3698,16 @@ document.addEventListener('peatcms.document_complete', function () {
                         if ((current_source = el.current_source)) {
                             if (current_source.height >= source.height) break; // if a larger or same image is already present, keep using that
                         }
-                        el.style.backgroundImage = 'url(' + source.src + ')';
-                        el.style.opacity = '1';
-                        el.current_source = source;
+                        setImage(el, source);
                         break;
                     }
                 }
                 // default to the last (should be largest) image
                 if ('undefined' === typeof el.current_source && null !== source) {
-                    el.style.backgroundImage = 'url(' + source.src + ')';
-                    el.style.opacity = '1';
-                    el.current_source = source;
+                    setImage(el, source);
                 }
             } catch (e) {
-                console.warn('srcset not understood', el.getAttribute('data-srcset'));
+                console.warn('srcset not understood', el);
             }
         }
     }
@@ -3934,6 +3937,14 @@ PEATCMS.lazyLoader = function() {
         }
     }
 }
+
+PEATCMS.preloadImage = function(src, onload)
+{
+    let img = new Image();
+    img.src = src;
+    if (onload) img.onload = onload;
+}
+
 
 /**
  * startup peatcms object
