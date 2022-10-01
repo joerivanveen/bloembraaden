@@ -3682,6 +3682,7 @@ document.addEventListener('peatcms.document_complete', function () {
         let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
         const elements = document.querySelectorAll('[data-srcset]');
         const setImage = function(el, source) {
+            el.current_source = source;
             PEATCMS.preloadImage(source.src, function() {
                 if ('img' === el.tagName.toLowerCase()) {
                     el.src = source.src;
@@ -3689,7 +3690,6 @@ document.addEventListener('peatcms.document_complete', function () {
                     el.style.backgroundImage = 'url(' + source.src + ')';
                 }
                 el.style.opacity = '1';
-                el.current_source = source;
             });
         }
         for (i = 0, len = elements.length; i < len; ++i) {
@@ -3699,7 +3699,7 @@ document.addEventListener('peatcms.document_complete', function () {
             height = rect.height;
             source = null;
             try {
-                srcset = JSON.parse(el.getAttribute('data-srcset'));
+                srcset = JSON.parse(el.dataset.srcset);
                 for (i2 = 0, len2 = srcset.length; i2 < len2; ++i2) {
                     if ('' === srcset[i2].height) continue;
                     source = srcset[i2];
