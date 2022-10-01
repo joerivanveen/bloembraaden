@@ -928,7 +928,7 @@ class Handler extends BaseLogic
                         }
                     } // TODO error message? element not found...
                 } elseif ($action === 'create_element') {
-                    if ($element = $this->createElement($post_data->element)) {
+                    if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
                         $out = $element->row;
                     } else {
                         $this->handleErrorAndStop(sprintf('Create element ‘%s’ failed', $post_data->element));
@@ -1878,13 +1878,13 @@ class Handler extends BaseLogic
         }
     }
 
-    private function createElement(string $type_name): ?BaseElement
+    private function createElement(string $type_name, ?bool $online = false): ?BaseElement
     {
         // TODO access control permissions
         if (!$this->getSession()->isAdmin()) return null;
-        if ($type_name !== 'search' and $peat_type = new Type($type_name)) {
+        if ($type_name !== 'search' && $peat_type = new Type($type_name)) {
             $el = $peat_type->getElement();
-            if ($id = $el->create()) {
+            if ($id = $el->create($online)) {
                 if ($el->fetchById($id)) {
                     return $el;
                 } else {

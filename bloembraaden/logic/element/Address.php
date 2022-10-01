@@ -12,7 +12,7 @@ class Address extends BaseElement
         $this->type_name = 'address';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         $this->handleErrorAndStop('For element Address use ‘new’ in stead of ‘create’');
 

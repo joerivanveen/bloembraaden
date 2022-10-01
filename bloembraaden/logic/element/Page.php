@@ -12,12 +12,13 @@ class Page extends BaseElement
         $this->type_name = 'page';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New document', 'peatcms'),
             'content' => __('Default content', 'peatcms'),
             'date_published' => 'NOW()',
+            'online' => $online,
         ));
     }
 }

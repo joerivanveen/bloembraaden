@@ -27,11 +27,12 @@ class Variant extends BaseElement
         return Help::getAsFloat($this->row->price_from, 0);
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New variant', 'peatcms'),
             'content' => __('Default content', 'peatcms'),
+            'online' => $online,
         ));
     }
 }

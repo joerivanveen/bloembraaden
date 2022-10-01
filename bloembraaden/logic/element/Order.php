@@ -56,7 +56,7 @@ class Order extends BaseElement
         return null;
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return null; // orders are created by DB->placeOrder();
     }

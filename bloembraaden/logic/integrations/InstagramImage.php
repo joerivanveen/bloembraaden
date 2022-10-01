@@ -23,7 +23,7 @@ class InstagramImage extends Image
         );
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return null;
     }

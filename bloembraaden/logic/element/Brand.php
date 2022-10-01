@@ -12,12 +12,13 @@ class Brand extends BaseElement
         $this->type_name = 'brand';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = false): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New brand', 'peatcms'),
             'content' => __('Default content', 'peatcms'),
             'excerpt' => '',
+            'online' => $online,
         ));
     }
 }

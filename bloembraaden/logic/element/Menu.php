@@ -12,11 +12,12 @@ class Menu extends BaseElement
         $this->type_name = 'menu';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('Menu', 'peatcms'),
             'slug' => __('menu', 'peatcms'),
+            'online' => $online,
         ));
     }
 

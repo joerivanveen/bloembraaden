@@ -12,13 +12,14 @@ class File extends BaseElement
         $this->type_name = 'file';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New file', 'peatcms'),
             'content_type' => 'application/octet-stream',
             'filename_saved' => '',
             'slug' => 'file',
+            'online' => $online,
         ));
     }
 

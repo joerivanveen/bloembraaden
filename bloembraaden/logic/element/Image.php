@@ -21,7 +21,7 @@ class Image extends BaseElement
         ); // TODO in config or something?
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New image', 'peatcms'),
@@ -30,6 +30,7 @@ class Image extends BaseElement
             'filename_original' => '',
             'extension' => 'tbd',
             'slug' => 'image',
+            'online' => $online,
         ));
     }
 

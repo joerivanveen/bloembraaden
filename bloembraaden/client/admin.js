@@ -1854,9 +1854,10 @@ PEATCMS_admin.prototype.edit = function (slug) {
 
 PEATCMS_admin.prototype.createElement = function (type) {
     const self = this;
+    const online = this.getEditorConfig(type).hidden_fields['online'] || false;
     NAV.ajax(
         '/__action__/create_element/',
-        {element: type},
+        {element: type, online: online},
         function (data) {
             if (data.hasOwnProperty('slug')) {
                 //self.edit(data.slug);

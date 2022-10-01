@@ -3678,7 +3678,11 @@ document.addEventListener('peatcms.document_complete', function () {
         const elements = document.querySelectorAll('[data-srcset]');
         const setImage = function(el, source) {
             PEATCMS.preloadImage(source.src, function() {
-                el.style.backgroundImage = 'url(' + source.src + ')';
+                if ('img' === el.tagName.toLowerCase()) {
+                    el.src = source.src;
+                } else {
+                    el.style.backgroundImage = 'url(' + source.src + ')';
+                }
                 el.style.opacity = '1';
                 el.current_source = source;
             });

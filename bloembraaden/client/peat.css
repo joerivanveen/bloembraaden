@@ -445,9 +445,20 @@ body select::-ms-expand {
 }
 
 /* carousel */
+.carousel {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 .carousel .slide {
     cursor: grab;
 }
 .carousel[data-mouse-is-down] .slide {
     cursor: grabbing;
+}
+
+/** just common sense **/
+[hidden] {
+    display: none;
 }

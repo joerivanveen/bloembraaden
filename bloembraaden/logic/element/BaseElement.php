@@ -43,7 +43,7 @@ class BaseElement extends BaseLogic implements Element
         return false;
     }
 
-    public function create(): ?int
+    public function create(?bool $online = false): ?int
     {
         $this->addError('element->create() needs to be overridden by the child class');
 

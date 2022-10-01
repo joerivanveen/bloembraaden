@@ -13,7 +13,7 @@ class Comment extends BaseElement
         $this->type_name = 'comment';
     }
 
-    public function create(): ?int
+    public function create(?bool $online = true): ?int
     {
         //Help::addError(new \Exception('Cannot ‘create’ a comment element'));
         Help::addMessage(__('Cannot ‘create’ a comment element', 'peatcms'), 'warn');
