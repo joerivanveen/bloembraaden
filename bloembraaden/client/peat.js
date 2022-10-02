@@ -3657,8 +3657,9 @@ function insertAtCaret(input_element, str_value) {
  *  viewport inconsistently while scrolling with touch, so we roll our own function
  */
 PEATCMS.getBoundingClientTop = function (el) {
-    var elementTop = 0, scrollTop = window.pageYOffset;
-    // offsetParent: null for body, and in some browsers null for a fixed element, but than we have returned already
+    let elementTop = 0;
+    const scrollTop = window.pageYOffset;
+    // offsetParent: null for body, and in some browsers null for a fixed element, but we returned early than
     while (el) {
         elementTop += el.offsetTop;
         if (scrollTop > 0
@@ -3666,7 +3667,7 @@ PEATCMS.getBoundingClientTop = function (el) {
                 || window.getComputedStyle(el).getPropertyValue('position').toLowerCase()))) {
             return elementTop;
         }
-        el = el.offsetParent; // this is either null for body, or maybe a fixed element, but we returned early then
+        el = el.offsetParent; // this is either null for body, or maybe a fixed element, but we returned early than
     }
     return elementTop - scrollTop;
 }
@@ -3827,7 +3828,7 @@ PEATCMS.setupCarousels = function () {
         car.identifier = identifier;
         car.bb_scrollX = 0;
         car.bb_mouseX = 0;
-        car.has_moved = false;
+        car.total_delta = 0;
         if (car.hasAttribute('data-carousel-setup')) return;
         car.setAttribute('data-carousel-setup', '0');
         slides = car.getElementsByClassName('slide');
@@ -3842,11 +3843,9 @@ PEATCMS.setupCarousels = function () {
             slide.addEventListener('mousedown', function (e) {
                 e.preventDefault();
                 car.bb_mouseX = e.clientX;
-                car.has_moved = false;
                 PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
             });
             slide.addEventListener('touchstart', function () {
-                car.has_moved = false;
                 PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
             }, {passive: true});
             slide.addEventListener('mouseup', function (e) {
@@ -3858,10 +3857,10 @@ PEATCMS.setupCarousels = function () {
             slide.addEventListener('mousemove', function (e) {
                 let delta, xPos;
                 e.preventDefault();
-                car.has_moved = true;
                 if (e.buttons > 0) {
                     car.setAttribute('data-mouse-is-down', '1');
                     delta = car.bb_mouseX - (xPos = e.clientX);
+                    car.total_delta += delta;
                     car.bb_mouseX = xPos;
                     car.scrollBy(delta, 0);
                 } else {
@@ -3871,10 +3870,11 @@ PEATCMS.setupCarousels = function () {
             slide.querySelectorAll('.slide a > *').forEach(function (el) {
                 el.addEventListener('click', function (e) {
                     // @since 0.12.0 prevent links and such from triggering clicks when used for moving
-                    if (car.has_moved) {
+                    if (Math.abs(car.total_delta) > 5) {
                         e.preventDefault();
                         e.stopPropagation();
                     }
+                    car.total_delta = 0;
                 })
             });
         }
