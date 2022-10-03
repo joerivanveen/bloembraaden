@@ -345,6 +345,7 @@ class DB extends Base
                 $intersected = array_intersect_key($term, $intersected);
             }
         }
+        if (0 === count($intersected)) return array();
         if (0 === count($properties)) return $intersected;
         // filter by properties before returning:
         $sub_queries = implode(' ', $this->queriesProperties($properties, $type_name));
@@ -1877,7 +1878,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement = $this->conn->prepare("
             SELECT *, {$type_name}_id AS id, 'cms_$type_name' AS table_name FROM cms_$type_name c 
             WHERE NOT EXISTS(SELECT FROM _ci_ai WHERE type_name = '$type_name' AND id = c.{$type_name}_id) 
-            LIMIT $limit;
+            AND online = TRUE AND deleted = FALSE LIMIT $limit;
         ");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());

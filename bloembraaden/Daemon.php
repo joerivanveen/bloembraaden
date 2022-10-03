@@ -19,10 +19,15 @@ class Daemon
 
     public function __construct()
     {
-        if (false === isset($_GET['force'])) {
+        if (isset($_SERVER['argv'])) {
+            $force = 'force' === ($_SERVER['argv'][1] ?? null);
+        } else {
+            $force = isset($_GET['force']);
+        }
+        if (false === $force) {
             $last_alive = Help::getDB()->getSystemValue('daemon_last_alive');
             $this->log("DAEMON last alive $last_alive");
-            if (strtotime($last_alive) > Setup::getNow() - 40) {
+            if (strtotime($last_alive) > Setup::getNow() - (3 * self::MAX_LOOP_SECONDS)) {
                 die("DAEMON still running\n");
             }
         }
@@ -68,28 +73,15 @@ class Daemon
                 }
                 // delete the slug when we’re done
                 $db->deleteFromStale($stale_slug, $instance_id);
+                if ($this->runningLate($start_timer)) {
+                    echo 'Stopped for time', PHP_EOL;
+                    break;
+                }
             }
             echo $total_count;
             echo " done\n";
             echo 'remove duplicates from cache: ';
             echo $db->removeDuplicatesFromCache();
-            echo PHP_EOL;
-            if (0 === $total_count) ob_clean();
-            $trans->start('warmup old (elements) cache');
-            $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
-            $total_count = 0;
-            foreach ($rows as $key => $row) {
-                echo 'Warming up ';
-                echo $row->slug;
-                echo ': ';
-                echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
-                echo PHP_EOL;
-                $total_count += 1;
-            }
-            echo $total_count;
-            echo " done\n";
-            echo 'remove duplicates from search index: ';
-            echo $db->removeDuplicatesFromCiAi();
             echo PHP_EOL;
             if (0 === $total_count) ob_clean();
             // refresh the json files for the filters as well TODO maybe move to a more appropriate place (job)
@@ -109,9 +101,8 @@ class Daemon
                             if ($age < 60 * self::MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
                             $filename = $filter_file_info->getFilename();
                             $filename_for_cache = "$instance_id/$filename";
-                            if (microtime(true) - $start_timer > self::MAX_LOOP_SECONDS) {
-                                echo "Stopped for time, filter age being $age seconds";
-                                echo PHP_EOL;
+                            if ($this->runningLate($start_timer)) {
+                                echo "Stopped for time, filter age being $age seconds", PHP_EOL;
                                 // remember we left off here, to resume next run
                                 $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
                                 break 2;
@@ -132,6 +123,28 @@ class Daemon
             }
             echo "done... \n";
             if (null === $filename_for_cache) ob_clean();
+            /* old cache (least important, most time consuming) */
+            $trans->start('warmup old (elements) cache');
+            $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
+            $total_count = 0;
+            foreach ($rows as $key => $row) {
+                echo 'Warming up ';
+                echo $row->slug;
+                echo ': ';
+                echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
+                echo PHP_EOL;
+                $total_count += 1;
+                if ($this->runningLate($start_timer)) {
+                    echo 'Stopped for time', PHP_EOL;
+                    break;
+                }
+            }
+            echo $total_count;
+            echo " done\n";
+            echo 'remove duplicates from search index: ';
+            echo $db->removeDuplicatesFromCiAi();
+            echo PHP_EOL;
+            if (0 === $total_count) ob_clean();
             /* */
             $total_time = microtime(true) - $start_timer;
             printf("DAEMON completed in %s seconds (%s)\n", number_format($total_time, 2), date('Y-m-d H:i:s'));
@@ -145,5 +158,10 @@ class Daemon
     private function log(string $message): void
     {
         error_log("$message\n", 3, Setup::$LOGFILE);
+    }
+
+    private function runningLate(float $start_timer): bool
+    {
+        return microtime(true) - $start_timer > self::MAX_LOOP_SECONDS;
     }
 }
