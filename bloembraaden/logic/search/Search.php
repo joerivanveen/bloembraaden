@@ -27,6 +27,7 @@ class Search extends BaseElement
     public function findWeighted(array $terms, ?int $hydrate_until = null): void
     {
         // search queries are also cached by path! when result_count > 0.
+        $original_terms = $terms;
         $terms = $this->cleanTerms($terms);
         $properties = $this->getProperties();
         $this->row->item_count = 0;
@@ -94,9 +95,12 @@ class Search extends BaseElement
                     $this->row->item_count += 1;
                 }
             }
-            if ('not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
+            if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
         } else {
             $this->row->item_count = $item_count;
+        }
+        if (0 === $this->result_count) {
+            $terms = $original_terms;
         }
         $this->row->slug = implode('/', $terms);
         $this->row->title = htmlentities(implode(' ', $terms));
