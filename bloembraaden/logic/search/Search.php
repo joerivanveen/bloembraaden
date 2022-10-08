@@ -170,12 +170,15 @@ class Search extends BaseElement
     public function getRelevantPropertyValuesAndPrices(string $path, int $instance_id = null, bool $rewrite = false): array
     {
         $instance_id = $instance_id ?? Setup::$instance_id;
-        $filename = Setup::$DBCACHE . 'filter/' . $instance_id . '/' . rawurlencode($path) . '.serialized';
-        if (true === file_exists($filename) && false === $rewrite) {
-            return unserialize(file_get_contents($filename));
+        $file_name = Setup::$DBCACHE . "filter/$instance_id/" . rawurlencode($path) . '.serialized';
+        if (true === file_exists($file_name) && false === $rewrite) {
+            if (false !== ($obj = unserialize(file_get_contents($file_name)))) {
+                return $obj;
+            }
+            unlink($file_name);
         }
         //
-        $containing_folder = dirname($filename);
+        $containing_folder = dirname($file_name);
         if (false === file_exists($containing_folder)) {
             mkdir($containing_folder, 0755);
         }
@@ -190,7 +193,7 @@ class Search extends BaseElement
         // and get the prices
         $return_arr['prices'] = Help::getDB()->fetchAllPricesAsInts($variant_ids);
         // cache the values as a file
-        file_put_contents($filename, serialize($return_arr), LOCK_EX); // overwrites by default
+        file_put_contents($file_name, serialize($return_arr), LOCK_EX); // overwrites by default
 
         return $return_arr;
     }

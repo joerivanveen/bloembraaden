@@ -659,7 +659,7 @@ class Help
 
     public static function upgrade(DB $db)
     {
-        $version = $db->getVersion();
+        $version = $db->getDbVersion();
         if (strlen($version) < 5) {
             echo sprintf('Upgrade failed, version %s from db not valid', $version);
 
@@ -866,7 +866,7 @@ class Help
          */
         $do = false;
         try {
-            $do = version_compare(Setup::$VERSION, $db->getVersion());
+            $do = version_compare(Setup::$VERSION, $db->getDbVersion());
             if ($do === 0) {
                 Help::addError(new \Exception('Installed version is current, please switch off the install flag in config'));
 

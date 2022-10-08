@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Peat;
 class DB extends Base
 {
-    private string $version, $db_schema;
+    private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
     private array $table_infos, $stale_slugs;
     public array $tables_without_history = array(
@@ -42,6 +42,7 @@ class DB extends Base
         if (!isset(Setup::$instance_id)) Setup::$instance_id = -1;
         $this->conn = Setup::getMainDatabaseConnection();
         $this->db_schema = 'public';
+        $this->cache_folder = Setup::$DBCACHE;
     }
 
     public function resetConnection()
@@ -136,16 +137,16 @@ class DB extends Base
      * @return string the version of peatcms in the database (might not be the currently configured version)
      * @since 0.0.0
      */
-    public function getVersion(): string
+    public function getDbVersion(): string
     {
-        if (!isset($this->version)) {
+        if (!isset($this->db_version)) {
             $statement = $this->conn->prepare('SELECT version FROM _system');
             $statement->execute();
-            $this->version = $statement->fetchColumn(0);
+            $this->db_version = $statement->fetchColumn(0);
             $statement = null;
         }
 
-        return $this->version;
+        return $this->db_version;
     }
 
     public function fetchAdminReport(): array
@@ -434,6 +435,7 @@ class DB extends Base
             $statement->execute();
             $rows = $statement->fetchAll();
             $statement = null;
+
             return $this->normalizeRows($rows);
         }
         if ('not_online' === $case) { // select only variants that are not online (for admins...)
@@ -446,8 +448,10 @@ class DB extends Base
             $statement->execute();
             $rows = $statement->fetchAll();
             $statement = null;
+
             return $this->normalizeRows($rows);
         }
+
         return array();
     }
 
@@ -3132,11 +3136,11 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             $ids[$row['template_id']] = true;
         }
         // load the id’s of templates in the folder
-        if (($files = scandir(Setup::$DBCACHE . 'templates/'))) {
+        if (($files = scandir("{$this->cache_folder}templates/"))) {
             $files = array_diff($files, array('..', '.'));
             foreach ($files as $index => $file_name) {
                 if (false === isset($ids[intval(explode('.', $file_name)[0])])) {
-                    unlink(Setup::$DBCACHE . 'templates/' . $file_name);
+                    unlink("{$this->cache_folder}templates/$file_name");
                     $file_names .= $file_name . ', ';
                 }
             }
@@ -3805,22 +3809,27 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     private function fetchTableInfo(string $table_name): TableInfo
     {
         // @since 0.7.7 the contents is cached
-        $file_name = Setup::$DBCACHE . Setup::$VERSION . $table_name . '.info.serialized';
-        if (file_exists($file_name)) {
-            return unserialize(file_get_contents($file_name));
+        $version = Setup::$VERSION;
+        $file_name = "$this->cache_folder$version$table_name.info.serialized";
+        if (true === file_exists($file_name)) {
+            if (false !== ($obj = unserialize(file_get_contents($file_name)))) {
+                return $obj;
+            } else {
+                unlink($file_name);
+            }
         }
-        $statement = $this->conn->prepare('SELECT column_name AS name, data_type AS type, ' .
-            'column_default AS default, is_nullable AS nullable, character_octet_length / 4 as "length" ' .
-            'FROM information_schema.columns WHERE table_schema = :schema_name AND table_name = :table_name;');
+        $statement = $this->conn->prepare('SELECT column_name AS name, data_type AS type, column_default AS "default", 
+            is_nullable AS nullable, character_octet_length / 4 as "length" FROM information_schema.columns 
+            WHERE table_schema = :schema_name AND table_name = :table_name;');
         $statement->bindValue(':schema_name', $this->db_schema);
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
         $info = new TableInfo($table_name, $this->normalizeRows($statement->fetchAll()));
         // add the primary key column:
-        $statement = $this->conn->prepare('SELECT a.attname AS column_name, ' .
-            'format_type(a.atttypid, a.atttypmod) AS data_type FROM pg_index i ' .
-            'JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) ' .
-            'WHERE i.indrelid = :table_name::regclass AND i.indisprimary;');
+        $statement = $this->conn->prepare('SELECT a.attname AS column_name, 
+            format_type(a.atttypid, a.atttypmod) AS data_type FROM pg_index i 
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) 
+            WHERE i.indrelid = :table_name::regclass AND i.indisprimary;');
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
         $rows = $statement->fetchAll();
