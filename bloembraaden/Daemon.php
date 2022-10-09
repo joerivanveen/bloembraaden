@@ -12,10 +12,11 @@ new Daemon();
 class Daemon
 {
     private string $did;
+    private float $start_timer;
     // TODO make configurable using config file
     public const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
     public const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 5;
-    public const MAX_LOOP_SECONDS = 15;
+    public const MAX_LOOP_SECONDS = 10;
 
     public function __construct()
     {
@@ -42,7 +43,19 @@ class Daemon
         $trans = new jobTransaction();
         $db = Help::getDB();
         while (true) {
-            // check if we’re still the one and only
+            /* report if necessary */
+            if (true === isset($this->start_timer)) {
+                $total_time = microtime(true) - $this->start_timer;
+                if ($total_time > self::MAX_LOOP_SECONDS) {
+                    printf("DAEMON completed in %s seconds (%s)\n", number_format($total_time, 2), date('Y-m-d H:i:s'));
+                } else {
+                    /* sleep if you're really fast */
+                    \sleep(1);
+                }
+                $trans->flush();
+                Setup::logErrors();
+            }
+            /* check if we’re still the one and only */
             try {
                 if ($this->did !== Help::getDB()->getSystemValue('daemon_did')) {
                     $this->log("DAEMON $this->did stopped itself");
@@ -54,11 +67,11 @@ class Daemon
                 die();
             }
             Help::getDB()->setSystemValue('daemon_last_alive', 'NOW()');
-            // start the actual work
+            /* start the actual work */
             $total_count = 0;
             $stove = new Warmup();
             $done = array();
-            $start_timer = microtime(true);
+            $this->start_timer = microtime(true);
             $rows = $db->jobStaleCacheRows(200);
             $trans->start('warmup stale (elements) cache');
             foreach ($rows as $key => $row) {
@@ -73,8 +86,7 @@ class Daemon
                 }
                 // delete the slug when we’re done
                 $db->deleteFromStale($stale_slug, $instance_id);
-                if ($this->runningLate($start_timer)) {
-                    echo 'Stopped for time', PHP_EOL;
+                if ($this->runningLate()) {
                     break;
                 }
             }
@@ -101,8 +113,8 @@ class Daemon
                             if ($age < 60 * self::MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
                             $filename = $filter_file_info->getFilename();
                             $filename_for_cache = "$instance_id/$filename";
-                            if ($this->runningLate($start_timer)) {
-                                echo "Stopped for time, filter age being $age seconds", PHP_EOL;
+                            if ($this->runningLate()) {
+                                echo "Stopped for time, filter age being $age seconds";
                                 // remember we left off here, to resume next run
                                 $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
                                 break 2;
@@ -123,7 +135,7 @@ class Daemon
             }
             echo "done... \n";
             if (null === $filename_for_cache) ob_clean();
-            if ($this->runningLate($start_timer)) continue;
+            if ($this->runningLate()) continue;
             $trans->start('parent chains');
             // when some serie has its brand_id updated
             $rows = $db->jobIncorrectChainForProduct();
@@ -144,7 +156,7 @@ class Daemon
                 } else {
                     echo "Serie $row->serie_id not found\n";
                 }
-                if ($this->runningLate($start_timer)) {
+                if ($this->runningLate()) {
                     $rows = null;
                     continue 2;
                 }
@@ -171,7 +183,7 @@ class Daemon
                 } else {
                     echo "Did not update any variants for product $product->slug\n";
                 }
-                if ($this->runningLate($start_timer)) {
+                if ($this->runningLate()) {
                     $rows = null;
                     continue 2;
                 }
@@ -188,8 +200,7 @@ class Daemon
                 echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
                 echo PHP_EOL;
                 $total_count += 1;
-                if ($this->runningLate($start_timer)) {
-                    echo 'Stopped for time', PHP_EOL;
+                if ($this->runningLate()) {
                     break;
                 }
             }
@@ -199,13 +210,6 @@ class Daemon
             echo $db->removeDuplicatesFromCiAi();
             echo PHP_EOL;
             if (0 === $total_count) ob_clean();
-            /* */
-            $total_time = microtime(true) - $start_timer;
-            printf("DAEMON completed in %s seconds (%s)\n", number_format($total_time, 2), date('Y-m-d H:i:s'));
-            $trans->flush();
-            Setup::logErrors();
-            /* */
-            if ($total_time < self::MAX_LOOP_SECONDS) \sleep(1);
         }
     }
 
@@ -214,8 +218,8 @@ class Daemon
         error_log("$message\n", 3, Setup::$LOGFILE);
     }
 
-    private function runningLate(float $start_timer): bool
+    private function runningLate(): bool
     {
-        return microtime(true) - $start_timer > self::MAX_LOOP_SECONDS;
+        return microtime(true) - $this->start_timer > self::MAX_LOOP_SECONDS;
     }
 }
