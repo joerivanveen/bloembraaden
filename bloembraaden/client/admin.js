@@ -40,6 +40,7 @@ PEATCMS_actor.prototype.create_DOMElement = function () {
         el.classList.add('uneditable');
         el.title = column.name;
         el.setAttribute('disabled', 'disabled');
+        el.setAttribute('tabindex', '-1'); // not working at the moment (?)
         //div.innerHTML = column_name + ': ' + this.getColumnValue(column_name);
         el.value = this.server_value;
         return el;

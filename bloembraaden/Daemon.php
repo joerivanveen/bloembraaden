@@ -123,6 +123,60 @@ class Daemon
             }
             echo "done... \n";
             if (null === $filename_for_cache) ob_clean();
+            if ($this->runningLate($start_timer)) continue;
+            $trans->start('parent chains');
+            // when some serie has its brand_id updated
+            $rows = $db->jobIncorrectChainForProduct();
+            $total_count = count($rows);
+            foreach ($rows as $index => $row) {
+                Setup::loadInstanceSettingsFor($row->instance_id);
+                if ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id)) {
+                    if (($keys = $db->updateElementsWhere(
+                        new type('product'),
+                        array('brand_id' => $serie->brand_id),
+                        array('serie_id' => $serie->serie_id))
+                    )) {
+                        $affected = count($keys);
+                        echo "Updated $affected products with serie $serie->slug\n";
+                    } else {
+                        echo "Did not update any products for serie $serie->slug\n";
+                    }
+                } else {
+                    echo "Serie $row->serie_id not found\n";
+                }
+                if ($this->runningLate($start_timer)) {
+                    $rows = null;
+                    continue 2;
+                }
+            }
+            // when some product has its serie_id updated, or its serie had its brand_id updated previously
+            $rows = $db->jobIncorrectChainForVariant();
+            $total_count += count($rows);
+            $product = null;
+            foreach ($rows as $index => $row) {
+                Setup::loadInstanceSettingsFor($row->instance_id);
+                if (null === $product || $product->product_id !== $row->product_id) {
+                    if (!($product = $db->fetchElementRow(new Type('product'), $row->product_id))) {
+                        echo "Product $row->product_id not found\n";
+                        continue;
+                    }
+                }
+                if (($keys = $db->updateElementsWhere(
+                    new type('variant'),
+                    array('brand_id' => $product->brand_id, 'serie_id' => $product->serie_id),
+                    array('product_id' => $product->product_id))
+                )) {
+                    $affected = count($keys);
+                    echo "Updated $affected variants with product $product->slug\n";
+                } else {
+                    echo "Did not update any variants for product $product->slug\n";
+                }
+                if ($this->runningLate($start_timer)) {
+                    $rows = null;
+                    continue 2;
+                }
+            }
+            if (0 === $total_count) ob_clean();
             /* old cache (least important, most time consuming) */
             $trans->start('warmup old (elements) cache');
             $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);

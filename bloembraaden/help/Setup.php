@@ -144,6 +144,15 @@ Create your next website with bloembraaden.io
         $config = null;
     }
 
+    static public function loadInstanceSettingsFor(int $instance_id): void
+    {
+        if (self::$instance_id === $instance_id) return;
+        if (($row = Help::getDB()->fetchInstanceById($instance_id))){
+            self::loadInstanceSettings(new Instance($row));
+        }
+        $row = null;
+    }
+
     static public function loadInstanceSettings(Instance $I): void
     {
         self::$instance_id = $I->getId(); // this is necessary for DB to output the correct pages and products etc.
@@ -169,6 +178,7 @@ Create your next website with bloembraaden.io
         }
         // load translations
         self::loadTranslations(new \MoParser());
+        $I = null;
     }
 
     static public function loadTranslations(\MoParser $mo_parser): void

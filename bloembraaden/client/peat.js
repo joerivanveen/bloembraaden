@@ -911,29 +911,29 @@ PEATCMS_element.prototype.populateLinkableArea = function (type, suggestions, sr
 
 PEATCMS_element.prototype.chainParents = function (column_name, id) {
     console.log('chainParents called with column name ‘' + column_name + '’ and id: ' + id);
-    var chain = { // you only need to know the parent, references are handled on the server
-            // TODO make this a config somewhere so you have it in one place with the referencing tables
-            // TODO cron job should handle unfinished business on the server
-            'product_id': 'serie_id',
-            'serie_id': 'brand_id',
-            'brand_id': null,
-        },
-        parent_column, parent_id, actor_cached,
-        self = this;
+    const chain = { // you only need to know the parent, references are handled on the server
+        // TODO make this a config somewhere so you have it in one place with the referencing tables
+        // TODO cron job should handle unfinished business on the server
+        'product_id': 'serie_id',
+        'serie_id': 'brand_id',
+        'brand_id': null,
+    }, self = this;
+    let parent_column, parent_id, actor_cached;
     if (chain.hasOwnProperty(column_name)) {
         actor_cached = this.getColumnByName(column_name).actor;
         actor_cached.DOMElement.classList.add('peatcms_loading');
         parent_column = chain[column_name];
-        NAV.ajax('/__action__/update_element_and_parent_references', {
+        NAV.ajax('/__action__/update_element', {
             // for the current element, update the whole chain
             'element': this.getElementName(),
             'id': this.getElementId(),
-            'update_column_name': column_name,
-            'update_column_value': id,
+            'column_name': column_name,
+            'column_value': parseInt(id),
         }, function (data) {
-            //console.log(data);
+            console.warn(data, column_name);
             actor_cached.prettyParent(data[column_name]);
             if (parent_column !== null && (parent_id = data[parent_column])) {
+                console.warn('chaining:', parent_column, parent_id);
                 self.chainParents(parent_column, parent_id)
             } else { // if we're done, refresh the page
                 self.refreshOrGo(data.slug);
@@ -2731,7 +2731,7 @@ PEATCMS.prototype.startUp = function () {
     }
     // default closing mechanism for messages
     document.addEventListener('peatcms.message', function (e) {
-        var el = e.detail.element,
+        const el = e.detail.element,
             closeButton = document.createElement('div'); // dismiss button
         closeButton.classList.add('button');
         closeButton.classList.add('close');
@@ -2740,7 +2740,8 @@ PEATCMS.prototype.startUp = function () {
         };
         el.appendChild(closeButton);
         if (el.classList.contains('log')) { // log messages disappear soon
-            window.setTimeout(function (el) {
+            window.clearTimeout(el.peatcms_closing_timeout);
+            el.peatcms_closing_timeout = window.setTimeout(function (el) {
                 el.remove();
             }, 3000, el);
         }
@@ -3682,9 +3683,9 @@ document.addEventListener('peatcms.document_complete', function () {
     const loadSrcSets = function () {
         let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
         const elements = document.querySelectorAll('[data-srcset]');
-        const setImage = function(el, source) {
+        const setImage = function (el, source) {
             el.current_source = source;
-            PEATCMS.preloadImage(source.src, function() {
+            PEATCMS.preloadImage(source.src, function () {
                 if ('img' === el.tagName.toLowerCase()) {
                     el.src = source.src;
                 } else {
@@ -3909,7 +3910,7 @@ PEATCMS.setupCarousels = function () {
 /**
  * Damn fine lazy loader (stolen from Nonstockphoto)
  */
-PEATCMS.lazyLoader = function() {
+PEATCMS.lazyLoader = function () {
     const elements = document.querySelectorAll('[data-src]');
     const lazyLoad = function (lazyEl) {
         if (!lazyEl.dataset.src) return;
@@ -3947,8 +3948,7 @@ PEATCMS.lazyLoader = function() {
     }
 }
 
-PEATCMS.preloadImage = function(src, onload)
-{
+PEATCMS.preloadImage = function (src, onload) {
     let img = new Image();
     img.src = src;
     if (onload) img.onload = onload;

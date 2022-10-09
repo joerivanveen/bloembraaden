@@ -52,9 +52,16 @@ class BaseElement extends BaseLogic implements Element
 
     public function update(array $data): bool
     {
-        if (true === Help::getDB()->updateElement($this->getType(), $data, $this->getId())) {
+        $peat_type = $this->getType();
+        foreach ($data as $column_name => $column_value) {
+            if (false === is_int($column_value)) continue; // all the referencing tables go by (int) id
+            if (($arr = $this->updateRef($column_name, $column_value, $peat_type))) {
+                $data = array_merge($data, $arr);
+            }
+        }
+        if (true === Help::getDB()->updateElement($peat_type, $data, $this->getId())) {
             // get a fresh row straight from the database, if that fails, the element is deleted, or otherwise gone
-            $this->row->deleted = ! $this->refreshRow();
+            $this->row->deleted = false === $this->refreshRow();
             // update ci_ai
             if (false === Help::getDB()->updateSearchIndex($this)) {
                 $this->addError('could not update search index column');
@@ -75,30 +82,14 @@ class BaseElement extends BaseLogic implements Element
         return $this->update(array('deleted' => true));
     }
 
-    public function updateRef(string $column_name, string $column_value): ?array
+    public function updateRef(string $column_name, int $column_value, Type $peat_type): array
     {
-        $peat_type = $this->getType();
-        if ($ref_names = Help::getDB()->getReferencingTables($peat_type)) {
-            foreach ($ref_names as $key => $ref_name) {
-                $keys = Help::getDB()->updateElementsWhere(
-                    new Type($ref_name),
-                    array($column_name => $column_value),
-                    array($peat_type->idColumn() => $this->getId())
-                );
-                if (($rows_affected = count($keys)) > 0) {
-                    $this->addMessage(sprintf(
-                    // #translators: 1 = quantity, 2 = element name (singular), 3 = the parent(id) that is being updated
-                        __('%3$s: %1$s %2$s(s) updated as well.', 'peatcms'),
-                        $rows_affected, $ref_name, $peat_type->typeName()));
-                }
-            }
-        }
         // for product_id update the serie_id, for serie_id update the brand_id
         // setup data array for chainParents
-        // TODO the element knows too much, the chain must be automated, like with ReferencingTables
+        // TODO the element knows too much, the chain must be automated
         $arr = array($column_name => $column_value);
         if (isset($arr['product_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('product'), (int)$column_value))) {
+            if (($tmp = Help::getDB()->fetchElementRow(new Type('product'), $column_value))) {
                 if ($serie_id = $tmp->serie_id) {
                     $arr = array_merge($arr, array('serie_id' => $serie_id));
                 } else {
@@ -109,7 +100,7 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         if (isset($arr['serie_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), (int)$column_value))) {
+            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), $column_value))) {
                 if ($brand_id = $tmp->brand_id) {
                     $arr = array_merge($arr, array('brand_id' => $brand_id));
                 } else {

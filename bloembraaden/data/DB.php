@@ -7,7 +7,7 @@ class DB extends Base
     private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
     private array $table_infos, $stale_slugs;
-    public array $tables_without_history = array(
+    public const TABLES_WITHOUT_HISTORY = array(
         '_session',
         '_sessionvars',
         '_system',
@@ -98,28 +98,6 @@ class DB extends Base
         }
 
         return (object)$arr; // convert to object for json which does not accept named arrays
-    }
-
-    /**
-     * Returns the children element names in direct chains: tables that should be updated when it changes
-     *
-     * @param $type Type the element you want the children names of
-     * @return array|null returns the names of the children this element has, or null when it has none
-     */
-    public function getReferencingTables(Type $type): ?array
-    {
-        $type_name = $type->typeName();
-        // if element = product reference = variant, if element = serie references are product as well as variant,
-        // if element = brand you need to update serie, product and variant when you update the element itself
-        if ($type_name === 'product') {
-            return array('variant');
-        } elseif ($type_name === 'serie') {
-            return array('product', 'variant');
-        } elseif ($type_name === 'brand') {
-            return array('serie', 'product', 'variant');
-        } else {
-            return null;
-        }
     }
 
     /**
@@ -872,6 +850,50 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         }
 
         return $return_array;
+    }
+
+    /**
+     * Returns product_id and serie_id for any product that has a broken chain (in this case: where the brand_id is incorrect)
+     *
+     * @return array normalized rows
+     * @since 0.12.1
+     */
+    public function jobIncorrectChainForProduct(): array
+    {
+        $statement = $this->conn->prepare('
+            SELECT DISTINCT instance_id, serie_id FROM cms_product p 
+            WHERE serie_id <> 0 AND
+                NOT EXISTS(SELECT 1 FROM cms_serie s WHERE s.serie_id = p.serie_id AND s.brand_id = p.brand_id)
+            ORDER BY instance_id, serie_id;
+        ');
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+
+        return $this->normalizeRows($rows);
+    }
+
+    /**
+     * Returns variant_id and product_id for variants that have their parent chain broken
+     * (serie_id and / or brand_id may need updating)
+     *
+     * @return array normalized rows
+     * @since 0.12.1
+     */
+    public function jobIncorrectChainForVariant(): array
+    {
+        $statement = $this->conn->prepare('
+            SELECT DISTINCT instance_id, product_id FROM cms_variant v
+            WHERE product_id <> 0 AND
+                NOT EXISTS(SELECT 1 FROM cms_product p
+                WHERE p.product_id = v.product_id AND p.serie_id = v.serie_id AND p.brand_id = v.brand_id)
+            ORDER BY instance_id, product_id;
+        ');
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $statement = null;
+
+        return $this->normalizeRows($rows);
     }
 
     /**
@@ -4333,7 +4355,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // 1) select the row from the live database
         $table_info = $table->getInfo();
         // abort if there's no history
-        if (in_array($table_name = $table_info->getTableName(), $this->tables_without_history)) return null;
+        if (in_array($table_name = $table_info->getTableName(), self::TABLES_WITHOUT_HISTORY)) return null;
         // ok continue
         $row = $this->fetchRow($table_name, array('*'), array(
             'deleted' => null, // null means either value is good

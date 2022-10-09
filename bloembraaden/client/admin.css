@@ -839,6 +839,7 @@ body .PEATCMS_admin p {
 #PEATCMS_admin_page button:focus-visible,
 #PEATCMS_admin_page label:focus-visible,
 #PEATCMS_admin_page a:focus-visible,
+.PEATCMS_admin input.pretty_parent:focus-visible,
 .PEATCMS_admin input[type=text]:focus-visible,
 .PEATCMS_admin input[type=email]:focus-visible,
 .PEATCMS_admin input[type=number]:focus-visible,

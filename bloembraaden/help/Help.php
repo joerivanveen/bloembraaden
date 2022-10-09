@@ -755,7 +755,7 @@ class Help
         $tables = $db->getAllTables();
         $db_schema = Setup::getDatabaseSchema('DB_HIST');
         foreach ($tables as $table_index => $table) {
-            if (in_array($table->table_name, $db->tables_without_history)) continue; // tables without history
+            if (in_array($table->table_name, $db::TABLES_WITHOUT_HISTORY)) continue; // tables without history
             $table_name = $table->table_name;
             $info = $db->getTableInfo($table_name);
             $history_columns = $db->historyTableColumns($table_name);
