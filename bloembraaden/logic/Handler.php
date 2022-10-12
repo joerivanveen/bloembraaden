@@ -515,7 +515,7 @@ class Handler extends BaseLogic
                             $out = $comment->getOutput();
                             $out->success = true;
                             // TODO it should be a setting and new comments must also be visible / obvious in the admin panels
-                            if (! isset($post_data->from_email)) $post_data->from_email = $instance->getSetting('mail_verified_sender');
+                            if (!isset($post_data->from_email)) $post_data->from_email = $instance->getSetting('mail_verified_sender');
                             $post_data->slug = $slug;
                             $post_data->title = $title;
                             $this->sendMail($instance, $post_data);
@@ -1694,19 +1694,31 @@ class Handler extends BaseLogic
     private function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
     {
         $out = null;
-
-        if (true === isset($post_data->from_email) and strpos($post_data->from_email, '@')) {
-            if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+        if (true === isset($post_data->from_email)
+            && strpos(($from_email = $post_data->from_email), '@')
+        ) {
+            if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
                 $temp = new Template($template_row);
                 $body = $temp->renderObject($post_data);
             }
             if (false === isset($body)) {
                 $body = \var_export($post_data, true);
             }
+            if (true === isset($post_data->to)) {
+                $to = $post_data->to;
+                $allowed_recipients = array_map('trim', explode(',', $instance->getSetting('mail_form_allowed_to') ?? ''));
+                if (false === in_array($to, $allowed_recipients)) {
+                    $this->addMessage(__('‘To’ mail address not in allow list for this instance.', 'peatcms'), 'warn');
+                    $to = $instance->getSetting('mail_default_receiver');
+                }
+            } else {
+                $to = $instance->getSetting('mail_default_receiver');
+            }
             $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
             $mail->set(array(
-                'to' => $post_data->to ?? $instance->getSetting('mail_default_receiver'),
+                'to' => $to,
                 'from' => $instance->getSetting('mail_verified_sender'),
+                'reply_to' => $from_email,
                 'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
                 'text' => Help::html_to_text($body),
                 'html' => str_replace("\n", '<br/>', $body),

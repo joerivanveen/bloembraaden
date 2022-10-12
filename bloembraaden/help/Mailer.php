@@ -152,7 +152,7 @@ class Mailer extends Base
                     'type' => 'to',
                 )
             );
-            $post_data->message->headers = (object)array('Reply-To' => $from_email);
+            $post_data->message->headers = (object)array('Reply-To' => $this->fields['reply_to'] ?? $from_email);
             if ($this->attachments) {
                 $post_data->message->attachments = $this->attachments;
             }

@@ -90,9 +90,9 @@ if ('1' === $interval) { // interval should be '1'
                     $out = (object)(array(
                         'success' => false,
                         'status_code' => 0,
-                        'message' => '‘send order confirmation before payment’ switched off in settings',
+                        'message' => 'send order confirmation before payment switched off in settings',
                     ));
-                } elseif (!$mailer->hasError()) {
+                } elseif (false === $mailer->hasError()) {
                     $html = $row->html; // the original order html
                     // make a confirmation mail for the client
                     if (null !== ($template_id = $row->template_id_order_confirmation)) {
@@ -116,8 +116,14 @@ if ('1' === $interval) { // interval should be '1'
                         'html' => $html,
                     ));
                     $out = $mailer->send();
+                } else {
+                    $out = (object)(array(
+                        'success' => false,
+                        'status_code' => 0,
+                        'message' => 'Mailer has error',
+                    ));
                 }
-                var_dump($out ?? 'oops');
+                var_dump($out);
                 $db->updateColumns('_order', array(
                     'emailed_order_confirmation' => true,
                     'emailed_order_confirmation_success' => $out->success,
@@ -203,7 +209,7 @@ if ('1' === $interval) { // interval should be '1'
                     $out = (object)(array(
                         'success' => false,
                         'status_code' => 0,
-                        'message' => '‘send payment confirmation’ switched off in settings',
+                        'message' => 'send payment confirmation switched off in settings',
                     ));
                 } elseif (false === $mailer->hasError()) {
                     $mailer->clear();
@@ -254,6 +260,9 @@ if ('1' === $interval) { // interval should be '1'
                             }
                         }
                         // send to all addresses
+                        $mailer->set(array(
+                            'reply_to' => $row->user_email
+                        ));
                         foreach (explode(',', $row->confirmation_copy_to) as $email_address) {
                             $email_address = trim($email_address);
                             if (false === filter_var($email_address, FILTER_VALIDATE_EMAIL)) continue;
