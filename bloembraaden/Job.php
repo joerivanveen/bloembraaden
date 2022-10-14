@@ -313,8 +313,9 @@ if ('1' === $interval) { // interval should be '1'
     // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
     if (($rows = $db->fetchInstagramDeauthorized())) {
         foreach ($rows as $index => $row) {
-            $db->invalidateInstagramFeedSpecsByUserId($row->user_id);
-            $db->deleteInstagramMediaByUserId($row->user_id);
+            $user_id = (int) $row->user_id;
+            $db->invalidateInstagramFeedSpecsByUserId($user_id);
+            $db->deleteInstagramMediaByUserId($user_id);
             $db->updateColumns('_instagram_auth', array('deleted' => true), $row->instagram_auth_id);
         }
     }
