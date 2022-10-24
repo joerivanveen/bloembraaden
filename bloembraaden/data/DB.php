@@ -1396,26 +1396,36 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function fetchInstagramMediaForFeed(int $instance_id, ?string $username, ?string $hashtag, int $limit, string $cdnroot): array
     {
-        if (null === $username) $username = '';
-        if (null === $hashtag) $hashtag = '';
-        // if a certain username is requested, only get their media, otherwise combine the media of all users
+        // filter by username and / or hashtag
+        // $username and $hashtag can be null OR an empty string, both cases we treat as not present, hence the weak comparison
+        if (! $username) {
+            $and_username = '';
+        } else {
+            $and_username = ' AND instagram_username = :username';
+        }
+        if (! $hashtag) {
+            $and_hashtag = '';
+        } else {
+            $and_hashtag = ' AND caption LIKE :hashtag';
+        }
         // users MUST be AUTHORIZED FOR THIS INSTANCE
-        $sql = 'SELECT caption, media_type, src, media_url, permalink, user_id, instagram_username AS username, instagram_timestamp AS timestamp';
-        // @since 0.10.0 include the processed images TODO don’t include the cdnroot hardcoded in the feed
-        $sql .= ', concat(cast(:cdnroot AS text), src_tiny) AS src_tiny, width_tiny, height_tiny';
-        $sql .= ', concat(cast(:cdnroot AS text), src_small) AS src_small, width_small, height_small';
-        $sql .= ', concat(cast(:cdnroot AS text), src_medium) AS src_medium, width_medium, height_medium';
-        $sql .= ', concat(cast(:cdnroot AS text), src_large) AS src_large, width_large, height_large';
-        $sql .= ' FROM _instagram_media';
-        $sql .= ' WHERE user_id IN (SELECT user_id FROM _instagram_auth WHERE instance_id = :instance_id AND deleted = FALSE)';
-        if ('' !== $username) $sql .= ' AND instagram_username = :username';
-        if ('' !== $hashtag) $sql .= ' AND caption LIKE :hashtag';
-        $sql .= ' AND NOT instagram_timestamp IS NULL ORDER BY instagram_timestamp DESC LIMIT ' . $limit . ';';
+        // @since 0.10.0 include the processed images
+        $sql = "SELECT caption, media_type, src, media_url, permalink, user_id, instagram_username AS username, instagram_timestamp AS timestamp, 
+            concat(cast(:cdnroot AS text), src_tiny) AS src_tiny, width_tiny, height_tiny,
+            concat(cast(:cdnroot AS text), src_small) AS src_small, width_small, height_small,
+            concat(cast(:cdnroot AS text), src_medium) AS src_medium, width_medium, height_medium,
+            concat(cast(:cdnroot AS text), src_large) AS src_large, width_large, height_large
+        FROM _instagram_media
+        WHERE deleted = FALSE
+        AND user_id IN (SELECT user_id FROM _instagram_auth WHERE instance_id = :instance_id AND deleted = FALSE)
+        $and_username
+        $and_hashtag
+        AND NOT instagram_timestamp IS NULL ORDER BY instagram_timestamp DESC LIMIT $limit;";
         $statement = $this->conn->prepare($sql);
         $statement->bindValue(':instance_id', $instance_id);
         $statement->bindValue(':cdnroot', $cdnroot);
-        if ('' !== $username) $statement->bindValue(':username', $username);
-        if ('' !== $hashtag) $statement->bindValue(':hashtag', '%#' . $hashtag . '%');
+        if ($username) $statement->bindValue(':username', $username);
+        if ($hashtag) $statement->bindValue(':hashtag', '%#' . $hashtag . '%');
         //select * from _instagram_media where username = and caption like hashtag order by instagram_timestamp desc limit quantity
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
@@ -1424,7 +1434,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         return $rows;
     }
 
-    public function fetchInstagramDeauthorized()
+    public function fetchInstagramDeauthorized(): ?array
     {
         return $this->fetchRows(
             '_instagram_auth',
@@ -1443,7 +1453,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function getInstagramFeedSpecsByUserId(int $user_id): ?array
     {
         $statement = $this->conn->prepare('SELECT * FROM _instagram_feed WHERE instance_id IN 
-                                    (SELECT instance_id FROM _instagram_auth WHERE user_id = :user_id);');
+            (SELECT instance_id FROM _instagram_auth WHERE user_id = :user_id);');
         $statement->bindValue(':user_id', $user_id);
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());

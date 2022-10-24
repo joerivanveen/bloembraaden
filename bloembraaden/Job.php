@@ -28,7 +28,7 @@ $start_timer = microtime(true);
 $db = new DB;
 define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
-echo "\n" . date('Y-m-d H:i:s') . " JOB $interval:\n";
+echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 if ('1' === $interval) { // interval should be '1'
     $trans->start('mail order confirmations');
     // @since 0.5.16: mail order confirmation to client
@@ -311,7 +311,7 @@ if ('1' === $interval) { // interval should be '1'
     // Refresh Instagram media
     $trans->start('refresh instagram data');
     // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
-    if (($rows = $db->fetchInstagramDeauthorized())) {
+    if (null !== ($rows = $db->fetchInstagramDeauthorized())) {
         foreach ($rows as $index => $row) {
             $user_id = (int) $row->user_id;
             $db->invalidateInstagramFeedSpecsByUserId($user_id);
@@ -504,7 +504,7 @@ if ('1' === $interval) { // interval should be '1'
     // after updating the media entries, you can update the feeds for users you updated (some) media for
     $trans->start('update instagram feeds');
     // fill them with an appropriate number of entries
-    echo 'Updating feeds triggered by media updates... ' . PHP_EOL;
+    echo 'Updating feeds triggered by media updates...', PHP_EOL;
     $updated_feeds = array(); // each feed has to be updated only once here
     $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
         foreach ($feeds as $index => $specs) {
@@ -523,12 +523,12 @@ if ('1' === $interval) { // interval should be '1'
         }
     };
     foreach ($updated_user_ids as $user_id => $ok) {
-        echo 'user ' . $user_id . PHP_EOL;
+        echo 'user ', $user_id, PHP_EOL;
         $feeds = $db->getInstagramFeedSpecsByUserId($user_id);
         $update_feeds($feeds);
     }
     // there may be (changed) feeds that do not yet have an actual feed or need updating anyway
-    echo 'Updating feeds that are outdated... ' . PHP_EOL;
+    echo 'Updating feeds that are outdated...', PHP_EOL;
     $feeds = $db->getInstagramFeedSpecsOutdated();
     $update_feeds($feeds);
 } elseif ('5' === $interval) { // interval should be 5
