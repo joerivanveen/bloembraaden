@@ -3571,10 +3571,10 @@ function cloneShallow(obj) {
 
 // https://stackoverflow.com/a/55292366
 PEATCMS.trim = function (str, chars) {
-    var start = 0, end;
+    let start = 0, end;
     if (!str) return str;
     end = str.length;
-    if (!chars) chars = ' ';
+    if (!chars) chars = " \r\n\t";
     while (start < end && chars.indexOf(str[start]) >= 0)
         ++start;
     while (end > start && chars.indexOf(str[end - 1]) >= 0)
