@@ -428,8 +428,14 @@ class Handler extends BaseLogic
                         $out = array('__pages__' => $src->suggestPages($terms, $limit));
                     }
                 } else {
-                    $hydrate_until = (isset($props['hydrate_until'][0])) ? (int)($props['hydrate_until'][0]) : null;
-                    $src->findWeighted($terms, $hydrate_until);
+                    if (isset($post_data->hydrate_until)) {
+                        $hydrate_until = (int)$post_data->hydrate_until;
+                    } elseif (isset($props['hydrate_until'][0])) {
+                        $hydrate_until = (int)($props['hydrate_until'][0]);
+                    } else {
+                        $hydrate_until = null;
+                    }
+                    $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
                     $out = $src->getOutput();
                 }
                 $src = null;

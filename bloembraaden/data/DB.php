@@ -348,16 +348,33 @@ class DB extends Base
      * Finds results (title, slug, type_name, id) in ci_ai based on $terms (must be cleaned of accented characters)
      *
      * @param array $clean_terms
+     * @param array $ignore_types
      * @param callable $getWeight must accept two parameters: string $text, string $needle, to assign weight
      * @return array
      * @since 0.12.0
      */
-    public function findCiAi(array $clean_terms, callable $getWeight): array
+    public function findCiAi(array $clean_terms, array $ignore_types, callable $getWeight): array
     {
         $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
-        $statement = $this->conn->prepare('
-            SELECT DISTINCT ci_ai, title, slug, type_name, id FROM _ci_ai WHERE instance_id = :instance_id AND ci_ai LIKE lower(:term);
-        ');
+        $ignore_types_sane = array();
+        foreach ($ignore_types as $index => $type_name) {
+            if (true === in_array($type_name, self::TYPES_WITH_CI_AI)) {
+                $ignore_types_sane[] = "'$type_name'";
+            }
+        }
+        if ($ignore_types_sane) {
+            $not_in_type = implode(',', $ignore_types_sane);
+            $not_in_type = "AND type_name NOT IN ($not_in_type)";
+        } else {
+            $not_in_type = '';
+        }
+        $statement = $this->conn->prepare("
+            SELECT DISTINCT ci_ai, title, slug, type_name, id 
+            FROM _ci_ai 
+            WHERE instance_id = :instance_id 
+              AND ci_ai LIKE lower(:term)
+              $not_in_type;
+        ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         foreach ($clean_terms as $index => $term) {
             if ('' === $term) continue;

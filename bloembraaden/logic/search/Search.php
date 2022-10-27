@@ -23,8 +23,9 @@ class Search extends BaseElement
     /**
      * @param array $terms
      * @param int|null $hydrate_until null means hydrate all, else hydrate only if less than $hydrate_until items are found
+     * @param array $ignore_types
      */
-    public function findWeighted(array $terms, ?int $hydrate_until = null): void
+    public function findWeighted(array $terms, ?int $hydrate_until = null, array $ignore_types = array()): void
     {
         // search queries are also cached by path! when result_count > 0.
         $original_terms = $terms;
@@ -39,7 +40,7 @@ class Search extends BaseElement
         }
         $template_settings = $this->getAndSetTemplateSettings();
         // @since 0.12.0 get results from ci_ai table
-        $results = $this->getResults($terms);
+        $results = $this->getResults($terms, $ignore_types);
         $this->row->__results__ = $results;
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until) {
@@ -106,14 +107,14 @@ class Search extends BaseElement
         $this->row->title = htmlentities(implode(' ', $terms));
     }
 
-    private function getResults(array $clean_terms): array
+    private function getResults(array $clean_terms, array $ignore_types): array
     {
         // unfortunately special cases:
         if (isset($clean_terms[0]) && ('not_online' === ($term = $clean_terms[0]) || 'price_from' === $term)) {
             return Help::getDB()->findSpecialVariants($term);
         }
 
-        return Help::getDB()->findCiAi($clean_terms, static function (string $haystack, array $needles): float {
+        return Help::getDB()->findCiAi($clean_terms, $ignore_types, static function (string $haystack, array $needles): float {
                 // the getWeight function
                 $weight = 0.0;
                 foreach ($needles as $index => $needle) {
