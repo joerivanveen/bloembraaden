@@ -1714,7 +1714,7 @@ class Handler extends BaseLogic
                 $to = $post_data->to;
                 $allowed_recipients = array_map('trim', explode(',', $instance->getSetting('mail_form_allowed_to') ?? ''));
                 if (false === in_array($to, $allowed_recipients)) {
-                    $this->addMessage(__('‘To’ mail address not in allow list for this instance.', 'peatcms'), 'warn');
+                    $this->addError(sprintf('%s not in allow list for this instance.', htmlspecialchars($to)));
                     $to = $instance->getSetting('mail_default_receiver');
                 }
             } else {
