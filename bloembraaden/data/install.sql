@@ -2946,5 +2946,14 @@ COMMIT;
 BEGIN;
 COMMIT;
 
+-- version 0.13.1
+
+BEGIN;
+
+ALTER TABLE "public"."_instance"
+    ADD COLUMN "mail_form_allowed_to" Text;
+
+COMMIT;
+
 
 

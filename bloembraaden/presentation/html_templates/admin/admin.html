@@ -211,6 +211,15 @@
                            value="{{mail_default_receiver}}"
                            data-handle="update_column"/>
                 </div>
+                <div><label>Allowed ‘to’ addr:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="mail_form_allowed_to"
+                           data-table_name="{{table_name}}"
+                           placeholder="Adresses this instance may send to"
+                           value="{{mail_form_allowed_to}}"
+                           data-handle="update_column"/>
+                    <em>(comma seperated)</em>
+                </div>
                 <p>Mailing provider is set system wide in config file</p>
                 <!--<div><label>Test mail to:</label><input type="email"/>
                      <button data-peatcms_handle="send_email">SEND</button>
