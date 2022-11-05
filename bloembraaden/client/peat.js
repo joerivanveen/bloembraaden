@@ -1967,15 +1967,6 @@ var PEATCMS = function () {
     }
 
     function setupPageOnce() {
-        // switch linked styles (e.g. fonts) from preload to style
-        const elements = document.getElementsByTagName('link')
-        let el, i, len;
-        for (i = 0, len = elements.length; i < len; ++i) {
-            el = elements[i];
-            if (el.hasAttribute('rel') && 'preload' === el.getAttribute('rel')) {
-                el.setAttribute('rel', 'stylesheet');
-            }
-        }
         // load the tracking_id and recaptcha server_values
         if ((window.PEATCMS_globals.hasOwnProperty('google_tracking_id'))) {
             if ((self.google_tracking_id = PEATCMS.trim(window.PEATCMS_globals.google_tracking_id)) !== '') {
