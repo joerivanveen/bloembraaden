@@ -404,7 +404,10 @@ Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
             number_addition: addition,
             timestamp: this.timestamp
         }, function (json) {
-            var postcode_suggestion, el = document.getElementById('shipping_address_not_recognized') || null;
+            let postcode_suggestion,
+                el = document.getElementById('shipping_address_not_recognized')
+                    || self.wrapper.querySelector('.error')
+                    || null;
             //console.warn(self.timestamp +' === '+ json['timestamp']);
             if (self.timestamp !== json['timestamp']) return;
             if (VERBOSE) console.log(json);
