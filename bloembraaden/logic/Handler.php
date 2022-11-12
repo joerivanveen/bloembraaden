@@ -827,20 +827,14 @@ class Handler extends BaseLogic
                 }
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ($action === 'detail' and $this->resolver->hasInstruction('order')) {
-                // TODO get it by order number (in the url) ONLY FOR logged in users that actually OWN that order_number
-                // TODO or you can check if the order requested was actually placed by the session id, to show the whole thing
-                // for now only get it from the session and add some anonymous values to $out...
                 $out = new \stdClass;
                 if ($order_number = $this->getSession()->getValue('order_number')) {
-                    $out->order_number = $order_number;
-                    $out->order_number_readable = wordwrap($order_number, 4, ' ', true);
                     if (($row = Help::getDB()->getOrderByNumber($order_number))) {
-                        $out->amount_grand_total = Help::asMoney($row->amount_grand_total / 100.0);
-                        $out->payment_confirmed_bool = $row->payment_confirmed_bool;
-                        $out->emailed_order_confirmation_success = $row->emailed_order_confirmation_success;
-                        $out->emailed_payment_confirmation_success = $row->emailed_payment_confirmation_success;
-                        $out->date_created = $row->date_created;
-                        $out->deleted = $row->deleted;
+                        if ($row->session_id === ($session_id = $this->getSession()->getId())) {
+                            $out = $row;
+                        } else {
+                            $this->addError("Order $order_number does not belong to current session $session_id");
+                        }
                     }
                 }
                 // You can't get the html by order_number because session values are not safe, they can be set client-side
