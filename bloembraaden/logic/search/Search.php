@@ -350,6 +350,7 @@ class Search extends BaseElement
         $peat_type = new Type($type_name);
         // now you have the single ones, make objects from them
         foreach ($rows as $index => $row) {
+            if (isset($row->__ref)) continue; // already an object
             $rows[$index] = $peat_type->getElement($row)->getOutput();
         }
 
