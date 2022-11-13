@@ -406,7 +406,7 @@ class Handler extends BaseLogic
             } elseif ($action === 'suggest') {
                 // suggest should post type and id so we can infer some interesting stuff
                 $src = new Search();
-                // terms can be passed als query string ?terms=term1,term2 etc in the complex tag, as can limit
+                // terms can be passed as query string ?terms=term1,term2 etc in the complex tag, as can limit
                 $props = $this->resolver->getProperties();
                 $limit = isset($props['limit']) ? (int)$props['limit'][0] : 8;
                 $terms = $props['terms'] ?? array();
@@ -416,13 +416,13 @@ class Handler extends BaseLogic
                     // for now just get some id's that are linked to shoppinglist via other shoppinglists and / or orders
                     $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->id, $limit));
                 } elseif ('variant' === $type_name) {
-                    if (isset($post_data->id)) {
+                    if (count($terms) < 1 && isset($post_data->id)) {
                         $out = array('__variants__' => $src->getRelatedForVariant($post_data->id, $limit));
                     } else {
                         $out = array('__variants__' => $src->suggestVariants($terms, $limit));
                     }
                 } elseif ('page' === $type_name) {
-                    if (isset($post_data->id)) {
+                    if (count($terms) < 1 && isset($post_data->id)) {
                         $out = array('__pages__' => $src->getRelatedForPage($post_data->id, $limit));
                     } else {
                         $out = array('__pages__' => $src->suggestPages($terms, $limit));
@@ -752,7 +752,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ('account_update' === $action and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_update' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 if (null !== ($user = $this->getSession()->getUser())) {
                     // check which column is being updated... (multiple is possible)
                     $data = array();
@@ -780,11 +780,11 @@ class Handler extends BaseLogic
                         );
                     $out['__user__'] = $this->getSession()->getUser()->getOutput();
                 }
-            } elseif (('update_address' === $action or 'delete_address' === $action)
+            } elseif (('update_address' === $action || 'delete_address' === $action)
                 and (true === Help::recaptchaVerify($instance, $post_data))
             ) {
                 //$post_data = $this->resolver->escape($post_data);
-                if ((null !== ($user = $this->getSession()->getUser())) and isset($post_data->address_id)) {
+                if ((null !== ($user = $this->getSession()->getUser())) && isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
                     if ($action === 'delete_address') $post_data->deleted = true;
                     if (1 === Help::getDB()->updateColumnsWhere(
@@ -1484,7 +1484,6 @@ class Handler extends BaseLogic
                 if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
                 // @since 0.6.1 add any changed session vars for update on client
                 $out->__session__ = $this->getSession()->getUpdatedVars();
-                $out->session = $this->getSession()->getUpdatedVars(); // TODO remove this backwards compatibility from 0.10.9
                 ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
                 unset($out);
@@ -1605,7 +1604,6 @@ class Handler extends BaseLogic
             $out->__messages__ = Help::getMessages();
             // @since 0.6.1 add any changed session vars for update on client
             $out->__session__ = $this->getSession()->getUpdatedVars();
-            $out->session = $this->getSession()->getUpdatedVars(); // TODO remove this backwards compatibility from 0.10.9
             ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
             $response = gzencode(json_encode($out), 6);
             unset($out);
