@@ -610,7 +610,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         if ('page' !== $for) $for = 'variant';
         $statement = $this->conn->prepare("
-            SELECT DISTINCT p.slug property_slug, p.title property_title, pv.slug, pv.title, pxv.sub_o
+            SELECT DISTINCT p.slug property_slug, p.title property_title, pv.slug, pv.title, pxv.sub_o, count(pv.slug) item_count
             FROM cms_property p
             INNER JOIN cms_{$for}_x_properties xp ON p.property_id = xp.property_id
             INNER JOIN cms_$for el ON el.{$for}_id = xp.{$for}_id
@@ -618,6 +618,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             INNER JOIN cms_property_x_property_value pxv ON pxv.property_value_id = xp.property_value_id
             WHERE p.instance_id = :instance_id AND p.deleted = FALSE AND pv.deleted = FALSE AND pxv.deleted = FALSE
             AND el.online = TRUE AND pv.online = TRUE
+            GROUP BY p.slug, p.title, pv.slug, pv.title, pxv.sub_o
             ORDER BY p.title, pxv.sub_o, pv.title
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
@@ -631,7 +632,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
                 $current_prop = $row->property_slug;
                 $return_arr[$current_prop] = array();
             }
-            $return_arr[$current_prop][$row->slug] = $row->title;
+            $return_arr[$current_prop][$row->slug] = array('title' => $row->title, 'item_count' => $row->item_count);
         }
 
         return $return_arr;
@@ -852,18 +853,17 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         if (0 === count($variant_ids)) return array();
         $statement = $this->conn->prepare('
-            SELECT DISTINCT v.slug FROM cms_variant_x_properties x
+            SELECT DISTINCT v.slug, count(v.slug) item_count FROM cms_variant_x_properties x
             INNER JOIN cms_property_value v ON x.property_value_id = v.property_value_id
-            WHERE x.variant_id IN (' . implode(',', $variant_ids) . ');
+            WHERE x.variant_id IN (' . implode(',', $variant_ids) . ') GROUP BY v.slug;
         ');
         $statement->execute();
         $fetched_array = $statement->fetchAll();
-        //echo 'executed sql string: ' . str_replace(':id', $id, $statement->queryString);
+        //echo 'executed sql string: ', $statement->queryString;
         $statement = null;
         $return_array = array();
-        // todo make this a helper function or something?
         foreach ($fetched_array as $index => $row) {
-            $return_array[] = $row[0];
+            $return_array[] = array('slug' => $row[0], 'item_count' => $row[1]);
         }
 
         return $return_array;
@@ -1415,12 +1415,12 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         // filter by username and / or hashtag
         // $username and $hashtag can be null OR an empty string, both cases we treat as not present, hence the weak comparison
-        if (! $username) {
+        if (!$username) {
             $and_username = '';
         } else {
             $and_username = ' AND instagram_username = :username';
         }
-        if (! $hashtag) {
+        if (!$hashtag) {
             $and_hashtag = '';
         } else {
             $and_hashtag = ' AND caption LIKE :hashtag';
