@@ -41,11 +41,12 @@ if ('1' === $interval) { // interval should be '1'
             $mailgun_custom_domain = $row->mailgun_custom_domain;
             $mailer = new Mailer($mailgun_custom_domain);
             if ($mailer->hasError()) {
-                $out = (object)(array(
-                    'success' => false,
-                    'status_code' => 0,
-                    'message' => $mailer->getLastError()->getMessage(),
-                ));
+//                $out = (object)(array(
+//                    'success' => false,
+//                    'status_code' => 0,
+//                    'message' => $mailer->getLastError()->getMessage(),
+//                ));
+                Help::addError($mailer->getLastError());
             }
         }
         if (isset($row->order_number)) {
@@ -55,6 +56,7 @@ if ('1' === $interval) { // interval should be '1'
             }
             // determine what to do with the order
             $order_number = $row->order_number;
+            echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
             // make sure the dates are in the current timezone, and also use a generic format
             $row->date_created = date('Y-m-d H:i:s', strtotime($row->date_created));
             $row->date_updated = date('Y-m-d H:i:s', strtotime($row->date_updated));
@@ -83,6 +85,7 @@ if ('1' === $interval) { // interval should be '1'
             }
             // 1) mail order confirmation
             if (false === $row->emailed_order_confirmation) {
+                echo 'Order confirmation', PHP_EOL;
                 $mailer->clear();
                 // https://www.trompetters.nl/__action__/pay/order_number:202184610579
                 $order_output_object->payment_link = 'https://' . $row->domain . '/__action__/pay/order_number:' . $row->order_number;
@@ -133,6 +136,7 @@ if ('1' === $interval) { // interval should be '1'
             }
             // 3) mail payment confirmation // Note: (false === $row->emailed_payment_confirmation) is understood
             if (true === $row->payment_confirmed_bool) {
+                echo 'Payment confirmation', PHP_EOL;
                 // 2) create invoice
                 $filename = Help::getInvoiceFileName($order_number, $instance_id);
                 $invoice_title = sprintf(
@@ -259,25 +263,28 @@ if ('1' === $interval) { // interval should be '1'
                                 Help::addError($e);
                             }
                         }
-                        // send to all addresses
+                        // make order easy to answer to
                         $mailer->set(array(
                             'reply_to' => $row->user_email
                         ));
+                        // send to all addresses
                         foreach (explode(',', $row->confirmation_copy_to) as $email_address) {
                             $email_address = trim($email_address);
                             if (false === filter_var($email_address, FILTER_VALIDATE_EMAIL)) continue;
                             $mailer->set(array(
                                 'to' => $email_address
                             ));
-                            if ($mailer->send()) {
-                                echo $email_address . ' ';
+                            var_dump($mailer->send());
+                            if ($mailer->hasError()) {
+                                Help::addError($mailer->getLastError());
+                                break;
                             }
                         }
                     }
-                    var_dump($out);
                 } else {
                     $out = (object)array('success' => false, 'reason' => 'mailer has error');
                 }
+                var_dump($out);
                 $db->updateColumns('_order', array(
                     'emailed_payment_confirmation' => true,
                     'emailed_payment_confirmation_success' => $out->success,
