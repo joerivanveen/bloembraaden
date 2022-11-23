@@ -1587,7 +1587,7 @@ let PEATCMS_admin = function () {
     }
 
     document.addEventListener('peatcms.document_ready', activate);
-    if (PEAT.document_status > PEAT.status_codes.ready) {
+    if (PEAT.document_status >= PEAT.status_codes.ready) {
         activate();
     }
 
