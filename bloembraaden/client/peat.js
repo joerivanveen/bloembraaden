@@ -3738,7 +3738,7 @@ document.addEventListener('peatcms.document_complete', function () {
                 currentSlide = (n + slideCount) % slideCount;
                 slides[currentSlide].classList.add('active');
                 slideHeight = slides[currentSlide].clientHeight;
-                slideshow.style.height = slideHeight + 'px';
+                //slideshow.style.height = slideHeight + 'px';
             }
 
             const nextSlide = function (e) {
