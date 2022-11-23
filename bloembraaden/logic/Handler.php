@@ -632,7 +632,7 @@ class Handler extends BaseLogic
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     $as_admin = $this->resolver->hasInstruction('admin');
                     if ($as_admin or true === Help::recaptchaVerify($instance, $post_data)) {
-                        if (false === $this->session->login($post_data->email, (string) $post_data->pass, $as_admin)) {
+                        if (false === $this->session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                             $this->addMessage(__('Could not login', 'peatcms'), 'warn');
                         } else {
                             if ($as_admin) {
@@ -658,11 +658,11 @@ class Handler extends BaseLogic
                 ) {
                     if (null !== ($user_id = Help::getDB()->insertUserAccount(
                             $email_address,
-                            Help::passwordHash((string) $post_data->pass)))
+                            Help::passwordHash((string)$post_data->pass)))
                     ) {
                         $this->addMessage(__('Account created', 'peatcms'), 'note');
                         // auto login
-                        if (false === $this->session->login($email_address, (string) $post_data->pass, false)) {
+                        if (false === $this->session->login($email_address, (string)$post_data->pass, false)) {
                             $this->addMessage(__('Could not login', 'peatcms'), 'error');
                         } else {
                             $this->addMessage(__('Login successful', 'peatcms'), 'log');
@@ -726,7 +726,7 @@ class Handler extends BaseLogic
                             and isset($row->information->email_address)
                             and ($email_address = $row->information->email_address) === $post_data->email
                         ) {
-                            $password = (string) $post_data->pass;
+                            $password = (string)$post_data->pass;
                             // if it’s indeed an account, update the password
                             // (since the code proves the emailaddress is read by the owner)
                             if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
@@ -921,7 +921,9 @@ class Handler extends BaseLogic
                         $success = false;
                         $type = new Type($post_data->element_name);
                         $element = $type->getElement()->fetchById((int)$post_data->id);
-                        if ($admin->isRelatedElement($element)) {
+                        if (null === $element) {
+                            $this->addMessage(__('Element not found', 'peatcms'), 'warn');
+                        } elseif ($admin->isRelatedElement($element)) {
                             $path = $element->getSlug();
                             if (true === ($success = $element->delete())) {
                                 Help::getDB()->reCacheWithWarmup($path);

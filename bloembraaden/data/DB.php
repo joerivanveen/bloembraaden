@@ -4134,9 +4134,17 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     public function markStaleTheParents(string $slug): bool
     {
         // get all the slugs we need to warmup for this element
-        $element_row = $this->fetchElementIdAndTypeBySlug($slug);
-        if (null === $element_row) return false;
-        $element = (new Type($element_row->type))->getElement()->fetchById($element_row->id);
+        $id_and_type = $this->fetchElementIdAndTypeBySlug($slug);
+        if (null === $id_and_type) return false;
+        // you must mark stale also for deleted elements, so get this element also when deleted
+        $peat_type = new Type($id_and_type->type);
+        $element_row = Help::getDB()->fetchRow(
+            $peat_type->tableName(),
+            array('*'),
+            array($peat_type->idColumn() => $id_and_type->id, 'deleted' => null)
+        );
+        $element = $peat_type->getElement($element_row);
+        $element_row = null;
         if (null === $element) return false;
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
