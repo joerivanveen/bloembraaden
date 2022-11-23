@@ -1551,11 +1551,6 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                         build_rows += '<span class="PEATCMS_data_stasher" data-peatcms_id="' + obj.id +
                                             '" data-table_name="' + obj.table_name + '" data-tag="' + tag_name + '"></span>';
                                     }
-                                    if (obj.slug && obj.type) {
-                                        obj_id = obj.type + '_' + obj[obj.type + '_id'];
-                                        build_rows += '<span class="PEATCMS_edit_button" data-peatcms_slug="' + obj.slug +
-                                            '" data-peatcms_id="' + obj_id + '[' + i + ']"></span>'; // placeholder
-                                    }
                                 }
                                 // if this row doesn't contain any tags that are different for each row,
                                 // just leave it at the first execution, repetition is unnecessary
