@@ -102,14 +102,14 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         if (isset($arr['serie_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), $column_value))) {
+            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), $arr['serie_id']))) {
                 if ($brand_id = $tmp->brand_id) {
                     $arr = array_merge($arr, array('brand_id' => $brand_id));
                 } else {
                     $this->addMessage(sprintf(__('%1$s not set for this %2$s', 'peatcms'), 'Brand', 'series'), 'warn');
                 }
             } else {
-                $this->addError(sprintf('Parent chain update fail for serie_id ‘%s’', $column_value));
+                $this->addError(sprintf('Parent chain update fail for serie_id ‘%s’', $arr['serie_id']));
             }
         }
 
