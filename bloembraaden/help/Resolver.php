@@ -145,6 +145,21 @@ class Resolver extends BaseLogic
         return $this->properties;
     }
 
+    public function cleanOutboundProperties(\stdClass $out): \stdClass
+    {
+        $post_data = $this->getPostData();
+        // reflect properties:
+        if (isset($post_data->render_in_tag)) $out->render_in_tag = $post_data->render_in_tag;
+        if (isset($post_data->full_feedback)) $out->full_feedback = $post_data->full_feedback;
+        // some fields can never be output:
+        unset($out->password_hash);
+        if (false === ADMIN) unset($out->recaptcha_secret_key);
+
+        unset($post_data);
+
+        return $out;
+    }
+
     public function getTerms(): array
     {
         return $this->terms;

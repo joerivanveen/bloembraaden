@@ -1474,12 +1474,7 @@ class Handler extends BaseLogic
         if ($out !== null) {
             $out = (object)$out;
             $out->slugs = $GLOBALS['slugs'];
-            // mirror properties:
-            if (isset($post_data->render_in_tag)) $out->render_in_tag = $post_data->render_in_tag;
-            if (isset($post_data->full_feedback)) $out->full_feedback = $post_data->full_feedback;
-            // TODO make it generic / some fields can never be output
-            if (isset($out->password_hash)) unset($out->password_hash);
-            if (false === ADMIN && isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
+            $out = $this->resolver->cleanOutboundProperties($out);
             if (defined('OUTPUT_JSON')) {
                 // add messages and errors
                 $out->__messages__ = Help::getMessages();
@@ -1588,15 +1583,11 @@ class Handler extends BaseLogic
             }
         }
         unset($base_element);
-        // mirror properties
-        if (isset(($boe = $this->resolver->getPostData())->render_in_tag)) $out->render_in_tag = $boe->render_in_tag;
         // @since 0.7.9 load the properties in the out object as well
         $out->__query_properties__ = $this->resolver->getProperties();
         $out->template_published = strtotime($instance->getSetting('date_updated'));
         $out->is_admin = ADMIN;
-        // TODO make it generic / some fields can never be output
-        if (isset($out->password_hash)) unset($out->password_hash);
-        if (isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
+        $out = $this->resolver->cleanOutboundProperties($out);
         // output
         if (defined('OUTPUT_JSON')) {
             if (($post_data = $this->resolver->getPostData())) {
