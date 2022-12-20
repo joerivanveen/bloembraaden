@@ -12,7 +12,7 @@ class Resolver extends BaseLogic
 {
     private ?\stdClass $post_data;
     private array $terms, $properties, $instructions = array();
-    private string $path, $render_in_tag;
+    private string $path;
     private int $variant_page;
 
     public function __construct(string $request_uri, int $instance_id)
@@ -62,8 +62,6 @@ class Resolver extends BaseLogic
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
             $output_json = isset($post_data->json) && true === $post_data->json;
         }
-        // since 0.5.10: possibility to render returned element in a different tag than its slug
-        if (isset($post_data->render_in_tag)) $this->render_in_tag = $post_data->render_in_tag;
         // remember for everyone, only needed when output is imminent:
         if (true === $output_json && false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
@@ -150,11 +148,6 @@ class Resolver extends BaseLogic
     public function getTerms(): array
     {
         return $this->terms;
-    }
-
-    public function getRenderInTag(): ?string
-    {
-        return $this->render_in_tag ?? null;
     }
 
     public function getElement(?bool &$from_history, ?Session $session = null, ?bool $no_cache = false): BaseLogic

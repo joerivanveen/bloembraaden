@@ -1474,7 +1474,9 @@ class Handler extends BaseLogic
         if ($out !== null) {
             $out = (object)$out;
             $out->slugs = $GLOBALS['slugs'];
-            if ($tag = $this->resolver->getRenderInTag()) $out->render_in_tag = $tag;
+            // mirror properties:
+            if (isset($post_data->render_in_tag)) $out->render_in_tag = $post_data->render_in_tag;
+            if (isset($post_data->full_feedback)) $out->full_feedback = $post_data->full_feedback;
             // TODO make it generic / some fields can never be output
             if (isset($out->password_hash)) unset($out->password_hash);
             if (false === ADMIN && isset($out->recaptcha_secret_key)) unset($out->recaptcha_secret_key);
@@ -1555,8 +1557,6 @@ class Handler extends BaseLogic
         }
         // use a properly filled element to check some of the settings
         $base_element = (true === isset($out->__ref)) ? $out->slugs->{$out->__ref} : $out;
-        $render_in_tag = $this->resolver->getRenderInTag();
-        if (null !== $render_in_tag) $out->render_in_tag = $render_in_tag;
         if (true === ADMIN) {
             // security: check access
             if (isset($base_element->instance_id) and $base_element->instance_id !== Setup::$instance_id) {
@@ -1585,10 +1585,11 @@ class Handler extends BaseLogic
                 $element = new Search();
                 $element->findWeighted(array($base_element->title));
                 $out = $element->getOutputObject();
-                if (null !== $render_in_tag) $out->render_in_tag = $render_in_tag;
             }
         }
         unset($base_element);
+        // mirror properties
+        if (isset(($boe = $this->resolver->getPostData())->render_in_tag)) $out->render_in_tag = $boe->render_in_tag;
         // @since 0.7.9 load the properties in the out object as well
         $out->__query_properties__ = $this->resolver->getProperties();
         $out->template_published = strtotime($instance->getSetting('date_updated'));

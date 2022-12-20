@@ -665,10 +665,11 @@ PEATCMS_element.prototype.setLinked = function (type, data) {
         }
     }
     this.state['__' + type + 's__'] = clean_data;
-    NAV.admin_uncache_slug(this.state.slug, true); // @since 0.10.4
+    if (false === data.hasOwnProperty('full_feedback') || true === data['full_feedback']) {
+        NAV.admin_uncache_slug(this.state.slug, true);
+    } // @since 0.10.4
     if (VERBOSE) {
-        console.log('Data from setLinked:');
-        console.log(clean_data);
+        console.log('Data from setLinked:', clean_data);
     }
 }
 PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, src) {

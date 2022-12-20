@@ -312,8 +312,10 @@ class BaseElement extends BaseLogic implements Element
             }
             $keep_order++;
         }
-        if (!$this->reCache()) {
-            $this->addError(sprintf('Uncaching failed for %s, order is wrong', $this->getSlug()));
+        if (true === $full_feedback) {
+            if (!$this->reCache()) {
+                $this->addError(sprintf('Uncaching failed for %s, order is wrong', $this->getSlug()));
+            }
         }
 
         return $this->refreshLinked($linkable_type_name, $full_feedback);
