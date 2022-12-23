@@ -348,32 +348,30 @@ class DB extends Base
      * Finds results (title, slug, type_name, id) in ci_ai based on $terms (must be cleaned of accented characters)
      *
      * @param array $clean_terms
-     * @param array $ignore_types
+     * @param array $clean_types must be filtered already, to be only types with CI_AI
      * @param callable $getWeight must accept two parameters: string $text, string $needle, to assign weight
      * @return array
      * @since 0.12.0
      */
-    public function findCiAi(array $clean_terms, array $ignore_types, callable $getWeight): array
+    public function findCiAi(array $clean_terms, array $clean_types, callable $getWeight): array
     {
         $arr = array(); // collect the results (by slug) so you can intersect them, leaving only results with all the terms in them
-        $ignore_types_sane = array();
-        foreach ($ignore_types as $index => $type_name) {
-            if (true === in_array($type_name, self::TYPES_WITH_CI_AI)) {
-                $ignore_types_sane[] = "'$type_name'";
-            }
+        $type_query = '';
+        $online_query = '';
+        if (0 < count($clean_types)) {
+            // pay attention to the single quotes placed around every type in the clean_types array
+            $type_query = implode('\',\'', $clean_types);
+            $type_query = "AND type_name IN ('$type_query')";
         }
-        if ($ignore_types_sane) {
-            $not_in_type = implode(',', $ignore_types_sane);
-            $not_in_type = "AND type_name NOT IN ($not_in_type)";
-        } else {
-            $not_in_type = '';
-        }
+        // TODO have online work better everywhere the same way and loose the ADMIN constant, must be manageable in 1 place
+        if (false === defined('ADMIN') || false === ADMIN) $online_query = 'AND online = TRUE';
         $statement = $this->conn->prepare("
-            SELECT DISTINCT ci_ai, title, slug, type_name, id 
+            SELECT DISTINCT ci_ai, title, slug, type_name, id, online 
             FROM _ci_ai 
             WHERE instance_id = :instance_id 
               AND ci_ai LIKE lower(:term)
-              $not_in_type;
+              $online_query
+              $type_query;
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         foreach ($clean_terms as $index => $term) {

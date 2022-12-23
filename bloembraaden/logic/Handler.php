@@ -435,7 +435,11 @@ class Handler extends BaseLogic
                     } else {
                         $hydrate_until = null;
                     }
-                    $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
+                    if (isset($post_data->only_of_type)) {
+                        $src->findWeighted($terms, $hydrate_until, array($post_data->only_of_type), false);
+                    } else {
+                        $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
+                    }
                     $out = $src->getOutput();
                 }
                 $src = null;
@@ -1829,12 +1833,12 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private function getElementSuggestions(string $type_name, string $src = ''): ?object
+    private function getElementSuggestions(string $type_name, string $term = ''): ?object
     {
         if ($type_name === 'x_value') {
-            return Help::getDB()->fetchPropertiesRowSuggestions($src);
+            return Help::getDB()->fetchPropertiesRowSuggestions($term);
         } elseif ($type = new Type($type_name)) {
-            return Help::getDB()->fetchElementRowSuggestions($type, $src);
+            return Help::getDB()->fetchElementRowSuggestions($type, $term);
         }
 
         return null;
