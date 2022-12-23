@@ -63,8 +63,9 @@ Create your next website with bloembraaden.io
 
     public static function getNow(): string
     {
+        // TODO we add 30 seconds now to allow for when the script runs long and we want to compare to now but obviously this is flawed
         return self::$now_time_string
-            ?? (self::$now_time_string = (string)strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]));
+            ?? (self::$now_time_string = (string)(30 + strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0])));
     }
 
     public static function getMainDatabaseConnection(): PDO
