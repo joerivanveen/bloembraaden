@@ -1891,27 +1891,14 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     public function updateSearchIndex(BaseLogic $element): bool
     {
         if (false === $element instanceof BaseElement) return true;
-        $peat_type = $element->getType();
-        $table_name = $peat_type->tableName();
         if (false == in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
-        //if (false === $this->getTableInfo($table_name)->hasCiAiColumn()) return true;
-        $id_column = $peat_type->idColumn();
-        if (false === $element->isOnline()) {
-            return ($this->deleteSearchIndex($element));
-        }
         $out = $element->getOutputFull();
         $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($out)));
-        // todo remove when fully migrated to separate _ci_ai table
-        $statement = $this->conn->prepare("UPDATE $table_name SET ci_ai = :src WHERE $id_column = :id;");
-        $statement->bindValue(':src', $ci_ai);
-        $statement->bindValue(':id', $element->getId());
-        $statement->execute();
-        $success = (1 === $statement->rowCount());
-        $statement = null;
         // @since 0.12.0 maintain _ci_ai table
         $statement = $this->conn->prepare('
-            INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id)
-            VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id)
+            INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id, online)
+            VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id, :online)
+            RETURNING ci_ai_id
         ');
         $statement->bindValue(':instance_id', $out->instance_id);
         $statement->bindValue(':ci_ai', $ci_ai);
@@ -1919,8 +1906,9 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement->bindValue(':slug', $out->slug);
         $statement->bindValue(':type_name', $element->getTypeName());
         $statement->bindValue(':id', $out->id);
+        $statement->bindValue(':online', (true === $element->isOnline()) ? 1 : 0);
         $statement->execute();
-        $success = $success && (1 === $statement->rowCount());
+        $success = (1 === $statement->rowCount());
         $statement = null;
 
         return $success;
@@ -1931,7 +1919,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $statement = $this->conn->prepare("
             SELECT *, {$type_name}_id AS id, 'cms_$type_name' AS table_name FROM cms_$type_name c 
             WHERE NOT EXISTS(SELECT FROM _ci_ai WHERE type_name = '$type_name' AND id = c.{$type_name}_id) 
-            AND online = TRUE AND deleted = FALSE LIMIT $limit;
+            AND deleted = FALSE LIMIT $limit;
         ");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
@@ -4254,13 +4242,13 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // https://stackoverflow.com/a/12963112
         $statement = $this->conn->prepare('
             DELETE FROM _ci_ai c1 USING (
-              SELECT MAX(ctid) as ctid, type_name, id
+              SELECT MAX(ci_ai_id) as ci_ai_id, type_name, id
                 FROM _ci_ai
                 GROUP BY type_name, id HAVING COUNT(*) > 1
               ) c2
               WHERE c1.id = c2.id 
                 AND c1.type_name = c2.type_name
-                AND c1.ctid <> c2.ctid;
+                AND c1.ci_ai_id <> c2.ci_ai_id;
         ');
         $statement->execute();
         $affected = $statement->rowCount();

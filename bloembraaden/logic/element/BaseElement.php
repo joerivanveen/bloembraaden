@@ -63,7 +63,7 @@ class BaseElement extends BaseLogic implements Element
         }
         if (true === Help::getDB()->updateElement($peat_type, $data, $this->getId())) {
             // get a fresh row straight from the database, if that fails, the element is deleted, or otherwise gone
-            $this->row->deleted = false === $this->refreshRow();
+            $this->row->deleted = (false === $this->refreshRow());
             // update ci_ai
             if (false === Help::getDB()->updateSearchIndex($this)) {
                 $this->addError('could not update search index column');

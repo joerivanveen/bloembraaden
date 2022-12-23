@@ -2955,5 +2955,15 @@ ALTER TABLE "public"."_instance"
 
 COMMIT;
 
+-- version 0.15.1
+
+BEGIN;
+
+ALTER TABLE "public"."_ci_ai"
+    ADD COLUMN if not exists "online" boolean DEFAULT true NOT NULL;
+
+COMMIT;
+
+
 
 
