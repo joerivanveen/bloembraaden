@@ -452,11 +452,10 @@ class BaseElement extends BaseLogic implements Element
             $this->row->__properties__ = $properties;
         }
         // @since 0.8.19 allow is_published as a shorthand for date_published < now()
+        $this->row->is_published = true;
         if (isset($this->row->date_published)) {
             try {
-                if (strtotime($this->row->date_published) <= Setup::getNow()) {
-                    $this->row->is_published = true;
-                } else {
+                if (strtotime($this->row->date_published) > Setup::getNow()) {
                     $this->row->is_published = false;
                     // and also set it to stale on the specific date so it will in fact be published
                     if (isset($slug)) Help::getDB()->markStaleFrom($slug, $this->row->date_published);

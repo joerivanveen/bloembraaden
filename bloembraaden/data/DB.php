@@ -1121,7 +1121,8 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         }
         if ($table_name === 'cms_page') {
             $sorting = ' ORDER BY date_published DESC ';
-            $sub_queries[] = 'AND date_published < NOW() - INTERVAL \'5 minutes\''; // allow a few minutes for the cache to update
+            // todo have the date_published subquery depend on the presence of that column
+            $sub_queries[] = 'AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
         }
         $statement = $this->conn->prepare('SELECT DISTINCT el.* FROM ' . $x_table . ' x INNER JOIN ' .
             $table_name . ' el ON el.' . $id_column . ' = x.' . $id_column .
@@ -3470,7 +3471,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             echo ' ORDER BY o';
         } elseif ('_template' !== $table_name && in_array('date_published', $columns['names'])) {
             if (defined('ADMIN') && false === ADMIN) {
-                echo ' AND date_published < NOW() - INTERVAL \'5 minutes\''; // allow a few minutes for the cache to update
+                // todo have the date_published subquery depend on the presence of that column
+                echo ' AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
             }
             echo ' ORDER BY date_published DESC';
         } elseif ('_order' !== $table_name && in_array('date_updated', $columns['names'])) {

@@ -79,7 +79,7 @@ class BaseLogic extends Base
             $this->addError($this->getType()->typeName() . '->getOutput() called while row is NULL');
             $this->row = new \stdClass();
         }
-        if (!$this->completedRowForOutput) {
+        if (false === $this->completedRowForOutput) {
             $this->completedRowForOutput = true;
             $this->completeRowForOutput();
             // continue for all elements
