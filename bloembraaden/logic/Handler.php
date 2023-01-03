@@ -1838,7 +1838,17 @@ class Handler extends BaseLogic
         if ($type_name === 'x_value') {
             return Help::getDB()->fetchPropertiesRowSuggestions($term);
         } elseif ($type = new Type($type_name)) {
-            return Help::getDB()->fetchElementRowSuggestions($type, $term);
+            if (strlen($term) >= Search::MIN_TERM_LENGTH) {
+                $src = new Search();
+                $src->findWeighted(array($term), 0, array($type_name),false);
+                return (object)array(
+                    'element' => $type_name,
+                    'src' => $term,
+                    'rows' => $src->getOutputFull()->__results__,
+                );
+            } else {
+                return Help::getDB()->fetchElementRowSuggestions($type, $term);
+            }
         }
 
         return null;
