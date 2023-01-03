@@ -832,16 +832,12 @@ class Handler extends BaseLogic
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ($action === 'detail' and $this->resolver->hasInstruction('order')) {
                 $out = new \stdClass;
-                if ($order_number = $this->getSession()->getValue('order_number')) {
-                    if (($row = Help::getDB()->getOrderByNumber($order_number))) {
-                        if ($row->session_id === ($session_id = $this->getSession()->getId())) {
-                            $out = $row;
-                        } else {
-                            $this->addError("Order $order_number does not belong to current session $session_id");
-                        }
-                    }
+                // session values can be manipulated so you need to check if this order belongs to the session
+                if (($order_number = $this->getSession()->getValue('order_number'))
+                    && ($row = Help::getDB()->getOrderByNumber($order_number))
+                    && $row->session_id === $this->getSession()->getId()) {
+                    $out = $row;
                 }
-                // You can't get the html by order_number because session values are not safe, they can be set client-side
                 $out->slug = '__order__/' . $order_number;
             } elseif ($action === 'payment_start') {
                 // TODO LET OP het is niet gecheckt dat deze order bij deze user hoort, dus geen gegevens prijsgeven
@@ -1840,7 +1836,8 @@ class Handler extends BaseLogic
         } elseif ($type = new Type($type_name)) {
             if (strlen($term) >= Search::MIN_TERM_LENGTH) {
                 $src = new Search();
-                $src->findWeighted(array($term), 0, array($type_name),false);
+                $src->findWeighted(array($term), 0, array($type_name), false);
+
                 return (object)array(
                     'element' => $type_name,
                     'src' => $term,
