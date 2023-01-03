@@ -8,6 +8,7 @@ class DB extends Base
     private ?\PDO $conn;
     private array $table_infos, $stale_slugs;
     public const TABLES_WITHOUT_HISTORY = array(
+        '_ci_ai',
         '_session',
         '_sessionvars',
         '_system',
@@ -4473,7 +4474,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         return Setup::getHistoryDatabaseConnection()->exec($sql);
     }
 
-    private function getMeaningfulSearchString(\stdClass $out): string // todo poc
+    private function getMeaningfulSearchString(\stdClass $out): string
     {
         if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
         ob_start();
@@ -4512,6 +4513,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             echo ' ';
         }
 
-        return ob_get_clean();
+        // replace any pipe character that is not escaped (negative lookbehind for backslash)
+        return preg_replace('/(?<!\\\\)\\|/', '', ob_get_clean());
     }
 }
