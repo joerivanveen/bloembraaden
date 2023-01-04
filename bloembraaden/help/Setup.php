@@ -21,7 +21,7 @@ class Setup
     public static string $PRESENTATION_INSTANCE, $PRESENTATION_ADMIN, $INSTANCE_DOMAIN;
     public static array $translations;
     public static stdClass $MAIL, $INSTAGRAM, $POSTCODE, $PDFMAKER;
-    private static string $now_time_string;
+    private static int $seconds_delta;
     private static ?PDO $DB_MAIN_CONN = null, $DB_HIST_CONN = null;
     private static stdClass $DB_MAIN, $DB_HIST;
     public const AVAILABLE_TIMEZONES = [
@@ -61,10 +61,16 @@ Create your next website with bloembraaden.io
         }
     }
 
-    public static function getNow(): string
+    /**
+     * The db server is the single source of truth for Bloembraaden regarding the timestamp
+     * @return int the timestamp (in seconds) that you can compare to any date_ value coming from the db server
+     */
+    public static function getNow(): int
     {
-        return self::$now_time_string
-            ?? (self::$now_time_string = (string) strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]));
+        if (false === isset(self::$seconds_delta)) {
+            self::$seconds_delta = time() - strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]);
+        }
+        return time() + self::$seconds_delta;
     }
 
     public static function getMainDatabaseConnection(): PDO

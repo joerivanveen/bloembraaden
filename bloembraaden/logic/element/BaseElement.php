@@ -453,15 +453,13 @@ class BaseElement extends BaseLogic implements Element
         }
         // @since 0.8.19 allow is_published as a shorthand for date_published < now()
         $this->row->is_published = true;
-        if (isset($this->row->date_published)) {
-            try {
-                if (strtotime($this->row->date_published) > Setup::getNow()) {
-                    $this->row->is_published = false;
-                    // and also set it to stale on the specific date so it will in fact be published
-                    if (isset($slug)) Help::getDB()->markStaleFrom($slug, $this->row->date_published);
-                }
-            } catch (\Exception $e) {
-                $this->addError($e);
+        if (true === isset($this->row->date_published)
+            && false !== ($timestamp = strtotime($this->row->date_published))
+        ) {
+            if ($timestamp > Setup::getNow()) {
+                $this->row->is_published = false;
+                // and also set it to stale on the specific date so it will in fact be published
+                if (true === isset($slug)) Help::getDB()->markStaleFrom($slug, $this->row->date_published);
             }
         }
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
