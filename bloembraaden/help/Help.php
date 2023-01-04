@@ -771,7 +771,7 @@ class Help
                         'character' => 'Character Varying(' . $col->getLength() . ') ',
                         'timestamp' => 'Timestamp With Time Zone ',
                         'double' => 'float ',
-                        default => $col_type . ' ',
+                        default => "$col_type ",
                     };
                     //if (!is_null($col->getDefault())) { // default not necessary in a new table, and specifically, 'serial' leads to an error
                     //    $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
@@ -781,7 +781,7 @@ class Help
                 }
                 $sql = substr($sql, 0, -1) . ');'; // remove last comma and close the statement
                 //$sql .= 'CONSTRAINT "unique_' . $table_name . '_history_id" UNIQUE ("history_id") );';
-                echo $sql . PHP_EOL;
+                echo $sql, PHP_EOL;
                 $db->historyRun($sql);
             } else { // compare the columns and add new ones (currently changing of info for columns is not supported...)
                 foreach ($info->getColumnNames() as $column_index => $column_name) {
@@ -795,14 +795,14 @@ class Help
                         'character' => 'Character Varying(' . $col->getLength() . ') ',
                         'timestamp' => 'Timestamp With Time Zone ',
                         'double' => 'Double precision ',
-                        default => $col_type . ' ',
+                        default => "$col_type ",
                     };
                     if (!is_null($col->getDefault())) {
                         $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
                     }
                     if ($col->isNullable() === false) $sql .= 'NOT NULL ';
                     $sql .= ';';
-                    echo $sql . PHP_EOL;
+                    echo $sql, PHP_EOL;
                     $db->historyRun($sql);
                 }
                 // drop any remaining columns from history

@@ -2941,17 +2941,18 @@ CREATE INDEX "index__ci_ai_instance_id" ON "public"."_ci_ai" USING btree ("insta
 
 COMMIT;
 
--- version 0.13.0
-
-BEGIN;
-COMMIT;
-
--- version 0.14.0
+-- version 0.13.1
 
 BEGIN;
 
 ALTER TABLE "public"."_instance"
     ADD COLUMN "mail_form_allowed_to" Text;
+
+COMMIT;
+
+-- version 0.15.0
+
+BEGIN;
 
 COMMIT;
 
@@ -2962,7 +2963,39 @@ BEGIN;
 ALTER TABLE "public"."_ci_ai"
     ADD COLUMN if not exists "online" boolean DEFAULT true NOT NULL;
 
+-- remove ci_ai from cms tables since we have the separate ci_ai table now
+ALTER TABLE "public"."cms_brand"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_embed"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_file"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_image"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_page"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_product"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_property"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_property_value"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_serie"
+    DROP COLUMN if exists "ci_ai";
+
+ALTER TABLE "public"."cms_variant"
+    DROP COLUMN if exists "ci_ai";
+
 COMMIT;
+
 
 
 

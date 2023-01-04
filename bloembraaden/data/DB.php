@@ -4479,38 +4479,29 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
         ob_start();
         if (true === isset($out->title)) {
-            echo $out->title;
-            echo ' ';
+            echo $out->title, ' ';
         }
         if (true === isset($out->__x_values__)) {
             foreach ($out->__x_values__ as $key => $x) {
                 if (false === is_int($key)) continue; // not a row
-                echo $x->title;
-                echo ' ';
-                echo $x->x_value;
-                echo ' ';
+                echo $x->title, ' ', $x->x_value, ' ';
             }
         }
         if (true === isset($out->__products__)) {
             foreach ($out->__products__ as $key => $x) {
                 if (false === is_int($key)) continue; // not a row
-                if (isset($x->__ref)) $x = $GLOBALS['slugs']->{
-                $x->__ref};
-                echo $x->title;
-                echo ' ';
+                if (isset($x->__ref)) $x = $GLOBALS['slugs']->{$x->__ref};
+                echo $x->title, ' ';
             }
         }
         if (true === isset($out->excerpt)) {
-            echo $out->excerpt;
-            echo ' ';
+            echo $out->excerpt, ' ';
         }
         if (true === isset($out->content)) {
-            echo $out->content;
-            echo ' ';
+            echo $out->content, ' ';
         }
         if (true === isset($out->description)) {
-            echo $out->description;
-            echo ' ';
+            echo $out->description, ' ';
         }
 
         // replace any pipe character that is not escaped (negative lookbehind for backslash)
