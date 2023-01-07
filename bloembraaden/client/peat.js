@@ -3617,17 +3617,9 @@ function getFormData(form) {
 
 // https://stackoverflow.com/a/11077016
 PEATCMS.insertAtCaret = function (input_element, str_value) {
-    var sel, start, end;
-    // IE support
-    if (document.selection) {
-        input_element.focus();
-        sel = document.selection.createRange();
-        sel.text = str_value;
-    }
-    // MOZILLA and others
-    else if (input_element.selectionStart || input_element.selectionStart == '0') {
-        start = input_element.selectionStart;
-        end = input_element.selectionEnd;
+    if (input_element.selectionStart || input_element.selectionStart == '0') {
+        const start = input_element.selectionStart;
+        const end = input_element.selectionEnd;
         input_element.value = input_element.value.substring(0, start)
             + str_value
             + input_element.value.substring(end, input_element.value.length);
@@ -3636,11 +3628,6 @@ PEATCMS.insertAtCaret = function (input_element, str_value) {
     } else {
         input_element.value += str_value;
     }
-}
-
-function insertAtCaret(input_element, str_value) {
-    console.warn('insertAtCaret() is deprecated, use PEATCMS.insertAtCaret()');
-    return PEATCMS.insertAtCaret(input_element, str_value);
 }
 
 /**
