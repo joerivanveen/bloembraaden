@@ -32,7 +32,7 @@ class User extends BaseLogic
     }
 
     /**
-     * Overridden to include addresses in the output
+     * Overridden to include addresses and orders in the output
      * @return void
      */
     public function completeRowForOutput(): void

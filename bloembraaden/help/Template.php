@@ -418,8 +418,13 @@ class Template extends BaseLogic
                         $sub_template = (array)$sub_template; // TODO TEMP 0.5.5
                         $temp_remember_html = $sub_template['__html__'];
                         if (isset($output_object[0])) { // build rows if present
-                            $count = count($output_object);
-                            $output_object['__count__'] = $count; //<- count is also added to each row
+                            if (isset($output_object['item_count'])) {
+                                $count = $output_object['item_count'];
+                            } else {
+                                $count = count($output_object);
+                                $output_object['item_count'] = $count;
+                            }
+                            //$output_object['__count__'] = $count; //<- count is also added to each row
                             // prepare template for rows
                             $sub_template = $this->prepare_templateForRows($sub_template);
                             if (isset($sub_template['__row__'])) { // only render rows when present in the template

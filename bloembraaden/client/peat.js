@@ -1222,7 +1222,8 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
 }
 
 function unpack_temp(obj) {
-    var i, unp, slugs = obj['slugs'] || [];
+    let i, unp;
+    const slugs = obj['slugs'] || [];
     // load the slugs
     if (!window.PEATCMS_globals.slugs) window.PEATCMS_globals.slugs = {};
     for (i in slugs) {
@@ -1236,15 +1237,18 @@ function unpack_temp(obj) {
         if (unp.hasOwnProperty(i)) obj[i] = unp[i];
     }
     unp = null;
+    delete window.PEATCMS_globals.slugs;
+    console.warn('unpacked', obj); // TODO JOERI REMOVE
     return obj;
 }
 
 function unpack_rec(obj, nest_level) {
-    var slugs = window.PEATCMS_globals.slugs, n, i, len, arr;
+    const slugs = window.PEATCMS_globals.slugs;
+    let n, i, len, arr;
     if (nest_level > 2) return obj; // recursion stops here
     for (n in obj) {
         if (obj.hasOwnProperty(n)) {
-            if (n === '__ref' && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
+            if ('__ref' === n && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
                 return unpack_rec(slugs[obj[n]], nest_level); // __ref is considered to be this level
             }
             if (Array.isArray(obj[n])) {
@@ -1526,8 +1530,13 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     in_open_tag = this.inOpenTag(tag_name + '[' + i + ']', html);
                     if (output_object.hasOwnProperty(0)) { // build rows if present
                         //console.log('output with rows: ', output_object);
-                        __count__ = output_object.length;
-                        output_object.__count__ = __count__;
+                        if (output_object.hasOwnProperty('item_count')) {
+                            __count__ = output_object.item_count;
+                        } else {
+                            __count__ = output_object.length;
+                            output_object.item_count = __count__;
+                        }
+                        //output_object.__count__ = __count__;
                         // prepare template for rows
                         sub_template = this.convertTemplateToRow(sub_template);
                         for (temp_i = 0; temp_i < sub_template.__row__.length; temp_i++) {
@@ -1537,6 +1546,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 if (false === output_object.hasOwnProperty(row_i)) continue;
                                 if (false === PEATCMS.isInt(row_i)) continue
                                 // this is a row
+                                row_i = parseInt(row_i);
                                 value = output_object[row_i];
                                 if (typeof value === 'string') {
                                     obj = {value: value};
@@ -1545,9 +1555,11 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                     if (false === admin && value.hasOwnProperty('online') && false === value.online) continue;
                                     obj = value;
                                 }
-                                obj.__count__ = __count__;
-                                obj.__index__ = row_i;
-                                if (admin && false === in_open_tag) {
+                                if (__count__) {
+                                    obj.__count__ = __count__;
+                                    obj.__index__ = row_i;
+                                }
+                                if (true === admin && false === in_open_tag) {
                                     if (obj.hasOwnProperty('id')) {
                                         build_rows += '<span class="PEATCMS_data_stasher" data-peatcms_id="' + obj.id +
                                             '" data-table_name="' + obj.table_name + '" data-tag="' + tag_name + '"></span>';
@@ -1555,7 +1567,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 }
                                 // if this row doesn't contain any tags that are different for each row,
                                 // just leave it at the first execution, repetition is unnecessary
-                                if (parseInt(row_i) === 1) { // check this only the second time the row is processed
+                                if (1 === row_i) { // check this only the second time the row is processed
                                     if ((add_string = this.renderOutput(obj, row_template)) === build_rows) {
                                         // leave it as is and stop processing rows
                                         sub_template.__html__ = build_rows;
