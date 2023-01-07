@@ -384,7 +384,7 @@ class Template extends BaseLogic
         //
         $check_if = array(); // @since 0.10.7 remember simple tags to check for if-statements in template last
         foreach ($output as $tag_name => $output_object) { // for each tag in the output object
-            if (in_array($out_type = gettype($output_object), ['string', 'integer', 'boolean'])) {
+            if (in_array($out_type = gettype($output_object), array('string', 'integer', 'boolean'))) {
                 if ($out_type === 'boolean') {
                     $output_object = $output_object ? 'true' : 'false'; // else the object will be 1 versus 0...
                 } else {
@@ -431,28 +431,33 @@ class Template extends BaseLogic
                                 // $sub_template contains ['__row__'] indexed array, for all the row parts in ['__html__']
                                 // so render those separately..., and finally render the ['__html__']
                                 // for each occurrence in the template
-                                foreach ($sub_template['__row__'] as $template_index => $row_template) {
+                                $sub_template_row = $sub_template['__row__'];
+                                foreach ($sub_template_row as $template_index => $row_template) {
                                     $build_rows = '';
-                                    foreach ($output_object as $row_index => $value) {
+                                    foreach ($output_object as $row_index => $row_output) {
                                         if (false === is_int($row_index)) continue; // this is not a row
-                                        if (true === is_string($value)) { // row consists of a single string value.
-                                            $obj = (object)array('value' => $value);
+                                        if (true === is_string($row_output)) { // row consists of a single string value.
+                                            $obj = (object)array('value' => $row_output);
                                         } else {
+                                            if (isset($row_output->__ref)) {
+                                                $row_output = $GLOBALS['slugs']->{$row_output->__ref};
+                                                unset($row_output->__ref);
+                                            }
                                             // @since 0.7.6 do not render items that are not online
-                                            if (false === ADMIN && isset($value->online) && false === $value->online) continue;
-                                            $obj = $value;
+                                            if (false === ADMIN && isset($row_output->online) && false === $row_output->online) continue;
+                                            $obj = $row_output;
                                         }
                                         $obj->__index__ = $row_index;
                                         $obj->__count__ = $count;
                                         // if this row doesn't contain any tags that are different for each row,
                                         // just leave it at the first execution, repetition is unnecessary
-                                        if ($row_index === 1) { // check this only the second time the row is processed
-                                            if ($this->renderOutput($obj, (array)$row_template) === $build_rows) {
-                                                // leave it as is and stop processing rows
-                                                $sub_template['__html__'] = $build_rows;//$temp_remember_html;
-                                                break; // don't process any more rows from this $output_object
-                                            }
-                                        }
+//                                        if ($row_index === 1) { // check this only the second time the row is processed TODO POC JOERI
+//                                            if ($this->renderOutput($obj, (array)$row_template) === $build_rows) {
+//                                                // leave it as is and stop processing rows
+//                                                $sub_template['__html__'] = $build_rows;//$temp_remember_html;
+//                                                break; // don't process any more rows from this $output_object
+//                                            }
+//                                        }
                                         $build_rows .= $this->renderOutput($obj, (array)$row_template);
                                     }
                                     $sub_template['__html__'] = str_replace('{{__row__[' . $template_index . ']}}', $build_rows, $sub_template['__html__']);
@@ -893,6 +898,18 @@ class Template extends BaseLogic
     private function peat_as_float(string $str): float
     {
         return Help::getAsFloat($str, 0);
+    }
+
+    private function peat_minus_one(string $str): string
+    {
+        if (is_numeric($str)) return (string)((int)$str - 1);
+        return $str;
+    }
+
+    private function peat_plus_one(string $str): string
+    {
+        if (is_numeric($str)) return (string)((int)$str + 1);
+        return $str;
     }
 
     private function peat_encode_for_template(string $str): string

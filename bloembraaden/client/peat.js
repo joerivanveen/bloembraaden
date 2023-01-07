@@ -1567,13 +1567,13 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 }
                                 // if this row doesn't contain any tags that are different for each row,
                                 // just leave it at the first execution, repetition is unnecessary
-                                if (1 === row_i) { // check this only the second time the row is processed
-                                    if ((add_string = this.renderOutput(obj, row_template)) === build_rows) {
-                                        // leave it as is and stop processing rows
-                                        sub_template.__html__ = build_rows;
-                                        break; // don't process any more rows from this output_object
-                                    }
-                                }
+                                // if (1 === row_i) { // check this only the second time the row is processed TODO POC JOERI
+                                //     if ((add_string = this.renderOutput(obj, row_template)) === build_rows) {
+                                //         // leave it as is and stop processing rows
+                                //         sub_template.__html__ = build_rows;
+                                //         break; // don't process any more rows from this output_object
+                                //     }
+                                // }
                                 build_rows += this.renderOutput(obj, row_template);
                             }
                             sub_template.__html__ = sub_template.__html__.replace('{{__row__[' + temp_i + ']}}', build_rows);
@@ -1878,6 +1878,14 @@ PEATCMS_template.prototype.peat_plus_one = function (str) {
     var num;
     if ((num = parseInt(str)) == str) {
         return num + 1;
+    }
+    return str;
+}
+
+PEATCMS_template.prototype.peat_minus_one = function (str) {
+    var num;
+    if ((num = parseInt(str)) == str) {
+        return num - 1;
     }
     return str;
 }
@@ -2711,7 +2719,6 @@ PEATCMS.prototype.startUp = function () {
     let i, len, self = this;
     this.currentY = 0;
     this.html_node = document.getElementsByTagName('html')[0];
-    //var IE11 = !!window.msCrypto;
     //console.error('startUp short circuited for now');
     //return;
     // add js flag to html
