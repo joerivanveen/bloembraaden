@@ -238,10 +238,8 @@ class Instagram extends BaseLogic
         if (!($feed = Help::getDB()->getInstagramFeed($feed_name))) {
             $this->addError(sprintf('Instagram feed ‘%s’ not found', $feed_name));
             // get default feed
-            if (($rows = Help::getDB()->getInstagramFeedSpecs())) {
-                if (count($rows) > 0 && isset($rows[0]->feed_name)) {
-                    $feed = $rows[0];
-                }
+            if (($rows = Help::getDB()->getInstagramFeedSpecs()) && count($rows) > 0) {
+                $feed = $rows[0];
                 $rows = null;
             } else {
                 $feed = (object)array('feed_name' => __('No Instagram feed found', 'peatcms'));
