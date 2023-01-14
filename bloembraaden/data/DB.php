@@ -187,8 +187,8 @@ class DB extends Base
             $this->addError(json_last_error_msg());
             $info_as_json = '{}'; // empty object
         }
-        $statement = $this->conn->prepare('INSERT INTO _locker (key, instance_id, information, valid_until)' .
-            'VALUES (:key, :instance_id, :information, NOW() + (:expires_after  * interval \'1 second\'));');
+        $statement = $this->conn->prepare('INSERT INTO _locker (key, instance_id, information, valid_until)
+            VALUES (:key, :instance_id, :information, NOW() + (:expires_after  * interval \'1 second\'));');
         $statement->bindValue(':instance_id', Setup::$instance_id); // the original instance that filled this locker
         $statement->bindValue(':information', $info_as_json);
         $statement->bindValue(':expires_after', $expires_after);
@@ -367,12 +367,8 @@ class DB extends Base
         // TODO have online work better everywhere the same way and loose the ADMIN constant, must be manageable in 1 place
         if (false === defined('ADMIN') || false === ADMIN) $online_query = 'AND online = TRUE';
         $statement = $this->conn->prepare("
-            SELECT DISTINCT ci_ai, title, slug, type_name, id, online 
-            FROM _ci_ai 
-            WHERE instance_id = :instance_id 
-              AND ci_ai LIKE lower(:term)
-              $online_query
-              $type_query;
+            SELECT DISTINCT ci_ai, title, slug, type_name, id, online FROM _ci_ai 
+            WHERE instance_id = :instance_id AND ci_ai LIKE LOWER(:term) $online_query $type_query;
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         foreach ($clean_terms as $index => $term) {
@@ -456,8 +452,8 @@ class DB extends Base
      */
     public function fetchSearchLog(int $limit = 500): array
     {
-        $statement = $this->conn->prepare('SELECT * FROM _search_log WHERE instance_id = :instance_id' .
-            ' AND deleted = FALSE ORDER BY date_updated DESC LIMIT ' . $limit);
+        $statement = $this->conn->prepare("SELECT * FROM _search_log WHERE instance_id = :instance_id
+            AND deleted = FALSE ORDER BY date_updated DESC LIMIT $limit;");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $rows = $statement->fetchAll();
         $statement = null;
@@ -566,7 +562,7 @@ class DB extends Base
         // TODO make this use the search functionality to return better results
         $r->rows = $this->fetchRows($peat_type->tableName(),
             array($peat_type->idColumn(), 'title', 'slug'),
-            array('title' => '%' . $src . '%'));
+            array('title' => "%$src%"));
         $r->element = $peat_type->typeName();
         $r->src = $src;
 
@@ -580,24 +576,30 @@ class DB extends Base
      */
     public function fetchPropertiesRowSuggestions(string $src): \stdClass
     {
-        $r = new \stdClass;
+        $return_obj = new \stdClass;
         $src = Help::removeAccents($this->toLower($src));
-        $statement = $this->conn->prepare('SELECT p.property_id, pv.property_value_id, CONCAT(p.title, \': \', v.title) AS title, 
-v.slug, (v.online AND p.online) AS online FROM cms_property p INNER JOIN cms_property_x_property_value pv
-ON p.property_id = pv.sub_property_id INNER JOIN cms_property_value v ON v.property_value_id = pv.property_value_id WHERE
-pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id = ' . Setup::$instance_id .
-            ' AND (LEFT(p.ci_ai, 20) LIKE :src OR v.ci_ai LIKE :src) ORDER BY v.date_updated DESC');
-        $statement->bindValue(':src', '%' . $src . '%');
+        $instance_id = Setup::$instance_id;
+        $statement = $this->conn->prepare("
+            SELECT p.property_id, pv.property_value_id, CONCAT(p.title, ': ', v.title) AS title, 
+            v.slug, (v.online AND p.online) AS online FROM cms_property p 
+            INNER JOIN cms_property_x_property_value pv ON p.property_id = pv.sub_property_id 
+            INNER JOIN cms_property_value v ON v.property_value_id = pv.property_value_id 
+            INNER JOIN _ci_ai scp ON scp.type_name = 'property' AND scp.id = p.property_id
+            INNER JOIN _ci_ai scpv ON scpv.type_name = 'property_value' AND scpv.id = pv.property_value_id
+            WHERE pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id = $instance_id 
+                AND (LEFT(scp.ci_ai, 20) LIKE :src OR scpv.ci_ai LIKE :src) ORDER BY v.date_updated DESC;
+        ");
+        $statement->bindValue(':src', "%$src%");
         $statement->execute();
-        $r->rows = $this->normalizeRows($statement->fetchAll());
+        $return_obj->rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
         /*$r->rows = $this->fetchRows('cms_property_value',
             array('property_value_id', 'title', 'slug'),
             array('title' => '%' . $src . '%'));*/
-        $r->element = 'x_value';
-        $r->src = $src;
+        $return_obj->element = 'x_value';
+        $return_obj->src = $src;
 
-        return $r;
+        return $return_obj;
     }
 
     /**
@@ -618,7 +620,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             WHERE p.instance_id = :instance_id AND p.deleted = FALSE AND pv.deleted = FALSE AND pxv.deleted = FALSE
             AND el.online = TRUE AND pv.online = TRUE
             GROUP BY p.slug, p.title, pv.slug, pv.title, pxv.sub_o
-            ORDER BY p.title, pxv.sub_o, pv.title
+            ORDER BY p.title, pxv.sub_o, pv.title;
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
@@ -668,7 +670,8 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function addXValueLink(Type $peat_type, int $id, int $property_id, int $property_value_id): \stdClass
     {
-        $x_table_name = $peat_type->tableName() . '_x_properties';
+        $table_name = $peat_type->tableName();
+        $x_table_name = "{$table_name}_x_properties";
         $o = $this->getHighestO($x_table_name);
         $key = $this->insertRowAndReturnLastId(
             $x_table_name,
@@ -680,7 +683,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             )
         );
 
-        return $this->selectRow($peat_type->tableName() . '_x_properties', $key);
+        return $this->selectRow($x_table_name, $key);
     }
 
     /**
@@ -692,16 +695,18 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function deleteXValueLink(Type $peat_type, int $id, int $x_value_id): bool
     {
-        if (($affected = $this->deleteRowWhereAndReturnAffected(
-                $peat_type->tableName() . '_x_properties',
+        $table_name = $peat_type->tableName();
+        $type_name = $peat_type->typeName();
+        if (1 === ($affected = $this->deleteRowWhereAndReturnAffected(
+                "{$table_name}_x_properties",
                 array(
-                    $peat_type->typeName() . '_id' => $id,
-                    $peat_type->typeName() . '_x_properties_id' => $x_value_id,
+                    "{$type_name}_id" => $id,
+                    "{$type_name}_x_properties_id" => $x_value_id,
                 )
-            )) === 1) {
+            ))) {
             return true;
         } else {
-            $this->handleErrorAndStop(sprintf('->deleteXValueLink affected %s rows', $affected));
+            $this->handleErrorAndStop("->deleteXValueLink affected $affected rows");
         }
 
         return false;
@@ -742,7 +747,6 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function fetchRelatedVariantIds(int $variant_id): array
     {
-        // TODO refactor to a better name
         // fetch some variant_id’s based on other orders that include the supplied variant_id
         // you don’t need to check instance id because in each order variants are necessarily of the same instance
         $statement = $this->conn->prepare('SELECT variant_id FROM _order_variant WHERE order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id);');
@@ -934,22 +938,21 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $table_name = $peat_type->tableName();
         $table_info = $this->getTableInfo($table_name);
         $offset = ($page - 1) * $page_size;
-        $and_where = ' ';
+        $instance_id = Setup::$instance_id;
         if ($table_info->hasStandardColumns()) {
             $sorting = 'ORDER BY date_created DESC';
-            $and_where = ' AND deleted = FALSE ';
+            $and_where = 'AND deleted = FALSE';
         } else {
             $sorting = '';
+            $and_where = '';
         }
         // preferred sorting:
-        if ($table_info->getColumnByName('date_published')) {
-            $sorting = 'ORDER BY date_published DESC';
-        } elseif ($table_info->getColumnByName('date_popvote')) {
+        if ($table_info->getColumnByName('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
+        } elseif ($table_info->getColumnByName('date_published')) {
+            $sorting = 'ORDER BY date_published DESC';
         }
-        $statement = $this->conn->prepare('SELECT * FROM ' . $table_name .
-            ' WHERE instance_id = ' . Setup::$instance_id . $and_where .
-            $sorting . ' LIMIT ' . $page_size . ' OFFSET ' . $offset . ';');
+        $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = $instance_id $and_where $sorting LIMIT $page_size OFFSET $offset;");
         $statement->execute();
         $rows = $statement->fetchAll();
         $statement = null;
@@ -968,11 +971,13 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
     {
         $table_name = $peat_type->tableName();
         $table_info = $this->getTableInfo($table_name);
-        $sql = 'SELECT COUNT(1) FROM ' . $table_name . ' WHERE instance_id = ' . Setup::$instance_id;
+        $instance_id = Setup::$instance_id;
         if ($table_info->hasStandardColumns()) {
-            $sql .= ' AND deleted = FALSE';
+            $and_where = 'AND deleted = FALSE';
+        } else {
+            $and_where = '';
         }
-        $statement = $this->conn->prepare($sql);
+        $statement = $this->conn->prepare("SELECT COUNT(1) FROM $table_name WHERE instance_id = $instance_id $and_where");
         $statement->execute();
         $number_of_pages = ceil($statement->fetchAll()[0][0] / $page_size);
         $statement = null;
@@ -995,26 +1000,35 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
      */
     public function fetchElementRowsWhereIn(Type $peat_type, string $column_name, array $in, bool $exclude = false, int $limit = 1000): array
     {
-        if (count($in) === 0) return array();
+        if (0 === count($in)) return array();
         $table_name = $peat_type->tableName();
         $table_info = $this->getTableInfo($table_name);
-        $sorting = '';
-        if ($table_info->getColumnByName('date_published')) {
-            $sorting = 'ORDER BY date_published DESC';
-        } elseif ($table_info->getColumnByName('date_popvote')) {
+        $id_column = $table_info->getIdColumn();
+        $instance_id = Setup::$instance_id;
+        if (false === $exclude) {
+            $not = '';
+        } else {
+            $not = 'NOT';
+        }
+        $in_placeholders = str_repeat('?,', count($in) - 1); // NOTE you need one more ? at the end of this
+        if ($table_info->getColumnByName('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
+        } elseif ($table_info->getColumnByName('date_published')) {
+            $sorting = 'ORDER BY date_published DESC';
         } elseif ($table_info->getColumnByName('o')) {
             $sorting = 'ORDER BY o ASC';
+        } else {
+            $sorting = '';
         }
         if ($table_info->getColumnByName($column_name)) {
-            // TODO when admin chosen ONLINE value should be taken into account
-            $and_where_online = (false === ADMIN) ? ' AND el.online = TRUE' : '';
-            $statement = $this->conn->prepare('SELECT el.*, ' .
-                $table_info->getIdColumn() . ' AS id, \'' . $table_name . '\' AS table_name FROM ' . $table_name .
-                ' el WHERE el.deleted = FALSE AND instance_id = ' . Setup::$instance_id . ' ' .
-                $and_where_online . ' AND el.' . $column_name . ($exclude ? ' NOT ' : '') .
-                ' IN (' . str_repeat('?,', count($in) - 1) . '?) ' .
-                $sorting . ' LIMIT ' . $limit . ';');
+            if (defined('ADMIN') && false === ADMIN) {
+                $and_where_online = ' AND el.online = TRUE';
+            } else {
+                $and_where_online = '';
+            }
+            $statement = $this->conn->prepare("SELECT el.*, $id_column AS id, '$table_name' AS table_name
+                FROM $table_name el WHERE el.deleted = FALSE AND el.instance_id = $instance_id $and_where_online
+                AND el.$column_name $not IN ($in_placeholders?) $sorting LIMIT $limit;");
             $statement->execute($in);
             $rows = $statement->fetchAll();
             $statement = null;
@@ -1040,15 +1054,15 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         $type_name = $type->typeName();
         $id_column = $type->idColumn();
         $link_table = $table_name . '_x_properties';
-        $statement = $this->conn->prepare(
-            'SELECT ' . $type_name . '_x_properties_id x_value_id, x.o, x.x_value, ' .
-            'p.slug property_slug, p.title property_title, v.slug, v.title, (p.online AND v.online) online, ' .
-            'EXISTS(SELECT 1 FROM cms_' . $type_name . '_x_properties ' .
-            ' WHERE property_value_id = x.property_value_id AND TRIM(x_value) <> \'\' ) property_value_uses_x_value FROM '
-            . $link_table . ' x INNER JOIN cms_property p ON p.property_id = x.property_id INNER JOIN ' .
-            ' cms_property_value v ON v.property_value_id = x.property_value_id WHERE x.' .
-            $id_column . ' = :id AND v.deleted = FALSE AND x.deleted = FALSE ORDER BY x.o;'
-        );
+        $statement = $this->conn->prepare("
+            SELECT {$type_name}_x_properties_id x_value_id, x.o, x.x_value, p.slug property_slug, p.title property_title, 
+            v.slug, v.title, (p.online AND v.online) AS online, EXISTS(
+                SELECT 1 FROM cms_{$type_name}_x_properties WHERE property_value_id = x.property_value_id AND TRIM(x_value) <> ''
+            ) property_value_uses_x_value FROM $link_table x 
+                INNER JOIN cms_property p ON p.property_id = x.property_id 
+                INNER JOIN cms_property_value v ON v.property_value_id = x.property_value_id 
+            WHERE x.$id_column = :id AND v.deleted = FALSE AND x.deleted = FALSE ORDER BY x.o;
+        ");
         $statement->bindValue(':id', $id);
         $statement->execute();
         $rows = $statement->fetchAll();
@@ -1075,7 +1089,7 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
         // gets the specified $linked_type through the appropriate x_value cross table by $peat_type $id
         $table_name = $linked_type->tableName();
         $id_column = $linked_type->idColumn();
-        $x_table = $table_name . '_x_properties';
+        $x_table = "{$table_name}_x_properties";
         $sub_queries = array();
         // properties
         if (isset($properties)) { // we need to filter the linked items
@@ -1106,29 +1120,26 @@ pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id
             }
             // index exists on ...x_properties tables on property_value_id
             foreach ($property_value_ids as $index => $property_value_id) {
-                $sub_queries[] = sprintf(
-                    'AND el.' . $id_column . ' IN (SELECT ' . $id_column . ' FROM ' . $x_table .
-                    ' WHERE property_value_id = %d) ',
-                    $property_value_id
-                );
+                $sub_queries[] = "AND el.$id_column IN (SELECT $id_column FROM $x_table WHERE property_value_id = $property_value_id) ";
             }
         }
         // sorting...
-        $sorting = ' ORDER BY date_created DESC ';
-        $paging = '';
+        $table_info = $this->getTableInfo($table_name);
         if ($table_name === 'cms_variant') {
             $sorting = ' AND el.online = TRUE ORDER BY date_popvote DESC '; // @since 0.8.15 no variants that are not online, because of paging
-            $paging = ' LIMIT ' . $variant_page_size . ' OFFSET ' . ($variant_page_size * ($variant_page - 1));
-        }
-        if ($table_name === 'cms_page') {
+            $sorting .= "LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
+        } elseif ($table_info->getColumnByName('date_published')) {
             $sorting = ' ORDER BY date_published DESC ';
-            // todo have the date_published subquery depend on the presence of that column
             $sub_queries[] = 'AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
+        } else {
+            $sorting = ' ORDER BY date_created DESC ';
         }
-        $statement = $this->conn->prepare('SELECT DISTINCT el.* FROM ' . $x_table . ' x INNER JOIN ' .
-            $table_name . ' el ON el.' . $id_column . ' = x.' . $id_column .
-            ' WHERE x.' . $peat_type->idColumn() . ' = :id AND x.deleted = FALSE AND el.deleted = FALSE ' .
-            implode(' ', $sub_queries) . $sorting . $paging . ';');
+        $type_id_column = $peat_type->idColumn();
+        $str_sub_queries = implode(' ', $sub_queries);
+        $statement = $this->conn->prepare("
+            SELECT DISTINCT el.* FROM $x_table x INNER JOIN $table_name el ON el.$id_column = x.$id_column
+            WHERE x.$type_id_column = :id AND x.deleted = FALSE and el.deleted = FALSE $str_sub_queries $sorting;
+        ");
         $statement->bindValue(':id', $id);
         $statement->execute();
 //var_dump(str_replace(':id', $id, $statement->queryString));
