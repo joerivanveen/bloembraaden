@@ -1167,38 +1167,42 @@ class DB extends Base
         $peat_type_name = $peat_type->typeName();
         $linked_type_name = $linked_type->typeName();
         if ($linked_type_name === 'variant') {
-            $paging = ' LIMIT ' . $variant_page_size . ' OFFSET ' . ($variant_page_size * ($variant_page - 1));
+            $offset = ($variant_page_size * ($variant_page - 1));
+            $paging = " LIMIT $variant_page_size OFFSET $offset";
         } else {
             $paging = '';
         }
-        if ($relation === 'cross_parent') { // switch $type and $linked_type around
-            $link_table = 'cms_' . $linked_type_name . '_x_' . $peat_type_name;
+        if ('cross_parent' === $relation) { // switch $type and $linked_type around
+            $link_table = "cms_{$linked_type_name}_x_{$peat_type_name}";
             $statement = $this->conn->prepare(
-                'SELECT el.*, x.o FROM cms_' . $linked_type_name . ' el INNER JOIN ' .
-                $link_table . ' x ON x.sub_' . $linked_type_name . '_id = el.' . $linked_type_name . '_id WHERE x.' .
-                $peat_type_name . '_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.o ' . $paging . ';'
+                "SELECT el.*, x.o FROM cms_$linked_type_name el 
+                INNER JOIN $link_table x ON x.sub_{$linked_type_name}_id = el.{$linked_type_name}_id 
+                WHERE x.{$peat_type_name}_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.o $paging;"
             );
-        } elseif ($relation === 'cross_child') {
+        } elseif ('cross_child' === $relation) {
             $link_table = 'cms_' . $peat_type_name . '_x_' . $linked_type_name;
-            //echo '<h1>' . $relation . ': ' . $type . '_x_' . $linked_type . '</h1>';
             $statement = $this->conn->prepare(
-                'SELECT el.*, x.sub_o FROM cms_' . $linked_type_name . ' el INNER JOIN ' .
-                $link_table . ' x ON x.' . $linked_type_name . '_id = el.' . $linked_type_name . '_id WHERE x.sub_' .
-                $peat_type_name . '_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.sub_o' . $paging . ';'
+                "SELECT el.*, x.sub_o FROM cms_{$linked_type_name} el 
+                INNER JOIN $link_table x ON x.{$linked_type_name}_id = el.{$linked_type_name}_id 
+                WHERE x.sub_{$peat_type_name}_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.sub_o $paging;"
             );
             // direct relations: eg type = product, linked_type = variant, relation = direct_parent
-        } elseif ($relation === 'direct_parent') { // get the e-commerce element this table is a direct parent of
+        } elseif ('direct_parent' === $relation) { // get the e-commerce element this table is a direct parent of
             // honor popvote sorting...
-            $sorting = ($linked_type_name === 'variant') ? ' ORDER BY date_popvote DESC' : '';
+            if ($linked_type_name === 'variant') {
+                $sorting = 'ORDER BY date_popvote DESC';
+            } else {
+                $sorting = '';
+            }
             $statement = $this->conn->prepare(
-                'SELECT el.* FROM cms_' . $linked_type_name . ' el WHERE el.' .
-                $peat_type_name . '_id = :id AND el.deleted = FALSE' . $sorting . ' ' . $paging . ';'
+                "SELECT el.* FROM cms_{$linked_type_name} el 
+                WHERE el.{$peat_type_name}_id = :id AND el.deleted = FALSE $sorting $paging;"
             );
-        } elseif ($relation === 'direct_child') { // relation must be direct_child
+        } elseif ('direct_child' === $relation) { // relation must be direct_child
             $statement = $this->conn->prepare(
-                'SELECT el.* FROM cms_' . $linked_type_name . ' el INNER JOIN cms_' . $peat_type_name . ' t ON t.' .
-                $linked_type_name . '_id = el.' . $linked_type_name . '_id WHERE t.' . $peat_type_name .
-                '_id = :id AND el.deleted = FALSE ' . $paging . ';'
+                "SELECT el.* FROM cms_{$linked_type_name} el 
+                INNER JOIN cms_{$peat_type_name} t ON t.{$linked_type_name}_id = el.{$linked_type_name}_id 
+                WHERE t.{$peat_type_name}_id = :id AND el.deleted = FALSE $paging;"
             );
         } else {
             $statement = 'SELECT :id;';
@@ -1219,8 +1223,8 @@ class DB extends Base
      */
     public function fetchHomeSlug(int $instance_id): string
     {
-        $statement = $this->conn->prepare(
-            'SELECT slug FROM cms_page WHERE page_id = (SELECT homepage_id FROM _instance WHERE instance_id = :instance_id);'
+        $statement = $this->conn->prepare('SELECT slug FROM cms_page 
+            WHERE page_id = (SELECT homepage_id FROM _instance WHERE instance_id = :instance_id);'
         );
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
@@ -1244,26 +1248,30 @@ class DB extends Base
     public function updatePopVote(string $element_name, int $id, bool $down_vote = false): float
     {
         $type = new Type($element_name);
+        $table_name = $type->tableName();
+        $type_name = $type->typeName();
         if (false === $down_vote) {
-            $statement = $this->conn->prepare(
-                'UPDATE ' . $type->tableName() . ' SET date_popvote = NOW() WHERE ' .
-                $type->typeName() . '_id = ? AND instance_id = ?');
+            $statement = $this->conn->prepare("
+                UPDATE $table_name SET date_popvote = NOW() WHERE {$type_name}_id = ? AND instance_id = ?;
+            ");
             $statement->execute(array($id, Setup::$instance_id));
             if ($statement->rowCount() === 1) {
                 $this->reCacheWithWarmup($this->fetchElementRow($type, $id)->slug);
 
                 return 0; // this is now the highest voted
             } else {
-                $this->addError(sprintf('updatePopVote error for ‘%1$s’ with id %2$s', $element_name, $id));
+                $this->addError("updatePopVote error for $element_name with id $id");
             }
         } else { // downvote..., move approx one down on every vote by decreasing the date_popvote by random 1 - 20 minutes
             // or 8 hours when this is already the lowest
-            $statement = $this->conn->prepare('UPDATE ' . $type->tableName() .
-                ' SET date_popvote = COALESCE((SELECT date_popvote - CAST(floor(random() * 20 + 1) ||  \' minutes\' as INTERVAL) FROM ' .
-                $type->tableName() . ' WHERE date_popvote < (SELECT date_popvote FROM ' . $type->tableName() . ' WHERE ' . $type->typeName() .
-                '_id = :id AND instance_id = :instance_id AND deleted = FALSE) ORDER BY date_popvote DESC LIMIT 1), ' .
-                'date_popvote - CAST(8 ||  \' hours\' as INTERVAL))  WHERE ' .
-                $type->typeName() . '_id = :id AND instance_id = :instance_id;');
+            $statement = $this->conn->prepare("UPDATE $table_name 
+                SET date_popvote = COALESCE(
+                    (SELECT date_popvote - CAST(floor(random() * 20 + 1) ||  ' minutes' as INTERVAL)
+                    FROM $table_name WHERE date_popvote < 
+                         (SELECT date_popvote FROM $table_name 
+                            WHERE {$type_name}_id = :id AND instance_id = :instance_id AND deleted = FALSE) 
+                            ORDER BY date_popvote DESC LIMIT 1), date_popvote - CAST(8 ||  ' hours' as INTERVAL)
+                    ) WHERE {$type_name}_id = :id AND instance_id = :instance_id;");
             $statement->bindValue(':id', $id);
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute();
@@ -1292,10 +1300,12 @@ class DB extends Base
     public function getPopVote(string $element_name, int $id): float
     {
         $type = new Type($element_name);
+        $table_name = $type->tableName();
+        $type_name = $type->typeName();
         // select the relative position of this specific id in all the records
-        $statement = $this->conn->prepare('SELECT COUNT(' . $type->typeName() . '_id) FROM ' . $type->tableName() .
-            ' WHERE deleted = FALSE AND instance_id = :instance_id AND date_popvote > (SELECT date_popvote FROM ' .
-            $type->tableName() . ' WHERE ' . $type->typeName() . '_id = :id);');
+        $statement = $this->conn->prepare("SELECT COUNT({$type_name}_id) FROM $table_name
+            WHERE deleted = FALSE AND instance_id = :instance_id AND date_popvote > (
+                SELECT date_popvote FROM $table_name WHERE {$type_name}_id = :id);");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':id', $id);
         $statement->execute();
@@ -1303,8 +1313,9 @@ class DB extends Base
         $statement = null;
         $position = (count($rows) > 0) ? (float)$rows[0][0] : 0; // the returned count or 0 (apparently it’s the first one)
         if ($position > 0) { // get it relative to the total number of rows
-            $statement = $this->conn->prepare('SELECT COUNT(' . $type->typeName() . '_id) FROM ' . $type->tableName() .
-                ' WHERE deleted = FALSE AND instance_id = :instance_id');
+            $statement = $this->conn->prepare("
+                SELECT COUNT({$type_name}_id) FROM $table_name WHERE deleted = FALSE AND instance_id = :instance_id;
+            ");
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute();
             $rows = $statement->fetchAll();
@@ -1383,8 +1394,7 @@ class DB extends Base
     public function getRedirects(int $instance_id = -1): array
     {
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
-        $statement = $this->conn->prepare(
-            'SELECT * FROM _redirect WHERE instance_id = :instance_id AND deleted = FALSE ORDER BY term ASC;');
+        $statement = $this->conn->prepare('SELECT * FROM _redirect WHERE instance_id = :instance_id AND deleted = FALSE ORDER BY term ASC;');
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
         $rows = $statement->fetchAll();
@@ -1429,12 +1439,12 @@ class DB extends Base
         if (!$username) {
             $and_username = '';
         } else {
-            $and_username = ' AND instagram_username = :username';
+            $and_username = 'AND instagram_username = :username';
         }
         if (!$hashtag) {
             $and_hashtag = '';
         } else {
-            $and_hashtag = ' AND caption LIKE :hashtag';
+            $and_hashtag = 'AND caption LIKE :hashtag';
         }
         // users MUST be AUTHORIZED FOR THIS INSTANCE
         // @since 0.10.0 include the processed images
@@ -1652,11 +1662,12 @@ class DB extends Base
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
             if ($this->hasError()) return null;
             // setup the necessary vars
+            $instance_id = Setup::$instance_id;
             $country = $this->getCountryById((int)$vars['shipping_country_id']);
             $amount_row_total = 0;
             $shipping_costs = 0;
             $quantity_total = 0; // @since 0.7.6. also count the quantity, maybe there are only empty rows, you can’t order those
-            $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0(Setup::$instance_id);
+            $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0($instance_id);
             //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if clause)
             foreach ($order_rows as $index => $row) {
                 $amount_row_total += Help::getAsFloat($row->price) * $row->quantity;
@@ -1673,7 +1684,7 @@ class DB extends Base
                 $amount_grand_total += $shipping_costs;
             }
             // setup the order_number
-            if (null === ($order_number = $this->createUniqueOrderNumber(Setup::$instance_id))) {
+            if (null === ($order_number = $this->createUniqueOrderNumber($instance_id))) {
                 $this->addMessage(__('Could not create unique order_number', 'peatcms'));
                 $this->addError('Could not create unique order_number');
 
@@ -1681,7 +1692,7 @@ class DB extends Base
             }
             // build an order array to insert into the database
             $order_fields = array(
-                'instance_id' => Setup::$instance_id,
+                'instance_id' => $instance_id,
                 'session_id' => $session->getId(),
                 'user_id' => (($user = $session->getUser()) ? $user->getId() : 0),
                 // you need float for humans here to prevent rounding errors, but I think there is more to it than that
@@ -1941,10 +1952,9 @@ class DB extends Base
 
     public function jobFetchImagesForCleanup(int $more_than_days = 365, int $how_many = 15): array
     {
-        $statement = $this->conn->prepare(
-            'SELECT * FROM cms_image WHERE date_processed < NOW() - ' . $more_than_days .
-            '  * interval \'1 days\' AND filename_saved IS NOT NULL ORDER BY date_updated DESC LIMIT ' . $how_many
-        );
+        $statement = $this->conn->prepare("SELECT * FROM cms_image 
+            WHERE date_processed < NOW() - $more_than_days * interval '1 days' AND filename_saved IS NOT NULL
+            ORDER BY date_updated DESC LIMIT $how_many;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -1954,7 +1964,8 @@ class DB extends Base
 
     public function jobFetchImagesForProcessing(int $how_many = 15): array
     {
-        $statement = $this->conn->prepare('SELECT * FROM cms_image WHERE date_processed IS NULL AND filename_saved IS NOT NULL ORDER BY date_updated DESC LIMIT ' . $how_many);
+        $statement = $this->conn->prepare("SELECT * FROM cms_image 
+            WHERE date_processed IS NULL AND filename_saved IS NOT NULL ORDER BY date_updated DESC LIMIT $how_many");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -1964,10 +1975,9 @@ class DB extends Base
 
     public function jobFetchInstagramImagesForProcessing(int $how_many = 12): array
     {
-        $statement = $this->conn->prepare(
-            'SELECT * FROM _instagram_media WHERE date_processed IS NULL AND src IS NOT NULL ' .
-            'AND deleted = FALSE AND flag_for_update IS FALSE ORDER BY date_updated DESC LIMIT ' . $how_many
-        );
+        $statement = $this->conn->prepare("SELECT * FROM _instagram_media 
+            WHERE date_processed IS NULL AND src IS NOT NULL AND deleted = FALSE AND flag_for_update IS FALSE
+            ORDER BY date_updated DESC LIMIT $how_many;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -1983,8 +1993,8 @@ class DB extends Base
      */
     public function jobGetInstagramTokensForRefresh(int $days_in_advance = 5): array
     {
-        $statement = $this->conn->prepare('SELECT instagram_auth_id, access_token FROM _instagram_auth WHERE access_token_expires < NOW() + ' .
-            $days_in_advance . ' * interval \'1 days\';');
+        $statement = $this->conn->prepare("SELECT instagram_auth_id, access_token FROM _instagram_auth 
+            WHERE access_token_expires < NOW() + $days_in_advance * interval '1 days';");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -2001,8 +2011,9 @@ class DB extends Base
     public function jobGetInstagramMediaIdsForRefresh(int $limit = 25): array
     {
         // the older entries are the newer instagram media entries since they are loaded / paged in reverse order in the api
-        $statement = $this->conn->prepare('SELECT media_id, user_id FROM _instagram_media 
-            WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE ORDER BY date_created ASC LIMIT ' . $limit . ';');
+        $statement = $this->conn->prepare("SELECT media_id, user_id FROM _instagram_media 
+            WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE 
+            ORDER BY date_created LIMIT $limit;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -2018,8 +2029,8 @@ class DB extends Base
      */
     public function jobGetInstagramMediaIdsForRefreshByDate(int $limit = 25): array
     {
-        $statement = $this->conn->prepare('SELECT media_id, user_id FROM _instagram_media 
-            WHERE deleted = FALSE ORDER BY date_updated ASC LIMIT ' . $limit . ';');
+        $statement = $this->conn->prepare("SELECT media_id, user_id FROM _instagram_media 
+            WHERE deleted = FALSE ORDER BY date_updated LIMIT $limit;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -2036,9 +2047,9 @@ class DB extends Base
     public function jobGetInstagramMediaUrls(bool $for_src = false, int $limit = 100): array
     {
         $src_where = (true === $for_src) ? 'src IS NULL AND' : '';
-        $statement = $this->conn->prepare('SELECT media_id, user_id, media_url
-            FROM _instagram_media WHERE ' . $src_where . ' media_url IS NOT NULL 
-            AND deleted = FALSE AND flag_for_update = FALSE LIMIT ' . $limit . ';');
+        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url
+            FROM _instagram_media WHERE $src_where media_url IS NOT NULL 
+            AND deleted = FALSE AND flag_for_update = FALSE LIMIT $limit;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -2245,9 +2256,11 @@ class DB extends Base
         );
         // check if the item is dropped in a submenu, then use the submenu cross table
         if ($to_item_id > 0) {
-            $table_name = 'cms_menu_item_x_menu';
-            if ($this->rowExists('cms_menu_item_x_menu_item', $where_to))
+            if (true === $this->rowExists('cms_menu_item_x_menu_item', $where_to)) {
                 $table_name = 'cms_menu_item_x_menu_item';
+            } else {
+                $table_name = 'cms_menu_item_x_menu';
+            }
         } else { // if toggle is requested, remember if it existed
             if (false === $this->rowExists('cms_menu_item_x_menu', $where_not_deleted)) {
                 if (false === $this->rowExists('cms_menu_item_x_menu_item', $where_not_deleted)) {
@@ -2265,7 +2278,7 @@ class DB extends Base
         // insert the item in the right table, and move it to the correct order (if applicable)
         if (false === is_null($table_name)) {
             // when in sub menu table you need to specify the menu_item_id as well, same as the item you dropped it on
-            if ($table_name === 'cms_menu_item_x_menu_item') {
+            if ('cms_menu_item_x_menu_item' === $table_name) {
                 if ($row = $this->fetchRow('cms_menu_item_x_menu_item', array('menu_item_id'), $where_to)) {
                     $where_not_deleted = array_merge(array('menu_item_id' => $row->menu_item_id), $where_not_deleted);
                 } else {
@@ -2286,10 +2299,8 @@ class DB extends Base
             $success = true; // if anything goes wrong it will be set to false
             foreach ($rows as $key => $row) {
                 if ($row->sub_menu_item_id === $item_id) continue; // skip over the one we're ordering
-                // todo make it nicer
                 if ($row->sub_menu_item_id === $to_item_id or ($o === 1 and $to_item_id === 0)) { // the moved item must be inserted here
                     if (false === $this->updateRowAndReturnSuccess($table_name, array('o' => $o), $cross_table_row_id)) $success = false;
-                    //if (false === $this->orderMenuItemInsert($table_name, $menu_id, $item_id, $o, $to_item_id)) $success = false;
                     $o++;
                 }
                 if (false === $this->updateRowAndReturnSuccess($table_name, array('o' => $o), $row->id)) $success = false;
@@ -2358,14 +2369,14 @@ class DB extends Base
         $id_column = "{$sub_type_name}_x_{$type_name}_id";
         $keep_order = 0;
         $statement = $this->conn->prepare("
-        SELECT $id_column AS table_id, sub_{$sub_type_name}_id AS sub_id, o
-        FROM $link_table WHERE deleted = FALSE AND {$type_name}_id = :id ORDER BY o
+            SELECT $id_column AS table_id, sub_{$sub_type_name}_id AS sub_id, o
+            FROM $link_table WHERE deleted = FALSE AND {$type_name}_id = :id ORDER BY o
         ");
         $statement->bindValue(':id', $id);
         $statement->execute();
         $rows = $statement->fetchAll();
         $statement = $this->conn->prepare("
-        UPDATE $link_table SET date_updated = NOW(), o = :o WHERE $id_column = :table_id
+            UPDATE $link_table SET date_updated = NOW(), o = :o WHERE $id_column = :table_id
         ");
         $relocating_table_id = null;
         $relocating_o = null;
@@ -2404,7 +2415,7 @@ class DB extends Base
         $sub_type_name = $sub_type->typeName();
         $tables = $this->getLinkTables($type);
         if (isset($tables->$sub_type_name)) {
-            if ($tables->$sub_type_name === 'cross_parent') {
+            if ('cross_parent' === $tables->$sub_type_name) {
                 $order_column = 'o';
             } else {
                 Help::swapVariables($type_name, $sub_type_name);
@@ -2468,14 +2479,15 @@ class DB extends Base
     public function fetchAdminSessions(int $admin_id): array
     {
         $statement = $this->conn->prepare('
-SELECT s.session_id, s.reverse_dns, s.date_created, s.date_accessed, s.user_agent, s.deleted, i.domain, i.name, u.nickname as user_name
-FROM _session s 
-    LEFT OUTER JOIN _instance i 
-        ON s.instance_id = i.instance_id
-    LEFT OUTER JOIN _user u
-        ON u.user_id = s.user_id
-WHERE s.admin_id = :admin_id
-');
+            SELECT s.session_id, s.reverse_dns, s.date_created, s.date_accessed, 
+                   s.user_agent, s.deleted, i.domain, i.name, u.nickname as user_name
+            FROM _session s 
+                LEFT OUTER JOIN _instance i 
+                    ON s.instance_id = i.instance_id
+                LEFT OUTER JOIN _user u
+                    ON u.user_id = s.user_id
+            WHERE s.admin_id = :admin_id
+        ');
         $statement->bindValue(':admin_id', $admin_id);
         $statement->execute();
         $rows = $statement->fetchAll();
@@ -2487,12 +2499,12 @@ WHERE s.admin_id = :admin_id
     public function fetchUserSessionCount(int $user_id): int
     {
         $statement = $this->conn->prepare('
-SELECT COUNT(s.session_id)
-FROM _session s 
-    LEFT OUTER JOIN _user u
-        ON u.user_id = s.user_id
-WHERE s.user_id = :user_id AND s.deleted = FALSE
-');
+            SELECT COUNT(s.session_id)
+            FROM _session s 
+                LEFT OUTER JOIN _user u
+                    ON u.user_id = s.user_id
+            WHERE s.user_id = :user_id AND s.deleted = FALSE
+        ');
         $statement->bindValue(':user_id', $user_id);
         $statement->execute();
         $count = (int)$statement->fetchColumn(0);
@@ -2542,17 +2554,15 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         $email = $this->toLower($email);
         if (false === $fetch_admin) {
-            $statement = $this->conn->prepare(
-                'SELECT user_id AS id, password_hash AS hash
-                FROM _user 
-                WHERE instance_id = :instance_id AND email = :email AND is_account = TRUE AND deleted = FALSE;'
-            );
+            $statement = $this->conn->prepare('
+                SELECT user_id AS id, password_hash AS hash FROM _user 
+                WHERE instance_id = :instance_id AND email = :email AND is_account = TRUE AND deleted = FALSE;
+            ');
         } else {
-            $statement = $this->conn->prepare(
-                'SELECT admin_id AS id, password_hash AS hash
-                FROM _admin 
-                WHERE (instance_id = :instance_id OR instance_id = 0) AND email = :email AND deleted = FALSE;'
-            );
+            $statement = $this->conn->prepare('
+                SELECT admin_id AS id, password_hash AS hash FROM _admin 
+                WHERE (instance_id = :instance_id OR instance_id = 0) AND email = :email AND deleted = FALSE;
+            ');
         }
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':email', $email);
@@ -2710,8 +2720,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                         sprintf(__('json_decode error on menu item %s', 'peatcms'),
                             \var_export($row->title, true)), 'warn');
                 }
-                //if (isset($act->slug)) $row->slug = $act->slug;
             } catch (\Exception $e) {
+                // fail silently
             }
             if (($sub_items = $this->fetchMenuItems($menu_id, $row->menu_item_id, $nested_level))) {
                 $row->__menu__ = array('__item__' => $sub_items);
@@ -2828,8 +2838,11 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             }
         }
         if (count($placeholders) > 0) {
-            $statement = $this->conn->prepare('INSERT INTO _shoppinglist_variant ("shoppinglist_id", "variant_id", "quantity", "price", "price_from", "o") VALUES ' .
-                implode(', ', $placeholders) . ' RETURNING shoppinglist_variant_id;');
+            $placeholders_str = implode(', ', $placeholders);
+            $statement = $this->conn->prepare("
+                INSERT INTO _shoppinglist_variant (shoppinglist_id, variant_id, quantity, price, price_from, o) 
+                VALUES $placeholders_str RETURNING shoppinglist_variant_id;
+            ");
             $statement->execute($values);
             if (($shoppinglist_variant_id = $statement->fetchColumn(0))) {
                 // delete older rows
@@ -2864,9 +2877,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobDeleteOrphanedSessionVars(): int
     {
-        $statement = $this->conn->prepare('
-            DELETE FROM _sessionvars v WHERE NOT EXISTS(SELECT 1 FROM _session s WHERE session_id = v.session_id);
-        ');
+        $statement = $this->conn->prepare('DELETE FROM _sessionvars v WHERE NOT EXISTS(SELECT 1 FROM _session s WHERE session_id = v.session_id);');
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
@@ -3129,6 +3140,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         // find all tables that have a column 'deleted'
         // those tables must also have the standard columns (date_updated, etc.)
+        $db_schema = $this->db_schema;
         $statement = $this->conn->prepare("
             SELECT t . table_name FROM information_schema . tables t
             INNER JOIN information_schema . columns c ON c . table_name = t . table_name and c . table_schema = :schema
@@ -3141,10 +3153,11 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $total_count = 0;
         // for all the tables, delete items that have TRUE for the 'deleted' column and have been updated > $interval minutes ago
         foreach ($rows as $key => $row) {
-            $statement = $this->conn->prepare('
-            DELETE FROM "' . $this->db_schema . '"."' . $row->table_name . '"
-            WHERE deleted = TRUE AND date_updated < NOW() - interval \'' . $interval . ' minutes\'
-            ');
+            $table_name = $row->table_name;
+            $statement = $this->conn->prepare("
+                DELETE FROM \"$db_schema\".\"$table_name\"
+                WHERE deleted = TRUE AND date_updated < NOW() - interval '$interval minutes'
+            ");
             $statement->execute();
             $total_count += $statement->rowCount();
             $statement = null;
@@ -3283,8 +3296,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             $statement->execute(array($token));
         } else {
             $statement = $this->conn->prepare(
-                'UPDATE _session SET date_accessed = NOW(), date_updated = NOW(), ' .
-                'ip_address = ?, reverse_dns = NULL WHERE token = ?;');
+                'UPDATE _session SET date_accessed = NOW(), date_updated = NOW(), ip_address = ?, reverse_dns = NULL WHERE token = ?;');
             $statement->execute(array($ip_address, $token));
         }
         $count = $statement->rowCount();
@@ -3493,9 +3505,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             echo ' ORDER BY date_created DESC';
         }
         echo ' LIMIT 1000;';
-        $sql = ob_get_clean();
         // prepare the statement to let it execute as fast as possible
-        $statement = $this->conn->prepare($sql);
+        $statement = $this->conn->prepare(ob_get_clean());
         $statement->execute($where['values']);
         $rows = $statement->fetchAll();
         $statement = null;
@@ -3564,8 +3575,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         // TODO use internal functionality, the problem is that you need to ignore instance_id sometimes
         // TODO maybe setup an admin db interface or something?
         // or we use it like this, but then with some checks
-        $sql = 'SELECT * FROM ' . $table_name .
-            ' WHERE ' . $table_info->getPrimaryKeyColumn()->getName() . ' = ?;';
+        $primary_key_column_name = $table_info->getPrimaryKeyColumn()->getName();
+        $sql = "SELECT * FROM $table_name WHERE $primary_key_column_name = ?;";
         $statement = $this->conn->prepare($sql);
         $statement->execute(array($key));
         $rows = $statement->fetchAll();
@@ -3631,14 +3642,14 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $data = $table->formatColumnsAndData($data, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
         if (false !== array_search('slug', $data['discarded'])) unset($new_slug);
+        $column_list = implode(',', $data['columns']);
+        $in_placeholders = str_repeat('?,', count($data['columns']) - 1); // NOTE you need one more ? at the end of this
         // update
         try {
             $primary_key_column_name = $table->getInfo()->getPrimaryKeyColumn()->getName();
             // prepare and execute
-            $statement = $this->conn->prepare('INSERT INTO ' . $table_name . ' 
-                (' . implode(',', $data['columns']) . ') 
-                VALUES (' . implode(',', array_fill(0, count($data['columns']), '?')) . ') 
-                RETURNING ' . $primary_key_column_name . ';');
+            $statement = $this->conn->prepare("INSERT INTO $table_name ($column_list) 
+                VALUES ($in_placeholders?) RETURNING $primary_key_column_name;");
             $statement->execute($data['values']);
             $rows = $this->normalizeRows($statement->fetchAll());
             $statement = null;
@@ -3649,7 +3660,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             } elseif (count($rows) === 0) {
                 return null;
             } else { // this should be impossible
-                $this->handleErrorAndStop(new \Exception('Found more than one primary key for ' . $table_name),
+                $this->handleErrorAndStop(new \Exception("Found more than one primary key for $table_name"),
                     __('Database error.', 'peatcms'));
 
                 return null;
@@ -3687,7 +3698,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $columns_list = implode(', ', $data['parameterized']);
         $columns_date = ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '');
         $statement = $this->conn->prepare(
-            "UPDATE $table_name SET $columns_list$columns_date WHERE $key_column_name = ?;"
+            "UPDATE $table_name SET $columns_list $columns_date WHERE $key_column_name = ?;"
         );
         $data['values'][] = $key; // key must be added as last value for the where clause
         try {
@@ -3714,9 +3725,6 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                     $this->reCacheWithWarmup($old_row->slug);
                 }
             }
-            //var_dump($new_slug);
-            //var_dump($old_row->slug);
-            //die(' opa test');
             $table = null;
             $old_row = null;
 
@@ -3735,11 +3743,9 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $table = new Table($this->getTableInfo($table_name));
         $key_column_name = $table->getInfo()->getPrimaryKeyColumn()->getName();
         $where = $table->formatColumnsAndData($where, true);
-        $sql = 'SELECT ' . $key_column_name . ' FROM ' . $table_name;
-        if ('' !== ($where_statement = implode(' AND ', $where['parameterized']))) {
-            $sql .= ' WHERE ' . $where_statement;
-        }
-        $statement = $this->conn->prepare($sql);
+        $where_statement = implode(' AND ', $where['parameterized']);
+        if ('' !== $where_statement) $where_statement = "WHERE $where_statement";
+        $statement = $this->conn->prepare("SELECT $key_column_name FROM $table_name $where_statement");
         $statement->execute($where['values']);
         $rows = $this->normalizeRows($statement->fetchAll());
         $statement = null;
@@ -3759,13 +3765,12 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $table_info = $table->getInfo();
         // push current entry to history
         $old_row = $this->copyRowToHistory($table, $key); // returns current row
+        $primary_key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // delete the row
         if ($table_info->hasStandardColumns()) { // if the deleted column exists, use that
-            $statement = $this->conn->prepare('UPDATE ' . $table_name . ' SET date_updated = NOW(), deleted = TRUE WHERE ' .
-                $table_info->getPrimaryKeyColumn()->getName() . ' = ?');
+            $statement = $this->conn->prepare("UPDATE $table_name SET date_updated = NOW(), deleted = TRUE WHERE $primary_key_column_name = ?;");
         } else {
-            $statement = $this->conn->prepare('DELETE FROM ' . $table_name . ' WHERE ' .
-                $table_info->getPrimaryKeyColumn()->getName() . ' = ?');
+            $statement = $this->conn->prepare("DELETE FROM $table_name WHERE $primary_key_column_name = ?;");
         }
         // execute the update
         $statement->execute(array($key));
@@ -3804,9 +3809,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
         $where = $table->formatColumnsAndData($where, true);
         $where_string = implode(' AND ', $where['parameterized']);
-        $statement = $this->conn->prepare("
-            SELECT EXISTS(SELECT 1 FROM $table_name WHERE $where_string);
-        ");
+        $statement = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM $table_name WHERE $where_string);");
         $statement->execute($where['values']);
         $return_value = (bool)$statement->fetchColumn(0);
         $statement = null;
@@ -3822,9 +3825,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function getAllTables(): array
     {
-        $statement = $this->conn->prepare('
-            SELECT table_name, is_insertable_into FROM information_schema.tables WHERE table_schema = ?;
-        ');
+        $statement = $this->conn->prepare('SELECT table_name, is_insertable_into FROM information_schema.tables WHERE table_schema = ?;');
         $statement->execute(array($this->db_schema));
         $rows = $statement->fetchAll();
         $statement = null;
@@ -3867,8 +3868,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                 unlink($file_name);
             }
         }
-        $statement = $this->conn->prepare('SELECT column_name AS name, data_type AS type, column_default AS "default", 
-            is_nullable AS nullable, character_octet_length / 4 as "length" FROM information_schema.columns 
+        $statement = $this->conn->prepare('SELECT column_name AS name, data_type AS type, column_default AS default, 
+            is_nullable AS nullable, character_octet_length / 4 AS length FROM information_schema.columns 
             WHERE table_schema = :schema_name AND table_name = :table_name;');
         $statement->bindValue(':schema_name', $this->db_schema);
         $statement->bindValue(':table_name', $table_name);
@@ -3962,7 +3963,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             $statement = null;
             // take the element and id to select the current slug in the live database
             $row = $this->normalizeRow($rows[0]);
-            if ($row = $this->fetchRow('cms_' . $row->type, array('slug'), array($row->type . '_id' => $row->id))) {
+            if ($row = $this->fetchRow("cms_{$row->type}", array('slug'), array("{$row->type}_id" => $row->id))) {
                 return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
         }
@@ -4025,8 +4026,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function cached(string $slug, int $variant_page = 1): ?\stdClass
     {
-        $statement = $this->conn->prepare(
-            'SELECT row_as_json, since, variant_page_json FROM _cache 
+        $statement = $this->conn->prepare('SELECT row_as_json, since, variant_page_json FROM _cache 
                     WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;');
         $statement->bindValue(':instance_id', (Setup::$instance_id));
         $statement->bindValue(':slug', $slug);
@@ -4061,9 +4061,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function cachex(string $slug, int $in_browser_timestamp): bool
     {
-        $statement = $this->conn->prepare(
-            'SELECT since FROM _cache WHERE instance_id = :instance_id AND slug = :slug;'
-        );
+        $statement = $this->conn->prepare('SELECT since FROM _cache WHERE instance_id = :instance_id AND slug = :slug;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
@@ -4113,7 +4111,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         $statement = $this->conn->prepare(
             'DELETE FROM _cache WHERE instance_id = :instance_id AND slug = :slug 
-                    AND variant_page >= :variant_page;'
+            AND variant_page >= :variant_page;'
         );
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
@@ -4193,9 +4191,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     {
         if (isset($this->stale_slugs[$slug])) return true; // mark stale only once
         $this->stale_slugs[$slug] = true;
-        $statement = $this->conn->prepare(
-            'SELECT EXISTS (SELECT 1 FROM _stale WHERE instance_id = ? AND slug = ?);'
-        );
+        $statement = $this->conn->prepare('SELECT EXISTS (SELECT 1 FROM _stale WHERE instance_id = ? AND slug = ?);');
         $statement->execute(array(Setup::$instance_id, $slug));
         $exists = (bool)$statement->fetchColumn(0);
         if (false === $exists) {
@@ -4299,11 +4295,11 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
     public function jobStaleCacheRows(int $limit = 60): array
     {
         // collect all the stale slugs
-        $statement = $this->conn->prepare('
+        $statement = $this->conn->prepare("
             SELECT DISTINCT s.slug, s.instance_id, s.since, c.slug in_cache FROM _stale s
             LEFT OUTER JOIN _cache c ON c.slug = s.slug
             WHERE s.since <= NOW()
-            ORDER BY s.since DESC LIMIT ' . $limit . ';');
+            ORDER BY s.since DESC LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $this->normalizeRows($statement->fetchAll());
@@ -4339,10 +4335,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
      */
     public function jobOldCacheRows(int $interval = 600, int $limit = 60): array
     {
-        $statement = $this->conn->prepare("
-            SELECT DISTINCT slug, instance_id, since FROM _cache 
-            WHERE since < NOW() - interval '$interval minutes' ORDER BY since ASC LIMIT $limit;
-            ");
+        $statement = $this->conn->prepare("SELECT DISTINCT slug, instance_id, since FROM _cache 
+            WHERE since < NOW() - interval '$interval minutes' ORDER BY since LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $this->normalizeRows($statement->fetchAll());
@@ -4405,7 +4399,7 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
         }
         // 2) insert the row into history database
         try {
-            $sql = 'INSERT INTO ' . $table_name . ' (' . implode(', ', $table_info->getColumnNames()) . ') VALUES (';
+            $columns_list = implode(', ', $table_info->getColumnNames());
             $values = array();
             $parameters = array();
             foreach ($table_info->getColumnNames() as $key => $column_name) {
@@ -4416,8 +4410,8 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
                 }
                 $parameters[] = '?';
             }
-            $sql .= implode(', ', $parameters) . ');';
-            $statement = Setup::getHistoryDatabaseConnection()->prepare($sql);
+            $parameters = implode(', ', $parameters);
+            $statement = Setup::getHistoryDatabaseConnection()->prepare("INSERT INTO $table_name ($columns_list) VALUES ($parameters);");
             $statement->execute($values);
             $statement = null;
         } catch (\Exception $e) {
@@ -4453,12 +4447,10 @@ WHERE s.user_id = :user_id AND s.deleted = FALSE
             return null;
         }
         // else if exists, return columns
-        $statement = Setup::getHistoryDatabaseConnection()->prepare('SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = :schema_name
-            AND table_name = :table_name
-            ;'
-        );
+        $statement = Setup::getHistoryDatabaseConnection()->prepare('
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = :schema_name AND table_name = :table_name;
+        ');
         $statement->bindValue(':schema_name', $this->db_schema);
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
