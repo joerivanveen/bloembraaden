@@ -1237,7 +1237,6 @@ function unpack_temp(obj) {
         if (unp.hasOwnProperty(i)) obj[i] = unp[i];
     }
     unp = null;
-    delete window.PEATCMS_globals.slugs;
     console.warn('unpacked', obj); // TODO JOERI REMOVE
     return obj;
 }
@@ -2719,8 +2718,8 @@ PEATCMS.prototype.startUp = function () {
     let i, len, self = this;
     this.currentY = 0;
     this.html_node = document.getElementsByTagName('html')[0];
-    //console.error('startUp short circuited for now');
-    //return;
+    // console.error('startUp short circuited for now');
+    // return;
     // add js flag to html
     this.html_node.classList.add('js');
     // handle no hover flag for body
