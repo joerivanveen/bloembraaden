@@ -66,7 +66,7 @@ class BaseElement extends BaseLogic implements Element
             $this->row->deleted = (false === $this->refreshRow());
             // update ci_ai
             if (false === Help::getDB()->updateSearchIndex($this)) {
-                $this->addError('could not update search index column');
+                $this->addError("could not update search index column for {$this->getSlug()}");
             }
 
             return true;
