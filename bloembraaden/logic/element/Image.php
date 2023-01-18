@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class Image extends BaseElement
 {
     protected array $sizes;
@@ -39,6 +37,7 @@ class Image extends BaseElement
         if (isset($this->row->filename_saved)) {
             return $this->update(array('filename_saved' => null));
         }
+
         return $this->update(array('src' => null));
     }
 
@@ -65,6 +64,7 @@ class Image extends BaseElement
             if (false === $this->forgetOriginalFile()) {
                 $logger->log('database not updated');
             }
+
             return false;
         }
         if (false === in_array(($type = exif_imagetype($path)),
@@ -75,6 +75,7 @@ class Image extends BaseElement
             if (false === $this->forgetOriginalFile()) {
                 $logger->log('database not updated');
             }
+
             return false;
         }
         list($width, $height) = getimagesize($path);
@@ -192,6 +193,21 @@ class Image extends BaseElement
             } else {
                 $logger->log('FAILED');
             }
+            // automate css class for the image
+            if ('small' === $size) {
+                $brightness = $this->getBrightness($newImage);
+                $logger->log("Brightness: $brightness");
+                $css_class = $this->row->css_class ?? '';
+                // remove dark and brightness indicators from css_class
+                $css_class = preg_replace('/(brightness)-\d+/', '', $css_class);
+                $css_class = str_replace('dark', '', $css_class);
+                // process new class
+                if ($brightness < 45) {
+                    $css_class .= ' dark';
+                }
+                $css_class .=  ' brightness-' . min(floor($brightness / 7.9), 10);
+                $data['css_class'] = trim(preg_replace('/( )+/', ' ', $css_class));
+            }
             imagedestroy($newImage);
             // always requests webp, will be redirected to jpg if necessary webserver config
             $relativePath = substr($newPath, strlen(Setup::$CDNPATH));
@@ -245,6 +261,33 @@ class Image extends BaseElement
             }
 
         return $img;
+    }
+
+    /**
+     * Gets overall brightness of an image in percent, 0 = black, 100 = white, discards 5% padding.
+     *
+     * @param $img
+     * @return float
+     */
+    protected function getBrightness($img)
+    {
+        $width = imagesx($img);
+        $padding_width = (int)floor($width / 20);
+        $height = imagesy($img);
+        $padding_height = (int)floor($height / 20);
+        $totalBrightness = 0;
+        for ($x = $padding_width; $x < $width - $padding_width; $x++) {
+            for ($y = $padding_height; $y < $height - $padding_height; $y++) {
+                $rgb = imagecolorat($img, $x, $y);
+                $red = ($rgb >> 16) & 0xFF;
+                $green = ($rgb >> 8) & 0xFF;
+                $blue = $rgb & 0xFF;
+                $totalBrightness += (max($red, $green, $blue) + min($red, $green, $blue)) / 2;
+            }
+        }
+        imagedestroy($img);
+
+        return ($totalBrightness / ($width * $height)) / 2.55;
     }
 
     public function completeRowForOutput(): void // override from base element class
