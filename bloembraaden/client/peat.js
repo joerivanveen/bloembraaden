@@ -1237,7 +1237,6 @@ function unpack_temp(obj) {
         if (unp.hasOwnProperty(i)) obj[i] = unp[i];
     }
     unp = null;
-    console.warn('unpacked', obj); // TODO JOERI REMOVE
     return obj;
 }
 
@@ -2253,8 +2252,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     } else {
         template = this.templates[template_cache_name];
         if (VERBOSE) {
-            console.log('Templator ‘' + template_cache_name + '’ from cache:');
-            console.log(template);
+            console.log('Templator ‘' + template_cache_name + '’ from cache:', template);
         }
         // cache which template is currently active
         this.template_cache_name = template_cache_name;
@@ -2262,7 +2260,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     //this.template_cache_name = template_cache_name;
     data = template['template']['__template_status__'] || '';
     // TODO temporary fix, integrate this with live hints for admin
-    var checkers = document.getElementsByClassName('template_status');
+    const checkers = document.getElementsByClassName('template_status');
     for (i = 0; i < checkers.length; ++i) {
         checkers[i].innerText = data;
     }
@@ -2326,7 +2324,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         new_nodes = null;
         // reload headNodes
         this.cached_head_nodes = this.loadHeadNodes(document.head.childNodes);
-        var originals, new_attrs = {};
+        let originals, new_attrs = {};
         // set attributes of the body
         if ((attributes = template.getAttributes('body', html))) {
             for (i = 0, len = attributes.length; i < len; ++i) {
@@ -2357,7 +2355,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         for (i = len - 1; i >= 0; i--) {
             child_node = child_nodes[i];
             if (child_node.getAttribute && child_node.getAttribute('data-peatcms-keep') !== null) {
-                var attr_name = child_node.getAttribute('data-peatcms-keep');
+                const attr_name = child_node.getAttribute('data-peatcms-keep');
                 if (html.indexOf('data-peatcms-keep="' + attr_name + '"') !== -1) {
                     //console.log('load all new nodes from the last until ' + attr_name);
                     while ((new_node = new_nodes[node_walker])) {
@@ -2388,13 +2386,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
                 // prevent nodes with iframes to reload if they did not change (especially during re-render on the frontend)
                 // walk through the new nodes to find the same innerHTML
                 for (i2_len = new_nodes.length, i2 = i2_len - 1; i2 >= 0; i2--) {
-                    /*if (new_nodes[i2].innerHTML) {
-                        console.warn(i2 + ' opa iteration checking html with iframe');
-                        console.log(new_nodes[i2].innerHTML);
-                        console.log(child_node_html);
-                    }*/
                     if ((new_node_html = new_nodes[i2].innerHTML) && new_node_html.indexOf(child_node_html) > -1) {
-                        //console.warn('opa heeft een node met iframe(s) gevonden om te bewaren');
                         i2_found = true;
                         break;
                     }
@@ -2449,7 +2441,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         }
 
         // @since 0.6.11 check if you switched from type of template to initialize the site again
-        var temp = template.template;
+        const temp = template.template;
         if (temp.hasOwnProperty('__template_status__') && temp.__template_status__ === 'default') {
             this.template_status = 'default';
         } else if (this.template_status === 'default') {
