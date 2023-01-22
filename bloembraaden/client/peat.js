@@ -2732,13 +2732,13 @@ PEATCMS.prototype.startUp = function () {
     // default closing mechanism for messages
     document.addEventListener('peatcms.message', function (e) {
         const el = e.detail.element,
-            closeButton = document.createElement('div'); // dismiss button
-        closeButton.classList.add('button');
-        closeButton.classList.add('close');
-        closeButton.onclick = function () {
+            close_button = document.createElement('div'); // dismiss button
+        close_button.classList.add('button');
+        close_button.classList.add('close');
+        close_button.onclick = function () {
             this.parentNode.remove();
         };
-        el.appendChild(closeButton);
+        el.appendChild(close_button);
         if (el.classList.contains('log')) { // log messages disappear soon
             window.clearTimeout(el.peatcms_closing_timeout);
             el.peatcms_closing_timeout = window.setTimeout(function (el) {
@@ -2839,7 +2839,7 @@ PEATCMS.prototype.setSessionVar = function (name, value, callback) { // NOTE cal
 }
 
 PEATCMS.prototype.message = function (msg_obj, level) {
-    var el, string = msg_obj.message || msg_obj, count = msg_obj.count || 1,
+    let el, string = msg_obj.message || msg_obj, count = msg_obj.count || 1,
         message_wrapper, id;
     if (!level) level = 'log'; // replacing default value which is not supported < ES6
     id = PEATCMS.numericHashFromString(string) + '_message_' + level;
@@ -2851,15 +2851,14 @@ PEATCMS.prototype.message = function (msg_obj, level) {
     }
     if ((el = document.getElementById(id))) { // have it grab attention
         this.grabAttention(el);
+        el.setAttribute('data-count', (parseInt(el.getAttribute('data-count')) + count).toString());
     } else {
         el = document.createElement('div');
         el.classList.add('PEATCMS');
         el.classList.add('message');
         el.classList.add(level);
         el.innerHTML = string;
-        if (count > 1) {
-            el.insertAdjacentHTML('beforeend', '<span class="count">' + count.toString() + '</span>');
-        }
+        el.setAttribute('data-count', count.toString());
         el.id = id;
         message_wrapper.insertAdjacentElement('afterbegin', el);
     }
@@ -2873,26 +2872,26 @@ PEATCMS.prototype.message = function (msg_obj, level) {
 }
 
 PEATCMS.prototype.messages = function (data) {
-    var i, messages, message_id;
+    let level, messages, message_id;
     if (Array.isArray(data)) return; // this is a template
-    for (i in data) {
-        if (data.hasOwnProperty(i)) {
-            messages = data[i];
+    for (level in data) {
+        if (data.hasOwnProperty(level)) {
+            messages = data[level];
             for (message_id in messages) {
-                if (messages.hasOwnProperty(message_id)) this.message(messages[message_id], i)
+                if (messages.hasOwnProperty(message_id)) this.message(messages[message_id], level)
             }
         }
     }
 }
 PEATCMS.prototype.grabAttention = function (DOMElement, low_key) {
-    var class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
+    const class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
     DOMElement.classList.add(class_name);
     setTimeout(function (el, class_name) {
         el.classList.remove(class_name);
     }, 600, DOMElement, class_name);
 }
 PEATCMS.prototype.scrollIntoView = function (DOMElement, withMargin) {
-    var rect, top, bottom, h, scroll_by = 0;
+    let rect, top, bottom, h, scroll_by = 0;
     if (!DOMElement) return;
     if (!withMargin) withMargin = 0;
     top = (rect = DOMElement.getBoundingClientRect()).top;
