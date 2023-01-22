@@ -3136,12 +3136,14 @@ PEATCMS_navigator.prototype.setState = function () {
     const el = this.element;
     if (window.history && window.history.pushState) {
         if (el) {
+            const title = el.state.title;
+            const path = el.state.path || el.state.slug;
             window.history.replaceState({
-                path: el.state.path,
-                title: el.state.title,
+                path: path,
+                title: title,
                 scrollY: window.pageYOffset,
                 scrollX: window.pageXOffset
-            }, el.state.title, '/' + el.state.path);
+            }, title, '/' + path);
             if (VERBOSE) console.log('State set regarding scroll position');
         } else {
             console.error('Could not set state, no element found');
