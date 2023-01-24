@@ -2731,15 +2731,29 @@ PEATCMS.prototype.startUp = function () {
     }
     // default closing mechanism for messages
     document.addEventListener('peatcms.message', function (e) {
-        const el = e.detail.element,
-            close_button = document.createElement('div'); // dismiss button
-        close_button.classList.add('button');
-        close_button.classList.add('close');
-        close_button.onclick = function () {
-            this.parentNode.remove();
-        };
-        el.appendChild(close_button);
-        if (el.classList.contains('log')) { // log messages disappear soon
+        const el = e.detail.element;
+        if (! el.querySelector('.button.close')) {
+            const close_button = document.createElement('div'), // dismiss button
+                remove_on = ['peatcms.form_posting', 'peatcms.navigation_start'];
+            close_button.classList.add('button');
+            close_button.classList.add('close');
+            close_button.onclick = function () {
+                this.parentNode.remove();
+            };
+            el.appendChild(close_button);
+            function remove_when_stale() {
+                if (parseInt(el.getAttribute('data-from')) + 5000 < Date.now()) {
+                    el.remove(); // todo make a nice removal (fade out for example)
+                    for (let i = 0, len = remove_on.length; i < len; ++i) {
+                        document.removeEventListener(remove_on[i], remove_when_stale)
+                    }
+                }
+            }
+            for (let i = 0, len = remove_on.length; i < len; ++i) {
+                document.addEventListener(remove_on[i], remove_when_stale)
+            }
+        }
+        if (el.classList.contains('log')) { // log messages disappear automatically
             window.clearTimeout(el.peatcms_closing_timeout);
             el.peatcms_closing_timeout = window.setTimeout(function (el) {
                 el.remove();
@@ -2851,7 +2865,9 @@ PEATCMS.prototype.message = function (msg_obj, level) {
     }
     if ((el = document.getElementById(id))) { // have it grab attention
         this.grabAttention(el);
-        el.setAttribute('data-count', (parseInt(el.getAttribute('data-count')) + count).toString());
+        el.setAttribute('data-count', count.toString());
+        el.setAttribute('data-from', Date.now().toString())
+        //el.setAttribute('data-count', (parseInt(el.getAttribute('data-count')) + count).toString());
     } else {
         el = document.createElement('div');
         el.classList.add('PEATCMS');
@@ -2859,6 +2875,7 @@ PEATCMS.prototype.message = function (msg_obj, level) {
         el.classList.add(level);
         el.innerHTML = string;
         el.setAttribute('data-count', count.toString());
+        el.setAttribute('data-from', Date.now().toString())
         el.id = id;
         message_wrapper.insertAdjacentElement('afterbegin', el);
     }
