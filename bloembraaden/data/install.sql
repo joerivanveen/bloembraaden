@@ -2946,7 +2946,13 @@ COMMIT;
 BEGIN;
 
 ALTER TABLE "public"."_instance"
-    ADD COLUMN "mail_form_allowed_to" Text;
+    ADD COLUMN if not exists "mail_form_allowed_to" Text;
+
+COMMIT;
+
+-- version 0.14.0
+
+BEGIN;
 
 COMMIT;
 
