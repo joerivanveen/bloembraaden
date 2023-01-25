@@ -1913,7 +1913,8 @@ class DB extends Base
     public function updateSearchIndex(BaseLogic $element): bool
     {
         if (false === $element instanceof BaseElement) return true;
-        if (false == in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
+        if (false === in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
+        if (true === $element->getRow()->deleted) return true; // deleted items are not updated
         $out = $element->getOutputFull();
         $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($out)));
         // @since 0.12.0 maintain _ci_ai table
