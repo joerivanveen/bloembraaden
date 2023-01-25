@@ -344,6 +344,18 @@ input[type="checkbox"].peatcms_danger:checked + label:before {
     }
 }
 
+.bloembraaden-fade-out {
+    animation: bloembraaden_fade_out .5s forwards ease-in-out;
+}
+@keyframes bloembraaden_fade_out {
+    10% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
 /**
  * Pretty select lists
  */

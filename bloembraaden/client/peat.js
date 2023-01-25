@@ -2743,7 +2743,8 @@ PEATCMS.prototype.startUp = function () {
             el.appendChild(close_button);
             function remove_when_stale() {
                 if (parseInt(el.getAttribute('data-from')) + 5000 < Date.now()) {
-                    el.remove(); // todo make a nice removal (fade out for example)
+                    el.removeAttribute('id'); // do not reuse messages that are in the process of removal
+                    PEAT.fadeOut(el);
                     for (let i = 0, len = remove_on.length; i < len; ++i) {
                         document.removeEventListener(remove_on[i], remove_when_stale)
                     }
@@ -2899,6 +2900,11 @@ PEATCMS.prototype.messages = function (data) {
             }
         }
     }
+}
+PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
+    DOMElement.classList.add('bloembraaden-fade-out');
+    if (! callback) callback = function() { DOMElement.remove() };
+    setTimeout(callback, 550);
 }
 PEATCMS.prototype.grabAttention = function (DOMElement, low_key) {
     const class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
