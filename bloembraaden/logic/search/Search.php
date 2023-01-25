@@ -121,6 +121,7 @@ class Search extends BaseElement
             $terms = $original_terms;
         }
         $this->row->slug = implode('/', $terms);
+        if (isset($terms[0]) && 'price_from' === $terms[0]) $terms[0] = __('price_from', 'peatcms');
         $this->row->title = htmlentities(implode(' ', $terms));
     }
 
