@@ -436,11 +436,11 @@ ALTER TABLE "public"."_session"
 
 -- CREATE FIELD "css_class" for elements -----------------------
 ALTER TABLE "public"."cms_page"
-    ADD COLUMN "css_class" Character Varying(45) DEFAULT '' NOT NULL;
+    ADD COLUMN "css_class" Character varying(255) DEFAULT '' NOT NULL;
 ALTER TABLE "public"."cms_file"
-    ADD COLUMN "css_class" Character Varying(45) DEFAULT '' NOT NULL;
+    ADD COLUMN "css_class" Character varying(255) DEFAULT '' NOT NULL;
 ALTER TABLE "public"."cms_image"
-    ADD COLUMN "css_class" Character Varying(45) DEFAULT '' NOT NULL;
+    ADD COLUMN "css_class" Character varying(255) DEFAULT '' NOT NULL;
 -- -------------------------------------------------------------
 
 -- CREATE FIELD "instance_id" for admin ------------------------
@@ -466,7 +466,7 @@ CREATE TABLE "public"."cms_video"
     "instance_id"  Integer                                NOT NULL,
     "title"        Character Varying(127)                 NOT NULL,
     "slug"         Character Varying(127)                 NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "date_created" Timestamp With Time Zone DEFAULT NOW() NOT NULL,
     "date_updated" Timestamp With Time Zone DEFAULT NOW() NOT NULL,
     "online"       Boolean                  DEFAULT false NOT NULL,
@@ -541,7 +541,7 @@ CREATE TABLE "public"."cms_menu_item"
 (
     "menu_item_id" Serial PRIMARY KEY,
     "title"        Character Varying(127)                 NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "act"          Character Varying(2044)                NOT NULL,
     "content"      Character Varying(2044)                NOT NULL,
     "date_created" Timestamp With Time Zone DEFAULT NOW() NOT NULL,
@@ -698,7 +698,7 @@ CREATE TABLE "public"."cms_variant"
     "taxonomy_id"  Integer                  DEFAULT 0     NOT NULL,
     "title"        Character Varying(127)   DEFAULT ''    NOT NULL,
     "slug"         Character Varying(127)   DEFAULT ''    NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "mpn"          Character Varying(127)   DEFAULT ''    NOT NULL,
     "sku"          Character Varying(127)   DEFAULT ''    NOT NULL,
     "upc"          CHAR(12)                 DEFAULT ''    NOT NULL,
@@ -725,7 +725,7 @@ CREATE TABLE "public"."cms_product"
     brand_id       Integer                  DEFAULT 0     NOT NULL,
     "title"        Character Varying(127)   DEFAULT ''    NOT NULL,
     "slug"         Character Varying(127)   DEFAULT ''    NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "excerpt"      Text,
     "content"      Text,
     "template"     Character Varying(40)    DEFAULT ''    NOT NULL,
@@ -744,7 +744,7 @@ CREATE TABLE "public"."cms_serie"
     brand_id       Integer                  DEFAULT 0     NOT NULL,
     "title"        Character Varying(127)   DEFAULT ''    NOT NULL,
     "slug"         Character Varying(127)   DEFAULT ''    NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "excerpt"      Text,
     "content"      Text,
     "template"     Character Varying(40)    DEFAULT ''    NOT NULL,
@@ -763,7 +763,7 @@ CREATE TABLE "public"."cms_brand"
     "brand_name"   Character Varying(127)   DEFAULT ''    NOT NULL,
     "title"        Character Varying(127)   DEFAULT ''    NOT NULL,
     "slug"         Character Varying(127)   DEFAULT ''    NOT NULL,
-    "css_class"    Character Varying(45)    DEFAULT ''    NOT NULL,
+    "css_class"    Character varying(255)    DEFAULT ''    NOT NULL,
     "excerpt"      Text,
     "content"      Text,
     "template"     Character Varying(40)    DEFAULT ''    NOT NULL,
@@ -2478,9 +2478,9 @@ BEGIN;
 
 -- css_class for property and property_value
 ALTER TABLE cms_property
-    ADD COLUMN if not exists css_class Character Varying(45) DEFAULT '' NOT NULL;
+    ADD COLUMN if not exists css_class Character varying(255) DEFAULT '' NOT NULL;
 ALTER TABLE cms_property_value
-    ADD COLUMN if not exists css_class Character Varying(45) DEFAULT '' NOT NULL;
+    ADD COLUMN if not exists css_class Character varying(255) DEFAULT '' NOT NULL;
 
 COMMIT;
 
@@ -2958,10 +2958,16 @@ COMMIT;
 
 -- version 0.15.1
 
-BEGIN;
-
 ALTER TABLE "public"."_ci_ai"
     ADD COLUMN if not exists "online" boolean DEFAULT true NOT NULL;
+
+BEGIN;
+
+COMMIT;
+
+-- version 0.16.0
+
+BEGIN;
 
 -- remove ci_ai from cms tables since we have the separate ci_ai table now
 ALTER TABLE "public"."cms_brand"
@@ -2993,6 +2999,37 @@ ALTER TABLE "public"."cms_serie"
 
 ALTER TABLE "public"."cms_variant"
     DROP COLUMN if exists "ci_ai";
+
+-- enlarge css_class column, older version of peatcms have this as varchar(45)
+ALTER TABLE "public"."cms_brand"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_embed"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_file"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_image"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_page"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_product"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_property"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_property_value"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_serie"
+    ALTER COLUMN css_class TYPE character varying(255);
+
+ALTER TABLE "public"."cms_variant"
+    ALTER COLUMN css_class TYPE character varying(255);
 
 COMMIT;
 

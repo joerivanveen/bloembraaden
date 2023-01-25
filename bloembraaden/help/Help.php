@@ -786,6 +786,11 @@ class Help
             } else { // compare the columns and add new ones (currently changing of info for columns is not supported...)
                 foreach ($info->getColumnNames() as $column_index => $column_name) {
                     if (in_array($column_name, $history_columns)) {
+                        // temporary fix for 0.16.0 TODO remove this
+                        if ('css_class' === $column_name) {
+                            $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" ALTER COLUMN "' . $column_name . '" TYPE Character Varying(255);';
+                            $db->historyRun($sql);
+                        }
                         unset($history_columns[$column_name]); // remove this to indicate it's been checked
                         continue;
                     }
