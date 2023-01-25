@@ -1790,7 +1790,7 @@ PEATCMS_template.prototype.convertTemplateToRow = function (template) {
 
 PEATCMS_template.prototype.getInnerHtml = function (node_name, html) {
     // get a certain nodes inner html from the template html, TODO it only returns the first occurrence, maybe return an array?
-    var start = html.indexOf('<' + node_name),
+    const start = html.indexOf('<' + node_name),
         length = html.indexOf('>', start) + 1,
         end = html.indexOf('</' + node_name + '>', start);
     if (start > -1) {
@@ -2273,11 +2273,11 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     }
     data = null;
     if ((html = template.render(out))) {
-        this.title = template.getInnerHtml('title', html);
         // html is clean html, you can use that to fill head and body here
         this.loderunner = 1; // checks loading of all assets, 1 = for document that will be registered as loaded as well
         // start with loading head nodes
-        document.title = this.title;
+        const html_title = template.getInnerHtml('title', html);
+        document.title = new DOMParser().parseFromString(html_title, 'text/html').documentElement.textContent || '';
         // update the head meta, link, script, style and noscript nodes
         new_nodes = this.loadHeadNodes(template.getChildNodes('head', html));
         cached_nodes = this.cached_head_nodes;
