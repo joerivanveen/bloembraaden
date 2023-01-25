@@ -197,15 +197,19 @@ class Image extends BaseElement
             if ('small' === $size) {
                 $brightness = $this->getBrightness($newImage);
                 $logger->log("Brightness: $brightness");
-                $css_class = $this->row->css_class ?? '';
-                // remove dark and brightness indicators from css_class
-                $css_class = preg_replace('/(brightness)-\d+/', '', $css_class);
-                $css_class = str_replace('dark', '', $css_class);
+                if (isset($this->row->css_class)) {
+                    $css_class = $this->row->css_class;
+                    // remove dark and brightness indicators from css_class
+                    $css_class = preg_replace('/(bloembraaden-brightness)-\d+/', '', $css_class);
+                    $css_class = str_replace('bloembraaden-dark', '', $css_class);
+                } else {
+                    $css_class = '';
+                }
                 // process new class
                 if ($brightness < 45) {
-                    $css_class .= ' dark';
+                    $css_class .= ' bloembraaden-dark';
                 }
-                $css_class .=  ' brightness-' . min(floor($brightness / 7.9), 10);
+                $css_class .=  ' bloembraaden-brightness-' . min(floor($brightness / 7.9), 10);
                 $data['css_class'] = trim(preg_replace('/( )+/', ' ', $css_class));
             }
             imagedestroy($newImage);
