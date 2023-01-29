@@ -1675,6 +1675,7 @@ class DB extends Base
             }
             if ($quantity_total === 0) { // @since 0.7.6 if there is nothing to order, also abandon the process
                 $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
+                $this->addError('DB->placeOrder: no rows in shoppinglist to order');
 
                 return null;
             }

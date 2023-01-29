@@ -86,7 +86,7 @@ class Base
         } catch (\Exception $exception) {
         }
         // log the error
-        if (error_log($error_message, 3, Setup::$LOGFILE) === false) {
+        if (error_log("$error_message\n", 3, Setup::$LOGFILE) === false) {
             $s .= ' (could not be logged)';
         }
         // send to newrelic
