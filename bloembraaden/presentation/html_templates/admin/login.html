@@ -37,6 +37,10 @@
             transform: translate(-50%, -50%);
         }
 
+        #login p, #login a {
+            color: #303f7b;
+        }
+
         #login form span,
         #login form div {
             color: #303f7b;
@@ -84,17 +88,17 @@
 <div id="login">
     <form name="login" method="post">
         <div style="text-align:center">
-            <svg class="bloembraaden-icon" xmlns="http://www.w3.org/2000/svg"
-                 xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-                 viewBox="0 0 46 46" xml:space="preserve">
-        <path d="M22.4,0c4.5,0,8.1,2.8,8.1,10.7s-3.6,14.3-8.1,14.3s-8.1-6.4-8.1-14.3S17.9,0,22.4,0z"/>
-                <path d="M43.2,14.2c2.3,3.7,2.1,8.1-4.1,12s-13,3.9-15.4,0.2s0.7-9.9,6.9-13.8S40.9,10.4,43.2,14.2z"/>
-                <path d="M39.1,40.9c-3,3-7.3,3.5-12.6-1.8s-7.2-12.1-4.2-15s9.7-1.1,15,4.2S42.1,37.9,39.1,40.9z"/>
-                <path d="M10.5,45c-3.8-2-5.6-6-2-12.5s9.4-10.3,13.2-8.2s3.9,9,0.4,15.5S14.3,47,10.5,45z"/>
-                <path d="M1.7,16.2C3.1,12,6.9,9.5,14.3,12s12.2,8,10.7,12.2s-8.6,5.5-16,3S0.2,20.4,1.7,16.2z"/>
-    </svg>
+<!--            <svg class="bloembraaden-icon" xmlns="http://www.w3.org/2000/svg"-->
+<!--                 xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"-->
+<!--                 viewBox="0 0 46 46" xml:space="preserve">-->
+<!--        <path d="M22.4,0c4.5,0,8.1,2.8,8.1,10.7s-3.6,14.3-8.1,14.3s-8.1-6.4-8.1-14.3S17.9,0,22.4,0z"/>-->
+<!--                <path d="M43.2,14.2c2.3,3.7,2.1,8.1-4.1,12s-13,3.9-15.4,0.2s0.7-9.9,6.9-13.8S40.9,10.4,43.2,14.2z"/>-->
+<!--                <path d="M39.1,40.9c-3,3-7.3,3.5-12.6-1.8s-7.2-12.1-4.2-15s9.7-1.1,15,4.2S42.1,37.9,39.1,40.9z"/>-->
+<!--                <path d="M10.5,45c-3.8-2-5.6-6-2-12.5s9.4-10.3,13.2-8.2s3.9,9,0.4,15.5S14.3,47,10.5,45z"/>-->
+<!--                <path d="M1.7,16.2C3.1,12,6.9,9.5,14.3,12s12.2,8,10.7,12.2s-8.6,5.5-16,3S0.2,20.4,1.7,16.2z"/>-->
+<!--    </svg>-->
 
-            Bloembraaden, welcome
+            Bloembraaden {{version}}
         </div>
         <label>
             <input type="email" name="email" placeholder="e-mail"/>
@@ -105,7 +109,7 @@
         <input type="submit" value="Login"/>
         <input type="hidden" name="csrf_token" value="{{csrf_token}}"/>
         <input type="hidden" name="action" value="account_login"/>
-        <span style="font-size: 70%;"> Version {{version}}</span>
+        <p style="font-size: 70%;"> Door in te loggen gaat u akkoord met het <a href="https://bloembraaden.io/privacy">privacy beleid</a></p>
         {%__messages__%}
         <div class="messages">
             {% log %}
