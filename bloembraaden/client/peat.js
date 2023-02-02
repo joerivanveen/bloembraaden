@@ -857,8 +857,7 @@ PEATCMS_element.prototype.populateLinkableArea = function (type, suggestions, sr
         }
     }
     for (i in linked_elements) {
-        if (false === linked_elements.hasOwnProperty(i)
-            || false === PEATCMS.isInt(i)) continue;
+        if (false === linked_elements.hasOwnProperty(i) || false === PEATCMS.isInt(i)) continue;
         linked_element = linked_elements[i];
         if (children_by_slug[linked_element.slug]) {
             if (linkable_area.childNodes[i] !== children_by_slug[linked_element.slug])
@@ -874,12 +873,12 @@ PEATCMS_element.prototype.populateLinkableArea = function (type, suggestions, sr
     }
     // remove the current suggestions
     remove = (Array.isArray(suggestions));
-    if (remove === false) suggestions = [];
+    if (false === remove) suggestions = [];
     for (i = linkable_area.childNodes.length - 1; i >= 0; --i) { // reverse to catch them all
         if (linkable_area.childNodes.hasOwnProperty(i)) {
             n = linkable_area.childNodes[i];
             if (n.hasOwnProperty('PEATCMS_linkable') && n.PEATCMS_linkable.isLinked() === false) {
-                if (remove) {
+                if (true === remove) {
                     linkable_area.removeChild(n);
                 } else {
                     n.classList.remove('linked');

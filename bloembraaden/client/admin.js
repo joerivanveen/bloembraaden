@@ -764,7 +764,7 @@ PEATCMS_linkable.prototype.toggleLink = function () {
 }
 
 PEATCMS_linkable.prototype.getId = function () {
-    return this.row[this.name + '_id'];
+    return this.row['id'] ||  this.row[this.name + '_id']; // todo fix why sometimes the whole element is in the row but not the id then
 }
 
 PEATCMS_linkable.prototype.isLinked = function () {

@@ -561,7 +561,7 @@ class DB extends Base
         $r = new \stdClass;
         // TODO make this use the search functionality to return better results
         $r->rows = $this->fetchRows($peat_type->tableName(),
-            array($peat_type->idColumn(), 'title', 'slug'),
+            array('title', 'slug'),
             array('title' => "%$src%"));
         $r->element = $peat_type->typeName();
         $r->src = $src;
