@@ -2660,6 +2660,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         a.classList.add('peatcms-link');
         a.classList.add('link');
         a.setAttribute('tabindex', '0');
+        a.setAttribute('role', 'link');
     }
     if (typeof CMS_admin !== 'undefined') {
         as = el.getElementsByClassName('PEATCMS_editable');
