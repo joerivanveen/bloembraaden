@@ -25,7 +25,7 @@ class Resolver extends BaseLogic
         }
         $GLOBALS['slugs'] = new \stdClass;
         // urldecode means get utf-8 characters of requested path + querystring
-        $request_uri = mb_strtolower(urldecode($request_uri));
+        $request_uri = strip_tags(mb_strtolower(urldecode($request_uri)));
         // deconstruct path + querystring
         $uri = explode('?', $request_uri);
         $src = array();
