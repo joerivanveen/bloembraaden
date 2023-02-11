@@ -107,7 +107,7 @@ class Search extends BaseElement
                 }
                 $output = null;
                 if ($all_properties_present) {
-                    $plural = '__' . $type_name . 's__';
+                    $plural = "__{$type_name}s__";
                     if (false === isset($this->row->$plural)) $this->row->$plural = array();
                     $this->row->{$plural}[] = $element->getOutput();
                     $this->row->item_count += 1;

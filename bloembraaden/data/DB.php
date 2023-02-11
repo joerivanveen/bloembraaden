@@ -777,43 +777,52 @@ class DB extends Base
         $type = new Type($type_name);
         $sub_queries = array();
         // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
-        $property_value_ids = array();
+        $values_by_property = array();
         foreach ($properties as $property_name => $property_values) {
             if ('price_min' === $property_name) {
                 $sub_queries[] = sprintf(
-                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
                     Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
                 );
             } elseif ('price_max' === $property_name) {
                 $sub_queries[] = sprintf(
-                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
                     Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
                 );
             } else {
+                $values_by_property[$property_name] = array(); // since the properties are sorted and formatted, we can do this
                 foreach ($property_values as $index => $value) {
                     if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
                         if ('property_value' === $row->type) {
-                            $property_value_ids[] = (int)$row->id;
+                            $values_by_property[$property_name][] = (int)$row->id;
                         }
                     }
                 }
             }
         }
-        foreach ($property_value_ids as $index => $property_value_id) {
-            $sub_queries[] =
-                "AND x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties WHERE property_value_id = $property_value_id)";
+        foreach ($values_by_property as $property_name => $property_value_ids) {
+            $sub_sub_queries = array();
+            foreach ($property_value_ids as $index => $property_value_id) {
+                $sub_sub_queries[] =
+                    "x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties WHERE property_value_id = $property_value_id)";
+            }
+            $sub_queries[] = '(' . implode(' AND ', $sub_sub_queries) . ')'; // todo make or / and here configurable
         }
         $id_column = $type->idColumn();
-        $imploded_sub_queries = implode(' ', $sub_queries);
+        if (0 !== count($sub_queries)) {
+            $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
+        } else {
+            $imploded_sub_queries = '';
+        }
         $statement = $this->conn->prepare("
             SELECT DISTINCT x.variant_id FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
             WHERE x.$id_column = :id AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
         ");
         $statement->bindValue(':id', $id);
+        //echo str_replace(':id', (string)$id, $statement->queryString);
         $statement->execute();
         $fetched_array = $statement->fetchAll();
-        //echo 'executed sql string: ' . str_replace(':id', (string)$id, $statement->queryString);
         $statement = null;
         $return_array = array();
         // todo make this a helper function or something?
@@ -855,14 +864,15 @@ class DB extends Base
     public function fetchAllPossiblePropertyValues(array $variant_ids): array
     {
         if (0 === count($variant_ids)) return array();
-        $statement = $this->conn->prepare('
+        $in_str = implode(',', $variant_ids);
+        $statement = $this->conn->prepare("
             SELECT DISTINCT v.slug, count(v.slug) item_count FROM cms_variant_x_properties x
             INNER JOIN cms_property_value v ON x.property_value_id = v.property_value_id
-            WHERE x.variant_id IN (' . implode(',', $variant_ids) . ') GROUP BY v.slug;
-        ');
+            WHERE x.variant_id IN ($in_str) GROUP BY v.slug;
+        ");
         $statement->execute();
         $fetched_array = $statement->fetchAll();
-        //echo 'executed sql string: ', $statement->queryString;
+        //Help::addMessage($statement->queryString, 'note');
         $statement = null;
         $return_array = array();
         foreach ($fetched_array as $index => $row) {
@@ -1091,54 +1101,68 @@ class DB extends Base
         $id_column = $linked_type->idColumn();
         $x_table = "{$table_name}_x_properties";
         $sub_queries = array();
+        // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
+        $values_by_property = array();
         // properties
         if (isset($properties)) { // we need to filter the linked items
-            // get all the relevant property_value_id s from $properties, and select only items that also have those in their x-table
-            $property_value_ids = array();
-            foreach ($properties as $property_name => $property) {
-                foreach ($property as $index => $value) {
-                    if ('price_min' === $property_name) {
-                        if ('cms_variant' === $table_name) {
-                            $sub_queries[] = sprintf(
-                                'AND (peat_parse_float(el.price, \'%1$s\', \'%2$s\') > %3$s) ',
-                                Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$value
-                            );
-                        }
-                    } elseif ('price_max' === $property_name) {
-                        if ('cms_variant' === $table_name) {
-                            $sub_queries[] = sprintf(
-                                'AND (peat_parse_float(el.price, \'%1$s\', \'%2$s\') <= %3$s) ',
-                                Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$value
-                            );
-                        }
-                    } elseif (($row = $this->fetchElementIdAndTypeBySlug($value))) {
-                        if ('property_value' === $row->type) {
-                            $property_value_ids[] = (int)$row->id;
+            foreach ($properties as $property_name => $property_values) {
+                if ('price_min' === $property_name) {
+                    if ('cms_variant' === $table_name) {
+                        $sub_queries[] = sprintf(
+                            '(peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
+                            Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                        );
+                    }
+                } elseif ('price_max' === $property_name) {
+                    if ('cms_variant' === $table_name) {
+                        $sub_queries[] = sprintf(
+                            '(peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
+                            Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                        );
+                    }
+                } else {
+                    $values_by_property[$property_name] = array(); // since the properties are sorted and formatted, we can do this
+                    foreach ($property_values as $index => $value) {
+                        if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
+                            if ('property_value' === $row->type) {
+                                $values_by_property[$property_name][] = (int)$row->id;
+                            }
                         }
                     }
                 }
             }
-            // index exists on ...x_properties tables on property_value_id
-            foreach ($property_value_ids as $index => $property_value_id) {
-                $sub_queries[] = "AND el.$id_column IN (SELECT $id_column FROM $x_table WHERE property_value_id = $property_value_id) ";
+            foreach ($values_by_property as $property_name => $property_value_ids) {
+                $sub_sub_queries = array();
+                // index exists on ...x_properties tables on property_value_id
+                foreach ($property_value_ids as $index => $property_value_id) {
+                    $sub_sub_queries[] =
+                        "el.$id_column IN (SELECT $id_column FROM $x_table WHERE property_value_id = $property_value_id)";
+                }
+                $sub_queries[] = '(' . implode(' AND ', $sub_sub_queries) . ')'; // todo make or / and here configurable
+
             }
         }
         // sorting...
         $table_info = $this->getTableInfo($table_name);
         if ($table_name === 'cms_variant') {
-            $sorting = ' AND el.online = TRUE ORDER BY date_popvote DESC '; // @since 0.8.15 no variants that are not online, because of paging
+            $sub_queries[] = 'el.online = TRUE'; // @since 0.8.15 no variants that are not online, because of paging
+            $sorting = 'ORDER BY date_popvote DESC ';
             $sorting .= "LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
         } elseif ($table_info->getColumnByName('date_published')) {
-            $sorting = ' ORDER BY date_published DESC ';
-            $sub_queries[] = 'AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
+            $sorting = 'ORDER BY date_published DESC ';
+            $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
         } else {
             $sorting = ' ORDER BY date_created DESC ';
         }
         $type_id_column = $peat_type->idColumn();
-        $str_sub_queries = implode(' ', $sub_queries);
+        if (0 !== count($sub_queries)) {
+            $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
+        } else {
+            $imploded_sub_queries = '';
+        }
         $statement = $this->conn->prepare("
             SELECT DISTINCT el.* FROM $x_table x INNER JOIN $table_name el ON el.$id_column = x.$id_column
-            WHERE x.$type_id_column = :id AND x.deleted = FALSE and el.deleted = FALSE $str_sub_queries $sorting;
+            WHERE x.$type_id_column = :id AND x.deleted = FALSE and el.deleted = FALSE $imploded_sub_queries $sorting;
         ");
         $statement->bindValue(':id', $id);
         $statement->execute();
