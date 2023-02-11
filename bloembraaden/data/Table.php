@@ -137,7 +137,7 @@ class Table extends Base
         }
         // format for (where / update) statement
         foreach ($cols as $column_name => $value) {
-            if ($col = $this->getInfo()->getColumnByName($column_name)) {
+            if (($col = $this->getInfo()->getColumnByName($column_name))) {
                 // validate before save
                 if ($for_update and ! $this->isValid($col, $value)) {
                     $return_value['discarded'][] = $column_name;

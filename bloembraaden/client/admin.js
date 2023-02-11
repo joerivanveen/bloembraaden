@@ -333,7 +333,7 @@ PEATCMS_actor.prototype.suggestParent = function (element_name) {
                 div = document.createElement('div');
                 div.innerHTML = row['title'];
                 div.className = row['online'] ? 'online' : 'offline';
-                div.setAttribute('data-id', row[element + '_id']);
+                div.setAttribute('data-id', row[element + '_id'] || row['id']);
                 div.onclick = function () {
                     self.setParent(this.getAttribute('data-id'));
                 };
