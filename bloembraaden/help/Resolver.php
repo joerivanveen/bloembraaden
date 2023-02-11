@@ -25,10 +25,9 @@ class Resolver extends BaseLogic
         }
         $GLOBALS['slugs'] = new \stdClass;
         // urldecode means get utf-8 characters of requested path + querystring
-        // remove uppercase through db
-        $request_uri = Help::getDB()->toLower(strip_tags(urldecode($request_uri)));
+        $request_uri = mb_strtolower(urldecode($request_uri));
         // deconstruct path + querystring
-        $uri = (array)explode('?', $request_uri);
+        $uri = explode('?', $request_uri);
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];

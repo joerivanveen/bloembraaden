@@ -472,7 +472,7 @@ class DB extends Base
         // @since 0.7.5 if the slug is not in the format of a slug, no need to go look for it
         if ($slug !== Help::slugify($slug)) return null;
         // to be certain make $slug lower in database
-        $slug = $this->toLower($slug);
+        $slug = mb_strtolower($slug);
         // find appropriate item in database
         $rows = array();
         // @since 0.6.0 check the cache first
@@ -577,7 +577,7 @@ class DB extends Base
     public function fetchPropertiesRowSuggestions(string $src): \stdClass
     {
         $return_obj = new \stdClass;
-        $src = Help::removeAccents($this->toLower($src));
+        $src = Help::removeAccents(mb_strtolower($src));
         $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare("
             SELECT p.property_id, pv.property_value_id, CONCAT(p.title, ': ', v.title) AS title, 
@@ -1917,7 +1917,7 @@ class DB extends Base
         if (false === in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
         if (true === $element->getRow()->deleted) return true; // deleted items are not updated
         $out = $element->getOutputFull();
-        $ci_ai = Help::removeAccents($this->toLower($this->getMeaningfulSearchString($out)));
+        $ci_ai = Help::removeAccents(mb_strtolower($this->getMeaningfulSearchString($out)));
         // @since 0.12.0 maintain _ci_ai table
         $statement = $this->conn->prepare('
             INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id, online)
@@ -2554,7 +2554,7 @@ class DB extends Base
 
     public function fetchForLogin(string $email, bool $fetch_admin = false): ?\stdClass
     {
-        $email = $this->toLower($email);
+        $email = mb_strtolower($email);
         if (false === $fetch_admin) {
             $statement = $this->conn->prepare('
                 SELECT user_id AS id, password_hash AS hash FROM _user 
@@ -3387,7 +3387,7 @@ class DB extends Base
             // make it a safe slug (no special characters)
             $slug = Help::slugify($slug);
             // make it lowercase (multibyte)
-            $slug = $this->toLower($slug);
+            $slug = mb_strtolower($slug);
         }
         $slug = substr($slug, 0, 127);
         $rows = $this->getTablesWithSlugs();
@@ -3896,24 +3896,6 @@ class DB extends Base
     }
 
     /**
-     * performs a toLower action in the database, which is more accurate with UTF8 than the php version
-     *
-     * @param string $str A string to convert tolower
-     * @return string the lowercase string
-     * @since 0.1.0
-     */
-    public function toLower(string $str): string
-    {
-        $statement = $this->conn->prepare('SELECT lower(:str);');
-        $statement->bindValue(':str', $str);
-        $statement->execute();
-        $return_value = (string)$statement->fetchColumn(0);
-        $statement = null;
-
-        return $return_value;
-    }
-
-    /**
      * Returns the current slug based on an old slug by looking for the element in the history database
      *
      * @param string $slug the slug to search for in redirect table and history
@@ -3921,7 +3903,7 @@ class DB extends Base
      */
     public function getCurrentSlugBySlug(string $slug): ?string
     {
-        $slug = $this->toLower($slug);
+        $slug = mb_strtolower($slug);
         // @since 0.8.1: use the redirect table for specific slugs (you probably need to clear cache to pick them up)
         $statement = $this->conn->prepare('
             SELECT to_slug FROM _redirect
