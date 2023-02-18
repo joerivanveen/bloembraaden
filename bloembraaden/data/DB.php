@@ -806,7 +806,7 @@ class DB extends Base
                 $sub_sub_queries[] =
                     "x.variant_id IN (SELECT variant_id FROM cms_variant_x_properties WHERE property_value_id = $property_value_id)";
             }
-            $sub_queries[] = '(' . implode(' AND ', $sub_sub_queries) . ')'; // todo make or / and here configurable
+            $sub_queries[] = '(' . implode(' OR ', $sub_sub_queries) . ')'; // todo make or / and here configurable?
         }
         $id_column = $type->idColumn();
         if (0 !== count($sub_queries)) {
@@ -1132,14 +1132,14 @@ class DB extends Base
                 }
             }
             foreach ($values_by_property as $property_name => $property_value_ids) {
+                if (0 === count($property_value_ids)) continue;
                 $sub_sub_queries = array();
                 // index exists on ...x_properties tables on property_value_id
                 foreach ($property_value_ids as $index => $property_value_id) {
                     $sub_sub_queries[] =
                         "el.$id_column IN (SELECT $id_column FROM $x_table WHERE property_value_id = $property_value_id)";
                 }
-                $sub_queries[] = '(' . implode(' AND ', $sub_sub_queries) . ')'; // todo make or / and here configurable
-
+                $sub_queries[] = '(' . implode(' OR ', $sub_sub_queries) . ')'; // todo make or / and here configurable?
             }
         }
         // sorting...
