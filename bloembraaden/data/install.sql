@@ -2964,10 +2964,10 @@ COMMIT;
 
 -- version 0.15.1
 
+BEGIN;
+
 ALTER TABLE "public"."_ci_ai"
     ADD COLUMN if not exists "online" boolean DEFAULT true NOT NULL;
-
-BEGIN;
 
 COMMIT;
 
@@ -3036,6 +3036,12 @@ ALTER TABLE "public"."cms_serie"
 
 ALTER TABLE "public"."cms_variant"
     ALTER COLUMN css_class TYPE character varying(255);
+
+COMMIT;
+
+-- version 0.16.1
+
+BEGIN;
 
 COMMIT;
 
