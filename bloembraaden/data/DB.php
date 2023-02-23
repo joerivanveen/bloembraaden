@@ -3441,7 +3441,7 @@ class DB extends Base
             if ($found === true) break;
         }
         if ($found === true) {
-            // update slug to slug-1 (slug-2 etc) and check again
+            // update slug to 1-slug (2-slug etc) and check again
             if ($depth === 0) {
                 return $this->clearSlug("1-$slug", $element, $id, 1);
             } else {
@@ -3461,12 +3461,12 @@ class DB extends Base
     private function getTablesWithSlugs(): array
     {
         if (false === isset($this->tables_with_slugs)) {
-            // get all tables that contain a slug column, except cache of course, they are always duplicate
+            // get all tables that contain a slug column, except tables where slug is used as foreign key
             $statement = $this->conn->prepare("
             SELECT t.table_name FROM information_schema.tables t
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name <> '_cache' AND t.table_name <> '_stale'
+            AND t.table_name <> '_cache' AND t.table_name <> '_stale' AND t.table_name <> '_ci_ai'
         ");
             $statement->bindValue(':schema', $this->db_schema);
             $statement->execute();
