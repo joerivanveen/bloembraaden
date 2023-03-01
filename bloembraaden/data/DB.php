@@ -801,6 +801,7 @@ class DB extends Base
             }
         }
         foreach ($values_by_property as $property_name => $property_value_ids) {
+            if (0 === count($property_value_ids)) continue;
             $sub_sub_queries = array();
             foreach ($property_value_ids as $index => $property_value_id) {
                 $sub_sub_queries[] =
