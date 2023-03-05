@@ -307,6 +307,17 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':type_name', $type_name);
         foreach ($clean_terms as $index => $term) {
+            // unfortunately special case
+            if ('price_from' === $term && 'variant' === $type_name) {
+                $rows = Help::getDB()->findSpecialVariants('price_from');
+                $ids = array();
+                foreach ($rows as $key => $row) {
+                    $ids[] = $row->id;
+                }
+
+                $arr['price_from'] = $ids;
+                continue;
+            }
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
             $rows = $statement->fetchAll();
