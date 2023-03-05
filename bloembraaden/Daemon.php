@@ -128,10 +128,8 @@ class Daemon
                             echo "Refreshed $path\n";
                         }
                     }
+                    $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
                 }
-            }
-            if (null !== $cache_pointer_filter_filename && null === $filename_for_cache) {
-                $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
             }
             echo "done... \n";
             if (null === $filename_for_cache) ob_clean();
