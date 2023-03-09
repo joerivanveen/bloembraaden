@@ -75,6 +75,7 @@ class Search extends BaseElement
                 $all_properties_present = true;
                 if (true === isset($output->__x_values__)) {
                     foreach ($properties as $property => $property_values) {
+                        //echo "$property: ";
                         if ('price_max' === $property && isset($property_values[0])) {
                             if (true === isset($output->price) &&
                                 Help::getAsFloat($property_values[0]) < Help::getAsFloat($output->price)
@@ -94,15 +95,19 @@ class Search extends BaseElement
                             continue;
                         }
                         foreach ($property_values as $index => $value) {
+                            //echo "$value, ";
                             foreach ($output->__x_values__ as $x_i => $x_value) {
                                 if (false === is_int($x_i)) continue; // not a row
                                 if ($x_value->property_slug === $property && $x_value->slug === $value) {
-                                    continue 2;
+                                    //echo "YES\n";
+                                    continue 3; // means 'or' todo make and / or configurable?
+                                    //continue 2; // means 'and'
                                 }
                             }
-                            $all_properties_present = false;
-                            break 2;
+                            //echo "NO\n";
                         }
+                        $all_properties_present = false;
+                        break;
                     }
                 }
                 $output = null;
@@ -114,6 +119,9 @@ class Search extends BaseElement
                 }
             }
             if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
+//            echo '<pre>';
+//            var_dump($results);
+//            die('</pre> rjkwel');
         } else {
             $this->row->item_count = $item_count;
         }
