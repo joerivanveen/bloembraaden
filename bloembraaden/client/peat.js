@@ -468,14 +468,14 @@ function PEATCMS_element(slug, callback) {
 }
 
 PEATCMS_element.prototype.load = function (slug, callback) {
-    var self = this;
+    const self = this;
     if (slug.charAt(0) !== '/') slug = '/' + slug;
-    NAV.ajax(slug, false, function (data) {
-        if (VERBOSE) console.log('Element is loading', data);
-        if (data.hasOwnProperty('slug')) {
+    NAV.ajax(slug, false, function (json) {
+        if (VERBOSE) console.log('Element ' + slug + ' is loading', json);
+        if (json.hasOwnProperty('slug')) {
             // fill the object with this element
-            self.state = data;
-            data = null;
+            self.state = json;
+            json = null;
             self.ready = true;
             // cache me
             if (VERBOSE) console.log('Setting / refreshing cache for ' + self.state.slug);
@@ -991,39 +991,39 @@ PEATCMS_element.prototype.getColumnValue = function (column_name) {
 }
 
 PEATCMS_element.prototype.getElementName = function () {
-    var table_info = this.getTableInfo();
+    const table_info = this.getTableInfo();
     return table_info['table_name'].substr(4); // remove 'cms_' to get elementname from table
 }
 
 PEATCMS_element.prototype.getElementId = function () {
-    var table_info = this.getTableInfo();
+    const table_info = this.getTableInfo();
     return this.state[table_info['id_column']];
 }
 
 /**
  * ajax
  */
-var PEATCMS_ajax = function () {
-    window.peatcms_ajax_pending = []; // array keeps track of pending ajax calls
+const PEATCMS_ajax = function () {
+    this.peatcms_ajax_pending = []; // array keeps track of pending ajax calls
     this.slugs = {}; // @since 0.5.10 setup ‘out’ element cache to speed it up a bit more, TODO watch memory usage...
 }
 
 PEATCMS_ajax.prototype.ajaxHasPending = function () {
-    return (window.peatcms_ajax_pending.length !== 0);
+    return (0 !== this.peatcms_ajax_pending.length);
 }
 
 PEATCMS_ajax.prototype.ajaxAddPending = function (xhr) {
-    window.peatcms_ajax_pending[window.peatcms_ajax_pending.length] = xhr;
+    this.peatcms_ajax_pending[this.peatcms_ajax_pending.length] = xhr;
 }
 
 PEATCMS_ajax.prototype.ajaxRemovePending = function (xhr) {
-    window.peatcms_ajax_pending = window.peatcms_ajax_pending.filter(function (e) {
+    this.peatcms_ajax_pending = this.peatcms_ajax_pending.filter(function (e) {
         return e !== xhr
     });
 }
 PEATCMS_ajax.prototype.ajaxShouldBlock = function () {
-    var i, len, calls; // only block when update calls are being executed
-    for (i = 0, calls = window.peatcms_ajax_pending, len = calls.length; i < len; ++i) {
+    let i, len, calls; // only block when update calls are being executed
+    for (i = 0, calls = this.peatcms_ajax_pending, len = calls.length; i < len; ++i) {
         if (calls[i].responseURL.indexOf('/__action__/') > -1) return true;
     }
     return false;
@@ -1032,7 +1032,7 @@ PEATCMS_ajax.prototype.ajaxShouldBlock = function () {
 /*
     PEATCMS_ajax.prototype.ajaxLogPending = function() {
         if (this.ajaxHasPending()) {
-            console.log(window.peatcms_ajax_pending);
+            console.log(this.peatcms_ajax_pending);
         } else {
             console.log('No pending ajax calls');
         }
@@ -1043,10 +1043,10 @@ PEATCMS_ajax.prototype.getHTTPObject = function () {
         return new XMLHttpRequest();
     }
     try {
-        return new ActiveXObject("Msxml2.XMLHTTP");
+        return new ActiveXObject('Msxml2.XMLHTTP');
     } catch (e) {
         try {
-            return new ActiveXObject("Microsoft.XMLHTTP");
+            return new ActiveXObject('Microsoft.XMLHTTP');
         } catch (e) {
         }
     }
@@ -1054,7 +1054,7 @@ PEATCMS_ajax.prototype.getHTTPObject = function () {
 }
 
 PEATCMS_ajax.prototype.feedbackUpload = function (event, progress_element) {
-    var percent = event.loaded / event.total * 100;
+    const percent = 100 * event.loaded / event.total;
     progress_element.style.marginTop = (100 - percent) + '%';
     //console.log('Upload progress: ' + percent + '%');
     // progress indicator is removed by subsequent reload TODO maybe not always (in the future)
@@ -1064,8 +1064,9 @@ PEATCMS_ajax.prototype.feedbackUpload = function (event, progress_element) {
 }
 
 PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element) {
-    var xhr = this.getHTTPObject(), self = this, prgrs = document.createElement('div'), drop_area;
-    // setup the element for progress feedback
+    const xhr = this.getHTTPObject(), self = this, prgrs = document.createElement('div');
+    let drop_area;
+    // set up the element for progress feedback
     if (element !== null) {
         prgrs.className = 'progress';
         drop_area = element.querySelector('.drop_area') || element;
@@ -1095,20 +1096,21 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
 }
 
 PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
-    var loading_bar, state = xhr.readyState, i, len, calls, i_progress = 0, progress_width;
-    if (!(loading_bar = document.getElementById('peatcms_loading_bar'))) return;
+    let state = xhr.readyState, i, len, calls, i_progress = 0, progress_width;
+    const loading_bar = document.getElementById('peatcms_loading_bar');
+    if (!(loading_bar)) return;
     if (!progress) progress = (state === 4) ? 1 : 0;
     // first 3 states account for 60% of the bar now, .2 of 1 each :-) last 40% is for the loading progress
-    xhr.peatcms_progress = (state === 4) ? .6 + (.4 * progress) : .2 * state; // this updates the xhr in window.peatcms_ajax_pending since it's a reference
+    xhr.peatcms_progress = (state === 4) ? .6 + (.4 * progress) : .2 * state; // this updates the xhr in this.peatcms_ajax_pending since it's a reference
     // calculate the width of the bar based on all pending calls...
-    for (i = 0, calls = window.peatcms_ajax_pending, len = calls.length; i < len; ++i) {
+    for (i = 0, calls = this.peatcms_ajax_pending, len = calls.length; i < len; ++i) {
         i_progress += calls[i].peatcms_progress || 0;
     }
     //console.warn(i_progress.toString() + ' / ' + i.toString());
-    progress_width = i_progress / i * 100;
+    progress_width = 100 * i_progress / i;
     loading_bar.style.width = progress_width.toString() + 'vw';
     loading_bar.setAttribute('aria-valuenow', progress_width.toString());
-    if (progress_width === 100) {
+    if (100 === progress_width) {
         window.setTimeout(function () {
             loading_bar.style.width = '0';
         }, 240)
@@ -1116,8 +1118,8 @@ PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
 }
 
 PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
-    var self = this,
-        data = {}, i, len, arr, obj;
+    const self = this;
+    let json = {timestamp: NAV.nav_timestamp}, i, len, arr, obj;
     xhr.withCredentials = true; // send the cookies to cross-sub domain (secure)
     if (typeof on_done === 'function') {
         // default was to track progress, so only if you receive a config with track_progress other than true, don’t
@@ -1136,27 +1138,32 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
             xhr.peatcms_track_progress = false;
         }
         xhr.onreadystatechange = function () {
-            var slug, str;
+            let slug, str;
             if (true === xhr.peatcms_track_progress) self.trackProgress(xhr);
             if (xhr.readyState === 4) {
-                if (VERBOSE) if (xhr.status !== 200) console.warn('Received status: ' + xhr.status);
+                if (VERBOSE) if (200 !== xhr.status) console.warn('Received status: ' + xhr.status);
                 try {
-                    data = JSON.parse(xhr.responseText);
-                    if (typeof data !== 'object') data = {};
+                    json = JSON.parse(xhr.responseText);
+                    if ('object' !== typeof json) json = {};
                 } catch (e) { // data is an empty object here
                     console.error(e);
                     console.log('Response was: ' + xhr.responseText);
                 }
                 if (true === xhr.peatcms_track_progress) self.ajaxRemovePending(xhr);
-                if (xhr.status === 500) {
+                // @since 0.16.2 disregard responses from superseded requests
+                if (json.timestamp && json.timestamp < NAV.nav_timestamp) {
+                    if (VERBOSE) console.warn('Response discarded because it was requested before the current page.', json);
+                    return;
+                }
+                if (500 === xhr.status) {
                     console.error(xhr.statusText);
-                    PEAT.message(data.error, 'error');
+                    PEAT.message(json.error, 'error');
                 }
                 // @since 0.8.16 permit simple ‘downloading’ (ie copying) of text content
-                if (true === data.hasOwnProperty('download')) {
-                    obj = data.download;
-                    if (obj.hasOwnProperty('content')) {
-                        str = data.download.content;
+                if (true === json.hasOwnProperty('download')) {
+                    obj = json.download;
+                    if (true === obj.hasOwnProperty('content')) {
+                        str = json.download.content;
                         if (typeof (str) !== 'string') str = JSON.stringify(str);
                         if (PEAT.copyToClipboard(str)) {
                             str = (obj.hasOwnProperty('file_name')) ? obj.file_name : 'content';
@@ -1170,50 +1177,50 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 // @since 0.6.1 update session variables that were changed on the server
-                if (true === data.hasOwnProperty('__session__')) {
-                    obj = data['__session__'];
+                if (true === json.hasOwnProperty('__session__')) {
+                    obj = json['__session__'];
                     for (i in obj) {
                         if (obj.hasOwnProperty(i)) PEAT.updateSessionVarClientOnly(i, obj[i]);
                     }
                 }
                 // in case of a template object the returned messages and adminerrors are template parts
-                if (false === data.hasOwnProperty('__html__')) {
+                if (false === json.hasOwnProperty('__html__')) {
                     // @since 0.7.9 when a __user__ object is sent, also update it in the globals! (not for templates)
-                    if (true === data.hasOwnProperty('__user__')) {
-                        window.PEATCMS_globals.__user__ = data.__user__;
+                    if (true === json.hasOwnProperty('__user__')) {
+                        window.PEATCMS_globals.__user__ = json.__user__;
                     }
                     // handle messages
-                    if (true === data.hasOwnProperty('__messages__')) {
-                        PEAT.messages(data['__messages__']); // using bracket notation for it can be an object or an array
+                    if (true === json.hasOwnProperty('__messages__')) {
+                        PEAT.messages(json['__messages__']); // using bracket notation for it can be an object or an array
                     }
-                    if (true === data.hasOwnProperty('__adminerrors__')) {
-                        for (i = 0, arr = data['__adminerrors__'], len = arr.length; i < len; ++i) {
+                    if (true === json.hasOwnProperty('__adminerrors__')) {
+                        for (i = 0, arr = json['__adminerrors__'], len = arr.length; i < len; ++i) {
                             console.error(arr[i]);
                         }
                     }
                 }
-                // @since 0.8.2 cache timestamp is verified, Bloembraaden may return ‘ok’ in stead of the whole object
-                if (data.hasOwnProperty('x_cache_timestamp_ok') && data.hasOwnProperty('__ref')) {
-                    if ((slug = '/' + decodeURIComponent(data.__ref))) {
+                // @since 0.8.2 cache timestamp is verified, Bloembraaden may return ‘ok’ instead of the whole object
+                if (json.hasOwnProperty('x_cache_timestamp_ok') && json.hasOwnProperty('__ref')) {
+                    if ((slug = '/' + decodeURIComponent(json.__ref))) {
                         if (true === self.slugs.hasOwnProperty(slug)) {
                             if (VERBOSE) console.log('Got ‘' + slug + '’ from cache');
                             //console.warn(self.slugs);
-                            data = self.slugs[slug].el.state;
+                            json = self.slugs[slug].el.state;
                         }
                     }
                 }
                 window.PEATCMS_globals.__guest__ = window.PEATCMS_globals.is_account ? {} : {show: true};
-                if (data.hasOwnProperty('slugs')) data = unpack_temp(data);
+                if (json.hasOwnProperty('slugs')) json = unpack_temp(json);
                 // do the callback
-                on_done(data);
+                on_done(json);
                 // @since 0.6.11 redirect user when you receive a redirect_uri
                 // @since 0.7.2 also external websites are allowed, placed redirect after the callback
-                if (data.hasOwnProperty('redirect_uri')) {
-                    NAV.go(data.redirect_uri, (data.redirect_uri.indexOf('http') !== 0));
+                if (json.hasOwnProperty('redirect_uri')) {
+                    NAV.go(json.redirect_uri, (json.redirect_uri.indexOf('http') !== 0));
                 }
                 // @since 0.8.16 re-render something
-                if (data.hasOwnProperty('re_render')) {
-                    PEAT.renderProgressive(data.re_render);
+                if (json.hasOwnProperty('re_render')) {
+                    PEAT.renderProgressive(json.re_render);
                 }
             }
         }
@@ -1261,42 +1268,40 @@ function unpack_rec(obj, nest_level) {
 }
 
 PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
-    var xhr = this.getHTTPObject(), slug;
-    if (xhr === false) {
+    const xhr = this.getHTTPObject(),
+        slug = decodeURIComponent(url);
+    let header;
+    if (false === xhr) {
         console.error('Your browser does not support AJAX!');
         return;
     }
     method = (method && method.toUpperCase() === 'GET') ? 'GET' : 'POST'; // default to post
     if (!data) {
         data = {json: true}
-    } else { // use array notation in stead of object, to suppress warning in IDE
+    } else { // use array notation instead of object, to suppress warning in IDE
         data['json'] = true;
         data['csrf_token'] = PEAT.getSessionVar('csrf_token');
     }
-    // TODO get does not send the data, check if that is alright forever
+    // GET does not send any data at the moment
     // if (method === 'GET') {
     //     url = url + '?' + JSON.stringify(data);
     // }
-//    console.error(decodeURIComponent(url));
-    // get from the server
     xhr.open(method, url, true);
     // @since 0.8.2 see if it’s in the cache
-    if (this.slugs.hasOwnProperty((slug = decodeURIComponent(url)))) {
+    if (this.slugs.hasOwnProperty(slug)) {
         xhr.setRequestHeader('X-Cache-Timestamp', this.slugs[slug].timestamp);
     }
     // set optional headers @since 0.6.0
     if (headers) {
         if (VERBOSE) console.warn('Setting xhr headers');
-        var header;
         for (header in headers) {
-            if (headers.hasOwnProperty(header)) {
-                if (VERBOSE) console.log(header + ': ' + headers[header])
-                xhr.setRequestHeader(header, headers[header]);
-            }
+            if (false === headers.hasOwnProperty(header)) continue;
+            if (VERBOSE) console.log(header + ': ' + headers[header])
+            xhr.setRequestHeader(header, headers[header]);
         }
     }
     this.setUpProcess(xhr, callback, data['peatcms_ajax_config']);
-    if (method === 'POST') {
+    if ('POST' === method) {
         //xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;');
         if (VERBOSE) console.log('sending', data);
         xhr.send(JSON.stringify(data));
@@ -1305,7 +1310,7 @@ PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
     }
 }
 PEATCMS_ajax.prototype.cache = function (el) {
-    var path;
+    let path;
     if (el.hasOwnProperty('state') && (path = el.state.path)) {
         if (path.indexOf('__') !== 0) { // cache the element (‘__’ elements are dynamic and should not be cached)
             if (path.charAt(0) !== '/') path = '/' + path; // slugs are cached with leading / (forward slash) (because of url in ajax also has it)
@@ -1337,7 +1342,7 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     // since 0.5.2 option to render the parts specific to one slug only, e.g. for updating of shoppinglist
     // TODO since this can only be called after all the tags have been rendered once, make a mechanism so it doesn't fail
     if (tag) {
-        if (tags.hasOwnProperty(tag)) {
+        if (true === tags.hasOwnProperty(tag)) {
             self.renderProgressiveLoad(slug, tag);
         } else {
             if (VERBOSE) console.warn('No template for ' + tag);
@@ -1370,10 +1375,14 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     }
 }
 PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
-    let el, self = this, data = {render_in_tag: tag}; // Send info to the server to let it know where the request comes from
+    let el, self = this, data = {
+        render_in_tag: tag,
+        timestamp: Date.now()
+    };
     if (null === (el = NAV.getCurrentElement())) {
         console.warn('Couldn’t get element to send as originator during template.renderProgressive');
     } else {
+        // Send info to the server to let it know where the request comes from
         data.type = el.state.type;
         data.id = el.state[el.state.type + '_id'];
     }
@@ -2087,7 +2096,7 @@ PEATCMS.prototype.copyToClipboard = function (str) {
  * @param once Default false, when true the listener will be called when the event triggers and immediately removed
  */
 PEATCMS.prototype.addEventListener = function (type, listener, once) {
-    var id;
+    let id;
     if (true === once) {
         if (peatcms_events.includes(type)) {
             id = PEATCMS.numericHashFromString(listener.toString());
@@ -2107,7 +2116,7 @@ PEATCMS.prototype.addEventListener = function (type, listener, once) {
  * @param e Event
  */
 PEATCMS.prototype.triggerEvent = function (e) {
-    var id, obj;
+    let id, obj;
     if ((obj = this.eventListeners[e.type])) {
         for (id in obj) {
             if (obj.hasOwnProperty(id)) {
@@ -2118,8 +2127,8 @@ PEATCMS.prototype.triggerEvent = function (e) {
     }
 }
 PEATCMS.prototype.setup_google_recaptcha = function (site_key) {
-    var script = document.createElement('script'),
-        div = document.createElement('div');
+    const div = document.createElement('div'),
+        script = document.createElement('script');
     if (VERBOSE) console.log('Setting up Google recaptcha with key: ' + site_key);
     div.id = 'recaptcha';
     div.classList.add('g-recaptcha');
@@ -2158,7 +2167,7 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
             (function (w, d, s, l, i) {
                 w[l] = w[l] || [];
                 w[l].push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
-                var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+                let f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
                 j.async = true;
                 j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
                 j.setAttribute('nonce', window.PEATCMS_globals.nonce);
@@ -2174,7 +2183,7 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
             gtag('js', new Date());
             gtag('config', google_tracking_id, {'send_page_view': false}); // pageview is sent on navigation_end
 
-            function do_the_doodoo() {
+            function send_google_pageview() {
                 if (NAV.is_navigating) return;
                 if (VERBOSE) console.log('gtag: page_view', decodeURI(document.location.href));
                 gtag('event', 'page_view', {
@@ -2184,13 +2193,12 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
             }
 
             // load the gtag script, nonce is necessary because of CSP
-            var script = document.createElement('script');
+            const script = document.createElement('script');
             document.head.appendChild(script);
             script.setAttribute('nonce', window.PEATCMS_globals.nonce);
             script.id = 'google_gtag';
-            //script.addEventListener('load', do_the_doodoo);
             script.src = 'https://www.googletagmanager.com/gtag/js?id=' + google_tracking_id;
-            document.addEventListener('peatcms.navigation_end', do_the_doodoo);
+            document.addEventListener('peatcms.navigation_end', send_google_pageview);
         } else {
             console.error(google_tracking_id + ' not recognized as a Google tracking id');
         }
@@ -2732,7 +2740,7 @@ PEATCMS.prototype.startUp = function () {
     // default closing mechanism for messages
     document.addEventListener('peatcms.message', function (e) {
         const el = e.detail.element;
-        if (! el.querySelector('.button.close')) {
+        if (!el.querySelector('.button.close')) {
             const close_button = document.createElement('div'), // dismiss button
                 remove_on = ['peatcms.form_posting', 'peatcms.navigation_start'];
             close_button.classList.add('button');
@@ -2741,6 +2749,7 @@ PEATCMS.prototype.startUp = function () {
                 this.parentNode.remove();
             };
             el.appendChild(close_button);
+
             function remove_when_stale() {
                 if (parseInt(el.getAttribute('data-from')) + 5000 < Date.now()) {
                     el.removeAttribute('id'); // do not reuse messages that are in the process of removal
@@ -2750,6 +2759,7 @@ PEATCMS.prototype.startUp = function () {
                     }
                 }
             }
+
             for (let i = 0, len = remove_on.length; i < len; ++i) {
                 document.addEventListener(remove_on[i], remove_when_stale)
             }
@@ -2903,7 +2913,9 @@ PEATCMS.prototype.messages = function (data) {
 }
 PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
     DOMElement.classList.add('bloembraaden-fade-out');
-    if (! callback) callback = function() { DOMElement.remove() };
+    if (!callback) callback = function () {
+        DOMElement.remove()
+    };
     setTimeout(callback, 550);
 }
 PEATCMS.prototype.grabAttention = function (DOMElement, low_key) {
@@ -2987,12 +2999,13 @@ let PEATCMS_navigator = function (root) {
     this.element = false; // will load currently displayed element
     this.last_navigate = null; // remember if we went somewhere
     this.is_navigating = false;
+    this.nav_timestamp = Date.now();
     this.tags_in_cache = []; // setup tags cache
     this.tags_to_cache = ['__action__/countries'];
 }
 PEATCMS_navigator.prototype = new PEATCMS_ajax();
 PEATCMS_navigator.prototype.tagsCache = function (tag, json) {
-    if ('__' === tag.substr(0, 2) && false === this.tags_to_cache.includes(tag)) return;
+    if ('__' === tag.slice(0, 2) && false === this.tags_to_cache.includes(tag)) return;
     if (!json) {
         return this.tags_in_cache[tag] || null;
     }
@@ -3016,7 +3029,8 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
 PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
     let slug = path.replace(this.getRoot(true), '');
     this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
-    if (0 === slug.indexOf('/')) slug = slug.substr(1);
+    this.nav_timestamp = Date.now();
+    if (0 === slug.indexOf('/')) slug = slug.slice(1);
     document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
         bubbles: false,
         detail: {
@@ -3033,11 +3047,11 @@ PEATCMS_navigator.prototype.go = function (path, local) {
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.setState();
-        if (path.indexOf(this.getRoot()) === 0 || local === true) { // this is a local link
+        if (path.indexOf(this.getRoot()) === 0 || true === local) { // this is a local link
             slug = this.signalStartNavigating(path);
             new PEATCMS_element(slug, function (el) {
                 let title, path;
-                if (el === false) {
+                if (false === el) {
                     console.warn('The slug ‘' + slug + '’ is not an element');
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                     self.is_navigating = false;
@@ -3174,7 +3188,7 @@ PEATCMS_navigator.prototype.getCurrentPath = function () { // returned path uri 
     let href = decodeURIComponent(document.location.href.replace(this.getRoot(true), '')),
         len;
     if (href.indexOf('?') !== -1) href = href.split('?')[0];
-    if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.substr(0, len);
+    if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.slice(0, len);// href.substr(0, len);
     return href;
 }
 PEATCMS_navigator.prototype.getCurrentUri = function () {
