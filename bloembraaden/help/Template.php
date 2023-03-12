@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 /**
  * Class Template
  * @package Peat
@@ -308,6 +306,7 @@ class Template extends BaseLogic
     {
         if (false === isset($this->row)) {
             $this->addError('Template must be set / initialized before calling ->renderObject');
+
             return '';
         }
         if (ADMIN) {
@@ -485,7 +484,7 @@ class Template extends BaseLogic
                     $str_pos = $str_pos + strlen($equals) + 1;
                 } else {
                     $str_pos = $str_pos + strlen($tag_name) + 3;
-                    $is_false = (! $output_object || 'false' === $output_object);
+                    $is_false = (!$output_object || 'false' === $output_object);
                     $equals = null;
                 }
                 $end_pos = strpos($html, '}}', $str_pos);
@@ -515,7 +514,6 @@ class Template extends BaseLogic
                 }
             }
         }
-
         $check_if = null;
         $output = null;
         $output_object = null;
@@ -696,7 +694,7 @@ class Template extends BaseLogic
             ob_start();
             if (!isset($this->row->element) || 'invoice' !== $this->row->element) {
                 $instance_id = $this->getInstanceId();// ?? Setup::$instance_id;
-                $file_location = Setup::$DBCACHE . 'css/' . $instance_id . '.css';
+                $file_location = Setup::$DBCACHE . "css/$instance_id.css";
                 $css_ok = false;
                 if (false === Setup::$VERBOSE && file_exists($file_location)) {
                     echo '<style id="bloembraaden-css">';
@@ -710,7 +708,7 @@ class Template extends BaseLogic
                         $css_ok = true;
                     }
                 }
-                if (false === $css_ok) { // link to server generated javascript
+                if (false === $css_ok) { // link to server generated stylesheet
                     echo '<link rel="stylesheet" id="bloembraaden-css" href="/__action__/stylesheet?version=';
                     echo Setup::$VERSION;
                     echo '-{{template_published}}">';
@@ -723,7 +721,13 @@ class Template extends BaseLogic
             // replace the end of the head tag with these scripts / links
             $html = str_replace('</head>', ob_get_clean(), $html);
             // insert our tag
-            $html = '<!-- ' . Setup::FLOWER . ' -->' . $html;
+            $html = "<!-- 
+    
+Create your next website with bloembraaden.io
+
+-->
+ 
+$html";
         }
         $template['__html__'] = $html;
 
@@ -903,12 +907,14 @@ class Template extends BaseLogic
     private function peat_minus_one(string $str): string
     {
         if (is_numeric($str)) return (string)((int)$str - 1);
+
         return $str;
     }
 
     private function peat_plus_one(string $str): string
     {
         if (is_numeric($str)) return (string)((int)$str + 1);
+
         return $str;
     }
 

@@ -29,11 +29,6 @@ class Setup
         'Europe/Paris',
         'Europe/Berlin',
     ];
-    public const FLOWER = '
-    
-Create your next website with bloembraaden.io
-
-';
 
     public function __construct()
     {

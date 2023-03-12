@@ -106,7 +106,7 @@ class Minifier
 
     /**
      * Takes a string containing javascript and removes unneeded characters in
-     * order to shrink the code without altering it's functionality.
+     * order to shrink the code without altering its functionality.
      *
      * @param  string      $js      The raw javascript to be minified
      * @param  array       $options Various runtime options in an associative array
@@ -165,10 +165,10 @@ class Minifier
     protected function initialize($js, $options)
     {
         $this->options = array_merge(static::$defaultOptions, $options);
-        $this->input = str_replace(["\r\n", '/**/', "\r"], ["\n", "", "\n"], $js);
+        $this->input = str_replace(["\r\n", '/**/', "\r"], ["\n", '', "\n"], $js);
 
         // We add a newline to the end of the script to make it easier to deal
-        // with comments at the bottom of the script- this prevents the unclosed
+        // with comments at the bottom of the script, this prevents the unclosed
         // comment error that can otherwise occur.
         $this->input .= PHP_EOL;
 
@@ -402,7 +402,7 @@ class Minifier
                 // we need to echo a and fill it with a space before moving on.
                 if ($startIndex > 0) {
                     echo $this->a;
-                    $this->a = " ";
+                    $this->a = ' ';
 
                     // If the comment started on a new line we let it stay on the new line
                     if ($this->input[($startIndex - 1)] === "\n") {
@@ -432,7 +432,7 @@ class Minifier
     /**
      * Pushes the index ahead to the next instance of the supplied string. If it
      * is found the first character of the string is returned and the index is set
-     * to it's position.
+     * to its position.
      *
      * @param  string       $string
      * @return string|false Returns the first character of the string or false.

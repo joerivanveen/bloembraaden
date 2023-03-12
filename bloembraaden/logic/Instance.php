@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 class Instance extends BaseLogic
 {
     private array $menus;
@@ -140,8 +138,8 @@ class Instance extends BaseLogic
                 die();
             } else {
                 // @since 0.10.2 no more error reporting for these kinds of requests
-               if (Setup::$VERBOSE) $this->addError('No instance found for domain ' . $domain);
-                die('<pre style="font-family:Courier,monospace">' . Setup::FLOWER . '</pre>');
+                if (Setup::$VERBOSE) $this->addError("No instance found for domain $domain");
+                die('Bloembraaden.io');
             }
         }
     }
