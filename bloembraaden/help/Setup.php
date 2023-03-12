@@ -1,9 +1,7 @@
 <?php
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Peat;
-
 
 use PDO, PDOException, Exception, stdClass;
 
@@ -16,7 +14,7 @@ class Setup
     public static bool $INSTALL, $VERBOSE;
     public static bool $NOT_IN_STOCK_CAN_BE_ORDERED;
     public static int $instance_id, $DECIMAL_DIGITS;
-    public static string $DECIMAL_SEPARATOR, $RADIX, $timezone;
+    public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH;
     public static string $PRESENTATION_INSTANCE, $PRESENTATION_ADMIN, $INSTANCE_DOMAIN;
     public static array $translations;
@@ -51,7 +49,8 @@ Create your next website with bloembraaden.io
             });
     }
 
-    public static function logErrors():void {
+    public static function logErrors(): void
+    {
         $error_messages = Help::logErrorMessages();
         // newrelic reporting
         if (extension_loaded('newrelic')) {
@@ -70,6 +69,7 @@ Create your next website with bloembraaden.io
         if (false === isset(self::$seconds_delta)) {
             self::$seconds_delta = time() - strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]);
         }
+
         return time() + self::$seconds_delta;
     }
 
@@ -121,7 +121,7 @@ Create your next website with bloembraaden.io
             if ($connection->inTransaction()) {
                 try {
                     $connection->rollBack();
-                } catch(\Exception $e) {
+                } catch (\Exception $e) {
                     Help::addError($e);
                 }
             }
@@ -131,6 +131,7 @@ Create your next website with bloembraaden.io
 
     private static function loadConfig(): void
     {
+        $current_date = date('Y-m-d');
         $config = json_decode(file_get_contents(CORE . '../config.json'));
         self::$VERSION = $config->version;
         self::$UPLOADS = $config->uploads;
@@ -138,7 +139,8 @@ Create your next website with bloembraaden.io
         self::$DBCACHE = $config->dbcache;
         self::$CDNROOT = $config->cdnroot;
         self::$CDNPATH = $config->cdnpath;
-        self::$LOGFILE = $config->logfile . date('Y-m-d') . '.log';
+        self::$THEDATE = $current_date;
+        self::$LOGFILE = "$config->logfile$current_date.log";
         self::$VERBOSE = $config->VERBOSE;
         self::$INSTALL = $config->install;
         self::$DB_MAIN = $config->DB_MAIN;
@@ -153,7 +155,7 @@ Create your next website with bloembraaden.io
     static public function loadInstanceSettingsFor(int $instance_id): void
     {
         if (self::$instance_id === $instance_id) return;
-        if (($row = Help::getDB()->fetchInstanceById($instance_id))){
+        if (($row = Help::getDB()->fetchInstanceById($instance_id))) {
             self::loadInstanceSettings(new Instance($row));
         }
         $row = null;

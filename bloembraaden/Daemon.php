@@ -57,7 +57,10 @@ class Daemon
             }
             /* check if we’re still the one and only */
             try {
-                if ($this->did !== Help::getDB()->getSystemValue('daemon_did')) {
+                if (
+                    $this->did !== Help::getDB()->getSystemValue('daemon_did')
+                    || Setup::$THEDATE !== date('Y-m-d') // start a new daemon around midnight to use the current logfile
+                ) {
                     $this->log("DAEMON $this->did stopped itself");
                     die();
                 }

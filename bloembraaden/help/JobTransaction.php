@@ -40,7 +40,7 @@ class jobTransaction
         if (true === $this->useNewRelic) {
             newrelic_end_transaction(); // stop recording the current transaction
         }
-        if ($with_log) {
+        if (true === $with_log) {
             error_log($this->message, 3, Setup::$LOGFILE);
         }
         echo $this->message;
