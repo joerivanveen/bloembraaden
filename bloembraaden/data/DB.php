@@ -800,7 +800,7 @@ class DB extends Base
     {
         if ('property_value' !== $type_name && 'property' !== $type_name) return array();
         // TODO also get the attached (x-table) variants for eg page?
-        $sub_queries = $this->queriesProperties($properties, $type_name, 'x');
+        $sub_queries = $this->queriesProperties($properties, 'variant', 'x');
         if (0 !== count($sub_queries)) { // todo duplicate code
             $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
         } else {
@@ -812,7 +812,7 @@ class DB extends Base
             WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
         ");
         $statement->bindValue(':id', $id);
-        //echo str_replace(':id', (string)$id, $statement->queryString);
+        //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $statement->execute();
         $fetched_array = $statement->fetchAll();
         $statement = null;
@@ -1100,13 +1100,12 @@ class DB extends Base
         $table_info = $this->getTableInfo($table_name);
         if ($table_name === 'cms_variant') {
             $sub_queries[] = 'el.online = TRUE'; // @since 0.8.15 no variants that are not online, because of paging
-            $sorting = 'ORDER BY date_popvote DESC ';
-            $sorting .= "LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
+            $sorting = "ORDER BY date_popvote DESC LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
         } elseif ($table_info->getColumnByName('date_published')) {
             $sorting = 'ORDER BY date_published DESC ';
             $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
         } else {
-            $sorting = ' ORDER BY date_created DESC ';
+            $sorting = 'ORDER BY date_created DESC ';
         }
         $type_id_column = $peat_type->idColumn();
         if (0 !== count($sub_queries)) { // TODO duplicate code
@@ -1120,7 +1119,7 @@ class DB extends Base
         ");
         $statement->bindValue(':id', $id);
         $statement->execute();
-        //var_dump(str_replace(':id', (string)$id, $statement->queryString));
+        //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $rows = $statement->fetchAll();
         $statement = null;
 
