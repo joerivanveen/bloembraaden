@@ -1119,7 +1119,7 @@ PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
 
 PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
     const self = this;
-    let json = {timestamp: NAV.nav_timestamp}, i, len, arr, obj;
+    let json = {}, i, len, arr, obj;
     xhr.withCredentials = true; // send the cookies to cross-sub domain (secure)
     if (typeof on_done === 'function') {
         // default was to track progress, so only if you receive a config with track_progress other than true, don’t
@@ -1150,11 +1150,6 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     console.log('Response was: ' + xhr.responseText);
                 }
                 if (true === xhr.peatcms_track_progress) self.ajaxRemovePending(xhr);
-                // @since 0.16.2 disregard responses from superseded requests
-                if (json.timestamp && json.timestamp < NAV.nav_timestamp) {
-                    if (VERBOSE) console.warn('Response discarded because it was requested before the current page.', json);
-                    return;
-                }
                 if (500 === xhr.status) {
                     console.error(xhr.statusText);
                     PEAT.message(json.error, 'error');
@@ -1197,6 +1192,11 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                         for (i = 0, arr = json['__adminerrors__'], len = arr.length; i < len; ++i) {
                             console.error(arr[i]);
                         }
+                    }
+                    // @since 0.16.2 disregard further processing responses from superseded requests
+                    if (json.timestamp && json.timestamp < NAV.nav_timestamp) {
+                        if (VERBOSE) console.warn('Response discarded because it was requested before the current page.', json);
+                        return;
                     }
                 }
                 // @since 0.8.2 cache timestamp is verified, Bloembraaden may return ‘ok’ instead of the whole object
@@ -1277,9 +1277,10 @@ PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
     }
     method = (method && method.toUpperCase() === 'GET') ? 'GET' : 'POST'; // default to post
     if (!data) {
-        data = {json: true}
+        data = {json: true, timestamp: NAV.nav_timestamp }
     } else { // use array notation instead of object, to suppress warning in IDE
         data['json'] = true;
+        if (!data.hasOwnProperty('timestamp')) data['timestamp'] = NAV.nav_timestamp;
         data['csrf_token'] = PEAT.getSessionVar('csrf_token');
     }
     // GET does not send any data at the moment
