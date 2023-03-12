@@ -257,12 +257,12 @@ class DB extends Base
         foreach ($properties as $property_name => $property_values) {
             if ('price_min' === $property_name && 'variant' === $cms_type_name) {
                 $sub_queries[] = sprintf(
-                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
                     Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
                 );
             } elseif ('price_max' === $property_name && 'variant' === $cms_type_name) {
                 $sub_queries[] = sprintf(
-                    'AND (peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
                     Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
                 );
             } else {
@@ -2762,7 +2762,7 @@ class DB extends Base
             $row = $this->fetchRow('_shoppinglist', array('*'), array('shoppinglist_id' => $shoppinglist_id));
         } else {
             $count = $this->deleteRowWhereAndReturnAffected('_shoppinglist', $data);
-            $this->handleErrorAndStop(sprintf('Deleted %s shoppinglist entries.', $count), __('Could not get shoppinglist', 'peatcms'));
+            $this->handleErrorAndStop("Deleted $count shoppinglist entries.", __('Could not get shoppinglist', 'peatcms'));
             $row = null;
         }
 
