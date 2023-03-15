@@ -1499,24 +1499,22 @@ PEATCMS_template.prototype.render = function (out) {
 }
 // check if the string needle is currently in an open html tag in string haystack
 PEATCMS_template.prototype.inOpenTag = function (needle, haystack) {
-    var pos = haystack.indexOf(needle) + needle.length;
-    if (haystack.indexOf('<', pos) < haystack.indexOf('>', pos))
-        return false;
-    return true; // err on the side of safety
+    const pos = haystack.indexOf(needle) + needle.length;
+    return haystack.indexOf('<', pos) >= haystack.indexOf('>', pos);
 }
 
 PEATCMS_template.prototype.renderOutput = function (out, template) {
-    var break_reference = template.__html__ || template.html || '', // todo remove second one when all templates are published
+    let break_reference = template.__html__ || template.html || '', // todo remove second one when all templates are published
         tag_name, output_object, processed_object, type_of_object, value,
         admin = (typeof CMS_admin === 'object'),
         html = break_reference,
         // vars needed later:
-        len, i, temp_i, row_i, temp_remember_html, sub_template, row_template, sub_html, build_rows, obj, obj_id,
-        __count__, add_string, in_open_tag, check_if = {},
+        len, i, temp_i, row_i, temp_remember_html, sub_template, row_template, sub_html, build_rows, obj,
+        __count__, add_string, in_open_tag, check_if = [],
         // vars used for | method_name calling
         start, end, function_name,
         // vars used by : template show / hide
-        content, parts, equals, is_false, str_to_replace;
+        content, parts, equals, is_false, is_nested, str_to_replace;
     // process out object
     if (out.hasOwnProperty('__ref')) {
         out = unpack_temp(out, 1);
@@ -1595,7 +1593,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 }
             }
         } else if (['string', 'number', 'boolean'].includes(type_of_object)) {
-            check_if[tag_name] = output_object; // @since 0.10.7 remember tags to check for if-statements in template last
+            check_if.push({tag_name: tag_name, output_object: output_object}); // @since 0.10.7 remember tags to check for if-statements in template last
             html = PEATCMS.replace('{{' + tag_name + '}}', output_object.toString(), html);
             // @since 0.4.6: simple tags can also be processed by a function by using a pipe character |, {{tag|function_name}}
             while ((start = html.indexOf('{{' + tag_name + '|')) > -1) {
@@ -1616,9 +1614,10 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, type_of_object);
         }
     }
-    for (tag_name in check_if) {
-        if (false === check_if.hasOwnProperty(tag_name)) continue;
-        output_object = check_if[tag_name];
+    for (len = check_if.length, i = len - 1; i >= 0; i--) { // check in reverse order, to target the ::value:: in deeper nested tags first
+        obj = check_if[i];
+        tag_name = obj.tag_name;
+        output_object = obj.output_object;
         // @since 0.4.12: simple elements can show / hide parts of the template
         while ((start = html.indexOf('{{' + tag_name + ':')) !== -1) {
             // @since 0.7.9 you can use ‘equal to’ operator ‘==’
@@ -1638,6 +1637,17 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 continue;
             }
             content = html.substring(start, end);
+            // @since 0.16.3 allow nested ifs
+            if (-1 !== content.indexOf('{{')) {
+                while (content.split('{{').length > content.split('}}').length) {
+                    end = html.indexOf('}}', end + 2);
+                    content = html.substring(start, end);
+                }
+                if (-1 === end) {
+                    html = PEATCMS.replace('{{' + tag_name + ':', '<span class="warn">Nested if-error near ' + tag_name + '</span>', html);
+                    continue;
+                }
+            }
             parts = content.split(':not:'); // the content can be divided in true and false part using :not:
             str_to_replace = '{{' + tag_name + ((equals) ? ':==' + equals + ':' : ':') + content + '}}';
             if (is_false) {
@@ -1646,7 +1656,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 } else { // forget it
                     html = PEATCMS.replace(str_to_replace, '', html);
                 }
-            } else { // display the 'true' part, substitute original value into ::value::
+            } else { // display the 'true' part, substitute original value into ::value:: if not in the nested part
                 html = PEATCMS.replace(str_to_replace, PEATCMS.replace('::value::', output_object, parts[0]), html);
             }
         }

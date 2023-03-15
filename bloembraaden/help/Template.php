@@ -473,9 +473,10 @@ class Template extends BaseLogic
                 }
             }
         }
-        foreach ($check_if as $tag_name => $output_object) { // @since 0.10.7 if tags should be able to contain other tags
+        $check_if = array_reverse($check_if, true); // check in reverse order, to target the ::value:: in deeper nested tags first
+        foreach ($check_if as $tag_name => $output_object) {
             // @since 0.4.12: simple elements can show / hide parts of the template
-            while (($str_pos = strpos($html, '{{' . $tag_name . ':')) !== false) {
+            while (false !== ($str_pos = strpos($html, '{{' . $tag_name . ':'))) {
                 // @since 0.7.9 you can use ‘equal to’ operator ‘==’
                 if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
                     $str_pos = $str_pos + strlen($tag_name) + 5;
@@ -497,6 +498,21 @@ class Template extends BaseLogic
                     continue;
                 }
                 $content = substr($html, $str_pos, $end_pos - $str_pos);
+                // @since 0.16.3 allow nested ifs
+                if (false !== strpos($content, '{{')) {
+                    while (count(explode('{{', $content)) > count(explode('}}', $content))) {
+                        $end_pos = strpos($html, '}}', $end_pos + 2);
+                        $content = substr($html, $str_pos, $end_pos - $str_pos);
+                    }
+                    if (false === $end_pos) { // error: if tag has no end
+                        $html = str_replace(
+                            '{{' . $tag_name . ':',
+                            'Nested if-error near ' . $tag_name,
+                            $html
+                        );
+                        continue;
+                    }
+                }
                 $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
                 $str_to_replace = '{{' . $tag_name . ((isset($equals)) ? ':==' . $equals . ':' : ':') . $content . '}}';
                 if ($is_false) {
@@ -512,6 +528,9 @@ class Template extends BaseLogic
                         $html
                     );
                 }
+//                echo '<textarea style="width:75vw;height:145px">';
+//                var_dump($tag_name, $output_object, $str_to_replace);
+//                echo '</textarea>';
             }
         }
         $check_if = null;
