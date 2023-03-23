@@ -473,7 +473,7 @@ class Template extends BaseLogic
                 }
             }
         }
-        $check_if = array_reverse($check_if, true); // check in reverse order, to target the ::value:: in deeper nested tags first
+        //$check_if = array_reverse($check_if, true); // check in reverse order, to target the ::value:: in deeper nested tags first
         foreach ($check_if as $tag_name => $output_object) {
             // @since 0.4.12: simple elements can show / hide parts of the template
             while (false !== ($str_pos = strpos($html, '{{' . $tag_name . ':'))) {
@@ -500,7 +500,8 @@ class Template extends BaseLogic
                 $content = substr($html, $str_pos, $end_pos - $str_pos);
                 // @since 0.16.3 allow nested ifs
                 if (false !== strpos($content, '{{')) {
-                    while (count(explode('{{', $content)) > count(explode('}}', $content))) {
+                    while (substr_count($content, '{{') > substr_count($content, '}}')) {
+                        //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
                         $end_pos = strpos($html, '}}', $end_pos + 2);
                         $content = substr($html, $str_pos, $end_pos - $str_pos);
                     }
@@ -510,6 +511,9 @@ class Template extends BaseLogic
                             'Nested if-error near ' . $tag_name,
                             $html
                         );
+//                        echo '<textarea style="width:75vw;height:145px">';
+//                        var_dump($tag_name, $output_object, $content);
+//                        echo '</textarea>';
                         continue;
                     }
                 }
@@ -521,21 +525,44 @@ class Template extends BaseLogic
                     } else { // forget it
                         $html = str_replace($str_to_replace, '', $html);
                     }
-                } else { // display the 'true' part, substitute original value into ::value::
-                    $html = str_replace(
-                        $str_to_replace,
-                        str_replace('::value::', $output_object, $parts[0]),
-                        $html
-                    );
+                } else { // display the 'true' part
+                    $true_part = $parts[0];
+                    if (false !== strpos($true_part, '::value::')) {
+                        // subsitute the ::value:: with the actual value for this level only, not the nested levels
+                        $parts = explode('::value::', $true_part);
+                        $bracket_count = 0;
+                        $parts_length = count($parts);
+//                        echo '<textarea style="width:75vw;height:70px">';
+//                        var_dump($tag_name, $parts_length, $parts);
+//                        echo '</textarea>';
+                        foreach ($parts as $index => $part) {
+                            if ($index === $parts_length - 1) break;
+                            $bracket_count += substr_count($part, '{{') - substr_count($part, '}}');
+//                            echo '<textarea style="width:75vw;height:70px">';
+//                            var_dump($bracket_count, $output_object, $part);
+//                            echo '</textarea>';
+                            if (0 === $bracket_count) {
+                                $parts[$index] = "$part$output_object";
+                            } else {
+                                $parts[$index] = "$part::value::";
+                            }
+                        }
+                        $true_part = implode($parts);
+//                        echo '<textarea style="width:75vw;height:70px">';
+//                        var_dump($true_part);
+//                        echo '</textarea>';
+                    }
+                    $html = str_replace($str_to_replace, $true_part, $html);
                 }
 //                echo '<textarea style="width:75vw;height:145px">';
-//                var_dump($tag_name, $output_object, $str_to_replace);
+//                var_dump($tag_name, $output_object, $str_to_replace, $parts);
 //                echo '</textarea>';
             }
         }
         $check_if = null;
         $output = null;
         $output_object = null;
+//        die('ruf');
 
         return $html;
     }

@@ -1277,7 +1277,7 @@ PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
     }
     method = (method && method.toUpperCase() === 'GET') ? 'GET' : 'POST'; // default to post
     if (!data) {
-        data = {json: true, timestamp: NAV.nav_timestamp }
+        data = {json: true, timestamp: NAV.nav_timestamp}
     } else { // use array notation instead of object, to suppress warning in IDE
         data['json'] = true;
         if (!data.hasOwnProperty('timestamp')) data['timestamp'] = NAV.nav_timestamp;
@@ -1614,7 +1614,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, type_of_object);
         }
     }
-    for (len = check_if.length, i = len - 1; i >= 0; i--) { // check in reverse order, to target the ::value:: in deeper nested tags first
+    for (i = 0, len = check_if.length; i < len; ++i) {
         obj = check_if[i];
         tag_name = obj.tag_name;
         output_object = obj.output_object;
@@ -1656,8 +1656,24 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 } else { // forget it
                     html = PEATCMS.replace(str_to_replace, '', html);
                 }
-            } else { // display the 'true' part, substitute original value into ::value:: if not in the nested part
-                html = PEATCMS.replace(str_to_replace, PEATCMS.replace('::value::', output_object, parts[0]), html);
+            } else { // display the 'true' part
+                let true_part = parts[0];
+                if (-1 !== true_part.indexOf('::value::')) {
+                    // subsitute the ::value:: with the actual value for this level only, not the nested levels
+                    parts = true_part.split('::value::');
+                    let bracket_count = 0;
+                    for (let p = 0, p_len = parts.length; p < p_len - 1; ++p) {
+                        const part = parts[p];
+                        bracket_count += part.split('{{').length - part.split('}}').length;
+                        if (0 === bracket_count) {
+                            parts[p] = part + output_object;
+                        } else {
+                            parts[p] = part + '::value::';
+                        }
+                    }
+                    true_part = parts.join('');
+                }
+                html = PEATCMS.replace(str_to_replace, true_part, html);
             }
         }
     }
