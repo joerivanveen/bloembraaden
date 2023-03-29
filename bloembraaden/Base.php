@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class Base
 {
     // NOTE we track whether THIS object has a message or error, but we save and retrieve them all globally (through Help)

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class Shoppinglist extends BaseLogic
 {
     // TODO it's a bit wonky, with the 'rows' variable holding the rows

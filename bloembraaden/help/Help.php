@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 /**
  * This is a static class with some functions used throughout peatcms

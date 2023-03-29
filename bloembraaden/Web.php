@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 require 'Require.php';
 // startup Bloembraaden

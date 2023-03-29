@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class BaseElement extends BaseLogic implements Element
 {
     // $row, $template_pointer, $type_name, defined in BaseLogic

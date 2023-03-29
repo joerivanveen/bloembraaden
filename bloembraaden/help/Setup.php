@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 use PDO, PDOException, Exception, stdClass;
 

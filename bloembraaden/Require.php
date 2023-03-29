@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 //
 define('CORE', __DIR__ . '/');
@@ -49,7 +49,7 @@ require CORE . 'help/logger/LoggerInterface.php';
 require CORE . 'help/logger/SseLogger.php';
 require CORE . 'help/logger/StdOutLogger.php';
 require CORE . 'help/Translator.php';
-require CORE . 'help/JobTransaction.php'; // static class with helper functions
+require CORE . 'help/JobTransaction.php';
 require CORE . 'help/Help.php'; // static class with helper functions
 require CORE . 'help/Setup.php'; // static class with settings and variables
 require CORE . 'help/Mailer.php';
@@ -57,5 +57,5 @@ require CORE . 'help/Warmup.php';
 require CORE . 'help/Postcode.php';
 require CORE . 'help/Resolver.php';
 require CORE . 'help/Template.php';
-require CORE . 'help/Parser.php'; // markdown parser for content, excerpt and description fields
+require CORE . 'help/Parser.php'; // markdown parser
 require CORE . 'help/Minifier.php'; // JShrink minifier (c) Robert Hafner <tedivm@tedivm.com>

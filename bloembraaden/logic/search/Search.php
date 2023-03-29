@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class Search extends BaseElement
 {
     protected bool $admin = false;

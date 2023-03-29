@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class Handler extends BaseLogic
 {
     private Session $session;
@@ -2078,14 +2078,14 @@ class Handler extends BaseLogic
         foreach ($arr as $key => $value) {
             // trim is needed to remove the \0 byte denoting a (former) private property
             // https://stackoverflow.com/questions/5484574/php-fatal-error-cannot-access-property-started-with-0
-            $key = trim(str_replace('Peat\TableInfo', '', $key)); // also remove className
+            $key = trim(str_replace('Bloembraaden\TableInfo', '', $key)); // also remove className
             // convert all the columns (which are an object with private properties) to arrays as well
             if ($key === 'columns') {
                 foreach ($value as $column_name => $properties) {
                     // cleanup the properties as well
                     $arr_props = (array)$properties;
                     foreach ($arr_props as $prop_name => $prop_value) {
-                        $arr_props[trim(str_replace('Peat\Column', '', $prop_name))] = $prop_value;
+                        $arr_props[trim(str_replace('Bloembraaden\Column', '', $prop_name))] = $prop_value;
                         unset($arr_props[$prop_name]);
                     }
                     $value[$column_name] = $arr_props;

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 // there are a couple of standard commands that differ from normal handling:
 // - __admin__
 // - __action__

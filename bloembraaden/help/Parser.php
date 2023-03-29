@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 /**
  * The parser deals with 1 byte characters only to keep it fast etc., however there is no problem when

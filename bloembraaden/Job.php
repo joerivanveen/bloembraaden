@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 //
 if (extension_loaded('newrelic')) {
     newrelic_name_transaction('Job start');

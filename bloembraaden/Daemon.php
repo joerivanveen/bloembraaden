@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 require __DIR__ . '/Require.php';
 set_time_limit(0);
 //

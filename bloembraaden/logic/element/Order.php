@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 class Order extends BaseElement
 {

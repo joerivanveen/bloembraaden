@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Peat;
+namespace Bloembraaden;
 class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
@@ -3840,7 +3840,7 @@ class DB extends Base
     {
         // @since 0.7.7 the contents is cached
         $version = Setup::$VERSION;
-        $file_name = "$this->cache_folder$version$table_name.info.serialized";
+        $file_name = "$this->cache_folder$version.$table_name.serialized";
         if (true === file_exists($file_name)) {
             if (false !== ($obj = unserialize(file_get_contents($file_name)))) {
                 return $obj;
@@ -3910,9 +3910,9 @@ class DB extends Base
         // construct a sql statement inner joining all the entries, ordered by date_updated so you only get the most recent entry
         ob_start(); // will hold sql statement
         foreach ($rows as $key => $row) {
-            if (false === strpos($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
+            if (0 !== strpos($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
             if (ob_get_length()) echo 'UNION ALL ';
-            $element_name = str_replace('cms_', '', $row->table_name);
+            $element_name = substr($row->table_name, 4);//str_replace('cms_', '', $row->table_name);
             echo "SELECT {$element_name}_id as id, '$element_name' as type, date_updated 
                 FROM cms_$element_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
         }
@@ -3949,23 +3949,25 @@ class DB extends Base
         if ('' === (string)($slug = $row->__ref)) return;
         $json = json_encode($row);
         // switch update or insert
-        $statement = $this->conn->prepare(
-            'SELECT EXISTS (SELECT 1 FROM _cache WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page);'
-        );
+        $statement = $this->conn->prepare('
+            SELECT EXISTS (SELECT 1 FROM _cache WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page);
+        ');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $variant_page);
         $statement->execute();
         $exists = (bool)$statement->fetchColumn(0);
         if (true === $exists) { // update TODO go to an insert-only model and delete crap later
-            $statement = $this->conn->prepare(
-                'UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, ' .
-                'id = :id, since = now(), variant_page_json = null ' .
-                'WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;');
+            $statement = $this->conn->prepare('
+                UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, 
+                id = :id, since = now(), variant_page_json = null
+                WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;
+            ');
         } else { // insert
-            $statement = $this->conn->prepare(
-                'INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page) ' .
-                'VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page);');
+            $statement = $this->conn->prepare('
+                INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page) 
+                VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page);
+            ');
         }
         $statement->bindValue(':row_as_json', $json);
         $statement->bindValue(':type_name', $type_name);
@@ -4047,7 +4049,7 @@ class DB extends Base
      */
     public function reCacheWithWarmup(string $slug): bool // success
     {
-        // @since 0.8.2: warmup is used in stead of delete
+        // @since 0.8.2: warmup is used instead of delete
         if (false === (new Warmup())->Warmup($slug, Setup::$instance_id)) {
             $this->addError(sprintf(__('Warmup failed for ‘%s’', 'peatcms'), $slug));
             // only when warmup fails we delete
@@ -4071,10 +4073,10 @@ class DB extends Base
      */
     public function deleteFromCache(string $slug, int $from_variant_page_upwards = 1): bool //success
     {
-        $statement = $this->conn->prepare(
-            'DELETE FROM _cache WHERE instance_id = :instance_id AND slug = :slug 
-            AND variant_page >= :variant_page;'
-        );
+        $statement = $this->conn->prepare('
+            DELETE FROM _cache WHERE instance_id = :instance_id AND slug = :slug 
+            AND variant_page >= :variant_page;
+        ');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $from_variant_page_upwards);

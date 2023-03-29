@@ -1,7 +1,7 @@
 <?php
 function __($text, $domain)
 {
-    if (isset(\Peat\Setup::$translations[$text])) return \Peat\Setup::$translations[$text];
+    if (isset(\Bloembraaden\Setup::$translations[$text])) return \Bloembraaden\Setup::$translations[$text];
     return $text;
 }
 
@@ -34,7 +34,7 @@ class MoParser
             return array($locale=>array());
         }
         if (@filesize($filename) < 10) {
-            Peat\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
             return array($locale=>array());
         }
         // get Endian
@@ -44,7 +44,7 @@ class MoParser
         } else if (strtolower(substr(dechex($input[1]), -8)) == 'de120495') {
             $this->_bigEndian = true;
         } else {
-            Peat\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
             return array($locale=>array());
         }
         // read revision - not supported for now

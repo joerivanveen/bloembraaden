@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Peat;
+namespace Bloembraaden;
 
 class Type extends Base
 {
@@ -90,7 +90,7 @@ class Type extends Base
 
     public function getElement(\stdClass $row = null): BaseElement
     {
-        $class_name = '\\Peat\\' . $this->className();
+        $class_name = '\\Bloembraaden\\' . $this->className();
 
         return new $class_name($row);
     }
