@@ -3051,7 +3051,21 @@ BEGIN;
 
 COMMIT;
 
+-- version 0.16.3
 
+BEGIN;
 
+COMMIT;
+
+-- version 0.16.4
+
+BEGIN;
+
+ALTER TABLE "public"."_instagram_media"
+    ADD COLUMN if not exists "css_class" character varying(255);
+
+UPDATE "public"."_instagram_media" SET media_url = 're-process-all-insta-images' WHERE src IS NOT NULL;
+
+COMMIT;
 
 

@@ -1425,7 +1425,8 @@ class DB extends Base
         }
         // users MUST be AUTHORIZED FOR THIS INSTANCE
         // @since 0.10.0 include the processed images
-        $sql = "SELECT caption, media_type, src, media_url, permalink, user_id, instagram_username AS username, instagram_timestamp AS timestamp, 
+        $sql = "SELECT caption, media_type, src, media_url, permalink, user_id, css_class,
+            instagram_username AS username, instagram_timestamp AS timestamp, 
             concat(cast(:cdnroot AS text), src_tiny) AS src_tiny, width_tiny, height_tiny,
             concat(cast(:cdnroot AS text), src_small) AS src_small, width_small, height_small,
             concat(cast(:cdnroot AS text), src_medium) AS src_medium, width_medium, height_medium,
@@ -1990,7 +1991,7 @@ class DB extends Base
     public function jobGetInstagramMediaIdsForRefresh(int $limit = 25): array
     {
         // the older entries are the newer instagram media entries since they are loaded / paged in reverse order in the api
-        $statement = $this->conn->prepare("SELECT media_id, user_id FROM _instagram_media 
+        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url FROM _instagram_media 
             WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE 
             ORDER BY date_created LIMIT $limit;");
         $statement->execute();
@@ -2008,7 +2009,7 @@ class DB extends Base
      */
     public function jobGetInstagramMediaIdsForRefreshByDate(int $limit = 25): array
     {
-        $statement = $this->conn->prepare("SELECT media_id, user_id FROM _instagram_media 
+        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url FROM _instagram_media 
             WHERE deleted = FALSE ORDER BY date_updated LIMIT $limit;");
         $statement->execute();
         $rows = $this->normalizeRows($statement->fetchAll());

@@ -405,11 +405,10 @@ if ('1' === $interval) { // interval should be '1'
     }
     // now get all media entries that have no content (ie where username = null), to update
     $rows = $db->jobGetInstagramMediaIdsForRefresh(count($instagram_user_ids) * 4); // max 4 every minute per user registered
-    echo 'refresh instagram media entries' . PHP_EOL;
+    echo 'refresh instagram media entries', PHP_EOL;
     if (0 === count($rows)) { // when there are no new rows, select some old ones just to check if they’re still valid
-        // TODO temporarily disabled because of IG rate limiting
         $rows = $db->jobGetInstagramMediaIdsForRefreshByDate(count($instagram_user_ids) * 4);
-        echo '(no new ones found, so checking up on some old ones)' . PHP_EOL;
+        echo '(no new ones found, so checking up on some old ones)', PHP_EOL;
     }
     $updated_user_ids = array();
     // https://graph.instagram.com/17896358038720106?fields=caption,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token={}
@@ -418,14 +417,12 @@ if ('1' === $interval) { // interval should be '1'
             // this row is weird, can be when a user is deauthorized but has just uploaded media
             echo 'No access token for this user';
             if ($db->updateColumns('_instagram_media', array('deleted' => true), $row->media_id)) {
-                echo ', removed media entry: ';
-                echo $row->media_id;
+                echo ', removed media entry: ', $row->media_id;
             }
             echo PHP_EOL;
             continue;
         }
-        echo $row->media_id;
-        echo ': ';
+        echo $row->media_id, ': ';
         curl_setopt($curl, CURLOPT_URL,
             'https://graph.instagram.com/' . $row->media_id .
             '?fields=caption,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token=' .
@@ -436,16 +433,21 @@ if ('1' === $interval) { // interval should be '1'
         if (200 === $status_code) {
             $media = json_decode($result);
             if (json_last_error() === JSON_ERROR_NONE && isset($media->media_url)) {
-                // update the entry
-                if ($db->updateColumns('_instagram_media', array(
+                $media_url = ($media->thumbnail_url ?? $media->media_url);
+                $update_data = array(
                     'caption' => $media->caption ?? '', // (old) instagram posts may have no caption
                     'media_type' => $media->media_type,
                     'permalink' => $media->permalink,
                     'instagram_username' => $media->username,
                     'instagram_timestamp' => $media->timestamp,
-                    'media_url' => ($media->thumbnail_url ?? $media->media_url),
+                    'media_url' => $media_url,
                     'flag_for_update' => false,
-                ), $row->media_id)) {
+                );
+                if ($media_url !== $row->media_url) {
+                    $update_data['src'] = null; // have it processed again
+                }
+                // update the entry
+                if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
                     // remember you updated this user_id, so their feeds can be refreshed
                     $updated_user_ids[(string)$row->user_id] = true;
                     echo 'OK';
@@ -457,7 +459,7 @@ if ('1' === $interval) { // interval should be '1'
                 Help::addError(new \Exception('Insta media error: ' . $result));
                 echo 'error';
             }
-        } elseif ($status_code === 400 || $status_code === 403 || $status_code === 404) { // remove this
+        } elseif ($status_code === 400 || $status_code === 403 || $status_code === 404) { // remove this media entry
             // update the entry
             if ($db->updateColumns('_instagram_media', array(
                 'deleted' => true,
@@ -470,7 +472,7 @@ if ('1' === $interval) { // interval should be '1'
             }
         } else {
             Help::addError(new \Exception('Instagram media update failed with status ' . $status_code));
-            echo 'Nothing done, got status ' . $status_code;
+            echo 'Nothing done, got status ', $status_code;
         }
         echo PHP_EOL;
     }
@@ -499,6 +501,7 @@ if ('1' === $interval) { // interval should be '1'
                     }
                     // remember you updated this user_id, so their feeds can be refreshed
                     $updated_user_ids[(string)$row->user_id] = true;
+                    echo PHP_EOL;
                     $logger->out();
                 }
             }
@@ -517,7 +520,7 @@ if ('1' === $interval) { // interval should be '1'
     $updated_feeds = array(); // each feed has to be updated only once here
     $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
         foreach ($feeds as $index => $specs) {
-            echo($feed_name = $specs->feed_name);
+            echo ($feed_name = $specs->feed_name);
             if (isset($updated_feeds[$feed_name])) {
                 echo ' already done' . PHP_EOL;
                 continue;
