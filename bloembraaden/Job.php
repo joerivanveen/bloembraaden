@@ -172,7 +172,7 @@ if ('1' === $interval) { // interval should be '1'
                     }
                     // call the browserless people to make a pdf from the html
                     $curl = curl_init();
-                    if (!$curl) {
+                    if (false === $curl) {
                         continue; // peatcms can’t mail without curl anyway so might as well just ignore this
                     }
                     //curl_setopt($curl, CURLOPT_USERAGENT, 'Bloembraaden/VERSION');
@@ -193,15 +193,17 @@ if ('1' === $interval) { // interval should be '1'
                         ),
                     );
                     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($params));
-                    $result = trim(curl_exec($curl));
-                    $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-                    curl_close($curl);
-                    if (200 !== $status_code) {
-                        Help::addError(new \Exception(sprintf('Pdfmaker error: ‘%s’', substr($result, 0, 300))));
+                    $result = curl_exec($curl);
+                    if (false === $result) {
+                        Help::addError(new \Exception(sprintf('Curl error invoice for order %s: ‘%s’', $order_number, curl_error($curl))));
+                        curl_close($curl);
                         break; // it’s not working apparently
                     }
-                    if ('%PDF' !== substr($result, 0, 4)) {
-                        Help::addError(new \Exception(sprintf('Pdfmaker error: ‘%s’', substr($result, 0, 300))));
+                    $result = trim($result);
+                    $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
+                    curl_close($curl);
+                    if (200 !== $status_code || '%PDF' !== substr($result, 0, 4)) {
+                        Help::addError(new \Exception(sprintf('Pdf error invoice for order %s: ‘%s’', $order_number, substr($result, 0, 300))));
                         break; // it’s not working apparently
                     }
                     // save the pdf
