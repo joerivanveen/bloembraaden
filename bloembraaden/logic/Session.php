@@ -100,10 +100,8 @@ class Session extends BaseLogic
                     if ($this->user = new User($row->id)) {
                         return $this->refreshAfterLogin(array('user_id' => $row->id));
                     }
-                } else {
-                    if ($this->admin = new Admin($row->id)) {
+                } elseif ($this->admin = new Admin($row->id)) {
                         return $this->refreshAfterLogin(array('admin_id' => $row->id));
-                    }
                 }
                 $this->addError(sprintf('Email %s checks out in password_verify(), but no user is found.', $email));
                 $this->addMessage(__('Name / pass checks out, but no user found.', 'peatcms'), 'error');

@@ -1,13 +1,12 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
 /**
  * This is a static class with some functions used throughout peatcms
  */
-
 class Help
 {
     private static DB $db;
@@ -22,18 +21,18 @@ class Help
     private function __construct()
     {
     }
-    
+
     public static function getDB(): DB
     {
-        if (! isset(static::$db)) {
+        if (!isset(static::$db)) {
             static::$db = new DB();
         }
-        
+
         return static::$db;
     }
 
     /**
-     * @param $var mixed the variable to be returned as integer
+     * @param mixed $var the variable to be returned as integer
      * @param int|null $default return value if $var cannot be converted to integer
      * @return int|null the $var converted to integer, or $default when conversion failed
      * @since 0.4.0
@@ -255,7 +254,7 @@ class Help
      * @param string $level
      * @since 0.4.0, 0.5.9: added $level 'note'
      */
-    public static function addMessage(string $message, string $level = 'log')
+    public static function addMessage(string $message, string $level = 'log'): void
     {
         if (false === in_array($level, array('note', 'warn', 'error', 'log'), true)) $level = 'log'; // default to log
         // NOTE the level is not updated when the count for a message is updated
@@ -314,7 +313,7 @@ class Help
      * @param \Exception $e
      * @since 0.4.0
      */
-    public static function addError(\Exception $e)
+    public static function addError(\Exception $e): void
     {
         static::$errors[] = $e;
     }
@@ -354,9 +353,9 @@ class Help
             } else {
                 $message = "\r\nNO CLIENT";
             }
-            $message .= "\t" .  date('Y-m-d H:i:s') . "\t";
-            if (isset($_SERVER['REQUEST_METHOD'])) $message .=  $_SERVER['REQUEST_METHOD'] . "\t";
-            if (isset($_SERVER['REQUEST_URI'])) $message .=  $_SERVER['REQUEST_URI'] . "\t";
+            $message .= "\t" . date('Y-m-d H:i:s') . "\t";
+            if (isset($_SERVER['REQUEST_METHOD'])) $message .= $_SERVER['REQUEST_METHOD'] . "\t";
+            if (isset($_SERVER['REQUEST_URI'])) $message .= $_SERVER['REQUEST_URI'] . "\t";
             $message .= "LOG\r\n";
             $message .= implode("\r\n", $arr);
             error_log($message, 3, Setup::$LOGFILE);
@@ -371,11 +370,11 @@ class Help
      * @param int $level
      * @since 0.4.0
      */
-    public static function trigger_error(string $message, int $level = E_USER_NOTICE)
+    public static function trigger_error(string $message, int $level = E_USER_NOTICE): void
     {
-        if ($caller = debug_backtrace()[1]) {
+        if (($caller = debug_backtrace()[1])) {
             $message = $message . ' in <strong>' . $caller['function'] . '</strong> called from <strong>' .
-                $caller['file'] . '</strong> on line <strong>' . $caller['line'] . '</strong>' . "\n<br />error handler";
+                $caller['file'] . '</strong> on line <strong>' . $caller['line'] . "</strong>\n<br />error handler";
         }
         trigger_error($message, $level);
     }
@@ -424,7 +423,7 @@ class Help
     {
         if (-1 === $instance_id) $instance_id = Setup::$instance_id;
 
-        return Setup::$INVOICE . '/' . $instance_id . '_' . $order_number . '.pdf';
+        return Setup::$INVOICE . "/{$instance_id}_$order_number.pdf";
     }
 
     /*public static function humanFileSize($bytes, int $decimals = 2): string
@@ -458,7 +457,7 @@ class Help
         $file_name = Help::randomString(20);
         $new_path = Setup::$UPLOADS . $file_name;
         if (file_exists($new_path)) { // this should never happen
-            self::trigger_error(sprintf('File %s already exists', $new_path), E_USER_ERROR);
+            self::trigger_error("File $new_path already exists", E_USER_ERROR);
         } else {
             copy($temp_path, $new_path);
         }
@@ -552,18 +551,18 @@ class Help
 
     public static function prepareAdminRowForOutput(\stdClass &$row, string $what, ?string $which = null)
     {
-        $row->title = $what . ' | Bloembraaden';
+        $row->title = "$what | Bloembraaden";
         $row->template_pointer = (object)array('name' => $what, 'admin' => true);
         $row->type = $what;
         if (null !== $which) {
-            $what .= '/' . $which;
+            $what .= "/$which";
         }
-        $row->slug = '__admin__/' . $what;
+        $row->slug = "__admin__/$what";
         $row->path = $row->slug;
     }
 
     /**
-     * @param $password String The password
+     * @param string $password The password
      * @return bool|string|null Returns (string) hash, or false on failure (or null when algorithm is invalid)
      */
     public static function passwordHash(string $password): bool|string|null
@@ -573,9 +572,8 @@ class Help
 
     /**
      * Creates a safe slug from UTF-8 string, which is NOT lowercase yet
-     * bloembraaden relies on database for lowercase conversion, which is better with utf-8
      *
-     * @param $string string The string you want to be converted to a slug
+     * @param string $string The string you want to be converted to a slug
      * @return string slug-safe UTF-8 string, still contains case
      */
     public static function slugify(string $string): string
@@ -615,7 +613,7 @@ class Help
         usort($terms, function ($a, $b) {
             if (is_numeric($a) && !is_numeric($b))
                 return 1;
-            else if (!is_numeric($a) && is_numeric($b))
+            elseif (!is_numeric($a) && is_numeric($b))
                 return -1;
             else
                 return ($a < $b) ? -1 : 1;
@@ -835,16 +833,16 @@ class Help
     {
         // check the (new) folders @since 0.10.0
         foreach (array(
-            Setup::$DBCACHE,
-            Setup::$INVOICE,
-            Setup::$LOGFILE,
-            Setup::$UPLOADS,
-            Setup::$CDNPATH
+                     Setup::$DBCACHE,
+                     Setup::$INVOICE,
+                     Setup::$LOGFILE,
+                     Setup::$UPLOADS,
+                     Setup::$CDNPATH
                  ) as $index => $folder_name) {
-            if (! file_exists($folder_name)) {
+            if (!file_exists($folder_name)) {
                 Help::addError(new \Exception(sprintf('Please create folder %s on the server', $folder_name)));
             }
-            if (! is_writable($folder_name)) {
+            if (!is_writable($folder_name)) {
                 Help::addError(new \Exception(sprintf('Folder %s must be writable by the web user', $folder_name)));
             }
             if (Setup::$DBCACHE === $folder_name) {
@@ -869,20 +867,24 @@ class Help
         /**
          * if there is a version in the db, this may be an upgrade request
          */
-        $do = false;
         try {
-            $do = version_compare(Setup::$VERSION, $db->getDbVersion());
-            if ($do === 0) {
-                Help::addError(new \Exception('Installed version is current, please switch off the install flag in config'));
-
-                return;
-            } elseif ($do < 0) {
-                Help::addError(new \Exception('Seems the previously installed version is higher, downgrading is not supported'));
-
-                return;
-            }
+            $version = $db->getDbVersion();
         } catch (\Exception $e) {
             Help::addError($e);
+            $version = '';
+        }
+        $do = false;
+        if ('' !== $version) {
+            $do = version_compare(Setup::$VERSION, $version);
+        }
+        if ($do === 0) {
+            Help::addError(new \Exception('Installed version is current, please switch off the install flag in config'));
+
+            return;
+        } elseif ($do < 0) {
+            Help::addError(new \Exception('Seems the previously installed version is higher, downgrading is not supported'));
+
+            return;
         }
         if ($do === 1) {
             // setup output stream for feedback and write it to the log
@@ -898,7 +900,7 @@ class Help
                 $version = explode('.', PHP_VERSION);
                 define('PHP_VERSION_ID', ((int)$version[0] * 10000 + (int)$version[1] * 100 + (int)$version[2]));
             }
-            if (PHP_VERSION_ID < 70400) {
+            if (PHP_VERSION_ID < 80000) {
                 die('Peatcms needs php version 8.0 or higher.');
             }
             if (is_null(Help::passwordHash('test'))) {
@@ -921,8 +923,8 @@ class Help
              * run the entire install file
              */
             $install_file = CORE . '/data/install.sql';
-            if (! file_exists($install_file)) {
-                die('Expected sql file not found: ' . $install_file);
+            if (!file_exists($install_file)) {
+                die("Expected sql file not found: $install_file");
             }
             $sql = file_get_contents($install_file);
             $db->run($sql);

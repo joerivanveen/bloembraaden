@@ -47,7 +47,8 @@ class Instance extends BaseLogic
 
     public function getDomain(bool $includeProtocol = false): string
     {
-        return ($includeProtocol ? 'https://' : '') . $this->row->domain;
+        if (true === $includeProtocol) return "https://{$this->row->domain}";
+        return $this->row->domain;
     }
 
     public function completeRowForOutput(): void
@@ -125,7 +126,7 @@ class Instance extends BaseLogic
      * Loads the instance based on domain accessed
      * When this fails execution is halted, hence no return value is needed
      *
-     * @param $domain string
+     * @param string $domain
      */
     private function load(string $domain)
     {

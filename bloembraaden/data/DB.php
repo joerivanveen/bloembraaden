@@ -6,7 +6,7 @@ class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
-    private array $table_infos, $stale_slugs;
+    private array $table_infos, $stale_slugs, $tables_with_slugs;
     public const TABLES_WITHOUT_HISTORY = array(
         '_ci_ai',
         '_session',
@@ -56,7 +56,7 @@ class DB extends Base
     /**
      * These are tables linked by crosslink tables (_x_-tables), returns the relations both ways:
      * element_name=>'child' or element_name=>'parent'
-     * @param $type Type the element you want to get the cross linked tables for
+     * @param Type $type the element you want to get the cross linked tables for
      * @return \stdClass array containing named arrays: element_name=>relation (parent or child), array has no keys when no tables are linked
      */
     public function getLinkTables(Type $type): \stdClass
@@ -118,10 +118,10 @@ class DB extends Base
      */
     public function getDbVersion(): string
     {
-        if (!isset($this->db_version)) {
+        if (false === isset($this->db_version)) {
             $statement = $this->conn->prepare('SELECT version FROM _system');
             $statement->execute();
-            $this->db_version = $statement->fetchColumn(0);
+            $this->db_version = $statement->fetchColumn(0) ?: '';
             $statement = null;
         }
 
@@ -3432,7 +3432,7 @@ class DB extends Base
     }
 
     /**
-     * @param $table_name string holding correct table_name, fatal error is thrown when table_name is wrong
+     * @param string $table_name holding correct table_name, fatal error is thrown when table_name is wrong
      * @param array $columns
      * @param array $where
      * @param bool $single true when 1 return row is expected, false to return an array with every returned row (0 or more)
@@ -3456,8 +3456,8 @@ class DB extends Base
         } else {
             $columns = array('names' => array());
         }
-        $columns['names'][] = $table_info->getIdColumn() . ' AS id'; // always get the id of the table, as ->id
-        $columns['names'][] = '\'' . $table_name . '\' AS table_name'; // always return the table_name as well
+        $columns['names'][] = "{$table_info->getIdColumn()} AS id"; // always get the id of the table, as ->id
+        $columns['names'][] = "'$table_name' AS table_name"; // always return the table_name as well
         $where = $table->formatColumnsAndData($where);
         // @since 0.7.9 source of potential bugs, the changing of a where clause, will cause a fatal error from now on
         if (count($where['discarded']) !== 0) $this->handleErrorAndStop('->fetchRows discarded columns in where clause');
@@ -3506,7 +3506,7 @@ class DB extends Base
     }
 
     /**
-     * @param $table_name string holding correct table name
+     * @param string $table_name holding correct table name
      * @param array $columns
      * @param array $where
      * @return \stdClass|null null when failed, normalized row object when succeeded

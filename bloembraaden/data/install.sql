@@ -366,6 +366,7 @@ ALTER TABLE "public"."cms_image"
 -- -------------------------------------------------------------
 
 -- CREATE TABLE "_system" --------------------------------------
+DROP TABLE IF EXISTS "public"."_system";
 CREATE TABLE "public"."_system"
 (
     "version" Character Varying(40) NOT NULL,
@@ -1010,6 +1011,16 @@ $$
         END IF;
     END
 $$;
+
+-- drop the embed tables if this is a re-install
+DROP TABLE IF EXISTS "public"."cms_embed";
+DROP TABLE IF EXISTS "public"."cms_embed_x_brand";
+DROP TABLE IF EXISTS "public"."cms_embed_x_page";
+DROP TABLE IF EXISTS "public"."cms_embed_x_product";
+DROP TABLE IF EXISTS "public"."cms_embed_x_serie";
+DROP TABLE IF EXISTS "public"."cms_embed_x_variant";
+
+
 ALTER TABLE IF EXISTS "public"."cms_video"
     RENAME TO "cms_embed";
 -- including index and default value for id
