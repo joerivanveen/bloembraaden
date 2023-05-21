@@ -1483,7 +1483,7 @@ class Handler extends BaseLogic
                 if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
                 // @since 0.6.1 add any changed session vars for update on client
                 $out->__session__ = $this->getSession()->getUpdatedVars();
-                ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
+                if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
                 unset($out);
                 header('Content-Type: application/json');
