@@ -28,10 +28,7 @@ class jobTransaction
             newrelic_name_transaction($name);
         }
         ob_start(); // ob_get_clean also STOPS output buffering :-P
-        echo '=== ';
-        echo $name;
-        echo ' ===';
-        echo PHP_EOL;
+        echo '=== ', $name, ' ===', PHP_EOL;
     }
 
     public function flush(bool $with_log = true)
