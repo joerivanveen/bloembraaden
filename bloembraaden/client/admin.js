@@ -16,7 +16,7 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
     this.price_column_names = ['price', 'price_from'];
     this.selectlist_column_names = ['template_id', 'vat_category_id'];
     this.changed = false;
-    this.parent_PEATCMS_element = PEATCMS_element;
+    this.parent_PEATCMS_element = PEATCMS_element; // todo make this a reference to the element
     this.column = PEATCMS_element.getColumnByName(column_name);
     this.server_value = PEATCMS_element.getColumnValue(column_name);
     if (typeof this.server_value === 'undefined') PEAT.message('Cache must be refreshed', 'warn');
@@ -25,6 +25,7 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
         return; // prevent error message from appearing
     }
     if (VERBOSE) console.error('There is no ‘' + this.column.type + '’ for ' + column_name);
+    PEATCMS_element = null;
 }
 
 /**
@@ -463,7 +464,13 @@ PEATCMS_actor.prototype.typed = function (event, enter_triggers_save) {
         }
     }
     if (event.key === 'Escape') {
-        this.DOMElement.value = this.server_value;
+        // copy the title tag... special functionality since 0.16.5
+        if ((event.ctrlKey || event.metaKey) && 'slug' === this.column.name) {
+            const title = NAV.getCurrentElement().state.title_parsed; // TODO use parent_PEATCMS_element when it is the right reference
+            if (title) this.DOMElement.value = title;
+        } else {
+            this.DOMElement.value = this.server_value;
+        }
         this.reflectChanged();
     }
 }
@@ -683,6 +690,7 @@ const PEATCMS_x_value = function (row, parent_element) { // contains property / 
         try {
             event.dataTransfer.clearData();
         } catch (e) {
+            if (VERBOSE) console.error(e);
         }
     });
     // set
@@ -730,6 +738,7 @@ const PEATCMS_linkable = function (name, row, parent_element) {
         try {
             event.dataTransfer.clearData();
         } catch (e) {
+            if (VERBOSE) console.error(e);
         }
     });
     // set
@@ -764,7 +773,7 @@ PEATCMS_linkable.prototype.toggleLink = function () {
 }
 
 PEATCMS_linkable.prototype.getId = function () {
-    return this.row['id'] ||  this.row[this.name + '_id']; // todo fix why sometimes the whole element is in the row but not the id then
+    return this.row['id'] || this.row[this.name + '_id']; // todo fix why sometimes the whole element is in the row but not the id then
 }
 
 PEATCMS_linkable.prototype.isLinked = function () {
@@ -1928,7 +1937,7 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
             findr.insertAdjacentElement('afterbegin', new PEATCMS_searchable('menu_item', function (element, rows) {
                 // remove the children, and add the returned rows as children (as links)...
                 const list_el = document.getElementById('PEATCMS_menu_item_finder');
-                 let   i, len;
+                let i, len;
                 list_el.innerHTML = '';
                 for (i = 0, len = rows.length; i < len; ++i) {
                     list_el.insertAdjacentElement('beforeend', new PEATCMS_admin_menu_item(rows[i]).DOMElement);
