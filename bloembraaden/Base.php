@@ -97,7 +97,10 @@ class Base
             die($s);
         } else {
             // send error header
-            header($_SERVER['SERVER_PROTOCOL'] . ' 500 Bloembraaden Fatal Error', true, 500);
+            if (false === headers_sent()) {
+                $protocol = $_SERVER['SERVER_PROTOCOL'] ?? '';
+                header("$protocol 500 Bloembraaden Fatal Error", true, 500);
+            }
             if (defined('OUTPUT_JSON')) {
                 echo '{ "error": ' . json_encode($s) . ', "__messages__": ' . json_encode(Help::getMessages()) . ' }';
             } else {

@@ -1491,15 +1491,13 @@ class Handler extends BaseLogic
                 header('Content-Length: ' . strlen($response));
                 echo $response;
                 die();
+            } elseif (isset($out->redirect_uri)) {
+                header("Location: $out->redirect_uri", true, 302);
+                die();
             } else {
-                if (isset($out->redirect_uri)) {
-                    header('Location: ' . $out->redirect_uri, true, 302);
-                    die();
-                } else {
-                    $this->addMessage(__('Fallen through action', 'peatcms'));
-                    //\header('Location: /' . $this->resolver->getPath(), true, 307); <- doesn’t work
-                    //die();
-                }
+                $this->addMessage(__('Fallen through action', 'peatcms'));
+                //\header('Location: /' . $this->resolver->getPath(), true, 307); <- doesn’t work
+                //die();
             }
         }
         unset($post_data);

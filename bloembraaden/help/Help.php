@@ -832,10 +832,12 @@ class Help
     public static function install(DB $db)
     {
         // check the (new) folders @since 0.10.0
+        $log_path = substr(Setup::$LOGFILE, 0, strrpos( Setup::$LOGFILE, '/'));
+        $db_cache = Setup::$DBCACHE;
         foreach (array(
-                     Setup::$DBCACHE,
+                     $db_cache,
                      Setup::$INVOICE,
-                     Setup::$LOGFILE,
+                     $log_path,
                      Setup::$UPLOADS,
                      Setup::$CDNPATH
                  ) as $index => $folder_name) {
@@ -845,13 +847,13 @@ class Help
             if (!is_writable($folder_name)) {
                 Help::addError(new \Exception(sprintf('Folder %s must be writable by the web user', $folder_name)));
             }
-            if (Setup::$DBCACHE === $folder_name) {
+            if ($db_cache === $folder_name) {
                 // setup the mandatory subfolders
                 foreach (array(
-                             Setup::$DBCACHE . 'css',
-                             Setup::$DBCACHE . 'js',
-                             Setup::$DBCACHE . 'filter',
-                             Setup::$DBCACHE . 'templates',
+                             "{$db_cache}css",
+                             "{$db_cache}js",
+                             "{$db_cache}filter",
+                             "{$db_cache}templates",
                          ) as $index2 => $subfolder_name) {
                     if (false === file_exists($subfolder_name)) {
                         if (false === mkdir($subfolder_name)) {
@@ -893,6 +895,7 @@ class Help
             echo PHP_EOL . PHP_EOL;
             error_log(ob_get_clean(), 3, Setup::$LOGFILE);
         } else {
+            $installable = true;
             /**
              * if this wasn't an upgrade, install fresh, checking requirements
              */
@@ -901,16 +904,41 @@ class Help
                 define('PHP_VERSION_ID', ((int)$version[0] * 10000 + (int)$version[1] * 100 + (int)$version[2]));
             }
             if (PHP_VERSION_ID < 80000) {
-                die('Peatcms needs php version 8.0 or higher.');
+                die('Bloembraaden needs php version 8.0 or higher.');
             }
             if (is_null(Help::passwordHash('test'))) {
-                die('PASSWORD_ARGON2ID seems missing');
+                $installable = false;
+                echo 'PASSWORD_ARGON2ID seems missing', PHP_EOL;
+            }
+            if (false === extension_loaded('exif')) {
+                $installable = false;
+                echo 'please install and enable exif extension for php', PHP_EOL;
+            }
+            if (false === extension_loaded('gd')) {
+                $installable = false;
+                echo 'please install gd extension for php', PHP_EOL;
+            }
+            if (false === extension_loaded('mbstring')) {
+                $installable = false;
+                echo 'please install mbstring extension for php', PHP_EOL;
+            }
+            if (! function_exists('imagewebp')) {
+                $installable = false;
+                echo 'please enable imagewebp', PHP_EOL;
+            }
+            if (! function_exists('imagejpeg')) {
+                $installable = false;
+                echo 'please enable imagejpeg', PHP_EOL;
             }
             // check if a first instance domain is provided
             if (isset($_SERVER['HTTP_HOST'])) {
                 $instance_url = $_SERVER['HTTP_HOST'];
             } else {
-                die('Cannot install without HTTP_HOST header');
+                $installable = false;
+                echo 'Cannot install without HTTP_HOST header', PHP_EOL;
+            }
+            if (false === $installable) {
+                die('Install failed');
             }
             // check for first admin
             if (isset($_GET['admin_email']) && isset($_GET['admin_password'])) {
@@ -979,9 +1007,9 @@ class Help
             $version = trim(substr($version, 10, $length - 10));
             $db->run(sprintf('insert into _system (version) values(\'%s\');', $version));
             // done, feedback to user
-            echo(sprintf('Successfully installed Bloembraaden version %s', $version));
-            echo '<br/>' . PHP_EOL;
-            echo(sprintf('Now set version to %s exactly in your config.json and switch off the install flag', $version));
+            echo sprintf('Successfully installed Bloembraaden version %s', $version);
+            echo '<br/>', PHP_EOL;
+            echo sprintf('Now set version to %s exactly in your config.json and switch off the install flag', $version);
             die();
         }
     }

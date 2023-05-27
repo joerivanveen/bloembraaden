@@ -68,9 +68,9 @@ class Image extends BaseElement
             return false;
         }
         if (false === in_array(($type = exif_imagetype($path)),
-                [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP, IMAGETYPE_WEBP]
+                array(IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP, IMAGETYPE_WEBP)
             )) {
-            $logger->log('exif image type not recognized');
+            $logger->log('Exif image type not recognized');
             // because the file is not recognizable for processing, we have to lose it
             if (false === $this->forgetOriginalFile()) {
                 $logger->log('database not updated');
@@ -239,7 +239,7 @@ class Image extends BaseElement
         return false;
     }
 
-    private function removeAlpha($img, int $red, int $green, int $blue)
+    private function removeAlpha(\GdImage $img, int $red, int $green, int $blue): \GdImage
     {
         // check the values of RGB: must be a positive int smaller than 256
         $red = min(abs($red), 255);
@@ -259,7 +259,7 @@ class Image extends BaseElement
                 if (0 !== (imagecolorat($img, $x, $y) >> 24) & 0xFF) {
                     //set pixel with the new color
                     if (!imagesetpixel($img, $x, $y, $color)) {
-                        return null;
+                        $this->handleErrorAndStop('image processing error');
                     }
                 }
             }
