@@ -11,7 +11,10 @@ class Instance extends BaseLogic
         parent::__construct();
         $this->type_name = 'instance';
         if (null === $row) {
-            if (null === ($host = $_SERVER['HTTP_HOST'])) {
+            if (
+                false === isset($_SERVER['HTTP_HOST'])
+                || null === ($host = $_SERVER['HTTP_HOST'])
+            ) {
                 $this->handleErrorAndStop('Cannot serve pages without HTTP_HOST header');
             } else {
                 $this->load($host);
