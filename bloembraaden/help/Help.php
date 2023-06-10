@@ -388,7 +388,7 @@ class Help
      * @since 0.1.0
      */
     public static function randomString(
-        int $length,
+        int    $length,
         string $key_space = '0123456789abcdefghijklmnopqrstuvwxyz'
     ): string
     {
@@ -832,7 +832,7 @@ class Help
     public static function install(DB $db)
     {
         // check the (new) folders @since 0.10.0
-        $log_path = substr(Setup::$LOGFILE, 0, strrpos( Setup::$LOGFILE, '/'));
+        $log_path = substr(Setup::$LOGFILE, 0, strrpos(Setup::$LOGFILE, '/'));
         $db_cache = Setup::$DBCACHE;
         foreach (array(
                      $db_cache,
@@ -892,7 +892,7 @@ class Help
             // setup output stream for feedback and write it to the log
             ob_start();
             Help::upgrade($db);
-            echo PHP_EOL . PHP_EOL;
+            echo PHP_EOL, PHP_EOL;
             error_log(ob_get_clean(), 3, Setup::$LOGFILE);
         } else {
             $installable = true;
@@ -922,17 +922,19 @@ class Help
                 $installable = false;
                 echo 'please install mbstring extension for php', PHP_EOL;
             }
-            if (! function_exists('imagewebp')) {
+            if (!function_exists('imagewebp')) {
                 $installable = false;
                 echo 'please enable imagewebp', PHP_EOL;
             }
-            if (! function_exists('imagejpeg')) {
+            if (!function_exists('imagejpeg')) {
                 $installable = false;
                 echo 'please enable imagejpeg', PHP_EOL;
             }
             // check if a first instance domain is provided
             if (isset($_SERVER['HTTP_HOST'])) {
                 $instance_url = $_SERVER['HTTP_HOST'];
+            } elseif (isset($_ENV['MAIN_URL'])) {
+                $instance_url = $_ENV['MAIN_URL'];
             } else {
                 $installable = false;
                 echo 'Cannot install without HTTP_HOST header', PHP_EOL;
@@ -941,11 +943,14 @@ class Help
                 die('Install failed');
             }
             // check for first admin
-            if (isset($_GET['admin_email']) && isset($_GET['admin_password'])) {
+            if (isset($_GET['admin_email'], $_GET['admin_password'])) {
                 $admin_email = $_GET['admin_email'];
                 $admin_password = $_GET['admin_password'];
+            } elseif (isset($_ENV['BLOEMBRAADEN_ADMIN_EMAIL'], $_ENV['BLOEMBRAADEN_ADMIN_PASSWORD'])) {
+                $admin_email = $_ENV['BLOEMBRAADEN_ADMIN_EMAIL'];
+                $admin_password = $_ENV['BLOEMBRAADEN_ADMIN_PASSWORD'];
             } else {
-                die('Install failed, please provide first admin: ?admin_email=X&admin_password=Y');
+                die('Install failed, please provide first admin through env or querystring. ?admin_email=X&admin_password=Y');
             }
             /**
              * run the entire install file
