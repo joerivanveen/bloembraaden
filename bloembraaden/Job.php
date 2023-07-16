@@ -452,12 +452,22 @@ if ('1' === $interval) { // interval should be '1'
                     $updated_user_ids[(string)$row->user_id] = true;
                     echo 'OK';
                 } else {
-                    Help::addError(new \Exception('Insta update failed for ' . $media->permalink));
+                    Help::addError(new \Exception("Insta update failed for {$media->permalink}"));
                     echo 'failed';
                 }
             } else {
-                Help::addError(new \Exception('Insta media error: ' . $result));
-                echo 'error';
+                Help::addError(new \Exception("Insta media error (user_id {$row->user_id}): $result"));
+                // this happens when this user_id is a collaborator on the post, it is returned empty
+                $update_data = array(
+                    'instagram_username' => 'COLLABORATOR',
+                    'flag_for_update' => false,
+                );
+                if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
+                    echo 'COLLAB';
+                } else {
+                    Help::addError(new \Exception("Insta update failed for {$row->media_id}"));
+                    echo 'failed';
+                }
             }
         } elseif ($status_code === 400 || $status_code === 403 || $status_code === 404) { // remove this media entry
             // update the entry
