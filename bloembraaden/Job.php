@@ -456,7 +456,7 @@ if ('1' === $interval) { // interval should be '1'
                     echo 'failed';
                 }
             } else {
-                Help::addError(new \Exception("Insta media error (user_id {$row->user_id}): $result"));
+                echo '(user_id ', $row->user_id, '}): ', $result, ' ';
                 // this happens when this user_id is a collaborator on the post, it is returned empty
                 $update_data = array(
                     'instagram_username' => 'COLLABORATOR',
