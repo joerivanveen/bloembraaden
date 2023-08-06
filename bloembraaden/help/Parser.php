@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -24,16 +24,16 @@ class Parser extends Base
         '###' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h3'),
         '##' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h2'),
         '#' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h1'),
-        '---' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'coolparse-minuses'),
-        '+++' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'coolparse-pluses'),
-        '***' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'coolparse-stars'),
-        '___' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'coolparse-underscores'),
+        '---' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-minuses'),
+        '+++' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-pluses'),
+        '***' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-stars'),
+        '___' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-underscores'),
         '```' => array('new_line' => false, 'allow_space' => true, 'tag' => 'pre'), // also when indented by four spaces..., except when in a list
         '    ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'TAB'),
-        '– ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses coolparse-minuses'),
-        '- ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses coolparse-minuses'),
-        '+ ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'pluses coolparse-pluses'),
-        '* ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'stars coolparse-stars'),
+        '– ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
+        '- ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
+        '+ ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'pluses bloembraaden-pluses'),
+        '* ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'stars bloembraaden-stars'),
         '. ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ol'),
         '>' => array('new_line' => true, 'allow_space' => true, 'tag' => 'blockquote'),
         "\n" => array('new_line' => false, 'allow_space' => true, 'tag' => 'EOL'),
@@ -41,13 +41,13 @@ class Parser extends Base
         '_' => array('new_line' => false, 'allow_space' => false, 'tag' => 'em'),
         '~' => array('new_line' => false, 'allow_space' => false, 'tag' => 's'),
         '*' => array('new_line' => false, 'allow_space' => false, 'tag' => 'strong'),
-        '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-circ coolparse-circ'),
-        '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-curr coolparse-curr'),
+        '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-circ bloembraaden-circ'),
+        '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-curr bloembraaden-curr'),
         '![' => array('new_line' => false, 'allow_space' => true, 'tag' => 'img'),
         '[' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '<' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '=' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'nowrap'),
-        '@' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-email-link coolparse-email-link'),
+        '@' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-email-link bloembraaden-email-link'),
         '|' => array('new_line' => false, 'allow_space' => false, 'single' => true, 'tag' => '&#173;'),
     );
     private ?LoggerInterface $logger;
@@ -191,7 +191,6 @@ class Parser extends Base
                     }
                     $end++;
                     $this->pointer = $end;
-                    $this->slacker = $end;
                     $sig = '';
                 } elseif ($tag === 'a') {
                     $pointer = $this->pointer;
@@ -204,7 +203,7 @@ class Parser extends Base
                     // [About](/about/)
                     // [an example][id] or [an example] [id]
                     // (separate line) -> [id]: <http://www.google.com>
-                    // [Google][]
+                    // [Google]
                     // (separate line) ->  [Google]: http://google.com/ "Title here"
                     // separate line can also be on 2 lines
                     // the pointer is at the first [ now..., or < for that matter...
@@ -222,7 +221,6 @@ class Parser extends Base
                                 echo '</a>';
                                 $end++;
                                 $this->pointer = $end;
-                                $this->slacker = $end;
                                 $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
                             } // if it contains spaces, it's something else, just continue
                         }
@@ -239,7 +237,6 @@ class Parser extends Base
                             $next_EOL = $next_next_EOL;
                         }
                         $this->pointer = $next_EOL;
-                        $this->slacker = $next_EOL;
                         $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
                     } else {
                         $this->echoParagraphWhenNecessary();
@@ -258,7 +255,6 @@ class Parser extends Base
                                 substr($str_command, 1, strpos($str_command, ']') - 1));
                             $pointer += strlen($str_command) + 1; // go to the end of the whole tag construction
                             $this->pointer = $pointer;
-                            $this->slacker = $pointer;
                             $sig = '';
                         } elseif // inline is also fine:
                         (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']('), $pointer))
@@ -299,7 +295,6 @@ class Parser extends Base
                                 }
                                 $end++;
                                 $this->pointer = $end;
-                                $this->slacker = $end;
                                 $sig = '';
                             } else {
                                 $this->addMessage(sprintf(
@@ -308,6 +303,21 @@ class Parser extends Base
                                     substr($text, $pointer - 5, 20)
                                 ), 'warn');
                             }
+                        } // get the link for when the link text is also the id
+                        elseif (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ']', $pointer))){
+                            $link_id = substr($text, $pointer + 1, $positions[0] - $pointer - 1);
+                            if (null !== ($link = $this->getLinkById($link_id, $link_id))) {
+                                echo $link;
+                            } else {
+                                $this->addMessage(sprintf(
+                                    __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
+                                    $pointer,
+                                    substr($text, $pointer - 5, 20)
+                                ), 'warn');
+                            }
+                            $pointer += strlen("[$link_id]") + 1; // go to the end of the whole tag construction
+                            $this->pointer = $pointer;
+                            $sig = '';
                         } else {
                             $this->addMessage(sprintf(
                                 __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
@@ -354,7 +364,6 @@ class Parser extends Base
                 echo '/>';
                 // with HR forget about the rest of this row (note there is always "\n" at the end of $text)
                 $this->pointer = strpos($text, "\n", $this->pointer + 1);
-                $this->slacker = $this->pointer;
                 $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
             } elseif ($tag === 'blockquote') {
                 if ($tag !== $this->getOpenTag()) {
@@ -411,7 +420,7 @@ class Parser extends Base
                             // also check if the tags are in the right position when required by allow_space
                             if (true === $command['allow_space'] ||
                             ($command['tag'] === $this->getOpenTag()) ?
-                                 $text[$pointer - 1] !== ' ' :
+                                $text[$pointer - 1] !== ' ' :
                                 ($pointer + 1 < $this->len && $text[$pointer + 1] !== ' ')
                             ) {
                                 $this->log('<strong>found sig</strong>: ' . var_export($sig, true) . ' at: ' . $this->pointer);
@@ -454,7 +463,7 @@ class Parser extends Base
     {
         //looks for markdown link by index somewhere (anywhere) in $text
         $text = $this->text;
-        $needle = "\n" . '[' . $id . ']:';
+        $needle = "\n[$id]:";
         $pos = strpos($text, $needle);
         if (false === $pos) {
             $this->addMessage(sprintf(__('No link found for id ‘%s’', 'peatcms'), $id), 'warn');
@@ -484,9 +493,9 @@ class Parser extends Base
             // @since 0.6.17 tags inside a link are also possible
             $link_text = (new Parser($this->logger))->parse($link_text, true);
             if (isset($title)) {
-                $link = '<a href="' . $href . '" title="' . $title . '">' . $link_text . '</a>';
+                $link = "<a href=\"$href\" title=\"$title\">$link_text</a>";
             } else {
-                $link = '<a href="' . $href . '">' . $link_text . '</a>';
+                $link = "<a href=\"$href\">$link_text</a>";
             }
         }
         unset($text);
@@ -519,7 +528,7 @@ class Parser extends Base
     private function openTag(string $tag, array $attributes = []): string
     {
         $this->open_tags[] = $tag;
-        $this->log('open tag: &lt;' . $tag . '&gt;');
+        $this->log("open tag: &lt;$tag&gt;");
         ob_start();
         if (true === $this->holding_eol) {
             $open_tag = $this->getOpenTag();
@@ -552,7 +561,8 @@ class Parser extends Base
     private function closeTag(): string
     {
         if (null !== $this->getOpenTag()) {
-            return '</' . array_pop($this->open_tags) . '>';
+            $open_tag = array_pop($this->open_tags);
+            return "</$open_tag>";
         }
         $this->addError(__('closeTag called while no tags were open', 'peatcms'));
 
@@ -567,7 +577,7 @@ class Parser extends Base
     {
         $str = '';
         foreach ($this->open_tags as $index => $tag) {
-            $str = '</' . $tag . '>' . $str;
+            $str = "</$tag>$str";
         }
         $this->open_tags = array();
 
@@ -632,7 +642,7 @@ class Parser extends Base
             if (true === $this->holding_eol) {
                 // EOL converts to '<br/>' inside another tag which is not PRE
                 if (null !== $open_tag) {
-                    $str = '<br/>' . $str;
+                    $str = "<br/>$str";
                 }
                 $this->holding_eol = false;
             }
