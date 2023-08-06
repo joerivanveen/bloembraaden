@@ -2985,12 +2985,7 @@ PEATCMS.prototype.scrollTo = function (x, y, element) {
             behavior: 'smooth'
         });
     } else {
-        if (element.scrollTo) {
-            element.scrollTo(x, y);
-        } else { // IE11...
-            element.scrollLeft = x;
-            element.scrollTop = y;
-        }
+        element.scrollTo(x, y);
     }
 }
 
@@ -3196,8 +3191,8 @@ PEATCMS_navigator.prototype.setState = function () {
             window.history.replaceState({
                 path: path,
                 title: title,
-                scrollY: window.pageYOffset,
-                scrollX: window.pageXOffset
+                scrollY: window.scrollY,
+                scrollX: window.scrollX
             }, title, '/' + path);
             if (VERBOSE) console.log('State set regarding scroll position');
         } else {
@@ -3711,7 +3706,7 @@ PEATCMS.insertAtCaret = function (input_element, str_value) {
  */
 PEATCMS.getBoundingClientTop = function (el) {
     let elementTop = 0;
-    const scrollTop = window.pageYOffset;
+    const scrollTop = window.scrollY;
     // offsetParent: null for body, and in some browsers null for a fixed element, but we returned early than
     while (el) {
         elementTop += el.offsetTop;
