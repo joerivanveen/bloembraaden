@@ -32,6 +32,10 @@ It provides the backend / cms for your client and some integrations like Instagr
 
 One Bloembraaden installation can serve many websites, each one as unique as the other is baffling.
 
+## Docker
+
+Since the beginning of 2023 I have been using a docker image to run Bloembraaden: [https://github.com/joerivanveen/bloembraaden-docker]
+
 # Note to self
 The rest of this readme is more or less a giant **note to self**.
 Until more people start using it the documentation will probably remain sketchy.
@@ -139,6 +143,10 @@ Should multiple daemons be running at the same time for whatever reason, the old
 Your clients’ websites’ assets will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
 Each website must contain a `script.js` and `style.css` that will be compiled by bloembraaden.
 
+You can configure 2 optional files:
+- `editor_config.json`, the configuration of the editor for this instance.
+- `example.mo` (and .po if you wish), the translation file for all generic texts. Use PoEdit to generate it from the code.
+
 The website itself is build with simple templates that you put in the admin interface.
 You also point to the `/instance/example` folder through that admin interface.
 
@@ -173,8 +181,16 @@ The first install is done after you have prepared your config file and the two d
 Set `install` to `true` in the config and go to:
 
 `https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult`
+
+👍 since 0.16.x you can provide the following ENV variables in lieu of the insecure querystring and just visit `https://your_main_domain.tld/`
+
+    BLOEMBRAADEN_ADMIN_EMAIL=name@domain.tld
+    BLOEMBRAADEN_ADMIN_PASSWORD=difficult
+    MAIN_URL=your_main_domain.tld
+
 Bloembraaden will contact the database and setup a first ‘instance’.
-Please use an actual difficult password.
+
+⚠ Please use an actual difficult password.
 Do not forget these credentials, because you will not be able to login without them.
 
 Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
@@ -184,9 +200,3 @@ You should now switch off the install flag (set it to `false`).
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
 
 I will post some ‘getting started’ info on https://bloembraaden.io in the future.
-
-## Docker?
-There is some benefit in setting up your webserver manually, mainly you can tweak some extra speed and security out of your specific environment.
-However, to check out some new cool piece of software, it would be handy if it came as a Docker container.
-
-Currently for lack of time I am not working on this, contact me if you want to help me set it up, your help is greatly appreciated.
