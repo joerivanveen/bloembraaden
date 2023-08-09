@@ -99,13 +99,13 @@ class Help
         // probably the rounding error (that cannot be fixed with 'round'!) is discarded by strval, but we cleanup anyway
         // TODO check if it's consistently fixed by strval and if so remove the rest of this function
         // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues
-        if ($index = strpos($sunk, '00000')) {
+        if (($index = strpos($sunk, '00000'))) {
             $sunk = substr($sunk, 0, $index);
             if (substr($sunk, -1) === '.') {
                 $sunk = substr($sunk, 0, -1);
             }
         }
-        if ($index = strpos($sunk, '99999')) {
+        if (($index = strpos($sunk, '99999'))) {
             $sunk = substr($sunk, 0, $index);
             if (substr($sunk, -1) === '.') {
                 $sunk = (string)((int)$sunk + 1);
@@ -336,7 +336,7 @@ class Help
         $arr = [];
         $errors = Help::getErrors();
         foreach ($errors as $key => $e) {
-            $arr[] = $e->getMessage() . PHP_EOL . $e->getTraceAsString();
+            $arr[] = "{$e->getMessage()}\n{$e->getTraceAsString()}";
         }
 
         return $arr;
@@ -348,16 +348,20 @@ class Help
     public static function logErrorMessages(): ?string
     {
         if (count($arr = Help::getErrorMessages()) > 0) {
+            ob_start();
             if (isset($_SERVER['REMOTE_ADDR'])) {
-                $message = "\r\n" . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'];
+                echo "\r\n", $_SERVER['REMOTE_ADDR'], ':', $_SERVER['REMOTE_PORT'];
             } else {
-                $message = "\r\nNO CLIENT";
+                echo "\r\nNO CLIENT";
             }
-            $message .= "\t" . date('Y-m-d H:i:s') . "\t";
-            if (isset($_SERVER['REQUEST_METHOD'])) $message .= $_SERVER['REQUEST_METHOD'] . "\t";
-            if (isset($_SERVER['REQUEST_URI'])) $message .= $_SERVER['REQUEST_URI'] . "\t";
-            $message .= "LOG\r\n";
-            $message .= implode("\r\n", $arr);
+            echo "\t", date('Y-m-d H:i:s'), "\t";
+            if (isset($_SERVER['REQUEST_METHOD'])) echo $_SERVER['REQUEST_METHOD'], "\t";
+            if (isset($_SERVER['REQUEST_URI'])) echo $_SERVER['REQUEST_URI'], "\t";
+            echo "LOG\r\n";
+            echo implode("\r\n", $arr);
+
+            $message = ob_get_clean();
+
             error_log($message, 3, Setup::$LOGFILE);
 
             return $message;
@@ -373,8 +377,8 @@ class Help
     public static function trigger_error(string $message, int $level = E_USER_NOTICE): void
     {
         if (($caller = debug_backtrace()[1])) {
-            $message = $message . ' in <strong>' . $caller['function'] . '</strong> called from <strong>' .
-                $caller['file'] . '</strong> on line <strong>' . $caller['line'] . "</strong>\n<br />error handler";
+            $message = "$message in <strong>{$caller['function']}</strong> called from <strong>
+                {$caller['file']}</strong> on line <strong>{$caller['line']}</strong>\n<br />error handler";
         }
         trigger_error($message, $level);
     }
@@ -610,28 +614,24 @@ class Help
      */
     public static function turnIntoPath(array $terms, array $properties): string
     {
-        usort($terms, function ($a, $b) {
-            if (is_numeric($a) && !is_numeric($b))
+        $callback = function ($a, $b) {
+            $a_num = is_numeric($a);
+            $b_num = is_numeric($b);
+            if (true === $a_num && false === $b_num)
                 return 1;
-            elseif (!is_numeric($a) && is_numeric($b))
+            elseif (false === $a_num && true === $b_num)
                 return -1;
             else
-                return ($a < $b) ? -1 : 1;
-        });
+                return $a <=> $b;
+        };
+        usort($terms, $callback);
         ob_start(); // output buffer will hold url
         echo implode('/', $terms);
         if (count($properties) > 0) {
             ksort($properties, SORT_STRING);
             foreach ($properties as $prop => $value) {
                 echo '/';
-                usort($value, function ($a, $b) {
-                    if (is_numeric($a) && !is_numeric($b))
-                        return 1;
-                    else if (!is_numeric($a) && is_numeric($b))
-                        return -1;
-                    else
-                        return ($a < $b) ? -1 : 1;
-                });
+                usort($value, $callback);
                 echo $prop;
                 echo ':';
                 echo implode(',', $value);
