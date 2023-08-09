@@ -20,7 +20,7 @@ free to realise websites exactly the way they want.
 
 We like **unicorns** more than uniforms...
 
-While the code is free to setup and use, Bloembraaden also exists as a hosted solution,
+While the code is free to set up and use, Bloembraaden also exists as a hosted solution,
 if you’d rather be creative than maintaining your server.
 
 ## What does it do
@@ -34,7 +34,7 @@ One Bloembraaden installation can serve many websites, each one as unique as the
 
 ## Docker
 
-Since the beginning of 2023 I have been using a docker image to run Bloembraaden: [https://github.com/joerivanveen/bloembraaden-docker]
+Since the beginning of 2023 I have been using a [docker image to run Bloembraaden][bloembraaden-docker].
 
 # Note to self
 The rest of this readme is more or less a giant **note to self**.
@@ -200,3 +200,5 @@ You should now switch off the install flag (set it to `false`).
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
 
 I will post some ‘getting started’ info on https://bloembraaden.io in the future.
+
+[bloembraaden-docker]: https://github.com/joerivanveen/bloembraaden-docker
