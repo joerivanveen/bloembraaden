@@ -464,7 +464,7 @@ PEATCMS_actor.prototype.typed = function (event, enter_triggers_save) {
         }
     }
     if (event.key === 'Escape') {
-        // copy the title tag... special functionality since 0.16.5
+        // copy the title tag... special functionality since 0.16.4
         if ((event.ctrlKey || event.metaKey) && 'slug' === this.column.name) {
             const title = NAV.getCurrentElement().state.title_parsed; // TODO use parent_PEATCMS_element when it is the right reference
             if (title) this.DOMElement.value = title;
