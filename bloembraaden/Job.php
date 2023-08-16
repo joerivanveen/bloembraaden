@@ -642,16 +642,16 @@ if ('1' === $interval) { // interval should be '1'
     }
 } elseif ('daily' === $interval) {
     $trans->start('clean template folder');
-    echo $db->jobCleanTemplateFolder() . PHP_EOL;
+    echo $db->jobCleanTemplateFolder(), PHP_EOL;
     // @since 0.7.9 & 0.8.9
     $trans->start('remove old sessions');
-    echo $db->jobDeleteOldSessions() . PHP_EOL;
+    echo $db->jobDeleteOldSessions(), PHP_EOL;
     $trans->start('remove orphaned session variables');
-    echo $db->jobDeleteOrphanedSessionVars() . PHP_EOL;
+    echo $db->jobDeleteOrphanedSessionVars(), PHP_EOL;
     $trans->start('remove old shoppinglists');
-    echo $db->jobDeleteOrphanedLists() . PHP_EOL;
+    echo $db->jobDeleteOrphanedLists(), PHP_EOL;
     $trans->start('remove orphaned shoppinglist rows (variants)');
-    echo $db->jobDeleteOrphanedShoppinglistVariants() . PHP_EOL;
+    echo $db->jobDeleteOrphanedShoppinglistVariants(), PHP_EOL;
     // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
     $trans->start('refresh instagram access token');
     // @since 0.7.2
@@ -675,7 +675,7 @@ if ('1' === $interval) { // interval should be '1'
                 echo sprintf(
                         'Instagram refresh token error, status %1$s, body %2$s',
                         $status_code, var_export($return_value, true)
-                    ) . PHP_EOL;
+                    ), PHP_EOL;
             } else {
                 // and update it in the db
                 $expires = isset($return_value->expires_in) ?
@@ -685,22 +685,22 @@ if ('1' === $interval) { // interval should be '1'
                     'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),
                     'access_granted' => true,
                 ), $row->instagram_auth_id)) {
-                    echo 'OK' . PHP_EOL;
+                    echo 'OK', PHP_EOL;
                 } else {
-                    echo 'Unable to update settings for Instagram authorization' . PHP_EOL;
+                    echo 'Unable to update settings for Instagram authorization', PHP_EOL;
                 }
             }
         }
         $curl = null;
     } else {
-        echo 'no tokens to refresh' . PHP_EOL;
+        echo 'no tokens to refresh', PHP_EOL;
     }
     $rows = null;
     // TODO refresh media and remove deleted entries
     // fetch all the media_url statusses (not counting towards absurd rate limitation)
     // if not 200 then mark / flag the media for update (boolean flag_for_update)
 } elseif ('temp' === $interval) {
-    echo 'Notice: this is a temp job, only for testing' . PHP_EOL;
+    echo 'Notice: this is a temp job, only for testing', PHP_EOL;
     // @since 0.8.12 get the images you have, to check if they are still valid according to Instagram
     stream_context_set_default(
         array(
@@ -715,7 +715,7 @@ if ('1' === $interval) { // interval should be '1'
         if (is_array($headers) and isset($headers[0])) {
             if (false === strpos($headers[0], ' 200 OK')) {
                 $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
-                echo 'flagged for update: ' . $row->media_id . PHP_EOL;
+                echo 'flagged for update: ', $row->media_id, PHP_EOL;
             }
         }
         //var_dump($headers);

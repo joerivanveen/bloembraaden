@@ -48,7 +48,7 @@ class Setup
     {
         if (($e = error_get_last())) {
             Help::addError(new \Exception($e['message'], $e['type']));
-            if (Help::$LOGGER) Help::$LOGGER->log(sprintf(__('An error occurred in %s.', 'peatcms'), $e['file']));
+            if (Help::$LOGGER instanceof LoggerInterface) Help::$LOGGER->log(sprintf(__('An error occurred in %s.', 'peatcms'), $e['file']));
         }
 
         $error_messages = Help::logErrorMessages();

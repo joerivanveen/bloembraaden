@@ -327,6 +327,21 @@ class Handler extends BaseLogic
                 $sse->log(__('No slug found to process', 'peatcms'));
             }
             die(); // after an sse logger you cannot provide any more content yo
+        } elseif ('admin_export_instance' === $action) {
+            $props = $this->resolver->getProperties();
+            $sse = new SseLogger();
+            if (!($admin = $this->getSession()->getAdmin()) instanceof Admin) {
+                $sse->log(__('Export can only be accessed by admin.', 'peatcms'));
+                $sse->addError('Export can only be accessed by admin.');
+            } elseif (isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
+                if (true === $admin->isRelatedInstanceId($instance_id)) {
+                    Help::export_instance($instance_id, $sse);
+                } else {
+                    $sse->log(__('You may not export that instance.', 'peatcms'));
+                    $sse->addError("Current admin may not export instance $instance_id");
+                }
+            }
+            die(); // after an sse logger you cannot provide any more content, yo
         }
         // following is only valid with csrf
         if (isset($post_data->csrf_token) and $post_data->csrf_token === $this->session->getValue('csrf_token')) {
@@ -1511,7 +1526,7 @@ class Handler extends BaseLogic
             $check_timestamp = (int)$_SERVER['HTTP_X_CACHE_TIMESTAMP'];
             // check if it’s ok, then just return ok immediately
             if (true === Help::getDB()->cachex($slug, $check_timestamp)) {
-                if ($variant_page > 1) $slug .= '/variant_page' . $variant_page;
+                if ($variant_page > 1) $slug = "$slug/variant_page$variant_page";
                 $response = sprintf('{"__ref":"%s","x_cache_timestamp_ok":true}', rawurlencode($slug));
                 header('Content-Type: application/json');
                 header('Content-Length: ' . strlen($response));

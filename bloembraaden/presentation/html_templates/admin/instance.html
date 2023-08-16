@@ -282,11 +282,15 @@
             Danger
         </header>
         <span style="white-space: nowrap;">
-                <input type="checkbox" class="PEATCMS_editable peatcms_danger" id="park_{{instance_id}}"
-                       data-column_name="park" data-table_name="_instance" data-handle="update_column"
-                       {{park: checked="checked" }}/>
-                <label for="park_{{instance_id}}">park <em>switches OFF this entire website for non-admins!</em></label>
-            </span>
+            <form action="/__action__/admin_export_instance" data-sse="true">
+                <input type="submit" value="Export" title="Export complete instance"/>
+                <input type="hidden" name="instance_id" value="{{instance_id}}"/>
+            </form>
+            <input type="checkbox" class="PEATCMS_editable peatcms_danger" id="park_{{instance_id}}"
+                   data-column_name="park" data-table_name="_instance" data-handle="update_column"
+                   {{park: checked="checked" }}/>
+            <label for="park_{{instance_id}}">park <em>switches OFF this entire website for non-admins!</em></label>
+        </span>
     </section>
 </div>
 <p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden {{version}}, we’ve got your backend</p>

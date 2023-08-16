@@ -205,7 +205,7 @@ class Shoppinglist extends BaseLogic
             }
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
-        // set template_id to default template, if it exists
+        // set template_id to default template, if it exists TODO property immediately overwritten??
         $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
         $this->row = $output_object;
     }

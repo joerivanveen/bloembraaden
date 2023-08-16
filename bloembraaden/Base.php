@@ -64,7 +64,7 @@ class Base
      * @param string $message_for_frontend default 'A program error occurred.', will be displayed to user / client
      * @since 0.1.0
      */
-    public function handleErrorAndStop($e, string $message_for_frontend = 'A program error occurred'): void
+    public function handleErrorAndStop($e, string $message_for_frontend = 'Bloembraaden fatal error'): void
     {
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
@@ -77,7 +77,7 @@ class Base
         );
         try { // TODO these error messages are a bit much, but leaving them out is a bit scarce, what to do?
             $error_message .= var_export(Help::getErrorMessages(), true) . PHP_EOL;
-        } catch (\Exception $exception) {
+        } catch (\Throwable) {
         }
         // log the error
         if (false === error_log($error_message, 3, Setup::$LOGFILE)) {

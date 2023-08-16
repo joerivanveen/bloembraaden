@@ -2640,10 +2640,39 @@ PEATCMS.prototype.ajaxSubmit = function (e) {
     this.dispatchEvent(new CustomEvent('peatcms.form_posting', {
         bubbles: true,
         detail: {
-            "form": this
+            form: this
         }
     }));
-    NAV.submitForm(this);
+    // with sse logger if requested
+    if (this.hasAttribute('data-sse')) {
+        const form = this;
+        const sse_log = function (msg) {
+            //let el = self.DOMElement.querySelector('.progress') || self.DOMElement.querySelector('.drop_area') || self.DOMElement;
+            //el.innerHTML = msg + '<br/>' + el.innerHTML;
+            console.warn(msg);
+        }
+        const source = new EventSource(this.action + PEATCMS.getFormDataAsProperties(this));
+        source.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.hasOwnProperty('message')) {
+                sse_log(data.message);
+            }
+            if (data.hasOwnProperty('close')) {
+                source.close();
+                sse_log('Done');
+                form.removeAttribute('data-submitting');
+                form.dispatchEvent(new CustomEvent('peatcms.form_posted', {
+                    bubbles: true,
+                    detail: {
+                        form: form
+                    }
+                }));
+            }
+        };
+    } else {
+        // regular ajax submit:
+        NAV.submitForm(this);
+    }
     return false;
 }
 
@@ -3678,6 +3707,15 @@ PEATCMS.getFormData = function (form) {
         obj[i] = value;
     }
     return obj;
+}
+PEATCMS.getFormDataAsProperties = function (form) {
+    const obj = PEATCMS.getFormData(form);
+    let str = '';
+    for (let i in obj) {
+        if (false === obj.hasOwnProperty(i)) continue;
+        str += '/' + i + ':' + obj[i];
+    }
+    return str;
 }
 
 function getFormData(form) {

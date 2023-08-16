@@ -995,7 +995,7 @@ class DB extends Base
      * @param Type $peat_type
      * @param string $column_name
      * @param array $in indexed array holding id’s, when empty this method ALWAYS returns an empty array
-     * @param boolean $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
+     * @param bool $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
      * @param int $limit default 1000 limits the number of rows
      * @return array indexed array holding plain row objects that are online (non-admin only) and not deleted
      * @since 0.5.15
@@ -3429,6 +3429,43 @@ class DB extends Base
         }
 
         return $this->tables_with_slugs;
+    }
+
+    public function fetchTablesToExport(): array
+    {
+        // get all tables that contain a slug column, except tables where slug is used as foreign key
+        $statement = $this->conn->prepare("
+            SELECT DISTINCT t.table_name FROM information_schema.tables t
+            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
+            WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_media');
+        ");
+        $statement->bindValue(':schema', $this->db_schema);
+        $statement->execute();
+        $tables = $this->normalizeRows($statement->fetchAll());
+        $statement = null;
+
+        return $tables;
+    }
+
+    public function fetchRowsForExport(string $table_name, int $instance_id): array
+    {
+        // some tables do not have an instance_id,
+        // e.g. _order_variant, linked to _order, which has one...
+        // and _shoppinglist_variant, linked to _shoppinglist
+        // also, _order_number does not have an id column...
+        if ('_order_variant' === $table_name || '_shoppinglist_variant' === $table_name) {
+            // todo: load the correct rows
+            return array();
+        } elseif ('_order_number' === $table_name) {
+            // todo: load the correct rows
+            return array();
+        } elseif (false !== strpos($table_name, '_x_')) {
+            // todo: load the correct rows
+            return array();
+        } else {
+            return $this->fetchRows($table_name, array('*'), array('instance_id' => $instance_id));
+        }
     }
 
     /**

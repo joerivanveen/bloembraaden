@@ -24,7 +24,7 @@ class MoParser
 
     public function loadTranslationData(string $presentation_instance, string $locale): array
     {
-        $filename = CORE . '../htdocs/instance/' . $presentation_instance . '/' . $presentation_instance .'.mo';
+        $filename = CORE . "../htdocs/instance/$presentation_instance/$presentation_instance.mo";
         $_data = array();
         $this->_bigEndian = false;
         $this->_file = @fopen($filename, 'rb');

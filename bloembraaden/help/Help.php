@@ -88,7 +88,7 @@ class Help
      * Use floatForHumans to return the intended decimal as a string (floatVal it if you want to perform calculations)
      * Decimal separator is a . as is standard, use numberformatting/ str_replace etc. if you want something else
      *
-     * @param $float ?float a float that will be formatted to be human readable
+     * @param float|null $float $float a float that will be formatted to be human-readable
      *
      * @return string the number is returned as a correctly formatted string
      *
@@ -96,11 +96,8 @@ class Help
      */
     public static function floatForHumans(?float $float): string
     {
-        if (is_null($float) || '' === (string)$float) return '';
         // floating point not accurate... https://stackoverflow.com/questions/4921466/php-rounding-error
-        $sunk = strval($float);
-        // probably the rounding error (that cannot be fixed with 'round'!) is discarded by strval, but we cleanup anyway
-        // TODO check if it's consistently fixed by strval and if so remove the rest of this function
+        if (null === $float || '' === ($sunk = strval($float))) return '';
         // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues
         if (($index = strpos($sunk, '00000'))) {
             $sunk = substr($sunk, 0, $index);
@@ -486,7 +483,7 @@ class Help
         $html = str_replace("\t", ' ', $html);
         $html = str_replace('<h2', "\r\n.\r\n<h2", $html);
         $html = str_replace('</h2>', "</h2>\r\n", $html);
-        $html = str_replace('<p id="remarks"', "\r\n.\r\n.\r\nREMARKS:\r\n" . '<p', $html);
+        $html = str_replace('<p id="remarks"', "\r\n.\r\n.\r\nREMARKS:\r\n<p", $html);
         $html = strip_tags($html);
         $html = str_replace("\r\n ", "\r\n", $html);
         $html = str_replace("\r\n ", "\r\n", $html);
@@ -556,7 +553,7 @@ class Help
         return true;
     }
 
-    public static function prepareAdminRowForOutput(\stdClass &$row, string $what, ?string $which = null)
+    public static function prepareAdminRowForOutput(\stdClass &$row, string $what, ?string $which = null): void
     {
         $row->title = "$what | Bloembraaden";
         $row->template_pointer = (object)array('name' => $what, 'admin' => true);
@@ -658,7 +655,34 @@ class Help
         return $unpacked;
     }
 
-    public static function upgrade(DB $db)
+    public static function export_instance(int $instance_id, LoggerInterface $logger): void
+    {
+        $export_file = Setup::$UPLOADS . "_export-$instance_id.json";
+        if (file_exists($export_file)) {
+            $logger->log("Export file $export_file already exists, aborting.");
+            die();
+        }
+        $logger->log("Exporting instance $instance_id");
+        $db = self::getDB();
+        $tables = $db->fetchTablesToExport();
+        file_put_contents($export_file,'{',FILE_APPEND);
+        foreach ($tables as $index => $table) {
+            $table_name = $table->table_name;
+            $logger->log("Exporting $table_name");
+            $data = json_encode($db->fetchRowsForExport($table_name, $instance_id));
+            file_put_contents($export_file, "\"$table_name\":$data,\n", FILE_APPEND);
+        }
+        $version = Setup::$VERSION;
+        file_put_contents($export_file, "\"version\":\"$version\"}", FILE_APPEND);
+        $logger->log("Exported to $export_file");
+    }
+
+    public static function import_instance(string $json)
+    {
+
+    }
+
+    public static function upgrade(DB $db): void
     {
         $version = $db->getDbVersion();
         if (strlen($version) < 5) {
@@ -666,7 +690,7 @@ class Help
 
             return;
         }
-        echo 'Upgrading from ' . $version . PHP_EOL;
+        echo 'Upgrading from ', $version, PHP_EOL;
         // read the sql file up until the old version and process everything after that. Remember the new version to check
         if (!file_exists(CORE . 'data/install.sql')) {
             echo 'install.sql not found, nothing to do';
