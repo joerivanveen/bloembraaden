@@ -33,10 +33,6 @@ class MoParser
             Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
             return array($locale=>array());
         }
-        if (filesize($filename) < 10) {
-            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
-            return array($locale=>array());
-        }
         $_data = array();
         $this->_bigEndian = false;
         $this->_file = fopen($filename, 'rb');
@@ -44,7 +40,7 @@ class MoParser
         $input = $this->_readMOData(1);
         if (strtolower(substr(dechex($input[1]), -8)) == '950412de') {
             $this->_bigEndian = false;
-        } else if (strtolower(substr(dechex($input[1]), -8)) == 'de120495') {
+        } elseif (strtolower(substr(dechex($input[1]), -8)) == 'de120495') {
             $this->_bigEndian = true;
         } else {
             Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
