@@ -25,16 +25,20 @@ class MoParser
     public function loadTranslationData(string $presentation_instance, string $locale): array
     {
         $filename = CORE . "../htdocs/instance/$presentation_instance/$presentation_instance.mo";
+        if (false === file_exists($filename) || false === is_readable($filename)) {
+            // @since 0.6.16 you can safely run an instance without translations
+            return array($locale=>array());
+        }
+        if (filesize($filename) < 10) {
+            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            return array($locale=>array());
+        }
         $_data = array();
         $this->_bigEndian = false;
-        $this->_file = @fopen($filename, 'rb');
+        $this->_file = fopen($filename, 'rb');
         if (! $this->_file) {
             // @since 0.6.16 this is not really an error, you can safely run an instance without translations
             //Help::addError(new Exception('Error opening translation file \'' . $filename));
-            return array($locale=>array());
-        }
-        if (@filesize($filename) < 10) {
-            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
             return array($locale=>array());
         }
         // get Endian
