@@ -57,7 +57,7 @@ class Handler extends BaseLogic
             try {
                 $doc = \JShrink\Minifier::minify($doc);
             } catch (\Exception $e) {
-                $this->addError($e);
+                $this->addError($e->getMessage());
             }
             $response = gzencode($doc, 9);
             $doc = null;
@@ -557,7 +557,7 @@ class Handler extends BaseLogic
                         $response = $Postcode->lookupAddress($post_data->postal_code, $post_data->number, $addition);
                         $out = array('response' => $response, 'success' => true);
                     } catch (\Exception $e) { // it uses exceptions as a means of control
-                        $this->addError($e);
+                        $this->addError($e->getMessage());
                         $error_type = '';
                         if ($e instanceof \PostcodeNl_Api_RestClient_ClientException)
                             $error_type = 'Client error';
@@ -1383,7 +1383,7 @@ class Handler extends BaseLogic
                         if (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
                             $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
                         } else {
-                            $this->addError(Help::getDB()->getLastError());
+                            $this->addError(Help::getDB()->getLastError()->getMessage());
                             $this->addMessage(__('Update column failed', 'peatcms'), 'error');
                         }
                         // check published for templates

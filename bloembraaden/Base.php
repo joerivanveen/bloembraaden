@@ -21,24 +21,19 @@ class Base
      * @param string $message Localized message that will be displayed to the client
      * @param string $level default 'log', also possible: 'warn', 'error', 'note'
      */
-    public function addMessage(string $message, string $level = 'log')
+    public function addMessage(string $message, string $level = 'log'): void
     {
         Help::addMessage($message, $level);
     }
 
     /**
-     * @param \Exception|string $e
+     * @param string $error_message
      */
-    public function addError($e): void
+    public function addError(string $error_message): void
     {
-        if (is_string($e)) {
-            $domain = Setup::$INSTANCE_DOMAIN ?? Setup::$instance_id;
-            Help::addError(new \Exception("$e [$domain]"));
-        } elseif ($e instanceof \Exception) {
-            Help::addError($e);
-        } else {
-            Help::addError(new \Exception(var_export($e, true)));
-        }
+        $domain = Setup::$INSTANCE_DOMAIN ?? Setup::$instance_id;
+        Help::addError(new \Exception("$error_message [$domain]"));
+
         $this->has_error = true;
     }
 
@@ -74,26 +69,27 @@ class Base
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
         $error_message = sprintf(
-            "\n%s\t%s\t%s\t%s\nFATAL: ",
+            "\n%s\t%s\t%s\t%s\nFATAL: $e\n",
             ($_SERVER['REMOTE_ADDR'] ?? 'INTERNAL'),
             date('Y-m-d H:i:s'),
             ($_SERVER['REQUEST_METHOD'] ?? 'NON-WEB'),
             ($_SERVER['REQUEST_URI'] ?? '')
         );
-        $error_message .= $e;
         try { // TODO these error messages are a bit much, but leaving them out is a bit scarce, what to do?
-            $error_message .= PHP_EOL . var_export(Help::getErrorMessages(), true);
+            $error_message .= var_export(Help::getErrorMessages(), true) . PHP_EOL;
         } catch (\Exception $exception) {
         }
         // log the error
-        if (error_log("$error_message\n", 3, Setup::$LOGFILE) === false) {
-            $s .= ' (could not be logged)';
+        if (false === error_log($error_message, 3, Setup::$LOGFILE)) {
+            $s = "$s (could not be logged)";
         }
         // send to newrelic
-        if (extension_loaded('newrelic')) {
+        if (true === extension_loaded('newrelic')) {
             newrelic_notice_error($error_message);
         }
-        if (ob_get_length()) { // false or 0 when there's no content in it, but when there is you cannot send header
+        if ($this instanceof LoggerInterface) {
+            $this->log($s);
+        } elseif (ob_get_length()) { // false or 0 when there's no content in it, but when there is you cannot send header
             die($s);
         } else {
             // send error header
@@ -102,7 +98,7 @@ class Base
                 header("$protocol 500 Bloembraaden Fatal Error", true, 500);
             }
             if (defined('OUTPUT_JSON')) {
-                echo '{ "error": ' . json_encode($s) . ', "__messages__": ' . json_encode(Help::getMessages()) . ' }';
+                echo '{ "error": ', json_encode($s), ', "__messages__": ', json_encode(Help::getMessages()), ' }';
             } else {
                 // TODO customizable error pages
                 echo str_replace('{{message}}', $s, file_get_contents(CORE . 'presentation/error.html'));

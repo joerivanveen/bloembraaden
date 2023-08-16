@@ -3495,7 +3495,7 @@ class DB extends Base
                 return $this->normalizeRow($rows[0]);
             } else {
                 if ($count > 1) {
-                    $this->addError(new \Exception(sprintf('Query DB->fetchRow() returned %d rows', count($rows))));
+                    $this->addError(sprintf('Query DB->fetchRow() returned %d rows', count($rows)));
                 }
 
                 return null;
@@ -3646,7 +3646,7 @@ class DB extends Base
                 return null;
             }
         } catch (\Exception $e) {
-            $this->addError($e);
+            $this->addError($e->getMessage());
 
             return null;
         }
@@ -3684,7 +3684,7 @@ class DB extends Base
         try {
             $statement->execute($data['values']);
         } catch (\PDOException $e) {
-            $this->addError($e);
+            $this->addError($e->getMessage());
         }
         $row_count = $statement->rowCount();
         // ok done
@@ -4379,7 +4379,7 @@ class DB extends Base
             $statement->execute($values);
             $statement = null;
         } catch (\Exception $e) {
-            $this->addError($e);
+            $this->addError($e->getMessage());
         }
 
         return $row;

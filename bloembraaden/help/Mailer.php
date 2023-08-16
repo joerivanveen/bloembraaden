@@ -109,7 +109,7 @@ class Mailer extends Base
 
             return true;
         } catch(\Exception $e) {
-            $this->addError($e);
+            $this->addError($e->getMessage());
         }
         return false;
     }
