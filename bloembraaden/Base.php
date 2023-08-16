@@ -64,7 +64,7 @@ class Base
      * @param string $message_for_frontend default 'A program error occurred.', will be displayed to user / client
      * @since 0.1.0
      */
-    public function handleErrorAndStop($e, string $message_for_frontend = 'A program error occurred')
+    public function handleErrorAndStop($e, string $message_for_frontend = 'A program error occurred'): void
     {
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
@@ -87,8 +87,8 @@ class Base
         if (true === extension_loaded('newrelic')) {
             newrelic_notice_error($error_message);
         }
-        if ($this instanceof LoggerInterface) {
-            $this->log($s);
+        if (Help::$LOGGER instanceof LoggerInterface) {
+            Help::$LOGGER->log($s);
         } elseif (ob_get_length()) { // false or 0 when there's no content in it, but when there is you cannot send header
             die($s);
         } else {
@@ -97,7 +97,7 @@ class Base
                 $protocol = $_SERVER['SERVER_PROTOCOL'] ?? '';
                 header("$protocol 500 Bloembraaden Fatal Error", true, 500);
             }
-            if (defined('OUTPUT_JSON')) {
+            if (Help::$OUTPUT_JSON) {
                 echo '{ "error": ', json_encode($s), ', "__messages__": ', json_encode(Help::getMessages()), ' }';
             } else {
                 // TODO customizable error pages

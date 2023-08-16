@@ -2927,7 +2927,7 @@ class DB extends Base
                 } else { // this should never happen
                     $this->handleErrorAndStop(
                         'Multiple user lists found while merging shoppinglists',
-                        sprintf(__('There was an error in %s', 'peatcms'), $sessionlist->name)
+                        sprintf(__('An error occurred in %s.', 'peatcms'), $sessionlist->name)
                     );
                 }
             }
@@ -3460,7 +3460,9 @@ class DB extends Base
         $columns['names'][] = "'$table_name' AS table_name"; // always return the table_name as well
         $where = $table->formatColumnsAndData($where);
         // @since 0.7.9 source of potential bugs, the changing of a where clause, will cause a fatal error from now on
-        if (count($where['discarded']) !== 0) $this->handleErrorAndStop('->fetchRows discarded columns in where clause');
+        if (0 !== count($where['discarded'])) {
+            $this->handleErrorAndStop('->fetchRows discarded columns in where clause');
+        }
         // build the query
         ob_start();
         echo 'SELECT ';

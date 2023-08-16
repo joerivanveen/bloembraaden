@@ -95,7 +95,7 @@ class Handler extends BaseLogic
             echo $response;
             die();
         } elseif ('poll' === $action) {
-            if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+            Help::$OUTPUT_JSON = true;
             // get any update since last time, so the admin can fetch it when appropriate
             // this is a get request, without csrf or admin, so don’t give any specific information
             $out = array('new' => false, 'is_admin' => ADMIN);
@@ -132,7 +132,7 @@ class Handler extends BaseLogic
             }
         } elseif ($action === 'payment_status_update') {
             //header('Access-Control-Allow-Origin: https://apirequest.io'); //TODO this is temp for testing, not necessary for curl
-            if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+            Help::$OUTPUT_JSON = true;
             if (($psp = $instance->getPaymentServiceProvider())) {
                 if (true === $psp->updatePaymentStatus($post_data)) {
                     $out = $psp->successBody();
@@ -199,7 +199,7 @@ class Handler extends BaseLogic
                     $status_url .= '__action__/instagram/confirm/';
                     $status_url .= $confirmation_code;
                     // instagram wants the response as json
-                    if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+                    Help::$OUTPUT_JSON = true;
                     $out = array(
                         'url' => $status_url,
                         'confirmation_code' => $confirmation_code
@@ -1421,7 +1421,7 @@ class Handler extends BaseLogic
                     }
                 } elseif ($action === 'file_upload_admin') {
                     if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
-                        if (false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+                        Help::$OUTPUT_JSON = true;
                         $el = null;
                         $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
                         // save the file temporarily
@@ -1475,7 +1475,7 @@ class Handler extends BaseLogic
             $out = (object)$out;
             $out->slugs = $GLOBALS['slugs'];
             $out = $this->resolver->cleanOutboundProperties($out);
-            if (defined('OUTPUT_JSON')) {
+            if (true === Help::$OUTPUT_JSON) {
                 // add messages and errors
                 $out->__messages__ = Help::getMessages();
                 if ($this->session->isAdmin()) $out->__adminerrors__ = Help::getErrorMessages();
@@ -1587,7 +1587,7 @@ class Handler extends BaseLogic
         $out->is_admin = ADMIN;
         $out = $this->resolver->cleanOutboundProperties($out);
         // output
-        if (defined('OUTPUT_JSON')) {
+        if (true === Help::$OUTPUT_JSON) {
             if (($post_data = $this->resolver->getPostData())) {
                 if (isset($post_data->timestamp)) {
                     $out->timestamp = $post_data->timestamp;

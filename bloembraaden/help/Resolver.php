@@ -62,7 +62,7 @@ class Resolver extends BaseLogic
             $output_json = isset($post_data->json) && true === $post_data->json;
         }
         // remember for everyone, only needed when output is imminent:
-        if (true === $output_json && false === defined('OUTPUT_JSON')) define('OUTPUT_JSON', true);
+        if (true === $output_json) Help::$OUTPUT_JSON = true;
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (isset($this->instructions['action'])) {
             if (count($uri) > 0) {

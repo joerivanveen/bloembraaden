@@ -13,6 +13,9 @@ class Help
     private static array $errors = array();
     private static array $messages = array(); // indexed array of objects {message:..,count:..,level:..}
 
+    public static bool $OUTPUT_JSON = false;
+    public static ?LoggerInterface $LOGGER = null;
+
     /**
      * Construct won't be called inside this class and is uncallable from
      * the outside. This prevents instantiating this class.

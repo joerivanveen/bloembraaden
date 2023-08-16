@@ -15,6 +15,7 @@ class SseLogger extends Base implements LoggerInterface
             $this->handleErrorAndStop('Cannot setup SSE logger when there is already content in the buffer');
         } else {
             $this->open();
+            Help::$LOGGER = $this;
         }
 //        if(connection_aborted()){
 //            exit();

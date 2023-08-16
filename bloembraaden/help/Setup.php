@@ -46,12 +46,17 @@ class Setup
 
     public static function logErrors(): void
     {
+        if (($e = error_get_last())) {
+            Help::addError(new \Exception($e['message'], $e['type']));
+            if (Help::$LOGGER) Help::$LOGGER->log(sprintf(__('An error occurred in %s.', 'peatcms'), $e['file']));
+        }
+
         $error_messages = Help::logErrorMessages();
         // newrelic reporting
         if (extension_loaded('newrelic')) {
             if (isset($error_messages)) newrelic_notice_error($error_messages);
             newrelic_add_custom_parameter('bloembraaden_instance', self::$INSTANCE_DOMAIN ?? 'unknown');
-            newrelic_add_custom_parameter('bloembraaden_output_json', defined('OUTPUT_JSON') && true === OUTPUT_JSON);
+            newrelic_add_custom_parameter('bloembraaden_output_json', Help::$OUTPUT_JSON);
         }
     }
 
