@@ -1844,10 +1844,10 @@ class Handler extends BaseLogic
 
     private function getElementSuggestions(string $type_name, string $term = ''): ?object
     {
-        if ($type_name === 'x_value') {
+        if ('x_value' === $type_name) {
             return Help::getDB()->fetchPropertiesRowSuggestions($term);
         } elseif ($type = new Type($type_name)) {
-            if (strlen($term) >= Search::MIN_TERM_LENGTH) {
+            if (strlen($term) >= Search::MIN_TERM_LENGTH && 'menu_item' !== $type_name) {
                 $src = new Search();
                 $src->findWeighted(array($term), 0, array($type_name), false);
 

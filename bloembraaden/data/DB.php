@@ -584,10 +584,9 @@ class DB extends Base
      */
     public function fetchElementRowSuggestions(Type $peat_type, string $src): \stdClass
     {
-        $r = new \stdClass;
-        // TODO make this use the search functionality to return better results
+        $r = new \stdClass();
         $r->rows = $this->fetchRows($peat_type->tableName(),
-            array('title', 'slug'),
+            array($peat_type->idColumn(), 'title', 'slug'),
             array('title' => "%$src%"));
         $r->element = $peat_type->typeName();
         $r->src = $src;
@@ -602,7 +601,7 @@ class DB extends Base
      */
     public function fetchPropertiesRowSuggestions(string $src): \stdClass
     {
-        $return_obj = new \stdClass;
+        $return_obj = new \stdClass();
         $src = Help::removeAccents(mb_strtolower($src));
         $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare("
