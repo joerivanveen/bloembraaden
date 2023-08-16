@@ -33,14 +33,13 @@ class MoParser
             Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
             return array($locale=>array());
         }
+        if (filesize($filename) < 10) {
+            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            return array($locale=>array());
+        }
         $_data = array();
         $this->_bigEndian = false;
         $this->_file = fopen($filename, 'rb');
-        if (! $this->_file) {
-            // @since 0.6.16 this is not really an error, you can safely run an instance without translations
-            //Help::addError(new Exception('Error opening translation file \'' . $filename));
-            return array($locale=>array());
-        }
         // get Endian
         $input = $this->_readMOData(1);
         if (strtolower(substr(dechex($input[1]), -8)) == '950412de') {
