@@ -30,7 +30,7 @@ class MoParser
             return array($locale=>array());
         }
         if (filesize($filename) < 10) {
-            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            Bloembraaden\Help::addError(new Exception("$filename is not a gettext file"));
             return array($locale=>array());
         }
         $_data = array();
@@ -43,7 +43,7 @@ class MoParser
         } elseif (strtolower(substr(dechex($input[1]), -8)) == 'de120495') {
             $this->_bigEndian = true;
         } else {
-            Bloembraaden\Help::addError(new Exception('‘' . $filename . '’ is not a gettext file'));
+            Bloembraaden\Help::addError(new Exception("$filename is not a gettext file"));
             return array($locale=>array());
         }
         // read revision - not supported for now
