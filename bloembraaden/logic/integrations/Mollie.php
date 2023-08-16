@@ -42,6 +42,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
             $out->billing_address_number . ' ' .
             $out->billing_address_number_addition
         );
+        $instance_domain = str_replace('.local', '.io', $instance->getDomain(true));
         $data = '{
             "amount": {
                 "currency": "EUR",
@@ -49,7 +50,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
             },
             "description": "' . htmlentities($out->order_number . ' ' . $instance->getName()) . '",
             "redirectUrl": "' . htmlentities((string)$this->getFieldValue('returnUrl')) . '",
-            "webhookUrl": "' . str_replace('/', '\/', $instance->getDomain(true)) . '\/__action__\/payment_status_update",
+            "webhookUrl": "' . str_replace('/', '\/', $instance_domain) . '\/__action__\/payment_status_update",
             "shippingAddress": {
                 "country": "' . htmlentities($out->shipping_address_country_iso2) . '",
                 "city": "' . htmlentities($out->shipping_address_city) . '",
