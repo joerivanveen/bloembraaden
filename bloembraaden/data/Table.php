@@ -308,20 +308,20 @@ class TableInfo
                 $this->id_column = $column_name;
                 $column->editable = false;
             } else { // instance_id only means "per instance" if it's not the id column, because that would be table _instance
-                if ($column_name === 'instance_id') {
+                if ('instance_id' === $column_name) {
                     $this->per_instance = true;
                     $column->editable = false;
                 }
             }
             if ($column->editable === false) $this->getColumnByName($column_name)->setEditable(false);
         }
-        $this->has_standard_columns = ($count_standard_columns === 3);
+        $this->has_standard_columns = (3 === $count_standard_columns);
     }
 
     /**
-     * @param $name string, set the info which column holds the primary key
+     * @param string $name , set the info which column holds the primary key
      */
-    public function setPrimaryKeyColumn(string $name)
+    public function setPrimaryKeyColumn(string $name): void
     {
         $this->primary_key_column = $name;
         // @since 0.7.3 a table can have a key column without the serial datatype
@@ -350,7 +350,7 @@ class TableInfo
     }
 
     /**
-     * @param $name String the name of the column
+     * @param string $name the name of the column
      * @return Column | null Returns the requested column as Column object, or null when not found
      */
     public function getColumnByName(string $name): ?Column
@@ -440,7 +440,7 @@ class Column
      * This function is necessary to legitimate $editable, which is necessary to have non-editable columns in the admin interface
      * @return bool
      */
-    public function isEditable()
+    public function isEditable(): bool
     {
         return $this->editable;
     }

@@ -3450,22 +3450,29 @@ class DB extends Base
 
     public function fetchRowsForExport(string $table_name, int $instance_id): array
     {
-        // some tables do not have an instance_id,
-        // e.g. _order_variant, linked to _order, which has one...
-        // and _shoppinglist_variant, linked to _shoppinglist
-        // also, _order_number does not have an id column...
-        if ('_order_variant' === $table_name || '_shoppinglist_variant' === $table_name) {
-            // todo: load the correct rows
-            return array();
-        } elseif ('_order_number' === $table_name) {
-            // todo: load the correct rows
-            return array();
-        } elseif (false !== strpos($table_name, '_x_')) {
-            // todo: load the correct rows
-            return array();
+        if (
+            false !== ($is_x_table = strpos($table_name, '_x_'))
+            || '_order_variant' === $table_name
+            || '_shoppinglist_variant' === $table_name
+        ) {
+            if ($is_x_table) {
+                $split = explode('_x_', $table_name);
+                $foreign_part = str_replace('properties', 'property', $split[1]);
+                $foreign_table = "cms_$foreign_part";
+                $foreign_id = "{$foreign_part}_id";
+            } else {
+                $foreign_table = str_replace('_variant', '', $table_name);
+                $foreign_id = substr("{$foreign_table}_id", 1);
+            }
+            $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE $foreign_id IN
+                    (SELECT $foreign_id FROM $foreign_table WHERE $instance_id = ?);");
         } else {
-            return $this->fetchRows($table_name, array('*'), array('instance_id' => $instance_id));
+            $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = ?;");
         }
+        $statement->execute(array($instance_id));
+        $rows = $statement->fetchAll();
+        $statement = null;
+        return $this->normalizeRows($rows);
     }
 
     /**
