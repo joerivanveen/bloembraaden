@@ -90,7 +90,7 @@ class Type extends Base
 
     public function getElement(\stdClass $row = null): BaseElement
     {
-        $class_name = '\\Bloembraaden\\' . $this->className();
+        $class_name = "\\Bloembraaden\\{$this->className()}";
 
         return new $class_name($row);
     }
@@ -139,7 +139,7 @@ class Table extends Base
         foreach ($cols as $column_name => $value) {
             if (($col = $this->getInfo()->getColumnByName($column_name))) {
                 // validate before save
-                if ($for_update and ! $this->isValid($col, $value)) {
+                if (true === $for_update && false === $this->isValid($col, $value)) {
                     $return_value['discarded'][] = $column_name;
                     continue;
                 }
@@ -153,22 +153,22 @@ class Table extends Base
                     $return_value['values'][] = $value;
                     if (false === $for_update) {
                         // if the value starts and / or ends with %, treat this as a LIKE statement
-                        if (strpos($value, '%') === 0 || strrpos($value, '%') === strlen($value) - 1) $like = true;
+                        if (0 === strpos($value, '%') || strrpos($value, '%') === strlen($value) - 1) $like = true;
                         // ci_ai and token (_session) are already lower, prevent the table scan here
                         if ('ci_ai' !== $column_name && 'token' !== $column_name) {
-                            $column_name = 'lower(' . $column_name . ')';
+                            $column_name = "lower($column_name)";
                             $lower = true;
                         }
                     }
                 }
                 $like = ($like === false) ? ' = ' : ' LIKE ';
                 $lower = ($lower === false) ? '?' : 'lower(?)';
-                $return_value['parameterized'][] = $column_name . $like . $lower;
+                $return_value['parameterized'][] = "$column_name$like$lower";
             } else {
                 $return_value['discarded'][] = $column_name;
             }
         }
-        if (Setup::$VERBOSE && isset($return_value['discarded']) and count($return_value['discarded']) > 0) {
+        if (Setup::$VERBOSE && isset($return_value['discarded']) && count($return_value['discarded']) > 0) {
             $this->addError('Discarded columns in statement: ' . var_export($return_value['discarded'], true));
         }
 

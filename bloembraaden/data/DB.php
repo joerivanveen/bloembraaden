@@ -3097,16 +3097,20 @@ class DB extends Base
     }
 
     /**
-     * @param Type $which must be a valid element type
-     * @param array $data must contain at least 'title' and 'content', 'slug' and 'template' will default to something
+     * @param Type $peat_type must be a valid element type
+     * @param array $data must contain at least 'title' and 'content'
      * @return int|null the new id as integer when insert in database was successful, null otherwise
      */
-    public function insertElement(Type $which, array $data): ?int
+    public function insertElement(Type $peat_type, array $data): ?int
     {
-        if (false === isset($data['slug'])) $data['slug'] = $which->typeName(); // default
-        if (false === isset($data['instance_id'])) $data['instance_id'] = Setup::$instance_id;
+        if ('menu_item' !== $peat_type->tableName() && false === isset($data['slug'])) {
+            $data['slug'] = $peat_type->typeName();
+        } // default
+        if (false === isset($data['instance_id'])) {
+            $data['instance_id'] = Setup::$instance_id;
+        }
 
-        return $this->insertRowAndReturnLastId($which->tableName(), $data);
+        return $this->insertRowAndReturnLastId($peat_type->tableName(), $data);
     }
 
     /**

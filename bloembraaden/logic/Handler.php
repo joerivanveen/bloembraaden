@@ -1895,7 +1895,7 @@ class Handler extends BaseLogic
         if (!$this->getSession()->isAdmin()) return null;
         if ($type_name !== 'search' && $peat_type = new Type($type_name)) {
             $el = $peat_type->getElement();
-            if ($id = $el->create($online)) {
+            if (($id = $el->create($online))) {
                 if ($el->fetchById($id)) {
                     return $el;
                 } else {
