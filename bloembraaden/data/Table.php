@@ -76,10 +76,10 @@ class Type extends Base
 
     public function idColumn(): string
     {
-        if (strpos(($table_name = $this->tableName()), 'cms_') === false) {
-            return substr($table_name . '_id', 1); // convention: table name except the first _
+        if (0 === strpos(($table_name = $this->tableName()), 'cms_')) {
+            return substr("{$table_name}_id", 4); // convention: table name except the cms_
         } else {
-            return substr($table_name . '_id', 4); // convention: table name except the cms_
+            return substr("{$table_name}_id", 1); // convention: table name except the first _
         }
     }
 
