@@ -75,7 +75,7 @@ class Mailer extends Base
         }
         $this->curl = $curl;
         // @since 0.6.17 changed __destruct to __shutdown for stability reasons
-        register_shutdown_function(array(&$this, '__shutdown'));
+        register_shutdown_function(array($this, '__shutdown'));
     }
 
     public function __shutdown()

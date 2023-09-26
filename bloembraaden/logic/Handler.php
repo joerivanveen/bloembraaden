@@ -344,7 +344,7 @@ class Handler extends BaseLogic
             die(); // after an sse logger you cannot provide any more content, yo
         }
         // following is only valid with csrf
-        if (isset($post_data->csrf_token) and $post_data->csrf_token === $this->session->getValue('csrf_token')) {
+        if (isset($post_data->csrf_token) && $post_data->csrf_token === $this->session->getValue('csrf_token')) {
             if ('get_template' === $action) {
                 // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
                 if (isset($post_data->template_name)) {
@@ -1483,7 +1483,7 @@ class Handler extends BaseLogic
             } elseif ($action === 'reflect') {
                 $out = $post_data;
             }
-        } elseif (null !== $post_data && count(get_object_vars($post_data)) > 1) { // only add the error if you're not just asking for json
+        } elseif (isset($post_data->csrf_token)) { // only add the error if you're not just asking for json
             $this->addMessage(sprintf(__('%s check failed, please refresh browser', 'peatcms'), 'CSRF'), 'warn');
         }
         if ($out !== null) {

@@ -117,7 +117,7 @@ class Daemon
                             $filename = $filter_file_info->getFilename();
                             $filename_for_cache = "$instance_id/$filename";
                             if ($this->runningLate()) {
-                                echo "Stopped for time, filter age being $age seconds";
+                                echo "Stopped for time, filter age being $age seconds\n";
                                 // remember we left off here, to resume next run
                                 $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
                                 break 2;

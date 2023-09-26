@@ -10,7 +10,7 @@ class SseLogger extends Base implements LoggerInterface
     public function __construct()
     {
         parent::__construct();
-        register_shutdown_function([$this, 'close']);
+        register_shutdown_function(array($this, 'close'));
         if (ob_get_length()) { // false or 0 when there's no content in it
             $this->handleErrorAndStop('Cannot setup SSE logger when there is already content in the buffer');
         } else {

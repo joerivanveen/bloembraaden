@@ -88,7 +88,7 @@ if ('1' === $interval) { // interval should be '1'
                 echo 'Order confirmation', PHP_EOL;
                 $mailer->clear();
                 // https://www.trompetters.nl/__action__/pay/order_number:202184610579
-                $order_output_object->payment_link = 'https://' . $row->domain . '/__action__/pay/order_number:' . $row->order_number;
+                $order_output_object->payment_link = "https://$row->domain/__action__/pay/order_number:$row->order_number";
                 if (false === $row->confirmation_before_payment) {
                     $out = (object)(array(
                         'success' => false,
@@ -244,7 +244,7 @@ if ('1' === $interval) { // interval should be '1'
                     ));
                     if ($row->send_invoice_as_pdf) {
                         $mailer->attach(
-                            $invoice_title . '.pdf',
+                            "$invoice_title.pdf",
                             'application/pdf',
                             file_get_contents($filename)
                         );

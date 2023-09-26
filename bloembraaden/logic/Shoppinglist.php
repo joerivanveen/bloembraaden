@@ -24,7 +24,7 @@ class Shoppinglist extends BaseLogic
         $this->rows = Help::getDB()->fetchShoppingListRows($this->getId());
         // remember the state so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
-        register_shutdown_function(array(&$this, '__shutdown'));
+        register_shutdown_function(array($this, '__shutdown'));
     }
 
     /**
