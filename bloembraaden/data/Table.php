@@ -355,12 +355,12 @@ class TableInfo
      */
     public function getColumnByName(string $name): ?Column
     {
-        //if (in_array($name, $this->getColumnNames(), true)) {
-        if (isset($this->columns[$name])) {
-            return $this->columns[$name];
-        }
+        return $this->columns[$name] ?? null;
+    }
 
-        return null;
+    public function hasColumn(string $name): bool
+    {
+        return isset($this->columns[$name]);
     }
 
     /**

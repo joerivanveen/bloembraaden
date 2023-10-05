@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Bloembraaden;
 class BaseLogic extends Base
 {
-    private DB $db;
     protected Type $type;
     protected ?\stdClass $row, $template_settings;
     protected object $template_pointer;
@@ -242,11 +241,11 @@ class BaseLogic extends Base
     public function getId(): int
     {
         if (true === isset($this->id)) return $this->id;
-        $idColumn = $this->getType()->idColumn();
-        if (isset($this->row->$idColumn)) {
-            $this->id = $this->row->$idColumn;
+        $id_column = $this->getType()->idColumn();
+        if (isset($this->row->$id_column)) {
+            $this->id = $this->row->$id_column;
         } else { // we don't know
-            if ($idColumn !== 'search_settings_id') $this->addError('Failed to get id: ' . $idColumn);
+            if ($id_column !== 'search_settings_id') $this->addError("Failed to get id: $id_column");
             $this->id = 0;
         }
 

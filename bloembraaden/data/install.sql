@@ -3079,4 +3079,27 @@ UPDATE "public"."_instagram_media" SET media_url = 're-process-all-insta-images'
 
 COMMIT;
 
+-- version 0.16.5
+
+BEGIN;
+
+DROP TABLE IF EXISTS "public"."_history";
+CREATE TABLE "public"."_history"
+(
+    "history_id"   Serial PRIMARY KEY,
+    "instance_id"  Integer                                NOT NULL,
+    "admin_id"     Integer                                NOT NULL,
+    "user_id"      Integer                                NOT NULL,
+    "admin_name"   character varying(255)                 NOT NULL,
+    "user_name"    character varying(255)                 NOT NULL,
+    "table_name"   character varying(255)                 NOT NULL,
+    "table_column" character varying(255)                 NOT NULL,
+    "key"          Integer                                NOT NULL,
+    "value"        Text                                   NOT NULL,
+    "date_created" Timestamp With Time Zone DEFAULT NOW() NOT NULL
+);
+CREATE INDEX if not exists "index_history_table_column" ON "public"."_history" USING btree ("instance_id", "table_column" Asc NULLS Last);
+
+
+COMMIT;
 

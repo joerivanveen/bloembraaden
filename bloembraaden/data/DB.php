@@ -749,15 +749,28 @@ class DB extends Base
     {
         // todo refactor all these with the arrays to in/exclude stuff and that use the ONLINE
         // todo column depending on admin into a generic fetchRows‘Where’ variant or something
-        $limit_clause = ($limit === 0) ? '' : ' LIMIT ' . $limit;
-        $not_in_clause = (count($exclude_ids) === 0) ? '' :
-            ' AND variant_id NOT IN (' . str_repeat('?,', count($exclude_ids) - 1) . '?)';
+        if (0 === $limit) {
+            $limit_clause = '';
+        } else {
+            $limit_clause = " LIMIT $limit";
+        }
+        if (0 === ($count_exclude_ids = count($exclude_ids))) {
+            $not_in_clause = '';
+        } elseif (1 === $count_exclude_ids) {
+            $not_in_clause = ' AND variant_id NOT IN (?)';
+        } else {
+            $placeholders = str_repeat('?,', $count_exclude_ids - 1); // NOTE you need one more ?
+            $not_in_clause = " AND variant_id NOT IN ($placeholders?)";
+        }
         // TODO when admin chosen ONLINE value should be taken into account
         $and_where_online = (false === ADMIN) ? ' AND el.online = TRUE' : '';
         // build statement
-        $statement = $this->conn->prepare('SELECT el.*, variant_id AS id, \'cms_variant\' AS table_name FROM cms_variant el WHERE el.deleted = FALSE ' .
-            $and_where_online . ' AND el.instance_id = ' . Setup::$instance_id .
-            $not_in_clause . ' ORDER BY date_popvote DESC ' . $limit_clause . ';');
+        $instance_id = Setup::$instance_id;
+        $statement = $this->conn->prepare("
+            SELECT el.*, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant el WHERE el.deleted = FALSE
+            $and_where_online AND el.instance_id = $instance_id
+            $not_in_clause ORDER BY date_popvote DESC $limit_clause;
+        ");
         $statement->execute($exclude_ids);
         $rows = $statement->fetchAll();
         $statement = null;
@@ -1054,7 +1067,7 @@ class DB extends Base
         $table_name = $type->tableName();
         $type_name = $type->typeName();
         $id_column = $type->idColumn();
-        $link_table = $table_name . '_x_properties';
+        $link_table = "{$table_name}_x_properties";
         $statement = $this->conn->prepare("
             SELECT {$type_name}_x_properties_id x_value_id, x.o, x.x_value, p.slug property_slug, p.title property_title, 
             v.slug, v.title, (p.online AND v.online) AS online, EXISTS(
@@ -1142,30 +1155,30 @@ class DB extends Base
     {
         $peat_type_name = $peat_type->typeName();
         $linked_type_name = $linked_type->typeName();
-        if ($linked_type_name === 'variant') {
+        if ('variant' === $linked_type_name) {
             $offset = ($variant_page_size * ($variant_page - 1));
             $paging = " LIMIT $variant_page_size OFFSET $offset";
         } else {
             $paging = '';
         }
         if ('cross_parent' === $relation) { // switch $type and $linked_type around
-            $link_table = "cms_{$linked_type_name}_x_{$peat_type_name}";
+            $link_table = "cms_{$linked_type_name}_x_$peat_type_name";
             $statement = $this->conn->prepare(
                 "SELECT el.*, x.o FROM cms_$linked_type_name el 
                 INNER JOIN $link_table x ON x.sub_{$linked_type_name}_id = el.{$linked_type_name}_id 
                 WHERE x.{$peat_type_name}_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.o $paging;"
             );
         } elseif ('cross_child' === $relation) {
-            $link_table = 'cms_' . $peat_type_name . '_x_' . $linked_type_name;
+            $link_table = "cms_{$peat_type_name}_x_$linked_type_name";
             $statement = $this->conn->prepare(
-                "SELECT el.*, x.sub_o FROM cms_{$linked_type_name} el 
+                "SELECT el.*, x.sub_o FROM cms_$linked_type_name el 
                 INNER JOIN $link_table x ON x.{$linked_type_name}_id = el.{$linked_type_name}_id 
                 WHERE x.sub_{$peat_type_name}_id = :id AND el.deleted = FALSE AND x.deleted = FALSE ORDER BY x.sub_o $paging;"
             );
             // direct relations: eg type = product, linked_type = variant, relation = direct_parent
         } elseif ('direct_parent' === $relation) { // get the e-commerce element this table is a direct parent of
             // honor popvote sorting...
-            if ($linked_type_name === 'variant') {
+            if ('variant' === $linked_type_name) {
                 $sorting = 'ORDER BY date_popvote DESC';
             } else {
                 $sorting = '';
@@ -1176,8 +1189,8 @@ class DB extends Base
             );
         } elseif ('direct_child' === $relation) { // relation must be direct_child
             $statement = $this->conn->prepare(
-                "SELECT el.* FROM cms_{$linked_type_name} el 
-                INNER JOIN cms_{$peat_type_name} t ON t.{$linked_type_name}_id = el.{$linked_type_name}_id 
+                "SELECT el.* FROM cms_$linked_type_name el 
+                INNER JOIN cms_$peat_type_name t ON t.{$linked_type_name}_id = el.{$linked_type_name}_id 
                 WHERE t.{$peat_type_name}_id = :id AND el.deleted = FALSE $paging;"
             );
         } else {
@@ -2663,16 +2676,20 @@ class DB extends Base
         $items = array();
         // for nested_level 0 you get the subitems by menu_id, higher levels are subitems from subitems (obviously)
         if ($nested_level === 0) {
-            $statement = $this->conn->prepare('SELECT i.menu_item_id, i.act, i.title, i.css_class, i.content, i.online ' .
-                'FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu x ON i.menu_item_id = x.sub_menu_item_id ' .
-                'WHERE x.menu_id = ? AND i.deleted = FALSE AND x.deleted = FALSE ' .
-                'ORDER BY x.o');
+            $statement = $this->conn->prepare('
+                SELECT i.menu_item_id, i.act, i.title, i.css_class, i.content, i.online 
+                FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu x ON i.menu_item_id = x.sub_menu_item_id 
+                WHERE x.menu_id = ? AND i.deleted = FALSE AND x.deleted = FALSE 
+                ORDER BY x.o;
+            ');
             $parameters = array($menu_id);
         } else { // higher levels, get the items by menu_item_id, for the specific menu_id
-            $statement = $this->conn->prepare('SELECT i.menu_item_id, i.act, i.title, i.css_class, i.content, i.online ' .
-                'FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu_item x ON i.menu_item_id = x.sub_menu_item_id ' .
-                'WHERE x.menu_id = ? AND x.menu_item_id = ? AND i.deleted = FALSE AND x.deleted = FALSE ' .
-                'ORDER BY x.o');
+            $statement = $this->conn->prepare('
+                SELECT i.menu_item_id, i.act, i.title, i.css_class, i.content, i.online 
+                FROM cms_menu_item i INNER JOIN cms_menu_item_x_menu_item x ON i.menu_item_id = x.sub_menu_item_id 
+                WHERE x.menu_id = ? AND x.menu_item_id = ? AND i.deleted = FALSE AND x.deleted = FALSE 
+                ORDER BY x.o;
+            ');
             $parameters = array($menu_id, $menu_item_id);
         }
         try {
@@ -2699,7 +2716,7 @@ class DB extends Base
                         sprintf(__('json_decode error on menu item %s', 'peatcms'),
                             \var_export($row->title, true)), 'warn');
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // fail silently
             }
             if (($sub_items = $this->fetchMenuItems($menu_id, $row->menu_item_id, $nested_level))) {
@@ -3701,18 +3718,18 @@ class DB extends Base
         }
     }
 
-    private function updateRowAndReturnSuccess(string $table_name, array $data, $key): bool
+    private function updateRowAndReturnSuccess(string $table_name, array $key_value, $key): bool
     {
         $table = new Table($this->getTableInfo($table_name)); // fatal error is thrown when table_name is wrong
         $table_info = $table->getInfo();
         $key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // reCacheWithWarmup the old slug, clear this slug and reCacheWithWarmup the new slug as well (as it may be used for a search page)
-        if (isset($data['slug'])) {
+        if (isset($key_value['slug'])) {
             //$data['slug'] = $this->clearSlug($data['slug']); // (INSERT) needs to be unique for any entry
-            $new_slug = $this->clearSlug($data['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
-            $data['slug'] = $new_slug;
+            $new_slug = $this->clearSlug($key_value['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
+            $key_value['slug'] = $new_slug;
         }
-        $data = $table->formatColumnsAndData($data, true);
+        $data = $table->formatColumnsAndData($key_value, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
         if (false !== array_search('slug', $data['discarded'])) unset($new_slug);
         // check if there are any columns going to be updated, else return already
@@ -3722,7 +3739,7 @@ class DB extends Base
             return false;
         }
         // push current entry to history
-        $old_row = $this->copyRowToHistory($table, $key); // returns the copied (now old) row, can be null
+        $old_row = $this->addToHistory($table, $key, $key_value); // returns the copied (now old) row, can be null
         // update entry
         $columns_list = implode(', ', $data['parameterized']);
         $columns_date = ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '');
@@ -3793,7 +3810,7 @@ class DB extends Base
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
         $table_info = $table->getInfo();
         // push current entry to history
-        $old_row = $this->copyRowToHistory($table, $key); // returns current row
+        $old_row = $this->addToHistory($table, $key, array('deleted' => true)); // returns current row
         $primary_key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // delete the row
         if ($table_info->hasStandardColumns()) { // if the deleted column exists, use that
@@ -3811,7 +3828,7 @@ class DB extends Base
         }
         unset($old_row);
 
-        return ($row_count === 1);
+        return (1 === $row_count);
     }
 
     private function deleteRowWhereAndReturnAffected($table_name, array $where, array $where_not = array()): int
@@ -3944,7 +3961,24 @@ class DB extends Base
 
             return $rows[0][0];
         }
-        // look in the history, get all tables that contain a slug column
+        // @since 0.16.5 look in _history
+        $statement = $this->conn->prepare('SELECT key, table_name FROM _history WHERE instance_id = :instance_id AND table_column = \'slug\' AND value = :value ORDER BY date_created DESC LIMIT 1;');
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':value', $slug);
+        $statement->execute();
+        if (($rows = $statement->fetchAll())) {
+            $statement = null;
+            $row = $this->normalizeRow($rows[0]);
+            $table_name = $row->table_name;
+            if (0 === strpos($table_name, 'cms_')) {
+                $element_name = substr($table_name, 4);
+                if ($row = $this->fetchRow($table_name, array('slug'), array("{$element_name}_id" => $row->key))) {
+                    return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
+                }
+            }
+        }
+        // TODO remove the following logic except 'return null' when _history is filled
+        // look in the history database, get all tables that contain a slug column
         // those tables must also have the standard columns (data_updated, etc.)
         // TODO this seems incredibly slow but can also be somewhere else, looking up a slug from history :-(
         $statement = Setup::getHistoryDatabaseConnection()->prepare("
@@ -4385,16 +4419,14 @@ class DB extends Base
      * Copies an entry from a live table to the history database, for undo and redirect functionality
      *
      * @param Table $table the table object from the live database for reference
-     * @param $key mixed the key of the primary key column of the row to move to history
+     * @param mixed $key the key of the primary key column of the row to move to history
+     * @param array $key_value the column => value pairs that are updated
      * @return \stdClass|null the old row or null when not copied (@since 0.5.x)
      * @since 0.0.0
      */
-    private function copyRowToHistory(Table $table, $key): ?\stdClass
+    private function addToHistory(Table $table, $key, array $key_value): ?\stdClass
     {
-        // the history table must have the same definition / columns as the source table this is ensured by Help::upgrade()
-        // copying the row inside postgres from one db to another is not supported, so you have to do it via php...
-        // you could use two schemas (e.g. live + history) but I want to keep history separate entirely to be able to move it to a different server etc.
-        // 1) select the row from the live database
+        // select the row from the live database
         $table_info = $table->getInfo();
         // abort if there's no history
         if (in_array($table_name = $table_info->getTableName(), self::TABLES_WITHOUT_HISTORY)) return null;
@@ -4405,11 +4437,44 @@ class DB extends Base
             $table_info->getPrimaryKeyColumn()->getName() => $key,
         ));
         if ($row === null) {
-            $this->addError(sprintf('->copyRowToHistory() could not get row from %1$s with %2$s = %3$s',
+            $this->addError(sprintf('addToHistory could not get row from %1$s with %2$s = %3$s',
                 $table_name, $table_info->getPrimaryKeyColumn()->getName(), (string)$key));
 
             return null;
         }
+        // @since 0.16.5 use _history
+        if ('cms_image' === $table_name && isset($key_value['date_processed'])) {
+            $key_value = array('date_processed' => date('Y-m-d H:i:s'));
+        }
+        foreach ($key_value as $column_name => $value) {
+            if (false === $table_info->hasColumn($column_name)) continue;
+            // booleans get butchered in $statement->execute(), interestingly, NULL values don't
+            if (is_bool($value)) {
+                $value = ($value ? '1' : '0');
+            } else {
+                $value = (string)$value;
+            }
+            $admin = Help::$session->getAdmin();
+            $user = Help::$session->getUser();
+            $statement = $this->conn->prepare('
+                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value) 
+                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value);
+            ');
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->bindValue(':admin_id', $admin ? $admin->getId() : 0);
+            $statement->bindValue(':admin_name', $admin ? $admin->getRow()->email : 'N/A');
+            $statement->bindValue(':user_id', $user ? $user->getId() : 0);
+            $statement->bindValue(':user_name', $user ? $user->getRow()->email : 'N/A');
+            $statement->bindValue(':table_name', $table_name);
+            $statement->bindValue(':table_column', $column_name);
+            $statement->bindValue(':key', (int)$key);
+            $statement->bindValue(':value', $value);
+            if (false === $statement->execute()) {
+                $this->addError(sprintf('addToHistory could not insert into _history for %1$s with %2$s = %3$s',
+                    $table_name, $column_name, $value));
+            }
+        }
+        // TODO remove the following logic except 'return $row' when _history is filled
         // 2) insert the row into history database
         try {
             $columns_list = implode(', ', $table_info->getColumnNames());
