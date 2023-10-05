@@ -13,6 +13,7 @@ class Help
     private static array $errors = array();
     private static array $messages = array(); // indexed array of objects {message:..,count:..,level:..}
 
+    public static Session $session;
     public static bool $OUTPUT_JSON = false;
     public static ?LoggerInterface $LOGGER = null;
 

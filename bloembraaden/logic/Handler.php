@@ -8,10 +8,9 @@ class Handler extends BaseLogic
     private Resolver $resolver;
     private ?string $action;
 
-    public function __construct(Session $session)
+    public function __construct()
     {
         parent::__construct();
-        $this->session = $session;
         // the resolver will setup itself based on the supplied url, and then setup the necessary global constants
         $this->resolver = new Resolver($_SERVER['REQUEST_URI'], Setup::$instance_id);
         $this->action = $this->resolver->getAction();
@@ -28,7 +27,7 @@ class Handler extends BaseLogic
         // here you can do the actions, based on what’s $post-ed
         $out = null;
         $post_data = $this->resolver->getPostData();
-        $instance = $this->session->getInstance();
+        $instance = Help::$session->getInstance();
         // NOTE you always get the current version even if you ask for a previous one, this is no big deal I think
         $version = Setup::$VERSION . '-' . strtotime($instance->getSetting('date_updated'));
         // start with some actions that are valid without csrf
@@ -109,12 +108,12 @@ class Handler extends BaseLogic
             }
         } elseif ($action === 'account_delete_session') {
             if (!isset(($terms = $this->resolver->getTerms())[1])) {
-                $this->getSession()->delete();
+                Help::$session->delete();
                 $this->addMessage(__('Session has been deleted', 'peatcms'), 'log');
                 $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass);
             } else {
                 $session_id = (int)$terms[1];
-                $my_session = $this->getSession();
+                $my_session = Help::$session;
                 if ($session_id === $my_session->getId()) {
                     $this->addMessage(__('You can not destroy your own session this way', 'peatcms'), 'warn');
                 } elseif (true === Help::getDB()->deleteSessionById(
@@ -181,7 +180,7 @@ class Handler extends BaseLogic
             if (isset((($terms = $this->resolver->getTerms()))[1])) {
                 $insta = new Instagram();
                 if ('feed' === ($command = $terms[1])) {
-                    if (isset($post_data->csrf_token) && $post_data->csrf_token === $this->session->getValue('csrf_token')) {
+                    if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
                         $feed_name = $terms[2] ?? '';
                         $out = $insta->feed($feed_name);
                     } else {
@@ -195,7 +194,7 @@ class Handler extends BaseLogic
                     // https://developers.facebook.com/docs/apps/delete-data/
                     // URL to track the deletion:
                     $confirmation_code = $insta->delete($post_data);
-                    $status_url = $this->session->getInstance()->getDomain(true);
+                    $status_url = Help::$session->getInstance()->getDomain(true);
                     $status_url .= '__action__/instagram/confirm/';
                     $status_url .= $confirmation_code;
                     // instagram wants the response as json
@@ -231,7 +230,7 @@ class Handler extends BaseLogic
                             'payment_tracking_id' => NULL,
                             'payment_transaction_id' => NULL,
                         ), $order_row->order_id);
-                        $this->getSession()->setVar('order_number', $order_number);
+                        Help::$session->setVar('order_number', $order_number);
                         if (isset($properties['slug'][0])) {
                             $redirect_uri = Help::slugify($properties['slug'][0]);
                         } else {
@@ -250,7 +249,7 @@ class Handler extends BaseLogic
                 $out = true;
             } else if (isset($properties['order_number'])) {
                 $shoppinglist_name = $properties['shoppinglist'][0];
-                $shoppinglist = new Shoppinglist($shoppinglist_name, $this->session);
+                $shoppinglist = new Shoppinglist($shoppinglist_name, Help::$session);
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
                 if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
                     $order = new Order($order_row);
@@ -277,7 +276,7 @@ class Handler extends BaseLogic
                 }
             }
         } elseif ('invoice' === $action) {
-            if (!$this->getSession()->getAdmin() instanceof Admin) {
+            if (!Help::$session->getAdmin() instanceof Admin) {
                 $this->addMessage(__('Invoice can only be accessed by admin', 'peatcms'), 'warn');
             } else {
                 if (isset($this->resolver->getProperties()['order_number'])) {
@@ -299,7 +298,7 @@ class Handler extends BaseLogic
         } elseif ('process_file' === $action) {
             $props = $this->resolver->getProperties();
             $sse = new SseLogger();
-            if (false === $this->getSession()->getAdmin() instanceof Admin) {
+            if (false === Help::$session->getAdmin() instanceof Admin) {
                 $sse->addError('To process a file you must be admin');
                 die();
             }
@@ -330,7 +329,7 @@ class Handler extends BaseLogic
         } elseif ('admin_export_instance' === $action) {
             $props = $this->resolver->getProperties();
             $sse = new SseLogger();
-            if (!($admin = $this->getSession()->getAdmin()) instanceof Admin) {
+            if (!($admin = Help::$session->getAdmin()) instanceof Admin) {
                 $sse->log(__('Export can only be accessed by admin.', 'peatcms'));
                 $sse->addError('Export can only be accessed by admin.');
             } elseif (isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
@@ -344,7 +343,7 @@ class Handler extends BaseLogic
             die(); // after an sse logger you cannot provide any more content, yo
         }
         // following is only valid with csrf
-        if (isset($post_data->csrf_token) && $post_data->csrf_token === $this->session->getValue('csrf_token')) {
+        if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
             if ('get_template' === $action) {
                 // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
                 if (isset($post_data->template_name)) {
@@ -370,7 +369,7 @@ class Handler extends BaseLogic
                     }
                     // use Template() by loading html from disk
                     $temp = new Template();
-                    $admin = ((isset($post_data->admin) and $post_data->admin === true) and $this->session->isAdmin());
+                    $admin = ((isset($post_data->admin) and $post_data->admin === true) and Help::$session->isAdmin());
                     //$out = array('html' => $temp->load($data->template_name, $admin));
                     if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
                         $out = $temp->getPrepared($html);
@@ -465,8 +464,8 @@ class Handler extends BaseLogic
             } elseif ($action === 'set_session_var') {
                 $name = $post_data->name;
                 // times keeps track of how many times this var is (being) updated
-                $this->getSession()->setVar($name, $post_data->value, $post_data->times);
-                $out = true; //array($name => $this->getSession()->getVar($name)); // the var object including value and times properties is returned
+                Help::$session->setVar($name, $post_data->value, $post_data->times);
+                $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
             } elseif ($action === 'post_comment' and (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $valid = true;
@@ -504,7 +503,7 @@ class Handler extends BaseLogic
                     }
                 }
                 if (true === $valid) {
-                    $session =& $this->session; // point to this session
+                    $session =& Help::$session; // point to this session
                     $peat_type = new Type('comment');
                     $title = Help::summarize(127, $post_data->title ?? '');
                     if ('' === $title) $title = Help::summarize(127, $post_data->content);
@@ -624,7 +623,7 @@ class Handler extends BaseLogic
                                 }
                             }
                             if (true === $valid) {
-                                $session =& $this->session; // point to this session
+                                $session =& Help::$session; // point to this session
                                 $shoppinglist = new Shoppinglist($post_data->shoppinglist, $session);
                                 if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
                                     $session->setVar('order_number', $order_number);
@@ -651,7 +650,7 @@ class Handler extends BaseLogic
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     $as_admin = $this->resolver->hasInstruction('admin');
                     if ($as_admin or true === Help::recaptchaVerify($instance, $post_data)) {
-                        if (false === $this->session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
+                        if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                             $this->addMessage(__('Could not login', 'peatcms'), 'warn');
                         } else {
                             if ($as_admin) {
@@ -661,7 +660,7 @@ class Handler extends BaseLogic
                                 $out = array(
                                     'success' => true,
                                     'is_account' => true,
-                                    '__user__' => $this->session->getUser()->getOutput()
+                                    '__user__' => Help::$session->getUser()->getOutput()
                                 );
                             }
                         }
@@ -681,14 +680,14 @@ class Handler extends BaseLogic
                     ) {
                         $this->addMessage(__('Account created', 'peatcms'), 'note');
                         // auto login
-                        if (false === $this->session->login($email_address, (string)$post_data->pass, false)) {
+                        if (false === Help::$session->login($email_address, (string)$post_data->pass, false)) {
                             $this->addMessage(__('Could not login', 'peatcms'), 'error');
                         } else {
                             $this->addMessage(__('Login successful', 'peatcms'), 'log');
                             $out = array(
                                 'success' => true,
                                 'is_account' => true,
-                                '__user__' => $this->session->getUser()->getOutput()
+                                '__user__' => Help::$session->getUser()->getOutput()
                             );
                         }
                     } else {
@@ -753,12 +752,12 @@ class Handler extends BaseLogic
                             } else {
                                 $this->addMessage(__('Password updated', 'peatcms'), 'note');
                                 $out['success'] = true;
-                                if (true === $this->getSession()->login($email_address, $password, false)) {
+                                if (true === Help::$session->login($email_address, $password, false)) {
                                     $this->addMessage(__('Login successful', 'peatcms'), 'log');
                                     $out = array(
                                         'success' => true,
                                         'is_account' => true,
-                                        '__user__' => $this->session->getUser()->getOutput()
+                                        '__user__' => Help::$session->getUser()->getOutput()
                                     );
                                 }
                             }
@@ -772,7 +771,7 @@ class Handler extends BaseLogic
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
             } elseif ('account_update' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
-                if (null !== ($user = $this->getSession()->getUser())) {
+                if (null !== ($user = Help::$session->getUser())) {
                     // check which column is being updated... (multiple is possible)
                     $data = array();
                     if (isset($post_data->phone)) $data['phone'] = $post_data->phone;
@@ -792,18 +791,18 @@ class Handler extends BaseLogic
                     }
                 }
             } elseif ('account_delete_sessions' === $action) {
-                if ((null !== ($user = $this->getSession()->getUser()))) {
+                if ((null !== ($user = Help::$session->getUser()))) {
                     $out['success'] = 0 < Help::getDB()->deleteSessionsForUser(
                             $user->getId(),
-                            $this->getSession()->getId()
+                            Help::$session->getId()
                         );
-                    $out['__user__'] = $this->getSession()->getUser()->getOutput();
+                    $out['__user__'] = Help::$session->getUser()->getOutput();
                 }
             } elseif (('update_address' === $action || 'delete_address' === $action)
                 and (true === Help::recaptchaVerify($instance, $post_data))
             ) {
                 //$post_data = $this->resolver->escape($post_data);
-                if ((null !== ($user = $this->getSession()->getUser())) && isset($post_data->address_id)) {
+                if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
                     if ($action === 'delete_address') $post_data->deleted = true;
                     if (1 === Help::getDB()->updateColumnsWhere(
@@ -834,7 +833,7 @@ class Handler extends BaseLogic
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ($action === 'create_address' and (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
-                if ((null !== ($user = $this->getSession()->getUser()))) {
+                if ((null !== ($user = Help::$session->getUser()))) {
                     if (null !== ($address_id = Help::getDB()->insertElement(
                             new Type('address'),
                             array('user_id' => $user->getId())))
@@ -848,9 +847,9 @@ class Handler extends BaseLogic
             } elseif ($action === 'detail' and $this->resolver->hasInstruction('order')) {
                 $out = new \stdClass;
                 // session values can be manipulated so you need to check if this order belongs to the session
-                if (($order_number = $this->getSession()->getValue('order_number'))
+                if (($order_number = Help::$session->getValue('order_number'))
                     && ($row = Help::getDB()->getOrderByNumber($order_number))
-                    && $row->session_id === $this->getSession()->getId()) {
+                    && $row->session_id === Help::$session->getId()) {
                     $out = $row;
                 }
                 $out->slug = '__order__/' . $order_number;
@@ -900,7 +899,7 @@ class Handler extends BaseLogic
                 }
             } elseif (in_array($action, array('add_to_list', 'remove_from_list', 'update_quantity_in_list'))) {
                 $out = array('success' => $this->updateList($action, $post_data));
-            } elseif (($admin = $this->getSession()->getAdmin()) instanceof Admin) {
+            } elseif (($admin = Help::$session->getAdmin()) instanceof Admin) {
                 /**
                  * Admin actions, permission needs to be checked every time
                  */
@@ -984,7 +983,7 @@ class Handler extends BaseLogic
                 } elseif ($action === 'admin_export_templates_by_name') {
                     if (isset($post_data->instance_id) and $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $content = Help::getDB()->getTemplates($instance_id);
-                        $file_name = Help::slugify($this->session->getInstance()->getName()) . '-Templates.json';
+                        $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
                         $out = array('download' => array('content' => $content, 'file_name' => $file_name));
                     }
                 } elseif ($action === 'admin_import_templates_by_name') {
@@ -1350,7 +1349,7 @@ class Handler extends BaseLogic
                         if ($posted_table_name === '_admin'
                             and $posted_column_name === 'deleted'
                             and $posted_value === true) {
-                            if ((int)$posted_id === $this->session->getAdmin()->getId()) {
+                            if ((int)$posted_id === Help::$session->getAdmin()->getId()) {
                                 $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself', $posted_id),
                                     __('You can’t delete yourself', 'peatcms'));
                             }
@@ -1493,11 +1492,11 @@ class Handler extends BaseLogic
             if (true === Help::$OUTPUT_JSON) {
                 // add messages and errors
                 $out->__messages__ = Help::getMessages();
-                if ($this->session->isAdmin()) $out->__adminerrors__ = Help::getErrorMessages();
+                if (Help::$session->isAdmin()) $out->__adminerrors__ = Help::getErrorMessages();
                 // pass timestamp when available
                 if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
                 // @since 0.6.1 add any changed session vars for update on client
-                $out->__session__ = $this->getSession()->getUpdatedVars();
+                $out->__session__ = Help::$session->getUpdatedVars();
                 if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
                 unset($out);
@@ -1534,18 +1533,18 @@ class Handler extends BaseLogic
                 die();
             }
         }
-        $instance = $this->session->getInstance();
+        $instance = Help::$session->getInstance();
         // usually we get the element from cache, only when not cached yet get it from the resolver
         // @since 0.8.2 admin also gets from cache, table_info is added later anyway
         // warmup does an update of the cache row (getDB()->cache handles this automatically) so the client never misses out
         if ($this->resolver->hasInstructions()) {
-            $element = $this->resolver->getElement($from_history, $this->session);
+            $element = $this->resolver->getElement($from_history, Help::$session);
             $out = $element->getOutputObject();
         } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page))) {
             // check if it’s a paging error
             $out = ($variant_page !== 1) ? Help::getDB()->cached($slug, 1) : null;
             if (null === $out) {
-                $element = $this->resolver->getElement($from_history, $this->session);
+                $element = $this->resolver->getElement($from_history, Help::$session);
                 $out = $element->cacheOutputObject(true);
                 unset($element);
                 if (extension_loaded('newrelic')) {
@@ -1568,10 +1567,10 @@ class Handler extends BaseLogic
         if (true === ADMIN) {
             // security: check access
             if (isset($base_element->instance_id) and $base_element->instance_id !== Setup::$instance_id) {
-                if (false === $this->session->getAdmin()->isRelatedInstanceId($base_element->instance_id)) {
+                if (false === Help::$session->getAdmin()->isRelatedInstanceId($base_element->instance_id)) {
                     $this->handleErrorAndStop(
                         sprintf('admin %1$s tried to access %2$s (instance_id %3$s)',
-                            $this->session->getAdmin()->getId(),
+                            Help::$session->getAdmin()->getId(),
                             $this->resolver->getPath(),
                             $base_element->instance_id)
                         , __('It seems this does not belong to you', 'peatcms')
@@ -1610,7 +1609,7 @@ class Handler extends BaseLogic
             }
             $out->__messages__ = Help::getMessages();
             // @since 0.6.1 add any changed session vars for update on client
-            $out->__session__ = $this->getSession()->getUpdatedVars();
+            $out->__session__ = Help::$session->getUpdatedVars();
             if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
             $response = gzencode(json_encode($out), 6);
             unset($out);
@@ -1627,7 +1626,7 @@ class Handler extends BaseLogic
                     die(sprintf(__('Website is parked, but %s is not found.', 'peatcms'), 'park.html'));
                 }
             }
-            $session = $this->getSession();
+            $session = Help::$session;
             // add some global items
             $out->csrf_token = $session->getValue('csrf_token'); // necessary for login page at the moment
             $out->nonce = Help::randomString(32);
@@ -1786,7 +1785,7 @@ class Handler extends BaseLogic
         // update list
         $variant = $this->getElementById('variant', $variant_id);
         if ($variant instanceof Variant) {
-            $list = new Shoppinglist($list_name, $this->getSession());
+            $list = new Shoppinglist($list_name, Help::$session);
             if ($action === 'add_to_list') {
                 if (false === $list->addVariant($variant, $quantity)) {
                     $this->addMessage(sprintf(__('Adding to list ‘%s’ failed', 'peatcms'), $list_name), 'warn');
@@ -1818,7 +1817,7 @@ class Handler extends BaseLogic
 
     public function getSession()
     {
-        return $this->session;
+        return Help::$session;
     }
 
     /**
@@ -1892,7 +1891,7 @@ class Handler extends BaseLogic
     private function createElement(string $type_name, ?bool $online = false): ?BaseElement
     {
         // TODO access control permissions
-        if (!$this->getSession()->isAdmin()) return null;
+        if (!Help::$session->isAdmin()) return null;
         if ($type_name !== 'search' && $peat_type = new Type($type_name)) {
             $el = $peat_type->getElement();
             if (($id = $el->create($online))) {
@@ -1925,7 +1924,7 @@ class Handler extends BaseLogic
             if ($instance_id = Help::getDB()->insertInstance(
                 'example.com',
                 __('New instance', 'peatcms'),
-                //$this->Session->getAdmin()->getClient()->getOutput()->client_id
+                //Help::$session->getAdmin()->getClient()->getOutput()->client_id
                 $admin->getClient()->getId()
             )) {
                 // a new instance must have a homepage

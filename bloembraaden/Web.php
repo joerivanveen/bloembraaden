@@ -11,11 +11,11 @@ if (true === Setup::$INSTALL) Help::install(new DB());
 $I = new Instance();
 Setup::loadInstanceSettings($I);
 // start session (including user and admin)
-$S = new Session($I);
+Help::$session = new Session($I);
 $I = null;
 // setup some constants
-define('ADMIN', $S->isAdmin());
+define('ADMIN', Help::$session->isAdmin());
 // Respond
-$H = new Handler($S);
+$H = new Handler();
 $H->Act();
 $H->View();

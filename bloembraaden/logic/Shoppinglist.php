@@ -7,19 +7,17 @@ class Shoppinglist extends BaseLogic
     // TODO it's a bit wonky, with the 'rows' variable holding the rows
     private string $name, $state;
     private array $rows;
-    private Session $session;
 
-    public function __construct(string $name, Session $session)
+    public function __construct(string $name)
     {
         parent::__construct();
         $this->name = $name;
-        $this->session = $session;
         $this->type_name = 'shoppinglist';
         // get the list from db
         $this->row = Help::getDB()->fetchShoppingList(
             $name,
-            $session->getId(),
-            (null === ($user = $session->getUser())) ? 0 : $user->getId()
+            Help::$session->getId(),
+            (null === ($user = Help::$session->getUser())) ? 0 : $user->getId()
         );
         $this->rows = Help::getDB()->fetchShoppingListRows($this->getId());
         // remember the state so you can update the db on __shutdown
@@ -195,7 +193,7 @@ class Shoppinglist extends BaseLogic
         $output_object->row_count = $row_count;
         // @since 0.5.12 get the shippingcosts if a shipping country is known
         $amount_grand_total = $amount_row_total;
-        if (($country_id = (int)$this->session->getValue('shipping_country_id'))) {
+        if (($country_id = (int)Help::$session->getValue('shipping_country_id'))) {
             if (($country = Help::getDB()->getCountryById($country_id))) {
                 if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
                     $shipping_costs = Help::getAsFloat($country->shipping_costs);
