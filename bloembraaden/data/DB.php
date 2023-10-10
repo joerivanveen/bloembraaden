@@ -488,8 +488,8 @@ class DB extends Base
     }
 
     /**
-     * @param $slug string the slug to find an element by
-     * @param $no_cache bool default false, set to true if you want to ignore cache when getting the type and id
+     * @param string $slug the slug to find an element by
+     * @param bool $no_cache default false, set to true if you want to ignore cache when getting the type and id
      * @return \stdClass|null returns a stdClass (normalized row) with ->type and ->id, or null when not found
      * @since 0.0.0
      */
@@ -497,8 +497,6 @@ class DB extends Base
     {
         // @since 0.7.5 if the slug is not in the format of a slug, no need to go look for it
         if ($slug !== Help::slugify($slug)) return null;
-        // to be certain make $slug lower in database
-        $slug = mb_strtolower($slug);
         // find appropriate item in database
         $rows = array();
         // @since 0.6.0 check the cache first
@@ -3384,8 +3382,6 @@ class DB extends Base
         if ($depth === 0) {
             // make it a safe slug (no special characters)
             $slug = Help::slugify($slug);
-            // make it lowercase (multibyte)
-            $slug = mb_strtolower($slug);
         }
         $slug = substr($slug, 0, 127);
         $rows = $this->getTablesWithSlugs();
@@ -3961,6 +3957,8 @@ class DB extends Base
 
             return $rows[0][0];
         }
+        // no need to look further if the slug is not a real slug
+        if ($slug !== Help::slugify($slug)) return null;
         // @since 0.16.5 look in _history
         $statement = $this->conn->prepare('SELECT key, table_name FROM _history WHERE instance_id = :instance_id AND table_column = \'slug\' AND value = :value ORDER BY date_created DESC LIMIT 1;');
         $statement->bindValue(':instance_id', Setup::$instance_id);

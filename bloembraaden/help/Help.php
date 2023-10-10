@@ -593,7 +593,9 @@ class Help
         // lose consecutive hyphens
         $string = preg_replace('|-+|', '-', $string);
         // trim neatly
-        return trim($string, '-');
+        $string = trim($string, '-');
+        // return lowercase
+        return mb_strtolower($string);
     }
 
     public static function summarize(int $length, ...$parts): string
