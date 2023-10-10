@@ -258,13 +258,13 @@ class Resolver extends BaseLogic
             $type_name = 'page';
             $element_id = $session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
-            // find element by slug
-            if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0], $no_cache))) {
-                $element_id = (int)$row->id;
-                $type_name = (string)$row->type;
-            } else {
-                // try to get it from history
-                if ($slug = Help::getDB()->getCurrentSlugBySlug($terms[0])) {
+            $term = $terms[0];
+            if ($term === Help::slugify($term)) {
+                // find element by slug
+                if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, $no_cache))) {
+                    $element_id = (int)$row->id;
+                    $type_name = (string)$row->type;
+                } elseif ($slug = Help::getDB()->getCurrentSlugBySlug($term)) {
                     if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
                         $element_id = (int)$row->id;
                         $type_name = (string)$row->type;
