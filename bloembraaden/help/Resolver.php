@@ -164,14 +164,12 @@ class Resolver extends BaseLogic
         return $this->terms;
     }
 
-    public function getElement(?bool &$from_history, ?Session $session = null, ?bool $no_cache = false): BaseLogic
+    public function getElement(?bool &$from_history, ?bool $no_cache = false): BaseLogic
     {
         $from_history = false;
-        // TODO it is a bad sign that session has to be sent to this method
-        // TODO optimize this, probably move it to its own method
         // run over the instructions (skipped for regular urls)
         foreach ($this->instructions as $instruction => $value) {
-            if (null === $session) $this->handleErrorAndStop('Resolver->getElement() cannot get instructions-element with session = null');
+            if (null === ($session = Help::$session)) $this->handleErrorAndStop('Resolver->getElement() cannot get instructions-element with session = null');
             // btw, instructions may not be cached
             switch ($instruction) {
                 case 'admin':
@@ -263,7 +261,7 @@ class Resolver extends BaseLogic
             if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, $no_cache))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type;
-            } elseif ($slug = Help::getDB()->getCurrentSlugBySlug($term)) {
+            } elseif (null !== ($slug = Help::getDB()->getCurrentSlugBySlug($term))) {
                 if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
                     $element_id = (int)$row->id;
                     $type_name = (string)$row->type;
@@ -275,7 +273,7 @@ class Resolver extends BaseLogic
         $element = $peat_type->getElement();
         // null means element is deleted or something, perform a default search
         if (null === $element->fetchById($element_id)) {
-            $element = new Search;
+            $element = new Search();
         }
         // load the properties, to be used by filters
         $element->setProperties($this->getProperties());

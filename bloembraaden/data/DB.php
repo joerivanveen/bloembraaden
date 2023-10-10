@@ -3936,7 +3936,7 @@ class DB extends Base
     }
 
     /**
-     * Returns the current slug based on an old slug by looking for the element in the history database
+     * Returns the current slug based on an old slug by looking in the redirect and history tables
      *
      * @param string $slug the slug to search for in redirect table and history
      * @return string|null the current slug or null when nothing is found

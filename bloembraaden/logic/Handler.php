@@ -1538,13 +1538,13 @@ class Handler extends BaseLogic
         // @since 0.8.2 admin also gets from cache, table_info is added later anyway
         // warmup does an update of the cache row (getDB()->cache handles this automatically) so the client never misses out
         if ($this->resolver->hasInstructions()) {
-            $element = $this->resolver->getElement($from_history, Help::$session);
+            $element = $this->resolver->getElement($from_history);
             $out = $element->getOutputObject();
         } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page))) {
             // check if it’s a paging error
             $out = ($variant_page !== 1) ? Help::getDB()->cached($slug, 1) : null;
             if (null === $out) {
-                $element = $this->resolver->getElement($from_history, Help::$session);
+                $element = $this->resolver->getElement($from_history);
                 $out = $element->cacheOutputObject(true);
                 unset($element);
                 if (extension_loaded('newrelic')) {
