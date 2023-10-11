@@ -161,8 +161,8 @@ class Template extends BaseLogic
     public function addTags(\stdClass $output_object, \stdClass $tags): \stdClass
     {
         foreach ($tags as $key => $value) {
-            if (false === isset($output_object->$key)) {
-                $output_object->$key = $value;
+            if (false === isset($output_object->{$key})) {
+                $output_object->{$key} = $value;
             }
         }
 
@@ -178,7 +178,7 @@ class Template extends BaseLogic
     public function addComplexTags(\stdClass $output_object): \stdClass
     {
         if (isset($output_object->__ref) && ($ref = $output_object->__ref)) {
-            if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->$ref))) {
+            if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->{$ref}))) {
                 foreach ($obj as $path => $template) {
                     if (0 === strpos($path, '__action__/instagram/feed/')) {
                         $feed = (new Instagram())->feed(substr($path, 26));
@@ -402,7 +402,7 @@ class Template extends BaseLogic
                     $function_name = substr($html, $str_pos, $end_pos - $str_pos);
                     // @since 0.5.9: when not found add a hint but stay silent in the contents (for javascript-only functions)
                     if (method_exists($this, $method_name = 'peat_' . $function_name)) {
-                        $processed_object = $this->$method_name($output_object);
+                        $processed_object = $this->{$method_name}($output_object);
                     } else {
                         $this->addHint(strip_tags($function_name) . ' not found');
                         $processed_object = $output_object;
@@ -481,7 +481,7 @@ class Template extends BaseLogic
                 if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
                     $str_pos = $str_pos + strlen($tag_name) + 5;
                     $equals = strtolower(substr($html, $str_pos, strpos($html, ':', $str_pos) - $str_pos));
-                    $is_false = (false === isset($output->$tag_name) || strtolower((string)$output->$tag_name) !== $equals);
+                    $is_false = (false === isset($output->{$tag_name}) || strtolower((string)$output->{$tag_name}) !== $equals);
                     $str_pos = $str_pos + strlen($equals) + 1;
                 } else {
                     $str_pos = $str_pos + strlen($tag_name) + 3;

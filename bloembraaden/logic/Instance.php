@@ -117,7 +117,7 @@ class Instance extends BaseLogic
      */
     public function getSetting(string $which)
     {
-        return $this->row->$which ?? null;
+        return $this->row->{$which} ?? null;
     }
 
     public function isParked(): bool

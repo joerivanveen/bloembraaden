@@ -32,8 +32,8 @@ class PaymentServiceProvider extends BaseLogic
 
     public function getFieldValue(string $field_name)
     {
-        if (isset($this->getFields()->$field_name)) {
-            return $this->getFields()->$field_name;
+        if (isset($this->getFields()->{$field_name})) {
+            return $this->getFields()->{$field_name};
         }
 
         return null;
@@ -53,8 +53,8 @@ class PaymentServiceProvider extends BaseLogic
         }
         $field_names = $this->getFieldNames(); // detached now, the array will contain name=>value pairs after this
         foreach ($field_names as $field_name => $expl) {
-            if (isset($field_values->$field_name)) {
-                $field_names[$field_name] = $field_values->$field_name;
+            if (isset($field_values->{$field_name})) {
+                $field_names[$field_name] = $field_values->{$field_name};
             } else {
                 $field_names[$field_name] = null;
             }

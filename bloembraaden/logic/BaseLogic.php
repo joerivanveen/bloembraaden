@@ -242,8 +242,8 @@ class BaseLogic extends Base
     {
         if (true === isset($this->id)) return $this->id;
         $id_column = $this->getType()->idColumn();
-        if (isset($this->row->$id_column)) {
-            $this->id = $this->row->$id_column;
+        if (isset($this->row->{$id_column})) {
+            $this->id = $this->row->{$id_column};
         } else { // we don't know
             if ($id_column !== 'search_settings_id') $this->addError("Failed to get id: $id_column");
             $this->id = 0;
@@ -274,7 +274,7 @@ class BaseLogic extends Base
     {
         // for each element in $row update $this->row
         foreach ($row as $item => $value) {
-            $this->row->$item = $value;
+            $this->row->{$item} = $value;
         }
 
         // todo maybe save everything on shutdown?

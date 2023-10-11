@@ -102,7 +102,7 @@ class Resolver extends BaseLogic
     public function escape(\stdClass $post_data): \stdClass
     {
         foreach ($post_data as $key => $value) {
-            if (true === is_string($value)) $post_data->$key = htmlspecialchars($value, ENT_QUOTES);
+            if (true === is_string($value)) $post_data->{$key} = htmlspecialchars($value, ENT_QUOTES);
         }
         return $post_data;
     }

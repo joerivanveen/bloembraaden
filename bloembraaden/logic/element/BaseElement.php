@@ -35,7 +35,7 @@ class BaseElement extends BaseLogic implements Element
         if (($row = Help::getDB()->fetchElementRow($this->getType(), $this->getId()))) {
             // update the row with fresh values (leave everything else alone)
             foreach ($row as $column_name => $value) {
-                $this->row->$column_name = $value;
+                $this->row->{$column_name} = $value;
             }
             $row = null;
 
@@ -126,8 +126,8 @@ class BaseElement extends BaseLogic implements Element
         $arr = array();
         foreach ($linked as $type => $relation) {
             $plural_tag = "__{$type}s__";
-            if (isset($this->row->$plural_tag)) {
-                $arr[$type] = $this->row->$plural_tag;
+            if (isset($this->row->{$plural_tag})) {
+                $arr[$type] = $this->row->{$plural_tag};
             } else {
                 $arr[$type] = [];
             }
@@ -210,8 +210,8 @@ class BaseElement extends BaseLogic implements Element
                     foreach ($relation as $index => $element_name) {
                         $linked_type = new Type($element_name);
                         $plural_tag = "__{$element_name}s__";
-                        if (!isset($this->row->$plural_tag)) {
-                            $this->row->$plural_tag = array();
+                        if (!isset($this->row->{$plural_tag})) {
+                            $this->row->{$plural_tag} = array();
                             if (($tmp = Help::getDB()->fetchElementRowsLinkedX(
                                 $peat_type, $id, $linked_type, $this->variant_page_size, $this->variant_page_counter, $this->getProperties()
                             ))) {
@@ -228,8 +228,8 @@ class BaseElement extends BaseLogic implements Element
                 // property values are only shown one deep, and always shown all, so decouple $nested_level
                 $nested_level = ('property_value' === $linked_type_name) ? 2 : $this->nested_level;
                 $plural_tag = "__{$linked_type_name}s__"; // this is for the template etc., '__files__' in stead of 'file'
-                if (!isset($this->row->$plural_tag)) {
-                    $this->row->$plural_tag = array();
+                if (!isset($this->row->{$plural_tag})) {
+                    $this->row->{$plural_tag} = array();
                     if (($tmp = Help::getDB()->fetchElementRowsLinked(
                         $peat_type, $id, $linked_type, $relation, $this->variant_page_size, $this->variant_page_counter
                     ))) {
@@ -293,7 +293,7 @@ class BaseElement extends BaseLogic implements Element
     {
         $linkable_type = new Type($linkable_type_name);
         $elements = $this->getLinked()[$linkable_type_name];
-        $order_column = ($this->getLinkedTypes()->$linkable_type_name === 'cross_parent') ? 'o' : 'sub_o';
+        $order_column = ($this->getLinkedTypes()->{$linkable_type_name} === 'cross_parent') ? 'o' : 'sub_o';
         $keep_order = 1;
         foreach ($elements as $key => $element_row) {
             if (false === is_int($key)) continue;
@@ -306,7 +306,7 @@ class BaseElement extends BaseLogic implements Element
                     new Type($dropped_element->type), $dropped_element->id, false, $keep_order);
                 $keep_order++;
             }
-            if ($link_element->getRow()->$order_column !== $keep_order) {
+            if ($link_element->getRow()->{$order_column} !== $keep_order) {
                 Help::getDB()->upsertLinked($this->getType(), $this->getId(),
                     $link_element->getType(), $link_element->getId(), false, $keep_order);
             }
@@ -334,12 +334,12 @@ class BaseElement extends BaseLogic implements Element
     protected function refreshLinked(string $linkable_type_name, bool $full_feedback = true): array
     {
         $plural_tag = "__{$linkable_type_name}s__";
-        unset($this->row->$plural_tag);
+        unset($this->row->{$plural_tag});
         if (false === $full_feedback) {
             $id = $this->getId();
             $peat_type = $this->getType();
             $linked_type = new Type($linkable_type_name);
-            $relation = $this->getLinkedTypes()->$linkable_type_name;
+            $relation = $this->getLinkedTypes()->{$linkable_type_name};
             //$relation = 'cross_child';
             $GLOBALS['slugs'] = new \stdClass;
 
@@ -430,7 +430,7 @@ class BaseElement extends BaseLogic implements Element
             // from all the linked stuff, put the first one as default one (eg image:slug, image:description etc.)
             foreach ($linked_types as $table_name => $relation) {
                 $plural_tag = "__{$table_name}s__";
-                if (isset($this->row->$plural_tag[0]) && ($el = $this->row->$plural_tag[0])) {
+                if (isset($this->row->{$plural_tag}[0]) && ($el = $this->row->{$plural_tag}[0])) {
                     if (isset($el->__ref)) $el = $GLOBALS['slugs']->{$el->__ref}; // @since 0.8.0
                     $this->addParentTags($el, $table_name);
                 }
@@ -490,8 +490,8 @@ class BaseElement extends BaseLogic implements Element
         foreach ($row as $column_name => $column_value) {
             if (false !== strpos($column_name, ':')) continue;
             if (is_numeric($column_value) || (is_string($column_value) && strlen($column_value) < 256)) { // @since 0.8.0
-                $name = $name_space . ':' . $column_name;
-                $this->row->$name = $column_value;
+                $name = "$name_space:$column_name";
+                $this->row->{$name} = $column_value;
             }
         }
     }

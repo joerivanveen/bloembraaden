@@ -2404,8 +2404,8 @@ class DB extends Base
         $type_name = $type->typeName();
         $sub_type_name = $sub_type->typeName();
         $tables = $this->getLinkTables($type);
-        if (isset($tables->$sub_type_name)) {
-            if ('cross_parent' === $tables->$sub_type_name) {
+        if (isset($tables->{$sub_type_name})) {
+            if ('cross_parent' === $tables->{$sub_type_name}) {
                 $order_column = 'o';
             } else {
                 Help::swapVariables($type_name, $sub_type_name);
@@ -2423,7 +2423,7 @@ class DB extends Base
             }
             $update_array = array('deleted' => $delete, $order_column => $order);
             if ($row = $this->fetchRow($link_table, array($id_column), $where)) { // update
-                return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->$id_column);
+                return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->{$id_column});
             } else { // insert
                 return 0 !== $this->insertRowAndReturnLastId($link_table, array_merge($where, $update_array));
             }
@@ -2707,7 +2707,7 @@ class DB extends Base
             try { // normalize the stuff from the act field
                 if ($act = json_decode($row->act)) {
                     foreach ($act as $name => $prop) {
-                        $row->$name = $prop;
+                        $row->{$name} = $prop;
                     }
                 } else {
                     $this->addMessage(
@@ -3605,7 +3605,7 @@ class DB extends Base
         $r = new \stdClass();
         foreach ($row as $key => $value) {
             if (is_int($key)) continue;
-            $r->$key = $value;
+            $r->{$key} = $value;
         }
 
         return $r;
@@ -3698,7 +3698,7 @@ class DB extends Base
             if (count($rows) === 1) {
                 if (isset($new_slug)) $this->reCacheWithWarmup($new_slug);
 
-                return $rows[0]->$primary_key_column_name;
+                return $rows[0]->{$primary_key_column_name};
             } elseif (count($rows) === 0) {
                 return null;
             } else { // this should be impossible
@@ -3793,8 +3793,8 @@ class DB extends Base
         $statement = null;
         $return_keys = array();
         foreach ($rows as $key => $row) {
-            if ($this->updateRowAndReturnSuccess($table_name, $data, $row->$key_column_name)) {
-                $return_keys[] = $row->$key_column_name;
+            if ($this->updateRowAndReturnSuccess($table_name, $data, $row->{$key_column_name})) {
+                $return_keys[] = $row->{$key_column_name};
             }
         }
 
@@ -3837,9 +3837,9 @@ class DB extends Base
         if (count($rows) > 0) {
             foreach ($rows as $key => $row) {
                 foreach ($where_not as $where => $not) {
-                    if (isset($row->$where) && $row->$where === $not) continue 2;
+                    if (isset($row->{$where}) && $row->{$where} === $not) continue 2;
                 }
-                if ($this->deleteRowAndReturnSuccess($table_name, $row->$primary_key_column) === true) ++$rows_affected;
+                if ($this->deleteRowAndReturnSuccess($table_name, $row->{$primary_key_column}) === true) ++$rows_affected;
             }
         }
 
@@ -4480,10 +4480,10 @@ class DB extends Base
             $values = array();
             $parameters = array();
             foreach ($table_info->getColumnNames() as $key => $column_name) {
-                if (is_bool($row->$column_name)) { // booleans get butchered in $statement->execute(), interestingly, NULL values don't
-                    $values[] = ($row->$column_name ? '1' : '0');
+                if (is_bool($row->{$column_name})) { // booleans get butchered in $statement->execute(), interestingly, NULL values don't
+                    $values[] = ($row->{$column_name} ? '1' : '0');
                 } else {
-                    $values[] = $row->$column_name;
+                    $values[] = $row->{$column_name};
                 }
                 $parameters[] = '?';
             }

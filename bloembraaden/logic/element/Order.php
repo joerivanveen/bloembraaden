@@ -129,7 +129,7 @@ class Order extends BaseElement
             $vat_amount = $amount - ($amount / (1 + ($percentage_index / 100)));
             $amount_grand_total -= $vat_amount;
             $percentage_tag = 'vat_percentage_' . $percentage_index;
-            $row->$percentage_tag = Help::asMoney($vat_amount);
+            $row->{$percentage_tag} = Help::asMoney($vat_amount);
         }
         $row->amount_grand_total_ex_vat = Help::asMoney($amount_grand_total);
     }

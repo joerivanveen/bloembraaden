@@ -496,7 +496,7 @@ class Handler extends BaseLogic
                                  'nickname',
                                  'content',
                              ] as $index => $field_name) {
-                        if (false === isset($post_data->$field_name) or trim((string)$post_data->$field_name) === '') {
+                        if (false === isset($post_data->{$field_name}) || '' === trim((string)$post_data->{$field_name})) {
                             $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                             $valid = false;
                         }
@@ -616,7 +616,7 @@ class Handler extends BaseLogic
                                              'shipping_address_street',
                                              'shipping_address_city',
                                          ] as $index => $field_name) {
-                                    if (false === isset($post_data->$field_name) or trim($post_data->$field_name) === '') {
+                                    if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
                                         $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                                         $valid = false;
                                     }
@@ -2107,7 +2107,7 @@ class Handler extends BaseLogic
                     $arr_props = null;
                 }
             }
-            $info->$key = $value;
+            $info->{$key} = $value;
         }
         $arr = null;
         $info->link_tables = Help::getDB()->getLinkTables($peat_type);
