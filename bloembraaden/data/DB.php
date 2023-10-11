@@ -3727,7 +3727,7 @@ class DB extends Base
         }
         $data = $table->formatColumnsAndData($key_value, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
-        if (false !== array_search('slug', $data['discarded'])) unset($new_slug);
+        if (true === in_array('slug', $data['discarded'])) unset($new_slug);
         // check if there are any columns going to be updated, else return already
         if (count($data['parameterized']) === 0) {
             $this->addError('No columns to update');
@@ -4441,16 +4441,17 @@ class DB extends Base
             return null;
         }
         // @since 0.16.5 use _history
-        if ('cms_image' === $table_name && isset($key_value['date_processed'])) {
-            $key_value = array('date_processed' => date('Y-m-d H:i:s'));
-        }
         foreach ($key_value as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
+            if ($row->{$column_name} === $value) continue; // no need to add to history when the value is the same
             // booleans get butchered in $statement->execute(), interestingly, NULL values don't
             if (is_bool($value)) {
                 $value = ($value ? '1' : '0');
             } else {
                 $value = (string)$value;
+                if ('NOW()' === $value && 0 === strpos($column_name, 'date_')) {
+                    $value = date('Y-m-d H:i:s');
+                }
             }
             $admin = Help::$session->getAdmin();
             $user = Help::$session->getUser();
