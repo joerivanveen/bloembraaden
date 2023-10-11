@@ -97,7 +97,7 @@ class Base
                 $protocol = $_SERVER['SERVER_PROTOCOL'] ?? '';
                 header("$protocol 500 Bloembraaden Fatal Error", true, 500);
             }
-            if (Help::$OUTPUT_JSON) {
+            if (true === Help::$OUTPUT_JSON) {
                 echo '{ "error": ', json_encode($s), ', "__messages__": ', json_encode(Help::getMessages()), ' }';
             } else {
                 // TODO customizable error pages

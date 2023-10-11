@@ -29,6 +29,7 @@ class Setup
         'Europe/Paris',
         'Europe/Berlin',
     ];
+    private const DB_INIT_TRIES = 5;
 
     public function __construct()
     {
@@ -84,18 +85,9 @@ class Setup
     }
 
     /**
-     * @param string $name_of_db_obj_in_config
-     * @return string defaults to public
-     */
-    public static function getDatabaseSchema(string $name_of_db_obj_in_config): string
-    {
-        return Setup::${$name_of_db_obj_in_config}->schema ?? 'public';
-    }
-
-    /**
      * @noinspection PhpInconsistentReturnPointsInspection we know we don’t have to return after handleErrorAndStop...
      */
-    private static function initializeDatabaseConnection(stdClass $db_properties): PDO
+    private static function initializeDatabaseConnection(stdClass $db_properties, int $tries = 0): PDO
     {
         try {
             return new PDO(sprintf(
@@ -110,15 +102,20 @@ class Setup
                 PDO::ATTR_TIMEOUT => .5, // in seconds
             ));
         } catch (PDOException $e) {
-            $boo = new BaseLogic();
-            $boo->handleErrorAndStop($e, sprintf(__('No connection to database ‘%s’', 'peatcms'), $db_properties->name));
+            if (self::DB_INIT_TRIES > $tries) {
+                return self::initializeDatabaseConnection($db_properties, ++$tries);
+            } else {
+                Help::$OUTPUT_JSON = file_get_contents('php://input') || 0 < count($_POST);
+                $boo = new BaseLogic();
+                $boo->handleErrorAndStop($e, sprintf(__('No connection to database ‘%s’ (tries: %d)', 'peatcms'), $db_properties->name, $tries));
+            }
         }
     }
 
     private static function abandonDatabaseConnection(?PDO $connection): void
     {
         if (true === isset($connection)) {
-            if ($connection->inTransaction()) {
+            if (true === $connection->inTransaction()) {
                 try {
                     $connection->rollBack();
                 } catch (\Exception $e) {

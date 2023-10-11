@@ -781,7 +781,7 @@ class Help
     {
         // for each table in regular db, check history: if not present, create it from regular db, if present, check the columns and update those
         $tables = $db->getAllTables();
-        $db_schema = Setup::getDatabaseSchema('DB_HIST');
+        $db_schema = 'public';
         foreach ($tables as $table_index => $table) {
             if (in_array($table->table_name, $db::TABLES_WITHOUT_HISTORY)) continue; // tables without history
             $table_name = $table->table_name;
