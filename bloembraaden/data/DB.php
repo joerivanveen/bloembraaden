@@ -204,7 +204,7 @@ class DB extends Base
             $statement->bindValue(':key', $key);
             try {
                 $statement->execute();
-            } catch (\Exception $e) {
+            } catch (\Throwable) {
                 // if it’s not a unique key an exception will be thrown, but we want to try again with a new key so just catch it
             }
         }

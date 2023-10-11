@@ -37,11 +37,11 @@ class Resolver extends BaseLogic
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
                 if ('' === $value) {
                     return false;
-                } elseif (substr($value, 0, 2) === '__') {
+                } elseif (0 === strpos($value, '__')) {
                     $this->instructions[str_replace('__', '', $value)] = true;
 
                     return false;
-                } elseif (substr($value, 0, 12) === 'variant_page') {
+                } elseif (0 === strpos($value, 'variant_page')) {
                     if (!isset($this->variant_page)) {
                         $variant_page = (int)substr($value, 12);
                         $this->variant_page = ($variant_page < 1) ? 1 : $variant_page;
@@ -56,7 +56,7 @@ class Resolver extends BaseLogic
         // 0.5.3 / if you change this, check if the templates can still be saved
         $post_data = json_decode(file_get_contents('php://input'), false);
         if (json_last_error() === JSON_ERROR_NONE) {
-            $output_json = true; // $post_data->json; <- if you receive json you can bet it wants json back
+            $output_json = true; // if you receive json you can bet it wants json back
         } else { // this is at least used when files are uploaded and for the login page __admin__
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
             $output_json = isset($post_data->json) && true === $post_data->json;
@@ -91,7 +91,7 @@ class Resolver extends BaseLogic
             $this->addProperty($values[0], explode(',', $values[1]));
             unset($uri[$index]);
         }
-        $this->terms = array_values($uri); // $terms are the (now lowercase) uri parts separated by / (forward slash)
+        $this->terms = array_values($uri); // $terms are the uri parts separated by / (forward slash)
     }
 
     public function getPostData()

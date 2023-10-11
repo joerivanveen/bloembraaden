@@ -151,7 +151,7 @@ class Instagram extends BaseLogic
             }
         } else { // nothing specific, just redirect to the authorization screen
             // setup a state key so you will know what to change when the user comes back to the redirect url
-            if ($key = Help::getDB()->putInLocker(0)) {
+            if (($key = Help::getDB()->putInLocker(0))) {
                 return array('redirect_uri' => 'https://api.instagram.com/oauth/authorize?client_id=' . $this->config->app_id . '&redirect_uri=' .
                     $this->config->redirect_uri . '&scope=user_profile,user_media&response_type=code&state=' . $key);
             } else {

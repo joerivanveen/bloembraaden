@@ -668,11 +668,11 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_create' and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ($action === 'account_create' && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $out = array('success' => false);
                 if (isset($post_data->email)
-                    and isset($post_data->pass)
-                    and strpos(($email_address = $post_data->email), '@')
+                    && isset($post_data->pass)
+                    && strpos(($email_address = $post_data->email), '@')
                 ) {
                     if (null !== ($user_id = Help::getDB()->insertUserAccount(
                             $email_address,
@@ -696,14 +696,15 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_password_forgotten' and (true === Help::recaptchaVerify($instance, $post_data))) {
-                if (isset($post_data->email) and strpos(($email_address = $post_data->email), '@')) {
+            } elseif ($action === 'account_password_forgotten' && (true === Help::recaptchaVerify($instance, $post_data))) {
+                if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
                     $post_data->check_string = Help::getDB()->putInLocker(0,
                         (object)array('email_address' => $email_address));
                     // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
-                    $post_data->confirm_link = $instance->getDomain(true) .
-                        '/' . ((isset($post_data->slug)) ? $post_data->slug : 'account') .
-                        '/locker:' . $post_data->check_string;
+                    $post_data->confirm_link = sprintf('%s/%s/locker:%s',
+                        $instance->getDomain(true),
+                        ((isset($post_data->slug)) ? $post_data->slug : 'account'),
+                        $post_data->check_string);
                     $post_data->instance_name = $instance->getName();
                     /* this largely duplicate code must be in a helper function or something... */
                     if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
@@ -734,21 +735,23 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('E-mail is required', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_password_update' and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ($action === 'account_password_update' && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $out = array('success' => false);
-                if (isset($post_data->email) and isset($post_data->pass)) {
+                if (isset($post_data->email) && isset($post_data->pass)) {
                     if (isset($post_data->locker)
-                        and $row = Help::getDB()->emptyLocker($post_data->locker)
+                        && $row = Help::getDB()->emptyLocker($post_data->locker)
                     ) {
                         if (isset($row->information)
-                            and isset($row->information->email_address)
-                            and ($email_address = $row->information->email_address) === $post_data->email
+                            && isset($row->information->email_address)
+                            && ($email_address = $row->information->email_address) === $post_data->email
                         ) {
                             $password = (string)$post_data->pass;
                             // if it’s indeed an account, update the password
                             // (since the code proves the emailaddress is read by the owner)
                             if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
-                                $this->addMessage(__('Account update failed', 'peatcms'), 'warn');
+                                // create an account then...
+                                $this->action = 'account_create';
+                                $this->Act();
                             } else {
                                 $this->addMessage(__('Password updated', 'peatcms'), 'note');
                                 $out['success'] = true;

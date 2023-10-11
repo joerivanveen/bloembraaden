@@ -406,7 +406,7 @@ class Help
             }
 
             return implode('', $pieces);
-        } catch (\Exception $e) {
+        } catch (\Throwable) {
             die('no appropriate source for randomization found');
         }
     }
