@@ -4455,17 +4455,29 @@ class DB extends Base
                     $value = date('Y-m-d H:i:s');
                 }
             }
-            $admin = Help::$session->getAdmin();
-            $user = Help::$session->getUser();
+            $admin_id = 0 ;
+            $admin_email = '-';
+            $user_id = 0;
+            $user_email = '-';
+            if (isset(Help::$session)) {
+                if (($admin = Help::$session->getAdmin())) {
+                    $admin_id = $admin->getId();
+                    $admin_email = $admin->getRow()->email;
+                }
+                if (($user = Help::$session->getUser())) {
+                    $user_id = $user->getId();
+                    $user_email = $user->getRow()->email;
+                }
+            }
             $statement = $this->conn->prepare('
                 INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value) 
                 VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value);
             ');
             $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->bindValue(':admin_id', $admin ? $admin->getId() : 0);
-            $statement->bindValue(':admin_name', $admin ? $admin->getRow()->email : 'N/A');
-            $statement->bindValue(':user_id', $user ? $user->getId() : 0);
-            $statement->bindValue(':user_name', $user ? $user->getRow()->email : 'N/A');
+            $statement->bindValue(':admin_id', $admin_id);
+            $statement->bindValue(':admin_name', $admin_email);
+            $statement->bindValue(':user_id', $user_id);
+            $statement->bindValue(':user_name', $user_email);
             $statement->bindValue(':table_name', $table_name);
             $statement->bindValue(':table_column', $column_name);
             $statement->bindValue(':key', (int)$key);
