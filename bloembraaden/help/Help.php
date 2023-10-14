@@ -706,7 +706,7 @@ class Help
         // skip to the line -- version $version
         $position_of_current_version_in_sql = strpos($sql, '-- version ' . $version);
         if ($position_of_current_version_in_sql === false) {
-            echo sprintf('Current version ‘%s’ not found in install.sql, aborting upgrade', $version);
+            echo sprintf('Current version %s not found in install.sql, aborting upgrade', $version);
             Help::addError(new \Exception('Install flag switched on, but failing'));
 
             return;

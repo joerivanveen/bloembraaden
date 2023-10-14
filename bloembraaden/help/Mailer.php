@@ -119,7 +119,7 @@ class Mailer extends Base
         // validate / check if we have all the parameters we need and enrich them if possible
         foreach (['from', 'to', 'subject', 'text'] as $index => $field_name) {
             if (false === isset($this->fields[$field_name])) {
-                $this->addError(sprintf('Mailer->send(): field ‘%s’ is missing', $field_name));
+                $this->addError(sprintf('Mailer->send(): field %s is missing', $field_name));
 
                 return (object)array('success' => false);
             }

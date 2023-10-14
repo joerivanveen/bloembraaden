@@ -66,7 +66,7 @@ class BaseElement extends BaseLogic implements Element
             $this->row->deleted = (false === $this->refreshRow());
             // update ci_ai
             if (false === Help::getDB()->updateSearchIndex($this)) {
-                $this->addError("could not update search index column for {$this->getSlug()}");
+                $this->addError("Could not update search index column for {$this->getSlug()}");
             }
 
             return true;
@@ -98,7 +98,7 @@ class BaseElement extends BaseLogic implements Element
                     $this->addMessage(sprintf(__('%1$s not set for this %2$s', 'peatcms'), 'Series', 'product'), 'warn');
                 }
             } else {
-                $this->addError(sprintf('Parent chain update fail for product_id ‘%s’', $column_value));
+                $this->addError(sprintf('Parent chain update fail for product_id %s', $column_value));
             }
         }
         if (isset($arr['serie_id'])) {
@@ -109,7 +109,7 @@ class BaseElement extends BaseLogic implements Element
                     $this->addMessage(sprintf(__('%1$s not set for this %2$s', 'peatcms'), 'Brand', 'series'), 'warn');
                 }
             } else {
-                $this->addError(sprintf('Parent chain update fail for serie_id ‘%s’', $arr['serie_id']));
+                $this->addError(sprintf('Parent chain update fail for serie_id %s', $arr['serie_id']));
             }
         }
 
@@ -272,7 +272,7 @@ class BaseElement extends BaseLogic implements Element
                 return $this->reCache();
             }
         } else {
-            $this->addError("Could not link ‘{$sub_element_name}’");
+            $this->addError("Could not link $sub_element_name");
         }
 
         return false;
@@ -283,7 +283,7 @@ class BaseElement extends BaseLogic implements Element
         if (Help::getDB()->addXValueLink($this->getType(), $this->getId(), $property_id, $property_value_id)) {
             return $this->reCache();
         } else {
-            $this->addError('Could not link ‘property’');
+            $this->addError('Could not link property');
         }
 
         return false;
@@ -368,7 +368,7 @@ class BaseElement extends BaseLogic implements Element
      */
     public function orderXValue(int $x_value_id, int $before_x_value_id): array
     {
-        $table_name = $this->getType()->tableName() . '_x_properties';
+        $table_name = "{$this->getType()->tableName()}_x_properties";
         $elements = $this->getLinked()['x_value'];
         $keep_order = 1;
         foreach ($elements as $key => $element_row) {
@@ -518,7 +518,7 @@ class BaseElement extends BaseLogic implements Element
         if (isset(($row = $this->getRow())->instance_id)) {
             return $row->instance_id;
         }
-        $this->addError(sprintf('getInstanceId() on type ‘%s’ called while there was none', $this->type_name));
+        $this->addError(sprintf('getInstanceId() on type %s called while there was none', $this->type_name));
 
         return 0; // this will not belong to anything
     }
@@ -529,7 +529,7 @@ class BaseElement extends BaseLogic implements Element
      */
     public function getSlug(): ?string
     {
-        if (!isset($this->row)) $this->handleErrorAndStop('->getSlug() called with no row present');
+        if (false === isset($this->row)) $this->handleErrorAndStop('->getSlug() called with no row present');
 
         return $this->row->slug ?? $this->row->order_number ?? null;
     }
@@ -541,9 +541,9 @@ class BaseElement extends BaseLogic implements Element
 
     public function getRow(): \stdClass
     {
-        if (isset($this->row->slug)) return $this->row;
+        if (true === isset($this->row->slug)) return $this->row;
         $this->row = parent::getRow();
-        if (isset($this->row->__ref) && !isset($this->row->slug)) {
+        if (true === isset($this->row->__ref) && false === isset($this->row->slug)) {
             $this->row = $GLOBALS['slugs']->{$this->row->__ref};
         }
 

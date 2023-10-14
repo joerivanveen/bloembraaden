@@ -270,7 +270,7 @@ class Parser extends Base
                                 $href = trim(substr($text, $tag_sig_end, $end - $tag_sig_end));
                                 if (strlen($href) === 0) {
                                     $this->addMessage(sprintf(
-                                        __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
+                                        __('Incorrect link format at %1$s near %2$s', 'peatcms'),
                                         $pointer,
                                         substr($text, $pointer - 5, 20)
                                     ), 'warn');
@@ -298,7 +298,7 @@ class Parser extends Base
                                 $sig = '';
                             } else {
                                 $this->addMessage(sprintf(
-                                    __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
+                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
                                     $pointer,
                                     substr($text, $pointer - 5, 20)
                                 ), 'warn');
@@ -310,7 +310,7 @@ class Parser extends Base
                                 echo $link;
                             } else {
                                 $this->addMessage(sprintf(
-                                    __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
+                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
                                     $pointer,
                                     substr($text, $pointer - 5, 20)
                                 ), 'warn');
@@ -320,7 +320,7 @@ class Parser extends Base
                             $sig = '';
                         } else {
                             $this->addMessage(sprintf(
-                                __('Incorrect link format at %1$s near ‘%2$s’', 'peatcms'),
+                                __('Incorrect link format at %1$s near %2$s', 'peatcms'),
                                 $pointer,
                                 substr($text, $pointer - 5, 20)
                             ), 'warn');
@@ -466,7 +466,7 @@ class Parser extends Base
         $needle = "\n[$id]:";
         $pos = strpos($text, $needle);
         if (false === $pos) {
-            $this->addMessage(sprintf(__('No link found for id ‘%s’', 'peatcms'), $id), 'warn');
+            $this->addMessage(sprintf(__('No link found for id `%s`', 'peatcms'), $id), 'warn');
             $link = $id;
         } else {
             $pos += strlen($needle);

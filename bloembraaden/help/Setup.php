@@ -107,7 +107,7 @@ class Setup
             } else {
                 Help::$OUTPUT_JSON = file_get_contents('php://input') || 0 < count($_POST);
                 $boo = new BaseLogic();
-                $boo->handleErrorAndStop($e, sprintf(__('No connection to database ‘%s’ (tries: %d)', 'peatcms'), $db_properties->name, $tries));
+                $boo->handleErrorAndStop($e, sprintf(__('No connection to database %s (tries: %d)', 'peatcms'), $db_properties->name, $tries));
             }
         }
     }
@@ -172,7 +172,7 @@ class Setup
         // PAY ATTENTION the strings must be a valid timezone in PHP as well as in Postgresql
         self::$timezone = $I->getSetting('timezone') ?? 'Europe/Amsterdam';
         if (!in_array(self::$timezone, self::AVAILABLE_TIMEZONES)) {
-            Help::addError(new Exception(sprintf('Not a timezone ‘%s’', self::$timezone)));
+            Help::addError(new Exception(sprintf('Not a timezone `%s`', self::$timezone)));
             Help::addMessage('Config error, unrecognized timezone', 'warn');
             self::$timezone = 'Europe/Amsterdam'; // this is a correct timezone and for now the default
         }

@@ -53,7 +53,7 @@ class Type extends Base
             } else {
                 $this->handleErrorAndStop(
                     "$type_name is not a recognized type",
-                    sprintf(__('‘%s’ is not a recognized type', 'peatcms'), $type_name)
+                    sprintf(__('%s is not a recognized type', 'peatcms'), $type_name)
                 );
             }
         }

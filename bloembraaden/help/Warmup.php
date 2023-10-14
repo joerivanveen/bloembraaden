@@ -20,7 +20,7 @@ class Warmup extends BaseLogic
         //$slug = implode('/', array_map('rawurlencode', explode('/', $slug)));
         $resolver = new Resolver($slug, $instance_id);
         if (true === $resolver->hasInstructions()) {
-            $this->addMessage(sprintf(__('‘%s’ is never cached', 'peatcms'), $slug), 'note');
+            $this->addMessage(sprintf(__('%s is never cached', 'peatcms'), $slug), 'note');
 
             return false;
         }

@@ -174,7 +174,7 @@ class Instagram extends BaseLogic
     public function delete(\stdClass $post_data): string
     {
         if (false === isset($post_data->signed_request)) {
-            $this->handleErrorAndStop('Did not receive signed request for Instagram ‘delete’');
+            $this->handleErrorAndStop('Did not receive signed request for Instagram `delete`');
         }
         // NOTE this function can be called for any instance
         $data = $this->parse_signed_request($post_data->signed_request);
@@ -236,7 +236,7 @@ class Instagram extends BaseLogic
         // a feed can contain a username and a hashtag, it will filter the hashtag (if present) and one username (if present)
         // media is cached in feed column if all is well
         if (!($feed = Help::getDB()->getInstagramFeed($feed_name))) {
-            $this->addError(sprintf('Instagram feed ‘%s’ not found', $feed_name));
+            $this->addError(sprintf('Instagram feed %s not found', $feed_name));
             // get default feed
             if (($rows = Help::getDB()->getInstagramFeedSpecs()) && count($rows) > 0) {
                 $feed = $rows[0];

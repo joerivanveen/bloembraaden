@@ -72,7 +72,7 @@ if ('1' === $interval) { // interval should be '1'
                         $row->html = $html;
                     } else {
                         Help::addError(new \Exception(sprintf(
-                            __('Could not save order html for ‘%1$s’ (%2$s)', 'peatcms'),
+                            __('Could not save order html for %1$s (%2$s)', 'peatcms'),
                             $order_number,
                             $row->domain
                         )));

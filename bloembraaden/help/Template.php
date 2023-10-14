@@ -71,7 +71,7 @@ class Template extends BaseLogic
                         gzencode($json_prepared, 9), // compress as well
                         LOCK_EX
                     )) {
-                    $this->addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $template_file), 'error');
+                    $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), $template_file), 'error');
 
                     return false;
                 }
@@ -81,7 +81,7 @@ class Template extends BaseLogic
                     'date_published' => 'NOW()',
                 ), $this->getId());
             } else {
-                $this->addMessage(sprintf(__('Folder ‘%s’ does not exist', 'peatcms'), $template_folder), 'error');
+                $this->addMessage(sprintf(__('Folder %s does not exist', 'peatcms'), $template_folder), 'error');
 
                 return false;
             }
@@ -116,7 +116,7 @@ class Template extends BaseLogic
         if (($template_id = Help::getDB()->getDefaultTemplateIdFor($element_name))) {
             $this->row = Help::getDB()->getTemplateRow($template_id);
         } elseif (null === $this->loadByTemplatePointer($element_name)) { // try to get it from disk, the peatcms defaults, if that fails you have to throw an error
-            throw new \Exception(sprintf('Could not load default template for ‘%s’', $element_name));
+            throw new \Exception(sprintf('Could not load default template for %s', $element_name));
         }
     }
 

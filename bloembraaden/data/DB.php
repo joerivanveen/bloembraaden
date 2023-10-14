@@ -544,7 +544,7 @@ class DB extends Base
             return $this->normalizeRow($rows[0]);
         } else {
             if (count($rows) > 1) {
-                $this->addError(sprintf('DB->fetchElementIdAndTypeBySlug: ‘%1$s’ returned %2$d rows', $slug, count($rows)));
+                $this->addError(sprintf('DB->fetchElementIdAndTypeBySlug: %1$s returned %2$d rows', $slug, count($rows)));
             }
 
             return null; // if no element found, or too many
@@ -1047,7 +1047,7 @@ class DB extends Base
 
             return $this->normalizeRows($rows);
         } else { // column doesn't exist
-            $this->addError(sprintf('Column ‘%s’ does not exist', $column_name));
+            $this->addError(sprintf('Column %s does not exist', $column_name));
 
             return array();
         }
@@ -2213,7 +2213,7 @@ class DB extends Base
         ))) {
             return $row;
         }
-        $this->addError(sprintf(__('Template ‘%s’ not found', 'peatcms'), $template_name));
+        $this->addError(sprintf(__('Template %s not found', 'peatcms'), $template_name));
 
         return null;
     }
@@ -3034,7 +3034,7 @@ class DB extends Base
         if ($this->rowExists('_instance', array('domain' => $domain))) {
             // TODO this goes wrong with multiple clients
             if ($this->rowExists('_instance', array('domain' => $domain, 'deleted' => false))) {
-                $this->addMessage(__(sprintf('Domain ‘%s’ already taken', $domain), 'peatcms'));
+                $this->addMessage(__(sprintf('Domain %s already taken', $domain), 'peatcms'));
             } else {
                 if ($arr = $this->updateRowsWhereAndReturnKeys('_instance',
                     array('deleted' => false),
@@ -3266,7 +3266,7 @@ class DB extends Base
     public function updateElementsWhere(Type $which, array $data, array $where): array
     {
         if (true === isset($data['slug'])) {
-            $this->addError('->updateElementsWhere() cannot update column ‘slug’');
+            $this->addError('->updateElementsWhere() cannot update column `slug`');
 
             return array();
         }
@@ -4136,7 +4136,7 @@ class DB extends Base
     {
         // @since 0.8.2: warmup is used instead of delete
         if (false === (new Warmup())->Warmup($slug, Setup::$instance_id)) {
-            $this->addError(sprintf(__('Warmup failed for ‘%s’', 'peatcms'), $slug));
+            $this->addError(sprintf(__('Warmup failed for %s', 'peatcms'), $slug));
             // only when warmup fails we delete
             $this->deleteFromCache($slug);
 
