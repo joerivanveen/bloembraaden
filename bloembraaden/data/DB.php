@@ -4382,7 +4382,7 @@ class DB extends Base
     }
 
     /**
-     * Copies an entry from a live table to the history database, for undo and redirect functionality
+     * Records a change in the _history table for undo and redirect purposes
      *
      * @param Table $table the table object from the live database for reference
      * @param mixed $key the key of the primary key column of the row to move to history
@@ -4392,11 +4392,10 @@ class DB extends Base
      */
     private function addToHistory(Table $table, $key, array $col_val, bool $is_insert = false): ?\stdClass
     {
-        // select the row from the live database
         $table_info = $table->getInfo();
-        // abort if there's no history
+        // abort if there’s no history
         if (in_array(($table_name = $table_info->getTableName()), self::TABLES_WITHOUT_HISTORY)) return null;
-        // ok continue
+        // select the row from the live database
         if (true === $is_insert) {
             $row = null;
         } else {
@@ -4407,6 +4406,7 @@ class DB extends Base
             ));
         }
         // @since 0.16.5 use _history
+        $now = Setup::getNow(); // use the same timestamp for all columns in this update
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
             if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
@@ -4416,10 +4416,10 @@ class DB extends Base
             } else {
                 $value = (string)$value;
                 if ('NOW()' === $value && 0 === strpos($column_name, 'date_')) {
-                    $value = date('Y-m-d H:i:s');
+                    $value = date('Y-m-d H:i:s', $now);
                 }
             }
-            $admin_id = 0 ;
+            $admin_id = 0;
             $admin_email = '-';
             $user_id = 0;
             $user_email = '-';
@@ -4451,28 +4451,26 @@ class DB extends Base
                     $table_name, $column_name, $value));
             }
         }
-        // TODO remove the following logic except 'return $row' when _history is filled
-        if (null === $row) return $row;
-        // 2) insert the row into history database
-        try {
-            $columns_list = implode(', ', $table_info->getColumnNames());
-            $values = array();
-            $parameters = array();
-            foreach ($table_info->getColumnNames() as $key => $column_name) {
-                if (is_bool($row->{$column_name})) { // booleans get butchered in $statement->execute(), interestingly, NULL values don't
-                    $values[] = ($row->{$column_name} ? '1' : '0');
-                } else {
-                    $values[] = $row->{$column_name};
-                }
-                $parameters[] = '?';
-            }
-            $parameters = implode(', ', $parameters);
-            $statement = Setup::getHistoryDatabaseConnection()->prepare("INSERT INTO $table_name ($columns_list) VALUES ($parameters);");
-            $statement->execute($values);
-            $statement = null;
-        } catch (\Exception $e) {
-            $this->addError($e->getMessage());
-        }
+//        // 2) insert the row into history database
+//        try {
+//            $columns_list = implode(', ', $table_info->getColumnNames());
+//            $values = array();
+//            $parameters = array();
+//            foreach ($table_info->getColumnNames() as $key => $column_name) {
+//                if (is_bool($row->{$column_name})) { // booleans get butchered in $statement->execute(), interestingly, NULL values don't
+//                    $values[] = ($row->{$column_name} ? '1' : '0');
+//                } else {
+//                    $values[] = $row->{$column_name};
+//                }
+//                $parameters[] = '?';
+//            }
+//            $parameters = implode(', ', $parameters);
+//            $statement = Setup::getHistoryDatabaseConnection()->prepare("INSERT INTO $table_name ($columns_list) VALUES ($parameters);");
+//            $statement->execute($values);
+//            $statement = null;
+//        } catch (\Exception $e) {
+//            $this->addError($e->getMessage());
+//        }
 
         return $row;
     }

@@ -30,7 +30,7 @@ define('ADMIN', true); // todo remove this once we have it properly setup, neces
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 if ('1' === $interval) { // interval should be '1'
-    $trans->start('mail order confirmations');
+    $trans->start('Mail order confirmations');
     // @since 0.5.16: mail order confirmation to client
     // @since 0.9.0: added creation of invoice and sending payment confirmation to client
     $mailgun_custom_domain = '___';
@@ -296,7 +296,7 @@ if ('1' === $interval) { // interval should be '1'
         }
     }
     unset($mailer);
-    $trans->start('create missing search index records');
+    $trans->start('Create missing search index records');
     $limit = 250;
     foreach ($db::TYPES_WITH_CI_AI as $index => $type_name) {
         $rows = $db->fetchElementsMissingCiAi($type_name, $limit);
@@ -312,13 +312,13 @@ if ('1' === $interval) { // interval should be '1'
             }
         }
     }
-    $trans->start('delete orphaned search index records');
+    $trans->start('Delete orphaned search index records');
     echo $db->jobDeleteOrphanedCiAi();
     echo "\n";
-    $trans->start('empty expired lockers');
+    $trans->start('Empty expired lockers');
     echo $db->jobEmptyExpiredLockers() . PHP_EOL;
     // Refresh Instagram media
-    $trans->start('refresh instagram data');
+    $trans->start('Refresh instagram data');
     // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
     if (null !== ($rows = $db->fetchInstagramDeauthorized())) {
         foreach ($rows as $index => $row) {
@@ -487,7 +487,7 @@ if ('1' === $interval) { // interval should be '1'
         echo PHP_EOL;
     }
     // @since 0.7.4 get all images (media...) that are not yet cached and put them on your own server
-    $trans->start('caching instagram media');
+    $trans->start('Caching instagram media');
     echo 'Caching media_urls for instagram... ' . PHP_EOL;
     $rows = $db->jobGetInstagramMediaUrls(true, 15);
     $logger = new StdOutLogger();
@@ -524,7 +524,7 @@ if ('1' === $interval) { // interval should be '1'
     }
     curl_close($curl);
     // after updating the media entries, you can update the feeds for users you updated (some) media for
-    $trans->start('update instagram feeds');
+    $trans->start('Update instagram feeds');
     // fill them with an appropriate number of entries
     echo 'Updating feeds triggered by media updates...', PHP_EOL;
     $updated_feeds = array(); // each feed has to be updated only once here
@@ -554,9 +554,9 @@ if ('1' === $interval) { // interval should be '1'
     $feeds = $db->getInstagramFeedSpecsOutdated();
     $update_feeds($feeds);
 } elseif ('5' === $interval) { // interval should be 5
-    $trans->start('purge deleted');
+    $trans->start('Purge deleted');
     echo $db->jobPurgeDeleted((int)$interval) . PHP_EOL;
-    $trans->start('reverse dns for sessions');
+    $trans->start('Reverse dns for sessions');
     $sessions = $db->fetchSessionsWithoutReverseDns();
     foreach ($sessions as $key => $session) {
         $reverse_dns = gethostbyaddr($session->ip_address);
@@ -567,7 +567,7 @@ if ('1' === $interval) { // interval should be '1'
     $upload = Setup::$UPLOADS;
     $logger = new StdOutLogger();
     // instagram images
-    $trans->start('process instagram images');
+    $trans->start('Process instagram images');
     foreach ($db->jobFetchInstagramImagesForProcessing() as $index => $row) {
         $img = new InstagramImage($row);
         echo $img->getSlug();
@@ -581,7 +581,7 @@ if ('1' === $interval) { // interval should be '1'
     }
     echo PHP_EOL;
     // regular images
-    $trans->start('process images that need processing');
+    $trans->start('Process images that need processing');
     foreach ($db->jobFetchImagesForProcessing() as $index => $row) {
         $img = new Image($row);
         Setup::$instance_id = $row->instance_id;
@@ -595,7 +595,7 @@ if ('1' === $interval) { // interval should be '1'
     }
     echo PHP_EOL;
     // remove some originals that are old (date_processed = long ago)
-    $trans->start('remove old files from upload directory');
+    $trans->start('Remove old files from upload directory');
     foreach ($db->jobFetchImagesForCleanup() as $index => $row) {
         Setup::$instance_id = $row->instance_id;
         echo $row->slug;
@@ -615,7 +615,7 @@ if ('1' === $interval) { // interval should be '1'
     }
 } elseif ('hourly' === $interval) { // interval should be hourly
     // check all the js and css in the cache, delete old ones
-    $trans->start('handle js and css cache');
+    $trans->start('Handle js and css cache');
     foreach (array('js', 'css') as $sub_directory) {
         $dir = new \DirectoryIterator(Setup::$DBCACHE . $sub_directory);
         foreach ($dir as $index => $file_info) {
@@ -641,19 +641,19 @@ if ('1' === $interval) { // interval should be '1'
         }
     }
 } elseif ('daily' === $interval) {
-    $trans->start('clean template folder');
+    $trans->start('Clean template folder');
     echo $db->jobCleanTemplateFolder(), PHP_EOL;
     // @since 0.7.9 & 0.8.9
-    $trans->start('remove old sessions');
+    $trans->start('Remove old sessions');
     echo $db->jobDeleteOldSessions(), PHP_EOL;
-    $trans->start('remove orphaned session variables');
+    $trans->start('Remove orphaned session variables');
     echo $db->jobDeleteOrphanedSessionVars(), PHP_EOL;
-    $trans->start('remove old shoppinglists');
+    $trans->start('Remove old shoppinglists');
     echo $db->jobDeleteOrphanedLists(), PHP_EOL;
-    $trans->start('remove orphaned shoppinglist rows (variants)');
+    $trans->start('Remove orphaned shoppinglist rows (variants)');
     echo $db->jobDeleteOrphanedShoppinglistVariants(), PHP_EOL;
     // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
-    $trans->start('refresh instagram access token');
+    $trans->start('Refresh instagram access token');
     // @since 0.7.2
     $rows = $db->jobGetInstagramTokensForRefresh(5);
     // TODO move this to instagram class or somewhere more appropriate
@@ -669,7 +669,7 @@ if ('1' === $interval) { // interval should be '1'
                 urlencode($row->access_token)
             );
             $result = curl_exec($curl);
-            $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);   //get status code
+            $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
             $return_value = json_decode($result);
             if (json_last_error() !== JSON_ERROR_NONE || false === isset($return_value->access_token)) {
                 echo sprintf(
@@ -696,9 +696,6 @@ if ('1' === $interval) { // interval should be '1'
         echo 'no tokens to refresh', PHP_EOL;
     }
     $rows = null;
-    // TODO refresh media and remove deleted entries
-    // fetch all the media_url statusses (not counting towards absurd rate limitation)
-    // if not 200 then mark / flag the media for update (boolean flag_for_update)
 } elseif ('temp' === $interval) {
     echo 'Notice: this is a temp job, only for testing', PHP_EOL;
     // @since 0.8.12 get the images you have, to check if they are still valid according to Instagram
@@ -720,20 +717,12 @@ if ('1' === $interval) { // interval should be '1'
         }
         //var_dump($headers);
     }
-    //
-    // todo check the pretty parent chains + update them
-    // TODO delete original uploads that are no longer in the database
-    // load all files in an array, load all database entries in an array
-    // loop (?) through and remove the ones only on disk
-    // when there are left in the db that are not on disk, you need to log that there’s an error
-    // remove smaller photos as well that are no longer in the db (maybe after renaming in the next step)
-    // use ‘system’ to keep tabs on where you are so you don’t have to load everything everytime
     // TODO delete and rename images according to entries in the database
     // grab slug, src_small, src_medium and src_height
     // for each size, copy the image, upon success update the entry in the database
     // it has to be uncached as well, or else the image is gone when it’s deleted in the next run...
 }
-$trans->start('report current job');
+$trans->start('Report current job');
 echo date('Y-m-d H:i:s');
 echo " (ended)\n";
 printf("Job completed in %s seconds\n", number_format(microtime(true) - $start_timer, 2));

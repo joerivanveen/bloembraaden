@@ -57,7 +57,7 @@ class Help
      * @return float|null the $var converted to float, or $default when conversion failed
      * @since 0.5.1
      */
-    public static function getAsFloat($var, ?float $default = null): ?float
+    public static function getAsFloat(mixed $var, ?float $default = null): ?float
     {
         if ((string)($float = floatval($var)) === $var) return $float; // return correctly formatted vars immediately
         // get the float correctly from string
@@ -509,7 +509,7 @@ class Help
 
             return false;
         }
-        $recaptcha_pass_score = \floatval($instance->getSetting('recaptcha_pass_score'));
+        $recaptcha_pass_score = floatval($instance->getSetting('recaptcha_pass_score'));
         if ($recaptcha_pass_score === 0.0) {
             Help::addMessage(__('Recaptcha pass score of 0 will not let anything through', 'peatcms'), 'warn');
         }

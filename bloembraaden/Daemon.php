@@ -50,7 +50,7 @@ class Daemon
                     printf("DAEMON completed in %s seconds (%s)\n", number_format($total_time, 2), date('Y-m-d H:i:s'));
                 } else {
                     /* sleep if you're really fast */
-                    \sleep(1);
+                    sleep(1);
                 }
                 $trans->flush();
                 Setup::logErrors();
@@ -76,7 +76,7 @@ class Daemon
             $done = array();
             $this->start_timer = microtime(true);
             $rows = $db->jobStaleCacheRows(200);
-            $trans->start('warmup stale (elements) cache');
+            $trans->start('Warmup stale (elements) cache');
             foreach ($rows as $key => $row) {
                 $stale_slug = (string)$row->slug;
                 if (isset($done[$stale_slug])) continue;
@@ -95,12 +95,12 @@ class Daemon
             }
             echo $total_count;
             echo " done\n";
-            echo 'remove duplicates from cache: ';
+            echo 'Remove duplicates from cache: ';
             echo $db->removeDuplicatesFromCache();
             echo PHP_EOL;
             if (0 === $total_count) ob_clean();
             // refresh the json files for the filters as well TODO maybe move to a more appropriate place (job)
-            $trans->start('handle properties filters cache');
+            $trans->start('Handle properties filters cache');
             $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
             // get the cache pointer to resume where we left off, if present
             $cache_pointer_filter_filename = $db->getSystemValue('cache_pointer_filter_filename');
@@ -137,13 +137,13 @@ class Daemon
             echo "done... \n";
             if (null === $filename_for_cache) ob_clean();
             if ($this->runningLate()) continue;
-            $trans->start('parent chains');
+            $trans->start('Parent chains');
             // when some serie has its brand_id updated
             $rows = $db->jobIncorrectChainForProduct();
             $total_count = count($rows);
             foreach ($rows as $index => $row) {
                 Setup::loadInstanceSettingsFor($row->instance_id);
-                if ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id)) {
+                if (($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
                     if (($keys = $db->updateElementsWhere(
                         new type('product'),
                         array('brand_id' => $serie->brand_id),
@@ -190,8 +190,8 @@ class Daemon
                 }
             }
             if (0 === $total_count) ob_clean();
-            /* old cache (least important, most time consuming) */
-            $trans->start('warmup old (elements) cache');
+            /* old cache (least important, most time-consuming) */
+            $trans->start('Warmup old (elements) cache');
             $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
             $total_count = 0;
             foreach ($rows as $key => $row) {
@@ -207,7 +207,7 @@ class Daemon
             }
             echo $total_count;
             echo " done\n";
-            echo 'remove duplicates from search index: ';
+            echo 'Remove duplicates from search index: ';
             echo $db->removeDuplicatesFromCiAi();
             echo PHP_EOL;
             if (0 === $total_count) ob_clean();

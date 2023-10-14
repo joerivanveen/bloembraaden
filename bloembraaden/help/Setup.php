@@ -68,7 +68,7 @@ class Setup
     public static function getNow(): int
     {
         if (false === isset(self::$seconds_delta)) {
-            self::$seconds_delta = time() - strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchAll()[0][0]);
+            self::$seconds_delta = time() - strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchColumn(0));
         }
 
         return time() + self::$seconds_delta;
@@ -103,6 +103,7 @@ class Setup
             ));
         } catch (PDOException $e) {
             if (self::DB_INIT_TRIES > $tries) {
+                sleep(1);
                 return self::initializeDatabaseConnection($db_properties, ++$tries);
             } else {
                 Help::$OUTPUT_JSON = file_get_contents('php://input') || 0 < count($_POST);
