@@ -459,11 +459,11 @@ class BaseElement extends BaseLogic implements Element
             if ($timestamp > Setup::getNow()) {
                 $this->row->is_published = false;
                 // and also set it to stale on the specific date so it will in fact be published
-                if (true === isset($slug)) Help::getDB()->markStaleFrom($slug, $this->row->date_published);
+                Help::getDB()->markStaleFrom($slug, $this->row->date_published);
             }
         }
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
-        if (isset($slug) && isset($GLOBALS['slugs'])) {
+        if (isset($GLOBALS['slugs'])) {
             $GLOBALS['slugs']->{$slug} = $this->row;
 
             return (object)array('__ref' => $slug);

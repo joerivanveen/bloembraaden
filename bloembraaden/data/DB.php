@@ -4233,12 +4233,14 @@ class DB extends Base
     /**
      * Supplied slug is put in the _stale table so the cron job that warms up cache can pick it up
      * @param string $slug
-     * @return bool
+     * @return void
      * @since 0.8.3
      */
-    private function markStale(string $slug): bool
+    private function markStale(string $slug): void
     {
-        if (isset($this->stale_slugs[$slug])) return true; // mark stale only once
+        if (isset($this->stale_slugs[$slug])) {
+            return;
+        } // mark stale only once
         $this->stale_slugs[$slug] = true;
         $statement = $this->conn->prepare('SELECT EXISTS (SELECT 1 FROM _stale WHERE instance_id = ? AND slug = ?);');
         $statement->execute(array(Setup::$instance_id, $slug));
@@ -4248,8 +4250,6 @@ class DB extends Base
             $statement->execute(array(Setup::$instance_id, $slug));
         }
         $statement = null;
-
-        return true;
     }
 
     public function markStaleFrom(string $slug, string $date_from): bool
