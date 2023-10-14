@@ -3938,7 +3938,7 @@ class DB extends Base
             $table_name = $row->table_name;
             if (0 === strpos($table_name, 'cms_')) {
                 $element_name = substr($table_name, 4);
-                if ($row = $this->fetchRow($table_name, array('slug'), array("{$element_name}_id" => $row->key))) {
+                if (($row = $this->fetchRow($table_name, array('slug'), array("{$element_name}_id" => $row->key)))) {
                     return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
                 }
             }
@@ -3972,6 +3972,10 @@ class DB extends Base
         $statement->execute();
         if ($rows = $statement->fetchAll(5)) {
             $statement = null;
+            // monitor how many times this occurs
+            if (extension_loaded('newrelic')) {
+                newrelic_notice_error("slug $slug looked up in history database for " . Setup::$PRESENTATION_INSTANCE);
+            }
             // take the element and id to select the current slug in the live database
             $row = $rows[0];
             if ($row = $this->fetchRow("cms_{$row->type}", array('slug'), array("{$row->type}_id" => $row->id))) {
