@@ -11,13 +11,14 @@ namespace Bloembraaden;
 class Template extends BaseLogic
 {
     private array $partial_templates, $hints, $doublechecking, $json_by_template_id;
-    private string $json_fresh, $html;
+    private string $json_fresh, $html, $version;
 
     public function __construct(?\stdClass $row = null)
     {
         // @since 0.5.16 you can instantiate the template with null and load it later
         //if ($row === null) $this->handleErrorAndStop('Attempting to instantiate template with $row null');
         parent::__construct($row);
+        $this->version = Setup::$VERSION;
         $this->type_name = 'template';
         $this->doublechecking = array(); // I don’t want to worry about it being empty
         $this->json_by_template_id = array(); // I don’t want to worry about it being empty
@@ -64,12 +65,13 @@ class Template extends BaseLogic
             // save it to disk: /presentation/[template_id].gz
             $template_folder = Setup::$DBCACHE . 'templates/';
             if (true === file_exists($template_folder)) {
+                $template_file = "$template_folder{$this->getId()}.gz"; // json saved as gzipped string
                 if (false === file_put_contents(
-                        $template_folder . $this->getId() . '.gz', // json saved as gzipped string
+                        $template_file,
                         gzencode($json_prepared, 9), // compress as well
                         LOCK_EX
                     )) {
-                    $this->addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $template_folder . $this->getId() . '.gz'), 'error');
+                    $this->addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $template_file), 'error');
 
                     return false;
                 }
@@ -108,15 +110,13 @@ class Template extends BaseLogic
      * @throws \Exception when loading a default template failed
      * @since 0.5.16
      */
-    public function loadDefaultFor(string $element_name)
+    public function loadDefaultFor(string $element_name): void
     {
         $element_name = strtolower($element_name);
         if (($template_id = Help::getDB()->getDefaultTemplateIdFor($element_name))) {
             $this->row = Help::getDB()->getTemplateRow($template_id);
-        } else { // try to get it from disk, the peatcms defaults, if that fails you have to throw an error
-            if (null === $this->loadByTemplatePointer($element_name)) {
-                throw new \Exception(sprintf('Could not load default template for ‘%s’', $element_name));
-            }
+        } elseif (null === $this->loadByTemplatePointer($element_name)) { // try to get it from disk, the peatcms defaults, if that fails you have to throw an error
+            throw new \Exception(sprintf('Could not load default template for ‘%s’', $element_name));
         }
     }
 
@@ -131,15 +131,15 @@ class Template extends BaseLogic
     public function loadByTemplatePointer(string $template_name, bool $admin = false): ?string
     {
         if (false === $admin) {
-            $location = CORE . 'presentation/html_templates/frontend/' . $template_name . '.html';
+            $location = CORE . "presentation/html_templates/frontend/$template_name.html";
         } else {
-            $location = CORE . 'presentation/html_templates/admin/' . $template_name . '.html';
+            $location = CORE . "presentation/html_templates/admin/$template_name.html";
         }
         if (file_exists($location)) {
             // TODO move the cleaning to the caching procedure
             $html = $this->cleanTemplateHtml(file_get_contents($location));
             $json = $this->prepare($html);
-            $this->row = new \stdClass;
+            $this->row = new \stdClass();
             $this->row->html = $html;
             $this->row->json_dirty = $json;
             $this->row->json_prepared = $json;
@@ -206,12 +206,12 @@ class Template extends BaseLogic
      *
      * @param \stdClass $output generated stdClass output from an element or pseudo element
      */
-    public function renderConsole(\stdClass $output)
+    public function renderConsole(\stdClass $output): void
     {
         if ($html = $this->loadByTemplatePointer('console', true)) {
             // some standard properties
             $output->hints = $this->getHints();
-            if (isset($output->hints) && count($output->hints) > 0) {
+            if (count($output->hints) > 0) {
                 $output->hints['title'] = __('Template hints', 'peatcms');
             }
             if (isset($output->__adminerrors__) && count($output->__adminerrors__) > 0) {
@@ -223,8 +223,8 @@ class Template extends BaseLogic
         // add the html
         $this->insertIntoHtml($this->convertTagsRemaining($html));
         // add admin scripts
-        $this->insertIntoHtml('<script id="bloembraaden-admin-js" src="/client/admin.js?version=' . Setup::$VERSION . '" async="async"></script>', false);
-        $this->insertIntoHtml('<link rel="stylesheet" id="bloembraaden-admin-css" href="/client/admin.css?version=' . Setup::$VERSION . '">', false);
+        $this->insertIntoHtml("<script id='bloembraaden-admin-js' src='/client/admin.js?version=$this->version' async='async'></script>", false);
+        $this->insertIntoHtml("<link rel='stylesheet' id='bloembraaden-admin-css' href='/client/admin.css?version=$this->version'>", false);
         // add config for editor
         $default_location = CORE . '../htdocs/instance/editor_config.json';
         $custom_location = CORE . '../htdocs/instance/' . Setup::$PRESENTATION_INSTANCE . '/editor_config.json';
@@ -246,7 +246,7 @@ class Template extends BaseLogic
     /**
      * @param array $client_globals
      */
-    public function renderGlobalsOnce(array $client_globals)
+    public function renderGlobalsOnce(array $client_globals): void
     {
         // put global values in a special data element for reading by javascript
         ob_start();
@@ -260,8 +260,7 @@ class Template extends BaseLogic
             echo '\'';
         }
         echo '></div>';
-        $html = ob_get_clean();
-        $this->insertIntoHtml($html);
+        $this->insertIntoHtml(ob_get_clean());
     }
 
     /**
@@ -272,7 +271,7 @@ class Template extends BaseLogic
      * @param bool $end_of_document @since 0.5.5 added boolean to choose where you want the html (string) inserted
      * @since 0.1.0
      */
-    private function insertIntoHtml(string $html_to_insert, bool $end_of_document = true)
+    private function insertIntoHtml(string $html_to_insert, bool $end_of_document = true): void
     {
         if ($this->html === '') {
             $this->html = $html_to_insert;
@@ -329,7 +328,7 @@ class Template extends BaseLogic
      *
      * @param \stdClass $out
      */
-    public function render(\stdClass $out)
+    public function render(\stdClass $out): void
     {
         // @since 0.8.0 use __ref
         if (isset($out->slugs)) {
@@ -354,15 +353,15 @@ class Template extends BaseLogic
                 $this->html = $this->convertTagsRemaining($html);
             } else {
                 $this->handleErrorAndStop(
-                    'Template ‘' . $template_pointer->name . '’ not found in theme ',
-                    sprintf(__('Could not get template ‘%s’', 'peatcms'), $template_pointer->name)
+                    "Template $template_pointer->name not found in theme ",
+                    sprintf(__('Could not get template %s', 'peatcms'), $template_pointer->name)
                 );
             }
         }
         if (false === isset($this->html)) {
             $this->handleErrorAndStop(
                 'Template html is not set during render',
-                sprintf(__('Could not get template ‘%s’', 'peatcms'), '')
+                sprintf(__('Could not get template %s', 'peatcms'), '')
             );
         }
     }
@@ -391,23 +390,23 @@ class Template extends BaseLogic
                 }
                 $check_if[$tag_name] = $output_object;
                 // regular tag replacement
-                if (strpos($html, '{{' . $tag_name . '}}') !== false) {
-                    $html = str_replace('{{' . $tag_name . '}}', $output_object, $html);
+                if (false !== strpos($html, "{{{$tag_name}}}")) {
+                    $html = str_replace("{{{$tag_name}}}", $output_object, $html);
                 }
                 // @since 0.4.6: simple tags can be processed using a function, {{tag|function_name}}
-                while (($str_pos = strpos($html, '{{' . $tag_name . '|')) !== false) {
+                while (($str_pos = strpos($html, "{{{$tag_name}|")) !== false) {
                     // for each occurrence, grab the function name and (try to) execute it
                     $str_pos = $str_pos + strlen($tag_name) + 3;
                     $end_pos = strpos($html, '}}', $str_pos);
                     $function_name = substr($html, $str_pos, $end_pos - $str_pos);
                     // @since 0.5.9: when not found add a hint but stay silent in the contents (for javascript-only functions)
-                    if (method_exists($this, $method_name = 'peat_' . $function_name)) {
+                    if (method_exists($this, $method_name = "peat_$function_name")) {
                         $processed_object = $this->{$method_name}($output_object);
                     } else {
                         $this->addHint(strip_tags($function_name) . ' not found');
                         $processed_object = $output_object;
                     }
-                    $html = str_replace('{{' . $tag_name . '|' . $function_name . '}}', (string)$processed_object, $html);
+                    $html = str_replace("{{{$tag_name}|$function_name}}", (string)$processed_object, $html);
                 }
             } else {
                 $output_object = (array)$output_object; // this is a complex element which might contain indexed values that are rows
@@ -459,7 +458,7 @@ class Template extends BaseLogic
 //                                        }
                                         $build_rows .= $this->renderOutput($obj, (array)$row_template);
                                     }
-                                    $sub_template['__html__'] = str_replace('{{__row__[' . $template_index . ']}}', $build_rows, $sub_template['__html__']);
+                                    $sub_template['__html__'] = str_replace("{{__row__[$template_index]}}", $build_rows, $sub_template['__html__']);
                                 }
                             }
                         }
@@ -468,7 +467,7 @@ class Template extends BaseLogic
                         if ($sub_html === $temp_remember_html) {
                             $sub_html = '';
                         }
-                        $html = str_replace('{{' . $tag_name . '[' . $index . ']}}', $sub_html, $html);
+                        $html = str_replace("{{{$tag_name}[$index]}}", $sub_html, $html);
                     }
                 }
             }
@@ -476,9 +475,9 @@ class Template extends BaseLogic
         //$check_if = array_reverse($check_if, true); // check in reverse order, to target the ::value:: in deeper nested tags first
         foreach ($check_if as $tag_name => $output_object) {
             // @since 0.4.12: simple elements can show / hide parts of the template
-            while (false !== ($str_pos = strpos($html, '{{' . $tag_name . ':'))) {
+            while (false !== ($str_pos = strpos($html, "{{{$tag_name}:"))) {
                 // @since 0.7.9 you can use ‘equal to’ operator ‘==’
-                if (strpos($html, '{{' . $tag_name . ':==') === $str_pos) {
+                if (strpos($html, "{{{$tag_name}:==") === $str_pos) {
                     $str_pos = $str_pos + strlen($tag_name) + 5;
                     $equals = strtolower(substr($html, $str_pos, strpos($html, ':', $str_pos) - $str_pos));
                     $is_false = (false === isset($output->{$tag_name}) || strtolower((string)$output->{$tag_name}) !== $equals);
@@ -491,8 +490,8 @@ class Template extends BaseLogic
                 $end_pos = strpos($html, '}}', $str_pos);
                 if (false === $end_pos) { // error: if tag has no end
                     $html = str_replace(
-                        '{{' . $tag_name . ':',
-                        'If-error near ' . $tag_name,
+                        "{{{$tag_name}:",
+                        "If-error near $tag_name",
                         $html
                     );
                     continue;
@@ -507,8 +506,8 @@ class Template extends BaseLogic
                     }
                     if (false === $end_pos) { // error: if tag has no end
                         $html = str_replace(
-                            '{{' . $tag_name . ':',
-                            'Nested if-error near ' . $tag_name,
+                            "{{{$tag_name}:",
+                            "Nested if-error near $tag_name",
                             $html
                         );
 //                        echo '<textarea style="width:75vw;height:145px">';
@@ -518,7 +517,11 @@ class Template extends BaseLogic
                     }
                 }
                 $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
-                $str_to_replace = '{{' . $tag_name . ((isset($equals)) ? ':==' . $equals . ':' : ':') . $content . '}}';
+                if (true === isset($equals)) {
+                    $str_to_replace = "{{{$tag_name}:==$equals:$content}}";
+                } else {
+                    $str_to_replace = "{{{$tag_name}:$content}}";
+                }
                 if ($is_false) {
                     if (count($parts) > 1) { // display the 'false' part
                         $html = str_replace($str_to_replace, $parts[1], $html);
@@ -615,7 +618,7 @@ class Template extends BaseLogic
     private function getComplexTagString(string $tag_name, string $html, int $offset = 0): ?string
     {
         // always grab them with an EVEN number of complex tags between them
-        $search = '{%' . $tag_name . '%}';
+        $search = "{%$tag_name%}";
         $start = strpos($html, $search);
         if ($offset <= $start) $offset = $start + 1;
         if ($offset < strlen($html)) {
@@ -629,8 +632,8 @@ class Template extends BaseLogic
                     return $string;
                 } else {
                     if (isset($this->doublechecking[$string])) {
-                        $this->addError('Error in ->getComplexTagString for this string: ‘' . $string . '’');
-                        $this->addMessage(sprintf(__('Error in template for ‘%s’', 'peatcms'), htmlentities($string)), 'error');
+                        $this->addError("Error in ->getComplexTagString for this string: $string");
+                        $this->addMessage(sprintf(__('Error in template for %s', 'peatcms'), htmlentities($string)), 'error');
 
                         return str_replace($search, '', $string); // this is clearly broken, it will display something ugly anyway
                     } else {
@@ -655,7 +658,7 @@ class Template extends BaseLogic
     {
         // all the tags need to form a 'pyramid', always be in pairs, from outside to in, if not they are incorrectly nested
         if ($tag_name = $this->findComplexTagName($string)) {
-            $search = '{%' . $tag_name . '%}';
+            $search = "{%$tag_name%}";
             $len = strlen($search);
             // remove the outer two occurrences and check if the inner part still ->hasCorrectlyNestedComplexTags
             if (false !== ($pos = strpos($string, $search))) {
@@ -685,7 +688,7 @@ class Template extends BaseLogic
             $partials = array(); // named array holding template rows, by template_name
             foreach ($rows as $key => $row) {
                 if (isset($partials[$partial_name = strtolower($row->name)])) {
-                    $this->addMessage(sprintf(__('Multiple templates found with name ‘%s’', 'peatcms'), $partial_name), 'warn');
+                    $this->addMessage(sprintf(__('Multiple templates found with name %s', 'peatcms'), $partial_name), 'warn');
                 }
                 $partials[$partial_name] = $row;
             }
@@ -712,10 +715,10 @@ class Template extends BaseLogic
             $partials = $this->getPartialTemplates();
             if (isset($partials[$partial_name_lower])) {
                 $temp = new Template($partials[$partial_name_lower]);
-                $html = str_replace('{{>' . $partial_name . '}}', $this->cleanTemplateHtml($temp->row->html), $html); // insert the partial into this html
+                $html = str_replace("{{>$partial_name}}", $this->cleanTemplateHtml($temp->row->html), $html); // insert the partial into this html
             } else {
-                $this->addMessage(sprintf(__('Template ‘%1$s’ not found for inclusion in ‘%2$s’', 'peatcms'), $partial_name, $this->row->name), 'warn');
-                $html = str_replace('{{>' . $partial_name . '}}', '', $html); // remove the partial tag
+                $this->addMessage(sprintf(__('Template %1$s not found for inclusion in %2$s', 'peatcms'), $partial_name, $this->row->name), 'warn');
+                $html = str_replace("{{>$partial_name}}", '', $html); // remove the partial tag
             }
         }
         $template = array();
@@ -725,12 +728,12 @@ class Template extends BaseLogic
             if (($string = $this->getComplexTagString($tag_name, $html))) {
                 $number = count($template[$tag_name]);
                 $template[$tag_name][$number] = $this->prepare($this->getInnerContent($string));
-                $html = str_replace($string, '{{' . $tag_name . '[' . $number . ']}}', $html);
+                $html = str_replace($string, "{{{$tag_name}[$number]}}", $html);
             } else {
                 $this->addMessage(
-                    sprintf(__('Error in complex tag string ‘%s’', 'peatcms'), $tag_name),
+                    sprintf(__('Error in complex tag string %s', 'peatcms'), $tag_name),
                     'warn');
-                $html = str_replace('{%' . $tag_name, '', $html);
+                $html = str_replace("{%$tag_name", '', $html);
             }
         }
         // add the correct javascript and css location(s) this template needs
@@ -756,12 +759,12 @@ class Template extends BaseLogic
                 }
                 if (false === $css_ok) { // link to server generated stylesheet
                     echo '<link rel="stylesheet" id="bloembraaden-css" href="/__action__/stylesheet?version=';
-                    echo Setup::$VERSION;
+                    echo $this->version;
                     echo '-{{template_published}}">';
                 }
             }
             echo '<script id="bloembraaden-js" src="/__action__/javascript?version=';
-            echo Setup::$VERSION;
+            echo $this->version;
             echo '-{{template_published}}" async="async" defer="defer"></script>';
             echo '</head>';
             // replace the end of the head tag with these scripts / links
@@ -769,7 +772,7 @@ class Template extends BaseLogic
             // insert our tag
             $html = "<!-- 
     
-Create your next website with bloembraaden.io
+Bloembraaden.io, made by humans for humans
 
 -->
  
@@ -823,14 +826,14 @@ $html";
     {
         // all the tags with indexes may be progressive loading tags, they must be replaced with an option tag
         for ($index = 0; $index < 100; ++$index) {
-            $search = '[' . $index . ']}}';
+            $search = "[$index]}}";
             if (false === strpos($html, $search)) break; // don't loop any further if the indexes became too high
             // grab all the tags to replace
             $arr = explode($search, $html);
             foreach ($arr as $key => $html_part) {
                 $tag_name = substr($html_part, strrpos($html_part, '{{') + 2);
-                $replacer = '{{' . $tag_name . $search;
-                $html = str_replace($replacer, '<option data-peatcms-placeholder="1" id="' . $tag_name . '_' . $index . '"></option>', $html);
+                $replacer = "{{{$tag_name}$search";
+                $html = str_replace($replacer, "<option data-peatcms-placeholder='1' id='{$tag_name}_$index'></option>", $html);
             }
         }
         // now only single tags should be left, remove them
@@ -843,7 +846,7 @@ $html";
             }
             if (false === $end) {
                 $search = substr($html, $start, 20);
-                $this->addHint('tag error: ' . $search . '...');
+                $this->addHint("tag error: $search...");
                 $html = str_replace($search, '<span class="error">tag_error</span>', $html);
             }
             $search = substr($html, $start, $end - $start + 2);
@@ -901,7 +904,7 @@ $html";
      */
     private function getTemplateObjectForElement(\stdClass $out): ?\stdClass
     {
-        if ($out->type !== 'template' && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
+        if ('template' !== $out->type && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
             if (isset($this->json_by_template_id[$template_id])) {
                 return $this->json_by_template_id[$template_id];
             }
@@ -927,7 +930,7 @@ $html";
      * Ideally these should exactly mirror the ones in javascript (peat.js)...
      */
     /**
-     * @param $str string the dirty (html) string
+     * @param string $str the dirty (html) string
      * @return string stripped and cleaned version for use in head, textareas etc.
      * @noinspection PhpUnusedPrivateMethodInspection This is a template function callable from templates using |clean
      */
@@ -937,7 +940,7 @@ $html";
     }
 
     /**
-     * @param $str string the (html) string that may contain template tags
+     * @param string $str the (html) string that may contain template tags
      * @return string all the opening curly brackets are replaced with &#123;
      */
     private function peat_no_render(string $str): string
