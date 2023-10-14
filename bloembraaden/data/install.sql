@@ -3099,6 +3099,7 @@ CREATE TABLE "public"."_history"
     "date_created" Timestamp With Time Zone DEFAULT NOW() NOT NULL
 );
 CREATE INDEX if not exists "index_history_table_column" ON "public"."_history" USING btree ("instance_id", "table_column" Asc NULLS Last);
+CREATE INDEX if not exists "index_history_table_name_key" ON "public"."_history" USING btree ("instance_id", "table_name", "key" Asc NULLS Last);
 
 
 COMMIT;
