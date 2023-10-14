@@ -226,7 +226,7 @@ class DB extends Base
         $statement->bindValue(':key', $key);
         $statement->execute();
         if ($statement->rowCount() === 1) {
-            $row = $this->normalizeRow($statement->fetchAll()[0]);
+            $row = $statement->fetchAll(5)[0];
             $row->information = json_decode($row->information);
             // remove the entry
             $statement = $this->conn->prepare('DELETE FROM _locker WHERE key = :key;');
@@ -330,7 +330,7 @@ class DB extends Base
             }
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(3);
             $ids = array();
             foreach ($rows as $key => $row) {
                 $ids[$row[0]] = $row[0]; // since we're doing array_intersect_key later, the id must be the key also
@@ -361,7 +361,7 @@ class DB extends Base
             WHERE {$type_name}_id IN ($ids_as_string) $imploded_sub_queries;
         ");
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
         $ids = array();
         foreach ($rows as $key => $row) {
@@ -403,8 +403,8 @@ class DB extends Base
             //$term = Help::removeAccents($term); // already done when terms are clean
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
-            foreach ($temp = $statement->fetchAll() as $index_row => $row) {
-                $rows[$row['slug']] = $this->normalizeRow($row);
+            foreach ($temp = $statement->fetchAll(5) as $index_row => $row) {
+                $rows[$row->slug] = $row;
             }
             unset ($temp);
             $arr[$term] = $rows;
@@ -449,10 +449,10 @@ class DB extends Base
                     ");
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute();
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(5);
             $statement = null;
 
-            return $this->normalizeRows($rows);
+            return $rows;
         }
         if ('not_online' === $case) { // select only variants that are not online (for admins...)
             $statement = $this->conn->prepare("
@@ -462,10 +462,10 @@ class DB extends Base
                     ");
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute();
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(5);
             $statement = null;
 
-            return $this->normalizeRows($rows);
+            return $rows;
         }
 
         return array();
@@ -481,10 +481,10 @@ class DB extends Base
         $statement = $this->conn->prepare("SELECT * FROM _search_log WHERE instance_id = :instance_id
             AND deleted = FALSE ORDER BY date_updated DESC LIMIT $limit;");
         $statement->bindValue(':instance_id', Setup::$instance_id);
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -505,7 +505,7 @@ class DB extends Base
             $statement->bindValue(':slug', $slug);
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute(); // error handling necessary?
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(5);
         }
         if (count($rows) === 0) {
             $statement = $this->conn->prepare('
@@ -537,11 +537,11 @@ class DB extends Base
             $statement->bindValue(':slug', $slug);
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute(); // error handling necessary?
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(5);
         }
         $statement = null;
-        if (count($rows) === 1) {
-            return $this->normalizeRow($rows[0]);
+        if (1 === count($rows)) {
+            return $rows[0];
         } else {
             if (count($rows) > 1) {
                 $this->addError(sprintf('DB->fetchElementIdAndTypeBySlug: %1$s returned %2$d rows', $slug, count($rows)));
@@ -614,7 +614,7 @@ class DB extends Base
         ");
         $statement->bindValue(':src', "%$src%");
         $statement->execute();
-        $return_obj->rows = $this->normalizeRows($statement->fetchAll());
+        $return_obj->rows = $statement->fetchAll(5);
         $statement = null;
         /*$r->rows = $this->fetchRows('cms_property_value',
             array('property_value_id', 'title', 'slug'),
@@ -647,7 +647,7 @@ class DB extends Base
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $return_arr = array();
         $current_prop = '';
@@ -673,7 +673,7 @@ class DB extends Base
         $statement = $this->conn->prepare('SELECT slug, title FROM cms_property WHERE instance_id = :instance_id;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $return_arr = array();
         foreach ($rows as $index => $row) {
@@ -770,10 +770,10 @@ class DB extends Base
             $not_in_clause ORDER BY date_popvote DESC $limit_clause;
         ");
         $statement->execute($exclude_ids);
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -788,7 +788,7 @@ class DB extends Base
         $statement = $this->conn->prepare('SELECT variant_id FROM _order_variant WHERE order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id);');
         $statement->bindValue(':variant_id', $variant_id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
         foreach ($rows as $index => $row) {
             $rows[$index] = $row[0];
@@ -824,15 +824,13 @@ class DB extends Base
         $statement->bindValue(':id', $id);
         //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $statement->execute();
-        $fetched_array = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
-        $return_array = array();
-        // todo make this a helper function or something?
-        foreach ($fetched_array as $index => $row) {
-            $return_array[] = $row[0];
+        foreach ($rows as $index => $row) {
+            $rows[$index] = $row[0];
         }
 
-        return $return_array;
+        return $rows;
     }
 
     /**
@@ -847,7 +845,7 @@ class DB extends Base
             SELECT DISTINCT peat_parse_float(price, \'%1$s\', \'%2$s\') FROM cms_variant WHERE variant_id IN (%3$s);
         ', Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, implode(',', $variant_ids)));
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
         $return_arr = array();
         foreach ($rows as $index => $row) {
@@ -873,11 +871,11 @@ class DB extends Base
             WHERE x.variant_id IN ($in_str) GROUP BY v.slug;
         ");
         $statement->execute();
-        $fetched_array = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         //Help::addMessage($statement->queryString, 'note');
         $statement = null;
         $return_array = array();
-        foreach ($fetched_array as $index => $row) {
+        foreach ($rows as $index => $row) {
             $return_array[] = array('slug' => $row[0], 'item_count' => $row[1]);
         }
 
@@ -899,10 +897,10 @@ class DB extends Base
             ORDER BY instance_id, serie_id;
         ');
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -922,10 +920,10 @@ class DB extends Base
             ORDER BY instance_id, product_id;
         ');
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -966,10 +964,10 @@ class DB extends Base
         }
         $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = $instance_id $and_where $sorting LIMIT $page_size OFFSET $offset;");
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -991,14 +989,14 @@ class DB extends Base
         }
         $statement = $this->conn->prepare("SELECT COUNT(1) FROM $table_name WHERE instance_id = $instance_id $and_where");
         $statement->execute();
-        $number_of_pages = ceil($statement->fetchAll()[0][0] / $page_size);
+        $number_of_pages = ceil($statement->fetchColumn(0) / $page_size);
         $statement = null;
         $return = array();
         for ($i = 1; $i <= $number_of_pages; ++$i) {
-            $return[] = array('page_number' => $i);
+            $return[] = (object)array('page_number' => $i);
         }
 
-        return $this->normalizeRows($return);
+        return $return;
     }
 
     /**
@@ -1042,10 +1040,10 @@ class DB extends Base
                 FROM $table_name el WHERE el.deleted = FALSE AND el.instance_id = $instance_id $and_where_online
                 AND el.$column_name $not IN ($in_placeholders?) $sorting LIMIT $limit;");
             $statement->execute($in);
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(5);
             $statement = null;
 
-            return $this->normalizeRows($rows);
+            return $rows;
         } else { // column doesn't exist
             $this->addError(sprintf('Column %s does not exist', $column_name));
 
@@ -1077,10 +1075,10 @@ class DB extends Base
         ");
         $statement->bindValue(':id', $id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -1130,10 +1128,10 @@ class DB extends Base
         $statement->bindValue(':id', $id);
         $statement->execute();
         //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -1196,10 +1194,10 @@ class DB extends Base
         }
         $statement->bindValue(':id', $id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -1296,16 +1294,15 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':id', $id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $position = (float)$statement->fetchColumn();
         $statement = null;
-        $position = (count($rows) > 0) ? (float)$rows[0][0] : 0; // the returned count or 0 (apparently it’s the first one)
         if ($position > 0) { // get it relative to the total number of rows
             $statement = $this->conn->prepare("
                 SELECT COUNT({$type_name}_id) FROM $table_name WHERE deleted = FALSE AND instance_id = :instance_id;
             ");
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute();
-            $rows = $statement->fetchAll();
+            $rows = $statement->fetchAll(3);
             $statement = null;
             if (count($rows) < 1) {
                 $this->addError('getPopVote: total count wrong');
@@ -1346,10 +1343,10 @@ class DB extends Base
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare('UPDATE _instance SET payment_sequential_number = payment_sequential_number + 1 WHERE instance_id = ? RETURNING payment_sequential_number;');
         $statement->execute(array($instance_id));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
-        if (count($rows) === 1) {
-            return \intval($rows[0][0]);
+        if (1 === count($rows)) {
+            return (int)$rows[0][0];
         }
         $this->handleErrorAndStop(sprintf('payment sequential number failed for instance %s', $instance_id));
 
@@ -1384,10 +1381,10 @@ class DB extends Base
         $statement = $this->conn->prepare('SELECT * FROM _redirect WHERE instance_id = :instance_id AND deleted = FALSE ORDER BY term ASC;');
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -1401,9 +1398,9 @@ class DB extends Base
         $statement->bindValue(':feed_name', $feed_name);
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
-        $return_value = count($rows) > 0 ? $this->normalizeRow($rows[0]) : null;
+        $return_value = $rows[0] ?? null;
         $rows = null;
 
         return $return_value;
@@ -1454,7 +1451,7 @@ class DB extends Base
         if ($hashtag) $statement->bindValue(':hashtag', '%#' . $hashtag . '%');
         //select * from _instagram_media where username = and caption like hashtag order by instagram_timestamp desc limit quantity
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1482,7 +1479,7 @@ class DB extends Base
             (SELECT instance_id FROM _instagram_auth WHERE user_id = :user_id);');
         $statement->bindValue(':user_id', $user_id);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1531,7 +1528,7 @@ class DB extends Base
     {
         $statement = $this->conn->prepare('SELECT * FROM _instagram_feed WHERE date_updated > feed_updated;');
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1854,10 +1851,10 @@ class DB extends Base
         $statement = $this->conn->prepare('SELECT u.*, o.order_number FROM _payment_status_update u LEFT OUTER JOIN _order o ON u.order_id = o.order_id WHERE u.instance_id = ' .
             Setup::$instance_id . ' ORDER BY date_created DESC, date_processed DESC LIMIT 100;');
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -1881,10 +1878,10 @@ class DB extends Base
             ORDER BY mailgun_custom_domain;'
         );
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     public function deleteSearchIndex(BaseElement $element): bool
@@ -1934,7 +1931,7 @@ class DB extends Base
             AND deleted = FALSE LIMIT $limit;
         ");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1946,7 +1943,7 @@ class DB extends Base
             WHERE date_processed < NOW() - $more_than_days * interval '1 days' AND filename_saved IS NOT NULL
             ORDER BY date_updated DESC LIMIT $how_many;");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1957,7 +1954,7 @@ class DB extends Base
         $statement = $this->conn->prepare("SELECT * FROM cms_image 
             WHERE date_processed IS NULL AND filename_saved IS NOT NULL ORDER BY date_updated DESC LIMIT $how_many");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1969,7 +1966,7 @@ class DB extends Base
             WHERE date_processed IS NULL AND src IS NOT NULL AND deleted = FALSE AND flag_for_update IS FALSE
             ORDER BY date_updated DESC LIMIT $how_many;");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -1986,7 +1983,7 @@ class DB extends Base
         $statement = $this->conn->prepare("SELECT instagram_auth_id, access_token FROM _instagram_auth 
             WHERE access_token_expires < NOW() + $days_in_advance * interval '1 days';");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -2005,7 +2002,7 @@ class DB extends Base
             WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE 
             ORDER BY date_created LIMIT $limit;");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -2022,7 +2019,7 @@ class DB extends Base
         $statement = $this->conn->prepare("SELECT media_id, user_id, media_url FROM _instagram_media 
             WHERE deleted = FALSE ORDER BY date_updated LIMIT $limit;");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -2041,7 +2038,7 @@ class DB extends Base
             FROM _instagram_media WHERE $src_where media_url IS NOT NULL 
             AND deleted = FALSE AND flag_for_update = FALSE LIMIT $limit;");
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
         return $rows;
@@ -2101,7 +2098,7 @@ class DB extends Base
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare('SELECT template_id FROM _template WHERE instance_id = ? AND element = ? ORDER BY name;');
         $statement->execute(array($instance_id, $for_element));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
         if (count($rows) > 0) return $rows[0][0];
 
@@ -2158,10 +2155,10 @@ class DB extends Base
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare('SELECT * FROM _template WHERE instance_id = ? AND element LIKE ? AND deleted = FALSE ORDER BY element, name;');
         $statement->execute(array($instance_id, $for_element));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -2174,10 +2171,10 @@ class DB extends Base
         if ($instance_id === -1) $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare('SELECT * FROM _template WHERE instance_id = ? AND element = \'partial\' AND deleted = FALSE ORDER BY element, name;');
         $statement->execute(array($instance_id));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -2362,24 +2359,24 @@ class DB extends Base
         ");
         $statement->bindValue(':id', $id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = $this->conn->prepare("
             UPDATE $link_table SET date_updated = NOW(), o = :o WHERE $id_column = :table_id
         ");
         $relocating_table_id = null;
         $relocating_o = null;
         foreach ($rows as $index => $row) {
-            if ($sub_id === $row['sub_id']) {
-                $relocating_table_id = $row['table_id'];
+            if ($sub_id === $row->sub_id) {
+                $relocating_table_id = $row->table_id;
                 continue; // skip the one we are relocating
             }
             $keep_order++;
-            if ($keep_order !== $row['o']) { // update order so it will count nicely from 1 onwards
+            if ($keep_order !== $row->o) { // update order so it will count nicely from 1 onwards
                 $statement->bindValue(':o', $keep_order);
-                $statement->bindValue(':table_id', $row['table_id']);
+                $statement->bindValue(':table_id', $row->table_id);
                 $statement->execute();
             }
-            if ($after_id === $row['sub_id']) {
+            if ($after_id === $row->sub_id) {
                 // after the current id we want the row we are relocating
                 $keep_order++;
                 $relocating_o = $keep_order;
@@ -2482,10 +2479,10 @@ class DB extends Base
         ');
         $statement->bindValue(':admin_id', $admin_id);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     public function fetchUserSessionCount(int $user_id): int
@@ -2509,10 +2506,10 @@ class DB extends Base
     {
         $statement = $this->conn->prepare('SELECT token, ip_address FROM _session WHERE reverse_dns IS NULL');
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     public function fetchSession(string $token): ?\stdClass
@@ -2559,11 +2556,11 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':email', $email);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $num_rows = count($rows);
         if ($num_rows === 1) {
-            return $this->normalizeRow($rows[0]);
+            return $rows[0];
         } elseif ($num_rows > 1) {
             $this->handleErrorAndStop(sprintf('DB->fetchForLogin returned %d rows.', $num_rows), __('Error during login.', 'peatcms'));
         }
@@ -2661,10 +2658,10 @@ class DB extends Base
             INNER JOIN _instance_domain d ON d.deleted = FALSE AND i.instance_id = d.instance_id
             WHERE d.domain = ? AND d.deleted = false;');
         $statement->execute(array($domain));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         if (count($rows) > 0) {
-            return $this->normalizeRow($rows[0])->domain;
+            return $rows[0]->domain;
         }
 
         return null;
@@ -2701,11 +2698,10 @@ class DB extends Base
             var_dump($menu_or_menu_item_id);
             die($e);*/
         }
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         ++$nested_level;
         foreach ($rows as $key => $row) {
-            $row = $this->normalizeRow($row);
             try { // normalize the stuff from the act field
                 if ($act = json_decode($row->act)) {
                     foreach ($act as $name => $prop) {
@@ -2799,7 +2795,7 @@ class DB extends Base
             ORDER BY o, shoppinglist_variant_id DESC
         ');
         $statement->execute(array($shoppinglist_id));
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $variant_ids = array();
         // the rows can be double when they are just being updated, keep the most recent for each variant_id
         foreach ($rows as $key => $row) {
@@ -3148,7 +3144,7 @@ class DB extends Base
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $total_count = 0;
         // for all the tables, delete items that have TRUE for the 'deleted' column and have been updated > $interval minutes ago
@@ -3193,8 +3189,8 @@ class DB extends Base
         $file_names = '';
         $statement = $this->conn->prepare('SELECT template_id FROM _template');
         $statement->execute();
-        while (($row = $statement->fetch())) {
-            $ids[$row['template_id']] = true;
+        while (($row = $statement->fetch(5))) {
+            $ids[$row->template_id] = true;
         }
         // load the id’s of templates in the folder
         if (($files = scandir("{$this->cache_folder}templates/"))) {
@@ -3402,11 +3398,11 @@ class DB extends Base
                     WHERE slug = ? AND instance_id = $instance_id;
                 ");
                 $statement->execute(array($slug));
-                $rows2 = $statement->fetchAll();
+                $rows2 = $statement->fetchAll(0);
                 $statement = null;
-                if (count($rows2) === 1) {
-                    if ($rows2[0]['id'] !== $id) $found = true; // this row is not normalised, so it's an array ['id'] in stead of ->id
-                } elseif (count($rows2) > 1) {
+                if (1 === ($count2 = count($rows2))) {
+                    if ($rows2[0][0] !== $id) $found = true;
+                } elseif ($count2 > 1) {
                     $found = true;
                 }
             }
@@ -3442,7 +3438,7 @@ class DB extends Base
         ");
             $statement->bindValue(':schema', $this->db_schema);
             $statement->execute();
-            $this->tables_with_slugs = $this->normalizeRows($statement->fetchAll());
+            $this->tables_with_slugs = $statement->fetchAll(5);
             $statement = null;
         }
 
@@ -3460,7 +3456,7 @@ class DB extends Base
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
-        $tables = $this->normalizeRows($statement->fetchAll());
+        $tables = $statement->fetchAll(5);
         $statement = null;
 
         return $tables;
@@ -3488,9 +3484,10 @@ class DB extends Base
             $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = ?;");
         }
         $statement->execute(array($instance_id));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
-        return $this->normalizeRows($rows);
+
+        return $rows;
     }
 
     /**
@@ -3552,11 +3549,11 @@ class DB extends Base
         // prepare the statement to let it execute as fast as possible
         $statement = $this->conn->prepare(ob_get_clean());
         $statement->execute($where['values']);
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         if (true === $single) {
             if (($count = count($rows)) === 1) {
-                return $this->normalizeRow($rows[0]);
+                return $rows[0];
             } else {
                 if ($count > 1) {
                     $this->addError(sprintf('Query DB->fetchRow() returned %d rows', count($rows)));
@@ -3565,7 +3562,7 @@ class DB extends Base
                 return null;
             }
         } else {
-            return $this->normalizeRows($rows);
+            return $rows;
         }
     }
 
@@ -3581,38 +3578,6 @@ class DB extends Base
         return $this->fetchRows($table_name, $columns, $where, true);
     }
 
-    /**
-     * Plural for normalizeRow
-     * @param array $rows
-     * @return array
-     * @since 0.0.0
-     */
-    private function normalizeRows(array $rows): array
-    {
-        foreach ($rows as $key => $row) {
-            $rows[$key] = $this->normalizeRow($row);
-        }
-
-        return $rows;
-    }
-
-    /**
-     * @param array $row array row object as returned by fetchRow
-     * @return \stdClass the normalized row or empty when there was none
-     * @since 0.0.0
-     */
-    private function normalizeRow(array $row): \stdClass
-    {
-        // Strangely the column is returned twice in the array, under index '0' and under the name
-        $r = new \stdClass();
-        foreach ($row as $key => $value) {
-            if (is_int($key)) continue;
-            $r->{$key} = $value;
-        }
-
-        return $r;
-    }
-
     public function selectRow(string $table_name, $key): ?\stdClass
     {
         $table_info = $this->getTableInfo($table_name); // fatal error is thrown when table_name is wrong
@@ -3623,10 +3588,10 @@ class DB extends Base
         $sql = "SELECT * FROM $table_name WHERE $primary_key_column_name = ?;";
         $statement = $this->conn->prepare($sql);
         $statement->execute(array($key));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         if (count($rows) === 1) {
-            return $this->normalizeRow($rows[0]);
+            return $rows[0];
         }
 
         return null;
@@ -3695,7 +3660,7 @@ class DB extends Base
             $statement = $this->conn->prepare("INSERT INTO $table_name ($column_list) 
                 VALUES ($in_placeholders?) RETURNING $primary_key_column_name;");
             $statement->execute($data['values']);
-            $rows = $this->normalizeRows($statement->fetchAll());
+            $rows = $statement->fetchAll(5);
             $statement = null;
             if (1 === count($rows)) {
                 $row_id = $rows[0]->{$primary_key_column_name};
@@ -3793,7 +3758,7 @@ class DB extends Base
         if ('' !== $where_statement) $where_statement = "WHERE $where_statement";
         $statement = $this->conn->prepare("SELECT $key_column_name FROM $table_name $where_statement");
         $statement->execute($where['values']);
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $return_keys = array();
         foreach ($rows as $key => $row) {
@@ -3873,10 +3838,10 @@ class DB extends Base
     {
         $statement = $this->conn->prepare('SELECT table_name, is_insertable_into FROM information_schema.tables WHERE table_schema = ?;');
         $statement->execute(array($this->db_schema));
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
 
-        return $this->normalizeRows($rows);
+        return $rows;
     }
 
     /**
@@ -3920,18 +3885,17 @@ class DB extends Base
         $statement->bindValue(':schema_name', $this->db_schema);
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
-        $info = new TableInfo($table_name, $this->normalizeRows($statement->fetchAll()));
+        $info = new TableInfo($table_name, $statement->fetchAll(5));
         // add the primary key column:
-        $statement = $this->conn->prepare('SELECT a.attname AS column_name, 
-            format_type(a.atttypid, a.atttypmod) AS data_type FROM pg_index i 
+        $statement = $this->conn->prepare('SELECT a.attname FROM pg_index i 
             JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) 
             WHERE i.indrelid = :table_name::regclass AND i.indisprimary;');
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(3);
         $statement = null;
-        if ($rows) {
-            $info->setPrimaryKeyColumn($rows[0]['column_name']);
+        if (0 < count($rows)) {
+            $info->setPrimaryKeyColumn($rows[0][0]);
         }
         // @since 0.7.7 cache the object if not already cached
         if (false === file_exists($file_name)) file_put_contents($file_name, serialize($info), LOCK_EX);
@@ -3956,7 +3920,7 @@ class DB extends Base
         $statement->bindValue(':term', $slug);
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        if (count($rows = $statement->fetchAll()) === 1) {
+        if (count($rows = $statement->fetchAll(3)) === 1) {
             $statement = null;
 
             return $rows[0][0];
@@ -3968,9 +3932,9 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':value', $slug);
         $statement->execute();
-        if (($rows = $statement->fetchAll())) {
+        if (($rows = $statement->fetchAll(5))) {
             $statement = null;
-            $row = $this->normalizeRow($rows[0]);
+            $row = $rows[0];
             $table_name = $row->table_name;
             if (0 === strpos($table_name, 'cms_')) {
                 $element_name = substr($table_name, 4);
@@ -3990,7 +3954,7 @@ class DB extends Base
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         // construct a sql statement inner joining all the entries, ordered by date_updated so you only get the most recent entry
         ob_start(); // will hold sql statement
@@ -4006,10 +3970,10 @@ class DB extends Base
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        if ($rows = $statement->fetchAll()) {
+        if ($rows = $statement->fetchAll(5)) {
             $statement = null;
             // take the element and id to select the current slug in the live database
-            $row = $this->normalizeRow($rows[0]);
+            $row = $rows[0];
             if ($row = $this->fetchRow("cms_{$row->type}", array('slug'), array("{$row->type}_id" => $row->id))) {
                 return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
@@ -4081,14 +4045,14 @@ class DB extends Base
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $variant_page);
         $statement->execute();
-        $rows = $statement->fetchAll();
+        $rows = $statement->fetchAll(5);
         $statement = null;
         if (count($rows) > 0) {
             $row = $rows[0];
-            $obj = json_decode($row[0]);
-            $obj->x_cache_timestamp = strtotime($row[1]); // @since 0.8.2
-            if (isset($row[2])) {
-                $obj->__variant_pages__ = json_decode($row[2]);
+            $obj = json_decode($row->row_as_json);
+            $obj->x_cache_timestamp = strtotime($row->since); // @since 0.8.2
+            if (isset($row->variant_page_json)) {
+                $obj->__variant_pages__ = json_decode($row->variant_page_json);
             } else {
                 $obj->__variant_pages__ = array(); // @since 0.8.6
             }
@@ -4220,7 +4184,7 @@ class DB extends Base
             $statement->bindValue(':id', $element->getId());
             $statement->execute();
             if ($statement->rowCount() > 0) {
-                $rows = $this->normalizeRows($statement->fetchAll());
+                $rows = $statement->fetchAll(5);
                 foreach ($rows as $index => $row) {
                     $this->markStale($row->slug);
                 }
@@ -4351,7 +4315,7 @@ class DB extends Base
             ORDER BY s.since DESC LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
-            $rows = $this->normalizeRows($statement->fetchAll());
+            $rows = $statement->fetchAll(5);
         } else {
             $rows = array();
         }
@@ -4388,7 +4352,7 @@ class DB extends Base
             WHERE since < NOW() - interval '$interval minutes' ORDER BY since LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
-            $rows = $this->normalizeRows($statement->fetchAll());
+            $rows = $statement->fetchAll(5);
         } else {
             $rows = array();
         }
@@ -4546,7 +4510,7 @@ class DB extends Base
         $statement->bindValue(':schema_name', $this->db_schema);
         $statement->bindValue(':table_name', $table_name);
         $statement->execute();
-        $rows = $this->normalizeRows($statement->fetchAll());
+        $rows = $statement->fetchAll(5);
         $statement = null;
         $columns = array();
         foreach ($rows as $key => $value) {
