@@ -2337,15 +2337,13 @@ class DB extends Base
 
                 return true;
             }
-        } else {
-            if ($to_item_id > 0) {
-                // insert into the menu items cross table
-                return 0 !== $this->insertRowAndReturnLastId('cms_menu_item_x_menu_item', array_merge($where, array(
-                        'menu_item_id' => $to_item_id,
-                        'online' => true,
-                        'deleted' => false,
-                    )));
-            }
+        } elseif ($to_item_id > 0) {
+            // insert into the menu items cross table
+            return 0 !== $this->insertRowAndReturnLastId('cms_menu_item_x_menu_item', array_merge($where, array(
+                    'menu_item_id' => $to_item_id,
+                    'online' => true,
+                    'deleted' => false,
+                )));
         }
 
         return (bool)$num_deleted;
@@ -2418,14 +2416,18 @@ class DB extends Base
                 "{$type_name}_id" => $id,
                 "sub_{$sub_type_name}_id" => $sub_id,
             );
-            if ($order === 0) {
-                $order = $this->getHighestO($link_table, $order_column); // @since 0.11.0 always add at the end
-            }
-            $update_array = array('deleted' => $delete, $order_column => $order);
             if ($row = $this->fetchRow($link_table, array($id_column), $where)) { // update
+                $update_array = array('deleted' => $delete);
+                if (false === $delete) {
+                    $update_array[$order_column] = $order;
+                }
+
                 return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->{$id_column});
             } else { // insert
-                return 0 !== $this->insertRowAndReturnLastId($link_table, array_merge($where, $update_array));
+                $update_array = $where;
+                $update_array[$order_column] = $this->getHighestO($link_table, $order_column); // @since 0.11.0 always add at the end
+
+                return 0 !== $this->insertRowAndReturnLastId($link_table, $update_array);
             }
         }
         $this->addError("->upsertLinked failed, no link table found for $type_name and $sub_type_name");
@@ -3673,17 +3675,17 @@ class DB extends Base
     }
 
     // TODO the return value kan be integer (mostly) or varchar (e.g. session), how to account for this?
-    private function insertRowAndReturnLastId(string $table_name, array $data = null): int|string|null
+    private function insertRowAndReturnLastId(string $table_name, array $col_val = null): int|string|null
     {
         $table = new Table($this->getTableInfo($table_name));
         // reCacheWithWarmup the slug, maybe used for a search page
-        if (isset($data['slug'])) {
-            $new_slug = $this->clearSlug($data['slug']); // (INSERT) needs to be unique for any entry
-            $data['slug'] = $new_slug;
+        if (isset($col_val['slug'])) {
+            $new_slug = $this->clearSlug($col_val['slug']); // (INSERT) needs to be unique for any entry
+            $col_val['slug'] = $new_slug;
         }
-        $data = $table->formatColumnsAndData($data, true);
-        // maybe (though unlikely) the slug was provided in the $data but not actually in the table
-        if (false !== array_search('slug', $data['discarded'])) unset($new_slug);
+        $data = $table->formatColumnsAndData($col_val, true);
+        // maybe (though unlikely) the slug was provided in $col_val but not actually in the table
+        if (true === in_array('slug', $data['discarded'])) unset($new_slug);
         $column_list = implode(',', $data['columns']);
         $in_placeholders = str_repeat('?,', count($data['columns']) - 1); // NOTE you need one more ? at the end of this
         // update
@@ -3695,11 +3697,13 @@ class DB extends Base
             $statement->execute($data['values']);
             $rows = $this->normalizeRows($statement->fetchAll());
             $statement = null;
-            if (count($rows) === 1) {
+            if (1 === count($rows)) {
+                $row_id = $rows[0]->{$primary_key_column_name};
                 if (isset($new_slug)) $this->reCacheWithWarmup($new_slug);
+                $this->addToHistory($table, $row_id, $col_val, true);
 
-                return $rows[0]->{$primary_key_column_name};
-            } elseif (count($rows) === 0) {
+                return $row_id;
+            } elseif (0 === count($rows)) {
                 return null;
             } else { // this should be impossible
                 $this->handleErrorAndStop(new \Exception("Found more than one primary key for $table_name"),
@@ -3714,18 +3718,18 @@ class DB extends Base
         }
     }
 
-    private function updateRowAndReturnSuccess(string $table_name, array $key_value, $key): bool
+    private function updateRowAndReturnSuccess(string $table_name, array $col_val, $key): bool
     {
         $table = new Table($this->getTableInfo($table_name)); // fatal error is thrown when table_name is wrong
         $table_info = $table->getInfo();
         $key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // reCacheWithWarmup the old slug, clear this slug and reCacheWithWarmup the new slug as well (as it may be used for a search page)
-        if (isset($key_value['slug'])) {
+        if (isset($col_val['slug'])) {
             //$data['slug'] = $this->clearSlug($data['slug']); // (INSERT) needs to be unique for any entry
-            $new_slug = $this->clearSlug($key_value['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
-            $key_value['slug'] = $new_slug;
+            $new_slug = $this->clearSlug($col_val['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
+            $col_val['slug'] = $new_slug;
         }
-        $data = $table->formatColumnsAndData($key_value, true);
+        $data = $table->formatColumnsAndData($col_val, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
         if (true === in_array('slug', $data['discarded'])) unset($new_slug);
         // check if there are any columns going to be updated, else return already
@@ -3735,7 +3739,7 @@ class DB extends Base
             return false;
         }
         // push current entry to history
-        $old_row = $this->addToHistory($table, $key, $key_value); // returns the copied (now old) row, can be null
+        $old_row = $this->addToHistory($table, $key, $col_val); // returns the copied (now old) row, can be null
         // update entry
         $columns_list = implode(', ', $data['parameterized']);
         $columns_date = ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '');
@@ -4418,32 +4422,30 @@ class DB extends Base
      *
      * @param Table $table the table object from the live database for reference
      * @param mixed $key the key of the primary key column of the row to move to history
-     * @param array $key_value the column => value pairs that are updated
+     * @param array $col_val the column => value pairs that are updated
      * @return \stdClass|null the old row or null when not copied (@since 0.5.x)
      * @since 0.0.0
      */
-    private function addToHistory(Table $table, $key, array $key_value): ?\stdClass
+    private function addToHistory(Table $table, $key, array $col_val, bool $is_insert = false): ?\stdClass
     {
         // select the row from the live database
         $table_info = $table->getInfo();
         // abort if there's no history
-        if (in_array($table_name = $table_info->getTableName(), self::TABLES_WITHOUT_HISTORY)) return null;
+        if (in_array(($table_name = $table_info->getTableName()), self::TABLES_WITHOUT_HISTORY)) return null;
         // ok continue
-        $row = $this->fetchRow($table_name, array('*'), array(
-            'deleted' => null, // null means either value is good
-            'instance_id' => null, // will be overwritten by next line if the $key column is actually instance_id
-            $table_info->getPrimaryKeyColumn()->getName() => $key,
-        ));
-        if ($row === null) {
-            $this->addError(sprintf('addToHistory could not get row from %1$s with %2$s = %3$s',
-                $table_name, $table_info->getPrimaryKeyColumn()->getName(), (string)$key));
-
-            return null;
+        if (true === $is_insert) {
+            $row = null;
+        } else {
+            $row = $this->fetchRow($table_name, array('*'), array(
+                'deleted' => null, // null means either value is good
+                'instance_id' => null, // will be overwritten by next line if the $key column is actually instance_id
+                $table_info->getPrimaryKeyColumn()->getName() => $key,
+            ));
         }
         // @since 0.16.5 use _history
-        foreach ($key_value as $column_name => $value) {
+        foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
-            if ($row->{$column_name} === $value) continue; // no need to add to history when the value is the same
+            if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
             // booleans get butchered in $statement->execute(), interestingly, NULL values don't
             if (is_bool($value)) {
                 $value = ($value ? '1' : '0');
@@ -4474,6 +4476,7 @@ class DB extends Base
             }
         }
         // TODO remove the following logic except 'return $row' when _history is filled
+        if (null === $row) return $row;
         // 2) insert the row into history database
         try {
             $columns_list = implode(', ', $table_info->getColumnNames());
