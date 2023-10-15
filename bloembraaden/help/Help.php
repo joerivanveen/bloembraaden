@@ -660,6 +660,7 @@ class Help
 
     public static function export_instance(int $instance_id, LoggerInterface $logger): void
     {
+        set_time_limit(0);
         $export_file = Setup::$UPLOADS . "_export-$instance_id.json";
         if (file_exists($export_file)) {
             $logger->log("Export file $export_file already exists, aborting.");
@@ -678,11 +679,23 @@ class Help
         $version = Setup::$VERSION;
         file_put_contents($export_file, "\"version\":\"$version\"}", FILE_APPEND);
         $logger->log("Exported to $export_file");
+        chmod($export_file, 0664);
+        $logger->log("Set permissions to 664");
     }
 
-    public static function import_instance(string $json)
+    public static function import_instance(string $file_name, LoggerInterface $logger): void
     {
-
+        set_time_limit(0);
+        if (file_exists($file_name)) {
+            $logger->log($file_name);
+            if (($json = json_decode(file_get_contents($file_name))) && JSON_ERROR_NONE === json_last_error()) {
+                // todo: import into this instance...
+            } else {
+                $logger->log("File $file_name is not valid json, aborting.");
+            }
+        } else {
+            $logger->log("File $file_name does not exist, aborting.");
+        }
     }
 
     public static function upgrade(DB $db): void

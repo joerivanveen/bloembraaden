@@ -489,8 +489,10 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 body .PEATCMS.progress {
     position: fixed;
     width: 5px;
-    right: 0;
-    bottom: 0;
+    height: 100%;
+    background-color: rgb(48, 63, 123);
+    left: 0;
+    top: 0;
 }
 
 /**

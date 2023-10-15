@@ -1593,6 +1593,37 @@ let PEATCMS_admin = function () {
                 }
             });
         });
+        document.querySelectorAll('[type="file"]').forEach(function (el) {
+            const form = el.form;
+            if (!form) {
+                console.error('File input element has no form', el);
+                return;
+            } else if (form.querySelectorAll('[type="file"]').length > 1) {
+                console.error('Form has more than one file input element', form);
+            }
+            form.addEventListener('peatcms.form_posting', function (e) {
+                const file_input = this.querySelector('[type="file"]');
+                if (!file_input) return; // let the form handle itself
+                this.removeAttribute('data-submitting'); // cancel submission and handle file upload first
+                if (!file_input.value) {
+                    PEAT.message('No file selected');
+                    return;
+                }
+                // NAV.fileupload first
+                NAV.fileUpload(function (data) {
+                    if (data.hasOwnProperty('file_saved')) {
+                        // todo handle this better, maybe with an undo option
+                        file_input.type = 'button';
+                        file_input.value = 'OK';
+                        form.dispatchEvent(new Event('submit'));
+                    } else {
+                        console.error('Fail', data);
+                        PEAT.message('Fail', 'error');
+                    }
+                }, file_input.files[0]);
+                // only then submit the form proper, with the filename in the form
+            });
+        });
     }
 
     document.addEventListener('peatcms.document_ready', activate);

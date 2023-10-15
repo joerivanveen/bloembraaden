@@ -284,7 +284,7 @@ class Handler extends BaseLogic
                     $filename = Help::getInvoiceFileName($order_number);
                     //#TRANSLATORS this is the invoice title, %s is the order number
                     $filename_for_client = Help::slugify(sprintf(__('Invoice for order %s', 'peatcms'), $order_number));
-                    if (file_exists($filename)) {
+                    if (true === file_exists($filename)) {
                         header('Content-Type: application/pdf');
                         header('Content-Disposition: attachment; filename="' . $filename_for_client . '.pdf"');
                         header('Content-Length: ' . filesize($filename));
@@ -326,19 +326,23 @@ class Handler extends BaseLogic
                 $sse->log(__('No slug found to process', 'peatcms'));
             }
             die(); // after an sse logger you cannot provide any more content yo
-        } elseif ('admin_export_instance' === $action) {
+        } elseif ('admin_import_export_instance' === $action) {
             $props = $this->resolver->getProperties();
             $sse = new SseLogger();
             if (!($admin = Help::$session->getAdmin()) instanceof Admin) {
-                $sse->log(__('Export can only be accessed by admin.', 'peatcms'));
-                $sse->addError('Export can only be accessed by admin.');
-            } elseif (isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
+                $sse->log(__('Import / export can only be accessed by admin.', 'peatcms'));
+                $sse->addError('Import / export can only be accessed by admin.');
+            } elseif (true === isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
                 if (true === $admin->isRelatedInstanceId($instance_id)) {
                     Help::export_instance($instance_id, $sse);
                 } else {
-                    $sse->log(__('You may not export that instance.', 'peatcms'));
-                    $sse->addError("Current admin may not export instance $instance_id");
+                    $sse->log(__('You may not import / export that instance.', 'peatcms'));
+                    $sse->addError("Current admin may not import / export instance $instance_id");
                 }
+            } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
+                Help::import_instance($import_file_name, $sse);
+            } else {
+                $sse->log(__('Nothing to do.', 'peatcms'));
             }
             die(); // after an sse logger you cannot provide any more content, yo
         }
@@ -349,7 +353,7 @@ class Handler extends BaseLogic
                 if (isset($post_data->template_name)) {
                     // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
                     if (isset($post_data->template_id) and is_numeric(($template_id = $post_data->template_id))) {
-                        if (ADMIN and $row = Help::getDB()->getTemplateRow($template_id)) {
+                        if (ADMIN && $row = Help::getDB()->getTemplateRow($template_id)) {
                             $temp = new Template($row);
                             if (false === $temp->checkIfPublished()) {
                                 $out = json_decode($temp->getFreshJson());
@@ -358,7 +362,7 @@ class Handler extends BaseLogic
                                 die();
                             }
                         }
-                        $filename = Setup::$DBCACHE . 'templates/' . $template_id . '.gz';
+                        $filename = Setup::$DBCACHE . "templates/$template_id.gz";
                         if (true === file_exists($filename)) {
                             header('Content-Type: application/json');
                             header('Content-Encoding: gzip');
@@ -369,7 +373,7 @@ class Handler extends BaseLogic
                     }
                     // use Template() by loading html from disk
                     $temp = new Template();
-                    $admin = ((isset($post_data->admin) and $post_data->admin === true) and Help::$session->isAdmin());
+                    $admin = ((isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
                     //$out = array('html' => $temp->load($data->template_name, $admin));
                     if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
                         $out = $temp->getPrepared($html);
@@ -395,7 +399,7 @@ class Handler extends BaseLogic
                     $this->handleErrorAndStop(sprintf('No template_name found in data %s', \var_export($post_data, true)),
                         __('Could not load template', 'peatcms'));
                 }
-            } elseif ($action === 'get_template_by_name') {
+            } elseif ('get_template_by_name' === $action) {
                 if (isset($post_data->template_name)) {
                     if (($template_row = Help::getDB()->getTemplateByName($post_data->template_name))) {
                         $filename = Setup::$DBCACHE . 'templates/' . $template_row->template_id . '.gz';
@@ -417,7 +421,7 @@ class Handler extends BaseLogic
                         }
                     }
                 }
-            } elseif ($action === 'suggest') {
+            } elseif ('suggest' === $action) {
                 // suggest should post type and id so we can infer some interesting stuff
                 $src = new Search();
                 // terms can be passed as query string ?terms=term1,term2 etc in the complex tag, as can limit
@@ -552,7 +556,7 @@ class Handler extends BaseLogic
                         $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
                     }
                 }
-            } elseif ($action === 'sendmail' and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ($action === 'sendmail' && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $out = $this->sendMail($instance, $post_data);
             } elseif ($action === 'countries') {
@@ -560,7 +564,7 @@ class Handler extends BaseLogic
                 $out['slug'] = 'countries';
             } elseif ($action === 'postcode') { // TODO refactor completely but now I’m in a hurry
                 // check here: https://api.postcode.nl/documentation/nl/v1/Address/viewByPostcode
-                if (isset($post_data->postal_code) and isset($post_data->number)) {
+                if (isset($post_data->postal_code) && isset($post_data->number)) {
                     $addition = $post_data->number_addition ?? null;
                     try {
                         $Postcode = new \PostcodeNl_Api_RestClient(
@@ -598,7 +602,7 @@ class Handler extends BaseLogic
                         $this->addError('Shoppinglist is not set for order action');
                         $out = true;
                     } else {
-                        if (isset($post_data->email) and isset($post_data->shipping_country_id)) {
+                        if (isset($post_data->email) && isset($post_data->shipping_country_id)) {
                             $valid = true;
                             // validation process
                             if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
@@ -707,7 +711,7 @@ class Handler extends BaseLogic
                         $post_data->check_string);
                     $post_data->instance_name = $instance->getName();
                     /* this largely duplicate code must be in a helper function or something... */
-                    if (isset($post_data->template) and $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                    if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
                         $temp = new Template($template_row);
                         $body = $temp->renderObject($post_data);
                     }
@@ -834,7 +838,7 @@ class Handler extends BaseLogic
                     }
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ($action === 'create_address' and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ($action === 'create_address' && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser()))) {
                     if (null !== ($address_id = Help::getDB()->insertElement(
@@ -847,7 +851,7 @@ class Handler extends BaseLogic
                     $this->addMessage(__('You need to be logged in to manage addresses', 'peatcms'), 'warn');
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ($action === 'detail' and $this->resolver->hasInstruction('order')) {
+            } elseif ($action === 'detail' && $this->resolver->hasInstruction('order')) {
                 $out = new \stdClass;
                 // session values can be manipulated so you need to check if this order belongs to the session
                 if (($order_number = Help::$session->getValue('order_number'))
@@ -856,7 +860,7 @@ class Handler extends BaseLogic
                     $out = $row;
                 }
                 $out->slug = '__order__/' . $order_number;
-            } elseif ($action === 'payment_start') {
+            } elseif ('payment_start' === $action) {
                 // TODO LET OP het is niet gecheckt dat deze order bij deze user hoort, dus geen gegevens prijsgeven
                 if (isset($post_data->order_number)) {
                     if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
@@ -934,7 +938,7 @@ class Handler extends BaseLogic
                         $this->handleErrorAndStop(sprintf('Create element ‘%s’ failed', $post_data->element));
                     }
                 } elseif ($action === 'delete_element') {
-                    if (isset($post_data->element_name) and isset($post_data->id)) {
+                    if (isset($post_data->element_name) && isset($post_data->id)) {
                         $success = false;
                         $type = new Type($post_data->element_name);
                         $element = $type->getElement()->fetchById((int)$post_data->id);
@@ -1186,7 +1190,7 @@ class Handler extends BaseLogic
                     $rows = Help::getDB()->fetchSearchLog();
                     $out = array('__rows__' => $rows, 'item_count' => count($rows));
                 } elseif ($action === 'admin_instagram') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
+                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
                                 '__feeds__' => Help::getDB()->getInstagramFeedSpecs($instance_id),
@@ -1203,7 +1207,7 @@ class Handler extends BaseLogic
                         }
                     }
                 } elseif ($action === 'admin_redirect') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
+                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
                                 '__row__' => Help::getDB()->getRedirects($instance_id),
@@ -1212,7 +1216,7 @@ class Handler extends BaseLogic
                         }
                     }
                 } elseif ($action === 'templates') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
+                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
                                 '__row__' => Help::getDB()->getTemplates($instance_id),
@@ -1280,14 +1284,14 @@ class Handler extends BaseLogic
                         $out = true;
                     }
                 } elseif ($action === 'admin_countries') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
+                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array('__rows__' => Help::getDB()->getCountries($instance_id));
                             $out['slug'] = 'admin_countries';
                         }
                     }
                 } elseif ($action === 'admin_payment_service_providers') {
-                    if ($post_data->type === 'instance' and $instance_id = $post_data->id) {
+                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array('__rows__' => Help::getDB()->getPaymentServiceProviders($instance_id));
                             $out['slug'] = 'admin_payment_service_providers';
@@ -1350,15 +1354,16 @@ class Handler extends BaseLogic
                         }
                         //
                         if ($posted_table_name === '_admin'
-                            and $posted_column_name === 'deleted'
-                            and $posted_value === true) {
+                            && $posted_column_name === 'deleted'
+                            && $posted_value === true
+                        ) {
                             if ((int)$posted_id === Help::$session->getAdmin()->getId()) {
                                 $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself', $posted_id),
                                     __('You can’t delete yourself', 'peatcms'));
                             }
                         } elseif ($posted_column_name === 'domain') {
                             $value = $posted_value;
-                            if ($posted_table_name === '_instance' and ($instance->getDomain() === $value or
+                            if ($posted_table_name === '_instance' && ($instance->getDomain() === $value or
                                     $instance->getId() === (int)$posted_id)) {
                                 $this->handleErrorAndStop(
                                     sprintf('Domain %1$s was blocked for instance %2$s', $value, $posted_id),
@@ -1368,7 +1373,7 @@ class Handler extends BaseLogic
                                 if (function_exists('idn_to_ascii')) {
                                     $value = idn_to_ascii($value, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
                                 }
-                                if (dns_check_record($value, 'A') or dns_check_record($value, 'AAAA')) {
+                                if (dns_check_record($value, 'A') || dns_check_record($value, 'AAAA')) {
                                     $posted_value = $value; // set the possibly to punycode converted value back
                                 } else {
                                     $this->handleErrorAndStop(
@@ -1381,9 +1386,7 @@ class Handler extends BaseLogic
                                 $temp = new Template(Help::getDB()->getTemplateRow($posted_id, null));
                                 if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
                                     // this always sends true as value, attempt to publish the template
-                                    $update_arr = array(
-                                        'published' => $temp->publish(),
-                                    );
+                                    $update_arr = array('published' => $temp->publish());
                                 } else {
                                     $this->addMessage(__('Security warning, after multiple warnings your account may be blocked', 'peatcms'), 'warn');
                                 }
@@ -1436,10 +1439,9 @@ class Handler extends BaseLogic
                             $out = $instance;
                         }
                     }
-                } elseif ($action === 'file_upload_admin') {
+                } elseif ('file_upload_admin' === $action) {
                     if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
                         Help::$OUTPUT_JSON = true;
-                        $el = null;
                         $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
                         // save the file temporarily
                         $temp_file = tempnam(sys_get_temp_dir(), $instance->getName() . '_');
@@ -1448,33 +1450,39 @@ class Handler extends BaseLogic
                         stream_copy_to_stream($handle1, $handle2);
                         fclose($handle1);
                         fclose($handle2);
-                        $file_info = finfo_open(FILEINFO_MIME_TYPE);
-                        $post_data = array();
-                        $post_data['content_type'] = finfo_file($file_info, $temp_file);
-                        $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
-                        // prepare a default element based on the uploaded file that will be created when a new element is needed
-                        $default_type = 'file';
-                        if (substr($post_data['content_type'], 0, 5) === 'image') $default_type = 'image';
-                        // process it in cms
-                        if (isset($_SERVER['HTTP_X_SLUG'])) {
-                            if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
-                                if (in_array($row->type, array('file', 'image'))) { // update the existing element when file or image
-                                    $el = $this->updateElement($row->type, $post_data, $row->id);
-                                } else { // make a new element and link it to this posted element (if possible)
-                                    $el = $this->createElement($default_type);
-                                    $el->update($post_data);
-                                    $el->link($row->type, $row->id);
+                        if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import' === $_SERVER['HTTP_X_FILE_ACTION']) {
+                            Help::$session->setVar('import_file_name', $temp_file);
+                            $out = array('file_saved' => true);
+                        } else {
+                            $el = null;
+                            $file_info = finfo_open(FILEINFO_MIME_TYPE);
+                            $post_data = array();
+                            $post_data['content_type'] = finfo_file($file_info, $temp_file);
+                            $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
+                            // prepare a default element based on the uploaded file that will be created when a new element is needed
+                            $default_type = 'file';
+                            if (substr($post_data['content_type'], 0, 5) === 'image') $default_type = 'image';
+                            // process it in cms
+                            if (isset($_SERVER['HTTP_X_SLUG'])) {
+                                if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
+                                    if (in_array($row->type, array('file', 'image'))) { // update the existing element when file or image
+                                        $el = $this->updateElement($row->type, $post_data, $row->id);
+                                    } else { // make a new element and link it to this posted element (if possible)
+                                        $el = $this->createElement($default_type);
+                                        $el->update($post_data);
+                                        $el->link($row->type, $row->id);
+                                    }
                                 }
                             }
+                            if (null === $el) { // if no slug or an invalid slug was provided, just create a new file
+                                $el = $this->createElement($default_type);
+                                $el->update($post_data);
+                            }
+                            if (false === $el->saveFile($temp_file)) {
+                                $this->addError(__('File could not be processed at this time', 'peatcms'));
+                            }
+                            $out = $el->getOutput();
                         }
-                        if (null === $el) { // if no slug or an invalid slug was provided, just create a new file
-                            $el = $this->createElement($default_type);
-                            $el->update($post_data);
-                        }
-                        if (false === $el->saveFile($temp_file)) {
-                            $this->addError(__('File could not be processed at this time', 'peatcms'));
-                        }
-                        $out = $el->getOutput();
                     } else {
                         $this->addError(__('You need to be admin and provide X-File-Name header.', 'peatcms'));
                     }

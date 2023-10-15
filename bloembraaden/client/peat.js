@@ -1058,16 +1058,15 @@ PEATCMS_ajax.prototype.feedbackUpload = function (event, progress_element) {
     progress_element.style.marginTop = (100 - percent) + '%';
     //console.log('Upload progress: ' + percent + '%');
     // progress indicator is removed by subsequent reload TODO maybe not always (in the future)
-    if (100 === percent) {
-        progress_element.innerHTML = 'Scanning...'; // TODO integrate this with the sse_log...
-    }
 }
 
 PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element) {
-    const xhr = this.getHTTPObject(), self = this, prgrs = document.createElement('div');
+    const xhr = this.getHTTPObject(),
+        self = this,
+        prgrs = document.createElement('div');
     let drop_area;
     // set up the element for progress feedback
-    if (element !== null) {
+    if (element) {
         prgrs.className = 'progress';
         drop_area = element.querySelector('.drop_area') || element;
         drop_area.insertAdjacentElement('afterbegin', prgrs);
@@ -1083,6 +1082,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
     this.setUpProcess(xhr, callback);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream;'); // has no effect on the server
     xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name)); // maybe .fileName, for older Firefox browsers?
+    xhr.setRequestHeader('X-File-Action', 'import'); // todo
     xhr.setRequestHeader('X-Csrf-Token', PEAT.getSessionVar('csrf_token'));
     if (typeof for_slug === 'string') { // noinspection JSCheckFunctionSignatures // because it's a string here, phpStorm should shut up
         xhr.setRequestHeader('X-Slug', encodeURIComponent(for_slug));
@@ -2643,6 +2643,8 @@ PEATCMS.prototype.ajaxSubmit = function (e) {
             form: this
         }
     }));
+    // allow submitting to be cancelled from an event listener
+    if (false === this.hasAttribute('data-submitting')) return;
     // with sse logger if requested
     if (this.hasAttribute('data-sse')) {
         const form = this;
