@@ -1500,6 +1500,11 @@ class Handler extends BaseLogic
             $out = (object)$out;
             $out->slugs = $GLOBALS['slugs'];
             $out = $this->resolver->cleanOutboundProperties($out);
+            if (headers_sent()) {
+                echo "Bloembraaden cannot send response because headers already sent.\nResponse is:\n";
+                var_dump($out);
+                die();
+            }
             if (true === Help::$OUTPUT_JSON) {
                 // add messages and errors
                 $out->__messages__ = Help::getMessages();
