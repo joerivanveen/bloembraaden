@@ -1595,6 +1595,7 @@ let PEATCMS_admin = function () {
         });
         document.querySelectorAll('[type="file"]').forEach(function (el) {
             const form = el.form;
+            const label = el.label;
             if (!form) {
                 console.error('File input element has no form', el);
                 return;
@@ -1612,9 +1613,12 @@ let PEATCMS_admin = function () {
                 // NAV.fileupload first
                 NAV.fileUpload(function (data) {
                     if (data.hasOwnProperty('file_saved')) {
-                        // todo handle this better, maybe with an undo option
+                        PEAT.message('File uploaded successfully');
                         file_input.type = 'button';
-                        file_input.value = 'OK';
+                        file_input.value = '...';
+                        file_input.onclick = function(e) {
+                            this.type = 'file';
+                        };
                         form.dispatchEvent(new Event('submit'));
                     } else {
                         console.error('Fail', data);

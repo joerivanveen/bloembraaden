@@ -556,6 +556,7 @@ body .PEATCMS_admin p {
 .PEATCMS_admin input[type=submit],
 .PEATCMS_admin input[type=button],
 .PEATCMS_admin .button,
+.PEATCMS_admin ::file-selector-button,
 .PEATCMS_admin button {
     /* reset a button */
     width: auto;
