@@ -30,7 +30,7 @@
         <header data-done="{{payment_confirmed_bool}}">
             <button class="toggle_button" alt="Open / close"></button>
             {{payment_confirmed_bool:Paid &#x2713;:not:Not paid}}
-            {{payment_sequential_number:<a target="_blank" href="/__action__/invoice/order_number:{{order_number}}">Invoice: ::value::</a>}}
+            {{payment_sequential_number:<a target="_blank" class="button" href="/__action__/invoice/order_number:{{order_number}}">Invoice: ::value::</a>}}
             {{payment_live_flag::not:(test)}}
             {{payment_confirmed_bool::not:<button id="payment_link" data-href="/__action__/pay/order_number:{{order_number}}">Payment link</button>}}
         </header>

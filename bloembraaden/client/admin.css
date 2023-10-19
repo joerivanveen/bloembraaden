@@ -1,3 +1,18 @@
+:root {
+    --color-peatcms: rgb(48, 63, 123);
+    --color-peatcms-transparent: rgba(48, 63, 123, .4);
+    --color-peatcms-light: rgb(164, 164, 164);
+    --color-paper: rgb(255, 255, 255);
+    --color-paper-see-through: rgba(255, 255, 255, .9);
+    --color-key: rgb(44, 44, 52);
+    --color-accent-neutral: rgba(0, 0, 0, .09);
+    --color-accent-fierce: rgb(255, 166, 0);
+    --color-no: rgb(200, 0, 0);
+    --color-no-bg: rgba(200, 0, 0, .25);
+    --color-ok: rgb(0, 180, 60);
+    --color-ok-bg: rgba(0, 180, 60, .25);
+}
+
 /*
  * admin page specific styles
  */
@@ -20,7 +35,7 @@
 }
 
 #PEATCMS_admin_page {
-    background-color: #fff;
+    background-color: var(--color-paper);
     background-image: none;
     min-height: 100vh;
     padding: 1rem;
@@ -81,7 +96,7 @@
 
 .dark-mode .edit-area *,
 .edit-area * {
-    color: rgb(44, 44, 52);
+    color: var(--color-key);
 }
 
 #admin_console_button {
@@ -92,18 +107,18 @@
     width: 100%;
     max-width: 100%;
     margin: auto;
-    background-color: #fff;
+    background-color: var(--color-paper);
 }
 
 /**
  * generic
  */
 [data-done="true"] {
-    color: rgb(0, 180, 20) !important;
+    color: var(--color-ok) !important;
 }
 
 [data-done="false"] {
-    color: rgb(200, 0, 0) !important;
+    color: var(--color-no) !important;
 }
 
 .PEATCMS_admin [data-disabled="1"] {
@@ -128,11 +143,11 @@
     min-width: 160px;
     width: 50vw;
     border: 0;
-    border-bottom: solid 1px #333;
+    border-bottom: solid 1px var(--color-key);
 }
 
 #PEATCMS_admin_page input[type=button]:hover {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
 }
 
 /**
@@ -141,7 +156,7 @@
 #peatcms_publish {
     margin: .25rem .5rem;
     padding: .25rem;
-    background-color: rgb(48, 63, 123);
+    background-color: var(--color-peatcms);
     border-radius: .25rem;
     position: absolute;
     top: 2.08rem;
@@ -151,17 +166,17 @@
 #peatcms_publish:after {
     content: 'publish';
     font-weight: bold;
-    color: #fff;
+    color: var(--color-paper);
 }
 
 #peatcms_publish.published {
-    background-color: #f0f0f0;
+    background-color: var(--color-accent-neutral);
 }
 
 .template.published:after,
 #peatcms_publish.published:before {
     content: '\2713';
-    color: rgb(0, 180, 20);
+    color: var(--color-ok);
     font-weight: bold;
     margin-left: .2em;
 }
@@ -169,7 +184,7 @@
 #peatcms_publish.published:after {
     content: 'published';
     font-weight: normal;
-    color: #999;
+    color: var(--color-peatcms-light);
 }
 
 .template {
@@ -182,7 +197,7 @@
 
 .template > * {
     padding-right: .5rem;
-    color: #444;
+    color: var(--color-key);
     display: table-cell;
 }
 
@@ -257,18 +272,18 @@
 /*#PEATCMS_admin_menu_editor .toggle,
 .PEATCMS_admin.menu_editor ul li*/
 .menu_editor ul li {
-    background-color: #fff;
-    box-shadow: 0 2px 4px #f0f0f0;
+    background-color: var(--color-paper);
+    box-shadow: 0 2px 4px var(--color-accent-neutral);
     padding: 0 6px;
     margin: 0 0 3px 0;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--color-accent-neutral);
     list-style-type: none;
     border-top: 2px solid transparent;
 }
 
 #PEATCMS_admin_page.menu_editor ul li div.drop_area {
     height: 10px;
-    background-color: #ccc;
+    background-color: var(--color-accent-neutral);
     margin-left: 3%;
     width: 97%;
 }
@@ -286,38 +301,40 @@
 #PEATCMS_admin_menu_editor .toggle {
     max-height: 40px;
     margin-top: 1em;
-    background-color: #fff;
+    background-color: var(--color-paper);
 }
 
 #PEATCMS_admin_menu_editor .toggle.dragover {
-    border-color: rgb(48, 63, 123);
+    border-color: var(--color-peatcms);
 }
 
 /**
  * Console
  */
 .offline {
-    border-left: solid .2em rgba(0, 0, 0, .1);
+    border-left: solid .2em var(--color-accent-neutral);
 }
 
 .PEATCMS_admin .offline {
     display: inherit;
-    /*    outline: dotted 2px #f00;*/
 }
 
 
 .PEATCMS_admin .online {
-    border-left: solid .2em rgb(48, 63, 123);
+    border-left: solid .2em var(--color-peatcms);
 }
 
-.PEATCMS_admin .button.edit,
+/*.PEATCMS_admin .button.edit,
 .PEATCMS_admin button.edit {
     margin: 0 .2em;
 }
 
 .PEATCMS_admin .button.edit:hover,
 .PEATCMS_admin button.edit:hover {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
+}*/
+.edit + .edit {
+    margin-left: .3rem;
 }
 
 .peatcms-link,
@@ -325,14 +342,14 @@
 .PEATCMS_admin a:active,
 .PEATCMS_admin a:visited,
 .PEATCMS_admin .link {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
     text-decoration: underline;
     cursor: pointer;
 }
 
 /* panel close buttons */
 label.close:hover {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
 }
 
 /*.PEATCMS_editable.unsaved,
@@ -344,12 +361,15 @@ body .PEATCMS_admin .unsaved {
     background-repeat: no-repeat;
     background-position: right .7em top 50%, 0 0;
 }
+
 body .PEATCMS_admin .peatcms_loading {
     background-image: url('/client/logo-anim.gif');
 }
+
 body .PEATCMS_admin div.peatcms_loading {
     background-position: right .7em top .7em, 0 0;
 }
+
 /* for admin placeholder must signal layout may shift soon */
 body .PEATCMS_admin [data-peatcms-placeholder] {
     background-position: left 0 top 0, 0 0;
@@ -358,6 +378,7 @@ body .PEATCMS_admin [data-peatcms-placeholder] {
     background-repeat: no-repeat;
     background-image: url('/client/logo-anim.gif');
 }
+
 body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {
     display: block !important;
 }
@@ -365,15 +386,20 @@ body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {
 body .PEATCMS_admin textarea.unsaved {
     background-position: right 1.7em top .7em, 0 0;
 }
+
 body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty checkboxes */
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
+}
+
+input[type="checkbox"] + label:before { /* pretty checkboxes */
+    cursor: pointer;
 }
 
 .PEATCMS_admin .pretty_parent {
     width: calc(100% - .5em);
     padding: .25em;
     border: transparent;
-    color: #333;
+    color: var(--color-key);
     font-weight: bold;
 }
 
@@ -391,13 +417,13 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 }
 
 .PEATCMS_admin .button { /* inside suggestions */
-    margin: 0 2px;
+    /*margin: 0 2px;*/
 }
 
 .PEATCMS_data_stasher {
     position: absolute;
-    /*    border: solid 3px rgb(48, 63, 123);
-        color: rgb(48, 63, 123);
+    /*    border: solid 3px var(--color-peatcms);
+        color: var(--color-peatcms);
         border-radius: 10px;
         height: 0;
         width: 10px;
@@ -406,7 +432,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 
 .PEATCMS_admin ul li.dragover,
 .PEATCMS_admin .order.dragover {
-    border-top: solid 2px rgb(48, 63, 123);
+    border-top: solid 2px var(--color-peatcms);
 }
 
 /*.admin.menu_editor ul li span.drag_handle,
@@ -414,7 +440,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 .drag_handle {
     cursor: grab;
     font-weight: bold;
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
 }
 
 /*.admin.menu_editor ul li span.drag_handle:active,
@@ -425,7 +451,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 
 .PEATCMS_admin h3.divider {
     display: block;
-    color: #333;
+    color: var(--color-key);
     font-size: 125%;
     padding-top: .5em;
     padding-bottom: .2em;
@@ -452,7 +478,8 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 .process_area {
     height: 2rem;
 }
-.PEATCMS_admin .process_area .button {
+
+/*.PEATCMS_admin .process_area .button {
     cursor: pointer;
     width: auto;
     height: 1.8rem;
@@ -465,24 +492,24 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty
 .PEATCMS_admin .process_area .button option {
 
 }
-
+*/
 .drop_area {
     width: 90%;
     height: 200px;
-    border: dotted 3px #999;
+    border: dotted 3px var(--color-peatcms-light);
     overflow: hidden; /* for the progress indicator */
 }
 
 .drop_area.dragover {
-    border-color: rgb(48, 63, 123);
+    border-color: var(--color-peatcms);
 }
 
 .drop_area .progress {
     width: 100%;
     height: 100%;
     margin-top: 100%;
-    background-color: rgba(48, 63, 123, .4);
-    color: #fff;
+    background-color: var(--color-peatcms-transparent);
+    color: var(--color-paper);
     font-size: 10px;
 }
 
@@ -490,7 +517,7 @@ body .PEATCMS.progress {
     position: fixed;
     width: 5px;
     height: 100%;
-    background-color: rgb(48, 63, 123);
+    background-color: var(--color-peatcms);
     left: 0;
     top: 0;
 }
@@ -524,7 +551,7 @@ body .PEATCMS_admin header,
 body .PEATCMS_admin div,
 body .PEATCMS_admin span,
 body .PEATCMS_admin p {
-    color: rgb(44, 44, 52);
+    color: var(--color-key);
 }
 
 /* admin items that are only visible when hovering */
@@ -543,48 +570,65 @@ body .PEATCMS_admin p {
     position: fixed;
     bottom: .5em;
     left: .5em;
-    background-color: rgba(255, 255, 255, .9);
-    color: rgb(44, 44, 52);
+    background-color: var(--color-paper-see-through);
+    color: var(--color-key);
     padding: .25em;
     border-radius: 2em;
-    border: solid 3px rgb(48, 63, 123);
+    border: solid 3px var(--color-peatcms);
     z-index: 100;
     line-height: 0;
     text-align: center;
 }
 
+.PEATCMS_admin .hoverstate {
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+}
+
 .PEATCMS_admin input[type=submit],
 .PEATCMS_admin input[type=button],
 .PEATCMS_admin .button,
-.PEATCMS_admin ::file-selector-button,
-.PEATCMS_admin button {
+.PEATCMS_admin button,
+.PEATCMS_admin ::file-selector-button {
     /* reset a button */
     width: auto;
     height: auto;
-    background-color: #fff;
+    background-color: inherit;
     border-radius: 0;
-    border: none;
-    color: rgb(44, 44, 52);
+    border: 0;
+    color: var(--color-peatcms);
     cursor: pointer;
-    padding: 0 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .08);
+    padding: .1rem .21rem;
+    box-shadow: none;
     text-decoration: none;
 }
+
+.PEATCMS_admin .hoverstate:hover,
 .PEATCMS_admin input[type=submit]:hover,
 .PEATCMS_admin input[type=button]:hover,
 .PEATCMS_admin .button:hover,
+.PEATCMS_admin ::file-selector-button:hover,
+input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin button:hover {
-    background-color: inherit;
+    /*outline: solid 2px var(--color-accent-fierce);
+    outline-offset: -2px;*/
+    color: var(--color-accent-fierce);
+}
+
+#admin_console_button .hoverstate {
+    outline-offset: 1px;
 }
 
 #admin_console_button label {
     cursor: pointer;
 }
+
 .peatcms_ctrl_key_tip {
     position: absolute;
     display: inline-block;
     padding: 0 2px;
-    background-color: #ffc;
+    background-color: var(--color-accent-fierce);
     height: 1.5rem;
     line-height: 1.5rem;
     white-space: nowrap;
@@ -593,31 +637,19 @@ body .PEATCMS_admin p {
 #PEATCMS_edit_menu {
     cursor: pointer;
     position: fixed; /* because boundingRect = relative to view */
-    background-color: rgba(255, 255, 255, .9);
-    border: solid 3px rgb(48, 63, 123);
+    background-color: var(--color-paper-see-through);
+    border: solid 3px var(--color-peatcms);
     padding: 0 .25em;
     border-radius: 2em;
     margin: -1px 4px;
-    color: rgb(48, 63, 123);
-}
-.hoverstate {
-    background: transparent;
-    box-shadow: none;
-    cursor: pointer;
-}
-
-/*.PEATCMS_admin button.hoverstate:hover,
-#admin_console_button label*/
-.hoverstate:hover {
-    background-color: rgba(48, 63, 123, .1);
-    color: #000;
+    color: var(--color-peatcms);
 }
 
 /**
  * the various screens / consoles that can be activated by admin
  */
 .PEATCMS_admin .console_screen {
-    background-color: #fff;
+    background-color: var(--color-paper);
     position: fixed;
     bottom: 0;
     left: 0;
@@ -626,7 +658,7 @@ body .PEATCMS_admin p {
 .PEATCMS_admin .console_screen .cell {
     display: table-cell;
     padding: .2em .5em;
-    background-color: #fff; /* to prevent overflow:hidden to be shown in the next .harmonica cell */
+    background-color: var(--color-paper); /* to prevent overflow:hidden to be shown in the next .harmonica cell */
 }
 
 .PEATCMS_admin .console_screen .cell header {
@@ -642,7 +674,7 @@ body .PEATCMS_admin p {
 }
 
 .PEATCMS_admin .console_screen .cell:not(:first-child) {
-    border-left: solid 1px #f0f0f0;
+    border-left: solid 1px var(--color-accent-neutral);
 }
 
 .PEATCMS_admin .console_screen .cell.harmonica {
@@ -654,12 +686,12 @@ body .PEATCMS_admin p {
 .PEATCMS_admin .console_screen .cell.harmonica.active {
     width: 260px;
     max-width: 260px;
-    border-left-color: rgb(48, 63, 123);
+    border-left-color: var(--color-peatcms);
 }
 
 .PEATCMS_admin .console_screen .cell.active header *,
 .PEATCMS_admin .console_screen .cell.active header {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
     height: auto;
 }
 
@@ -690,7 +722,7 @@ body .PEATCMS_admin p {
     font-size: 85%;
 }
 
-/* stuff that should not be displayde (eg the checkboxes) */
+/* stuff that should not be displayed (eg the checkboxes) */
 .PEATCMS_admin .nodisplay {
     display: none;
 }
@@ -702,7 +734,7 @@ body .PEATCMS_admin p {
     height: 0;
     bottom: -3px; /* size of the border-top */
     width: 100%;
-    border-top: solid 3px rgb(48, 63, 123);
+    border-top: solid 3px var(--color-peatcms);
     z-index: 100;
     overflow: hidden;
 }
@@ -712,7 +744,7 @@ body .PEATCMS_admin p {
     width: 0;
     left: -4px;
     height: 100%;
-    /*border-right: inset 3px rgb(48, 63, 123);*/
+    /*border-right: inset 3px var(--color-peatcms);*/
     z-index: 100;
     float: left;
     display: inline-block;
@@ -723,7 +755,7 @@ body .PEATCMS_admin p {
     float: right;
     width: 3px;
     height: 100vh;
-    background-color: rgb(48, 63, 123);
+    background-color: var(--color-peatcms);
 }
 
 #admin_sidebar .edit-area {
@@ -740,6 +772,7 @@ body .PEATCMS_admin p {
 .edit-area button.delete {
     margin: 2rem 0;
 }
+
 .edit-area span[id] { /* the edit checkboxes */
     display: block;
     margin-bottom: 6px;
@@ -748,17 +781,10 @@ body .PEATCMS_admin p {
 .edit-area .button.delete,
 .edit-area button.delete,
 .PEATCMS_admin input[type="button"].delete {
-    color: rgb(200, 0, 0);
+    color: var(--color-no);
     font-weight: bold;
     cursor: pointer;
 }
-
-.edit-area .button.delete,
-.edit-area button.delete,
-#PEATCMS_admin_page input[type="button"].delete:hover {
-    color: rgb(255, 0, 0);
-}
-
 
 .edit-area button.delete ~ span.button {
     display: block;
@@ -770,15 +796,16 @@ body .PEATCMS_admin p {
     position: absolute;
     top: 5px;
     right: 5px;
-    border: solid 5px rgb(48, 63, 123); /* fill color is currently in javascript indicating the relative position */
+    border: solid 5px var(--color-peatcms); /* fill color is currently in javascript indicating the relative position */
     border-radius: 20px;
 }
+
 .edit-area #admin_date_popvote button {
-    color: #fff;
-    text-shadow: 0 0 1px rgb(44, 44, 52);
+    color: var(--color-paper);
+    text-shadow: 0 0 1px var(--color-key);
 }
 
-/* open / close box for x_value in properties */
+/* open / close box for .x_value in properties */
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible {
     float: right;
     display: block;
@@ -786,19 +813,23 @@ body .PEATCMS_admin p {
     height: 0;
     border-left: solid .32rem transparent;
     border-right: solid .32rem transparent;
-    border-top: solid .43rem rgb(83, 83, 83);
+    border-top: solid .43rem var(--color-peatcms);
     background-color: transparent;
     cursor: pointer;
 }
+
 .PEATCMS_admin .edit-area input[type="text"].flexible {
     display: none;
 }
+
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked + input[type="text"].flexible {
     display: block;
 }
+
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked {
     transform: rotate(180deg);
 }
+
 /**/
 .edit-area #admin_date_popvote button {
     background-color: transparent;
@@ -824,9 +855,9 @@ body .PEATCMS_admin p {
 .PEATCMS_admin textarea {
     border: none;
     outline: none;
-    border-bottom: solid 1px rgb(48, 63, 123);
-    color: rgb(44, 44, 52);
-    box-shadow: 0 2px 4px 0 inset rgba(0, 0, 0, .06);
+    border-bottom: solid 1px var(--color-peatcms);
+    color: var(--color-key);
+    box-shadow: 0 2px 4px 0 inset var(--color-accent-neutral);
     padding: .25em;
     margin-bottom: .25em;
     width: calc(100% - .5em);
@@ -834,6 +865,7 @@ body .PEATCMS_admin p {
     border-radius: 0;
     text-align: left;
 }
+
 /* why we need the #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
 #PEATCMS_admin_page input:focus-visible,
 #PEATCMS_admin_page textarea:focus-visible,
@@ -854,10 +886,11 @@ body .PEATCMS_admin p {
 .PEATCMS_admin button:focus-visible,
 .PEATCMS_admin label:focus-visible,
 .PEATCMS_admin a:focus-visible {
-    outline: solid 1px rgb(48, 63, 123);
-    outline-offset: -1px;
+    outline: solid 2px var(--color-accent-fierce);
+    outline-offset: -2px;
     animation: none;
 }
+
 #PEATCMS_admin_page button:focus-visible,
 #PEATCMS_admin_page label:focus-visible,
 .PEATCMS_admin .button:focus-visible,
@@ -866,13 +899,22 @@ body .PEATCMS_admin p {
     width: auto;
     height: auto;
 }
+
 .PEATCMS_admin a:focus-visible {
     outline-offset: 0;
 }
+
+/* open / close box for .x_value in properties */
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible {
+    outline-offset: 1px;
+}
+
+.hoverstate label:focus-visible,
 #PEATCMS_admin_page label:focus-visible,
 .PEATCMS_admin label:focus-visible {
     outline-offset: 2px;
 }
+
 .PEATCMS_admin textarea {
     min-width: calc(100% - .5em);
     border-radius: 0;
@@ -888,7 +930,7 @@ body .PEATCMS_admin p {
 }
 
 .PEATCMS_admin select {
-    background-color: #fff;
+    background-color: var(--color-paper);
 }
 
 #PEATCMS_admin_page input[type=text].PEATCMS_editable.small {
@@ -907,7 +949,7 @@ body .PEATCMS_admin p {
 #admin_console input[type=text].searchable,
 #admin_sidebar input[type=text]*/
 .PEATCMS_admin input[type=text].searchable {
-    background-color: #f0f0f0;
+    background-color: var(--color-accent-neutral);
     border-bottom: 0;
 }
 
@@ -918,7 +960,7 @@ body .PEATCMS_admin p {
 }
 
 body .PEATCMS_admin span.template_status {
-    color: rgb(48, 63, 123);
+    color: var(--color-peatcms);
     text-transform: uppercase;
 }
 
@@ -960,7 +1002,7 @@ body .PEATCMS_admin span.template_status {
 #PEATCMS_admin_page .footer {
     font-size: .8em;
     text-align: center;
-    color: #1d367d;
+    color: var(--color-peatcms);
 }
 
 /**
@@ -991,13 +1033,13 @@ body .PEATCMS_admin span.template_status {
 .payment-table .header,
 .order-table .header {
     display: table-row;
-    background-color: rgb(44, 44, 52);
+    background-color: var(--color-key);
 }
 
 .payment-table .header > *,
 .order-table .header > * {
     display: table-cell;
-    color: #fff;
+    color: var(--color-paper);
     font-weight: bold;
 }
 
@@ -1012,15 +1054,15 @@ body .PEATCMS_admin span.template_status {
 }
 
 .order-table .row:not([data-emailed]) {
-    background-color: rgba(255, 0, 0, .1);
+    background-color: var(--color-accent-neutral);
 }
 
 .order-table .row[data-paid] {
-    background-color: rgba(0, 180, 20, .25);
+    background-color: var(--color-ok-bg);
 }
 
 .payment-table .row:not([data-processed]) {
-    background-color: rgba(255, 0, 0, .4);
+    background-color: var(--color-no-bg);
 }
 
 textarea.code {
@@ -1036,12 +1078,14 @@ header.payment {
 .PEATCMS_admin .paging {
     padding: .5rem 0;
 }
+
 .PEATCMS_admin .paging a {
     padding: .2rem .4rem;
 }
+
 .PEATCMS_admin .paging a.peatcms-current-slug {
     text-decoration: none;
-    outline: solid 1px rgb(44, 44, 52);
+    outline: solid 1px var(--color-key);
 }
 
 
