@@ -545,7 +545,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.onclick = function () {
         NAV.go(self.state.slug, true)
     };
-    el.innerText = '👁';
+    el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
     // default when editor config is missing...
     this.config = (typeof CMS_admin === 'object') ? CMS_admin.getEditorConfig(self.state.type) : {};
