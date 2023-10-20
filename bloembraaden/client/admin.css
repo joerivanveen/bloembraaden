@@ -14,9 +14,9 @@
 }
 
 .dark-mode {
-    --color-peatcms: rgb(96, 126, 246);
-    --color-peatcms-transparent: rgba(96, 126, 246, .4);
-    --color-peatcms-light: rgb(20, 20, 20);
+    --color-peatcms: rgb(108, 149, 252);
+    --color-peatcms-transparent: rgba(108, 149, 252, .4);
+    --color-peatcms-light: rgb(76, 76, 76);
     --color-paper: rgb(44, 44, 52);
     --color-paper-see-through: rgba(44, 44, 52, .9);
     --color-key: rgb(224, 224, 224);
@@ -1019,11 +1019,6 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 .PEATCMS_admin select {
-    background-color: var(--color-paper);
-}
-
-/* TODO: for some reasong this does not work */
-.PEATCMS_admin select option {
     background-color: var(--color-paper);
     color: var(--color-key);
 }
