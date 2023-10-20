@@ -1057,7 +1057,12 @@ PEATCMS_ajax.prototype.feedbackUpload = function (event, progress_element) {
     const percent = 100 * event.loaded / event.total;
     progress_element.style.marginTop = (100 - percent) + '%';
     //console.log('Upload progress: ' + percent + '%');
-    // progress indicator is removed by subsequent reload TODO maybe not always (in the future)
+    // remove progress indicator when done
+    if (100 === percent) {
+        PEAT.grabAttention(progress_element, true, function() {
+            PEAT.fadeOut(progress_element);
+        });
+    }
 }
 
 PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element) {
@@ -2781,9 +2786,9 @@ PEATCMS.prototype.startUp = function () {
     // initialize dark mode
     // https://stackoverflow.com/questions/50840168/how-to-detect-if-the-os-is-in-dark-mode-in-browsers
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        PEAT.setSessionVar('dark_mode', true);
+        this.setSessionVar('dark_mode', true);
     }
-    if (PEAT.getSessionVar('dark_mode') === true) PEAT.html_node.classList.add('dark-mode');
+    if (this.getSessionVar('dark_mode') === true) this.html_node.classList.add('dark-mode');
     // add js flag to html
     this.html_node.classList.add('js');
     // handle no hover flag for body
@@ -2982,11 +2987,12 @@ PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
     };
     setTimeout(callback, 550);
 }
-PEATCMS.prototype.grabAttention = function (DOMElement, low_key) {
+PEATCMS.prototype.grabAttention = function (DOMElement, low_key, callback = null) {
     const class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
     DOMElement.classList.add(class_name);
     setTimeout(function (el, class_name) {
         el.classList.remove(class_name);
+        if (callback) callback();
     }, 600, DOMElement, class_name);
 }
 PEATCMS.prototype.scrollIntoView = function (DOMElement, withMargin) {

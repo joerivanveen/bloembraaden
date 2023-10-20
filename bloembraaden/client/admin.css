@@ -605,7 +605,8 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 body .PEATCMS.progress {
     position: fixed;
     width: 5px;
-    height: 100%;
+    height: 100vh;
+    margin-top: 100%;
     background-color: var(--color-peatcms);
     left: 0;
     top: 0;
