@@ -2778,6 +2778,12 @@ PEATCMS.prototype.startUp = function () {
     this.html_node = document.getElementsByTagName('html')[0];
     // console.error('startUp short circuited for now');
     // return;
+    // initialize dark mode
+    // https://stackoverflow.com/questions/50840168/how-to-detect-if-the-os-is-in-dark-mode-in-browsers
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        PEAT.setSessionVar('dark_mode', true);
+    }
+    if (PEAT.getSessionVar('dark_mode') === true) PEAT.html_node.classList.add('dark-mode');
     // add js flag to html
     this.html_node.classList.add('js');
     // handle no hover flag for body

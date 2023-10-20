@@ -13,6 +13,53 @@
     --color-ok-bg: rgba(0, 180, 60, .25);
 }
 
+.dark-mode {
+    --color-peatcms: rgb(96, 126, 246);
+    --color-peatcms-transparent: rgba(96, 126, 246, .4);
+    --color-peatcms-light: rgb(20, 20, 20);
+    --color-paper: rgb(44, 44, 52);
+    --color-paper-see-through: rgba(44, 44, 52, .9);
+    --color-key: rgb(224, 224, 224);
+    --color-accent-neutral: rgba(0, 0, 0, .27);
+    --color-no: rgb(180, 0, 0);
+    --color-no-bg: rgba(180, 0, 0, .42);
+    --color-ok: rgb(0, 145, 45);
+    --color-ok-bg: rgba(0, 145, 45, .25);
+}
+
+.bloembraaden-icon {
+    max-height: 1.4em;
+    max-width: 1.4em;
+    width: 1.4em;
+    margin-bottom: -.3em;
+}
+
+.bloembraaden-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.bloembraaden-icon .st0 {
+    opacity: 0.81;
+    fill: var(--color-peatcms);
+}
+
+/*
+ * dark mode admin page adjustments / corrections
+ */
+#PEATCMS_admin_page {
+    background-color: inherit;
+    height: auto;
+}
+
+#PEATCMS_admin_page td {
+    color: var(--color-key);
+}
+
+#PEATCMS_admin_page [type="file"] {
+    color: var(--color-key);
+}
+
 /*
  * admin page specific styles
  */
@@ -387,13 +434,55 @@ body .PEATCMS_admin textarea.unsaved {
     background-position: right 1.7em top .7em, 0 0;
 }
 
-body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before { /* pretty checkboxes */
+/**
+ * Pretty checkboxes
+ */
+input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"] + label {
+    line-height: .8em;
+}
+
+input[type="checkbox"] + label:before {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    font-size: inherit;
+    vertical-align: middle;
+    margin-right: .2em;
+    padding: 0;
+    content: url("data:image/svg+xml, %3Csvg xmlns='http://www.w3.org/2000/svg' height='12' width='12'%3E%3Ccircle fill='%23fff' cx='6' cy='6' r='5' /%3E%3C/svg%3E ");
+    width: 20px;
+    height: 12px;
+    line-height: 12px;
+    border-radius: 6px;
+    background-color: var(--color-accent-neutral);
+    color: var(--color-paper);
+    text-align: left;
+    transition: background-color .4s;
+    box-shadow: 0 .1em 1em var(--color-accent-neutral) inset;
+}
+
+input[type="checkbox"]:checked + label:before {
+    background-color: var(--color-peatcms);
+    text-align: right;
+}
+
+input[type="checkbox"].peatcms_loading + label:before {
+    animation: peatcms_pulsating 613ms infinite ease-in-out;
+}
+
+input[type="checkbox"].peatcms_danger:checked + label:before {
+    background-color: var(--color-no);
+}
+
+body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
     color: var(--color-peatcms);
 }
 
-input[type="checkbox"] + label:before { /* pretty checkboxes */
-    cursor: pointer;
-}
+/**/
 
 .PEATCMS_admin .pretty_parent {
     width: calc(100% - .5em);
@@ -933,6 +1022,12 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     background-color: var(--color-paper);
 }
 
+/* TODO: for some reasong this does not work */
+.PEATCMS_admin select option {
+    background-color: var(--color-paper);
+    color: var(--color-key);
+}
+
 #PEATCMS_admin_page input[type=text].PEATCMS_editable.small {
     width: 40px;
     max-width: 40px;
@@ -1033,13 +1128,12 @@ body .PEATCMS_admin span.template_status {
 .payment-table .header,
 .order-table .header {
     display: table-row;
-    background-color: var(--color-key);
+    background-color: var(--color-peatcms-transparent);
 }
 
 .payment-table .header > *,
 .order-table .header > * {
     display: table-cell;
-    color: var(--color-paper);
     font-weight: bold;
 }
 
