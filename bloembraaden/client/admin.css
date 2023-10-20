@@ -2,8 +2,8 @@
     --color-peatcms: rgb(48, 63, 123);
     --color-peatcms-transparent: rgba(48, 63, 123, .4);
     --color-peatcms-light: rgb(164, 164, 164);
-    --color-paper: rgb(255, 255, 255);
-    --color-paper-see-through: rgba(255, 255, 255, .9);
+    --color-paper: rgb(253, 253, 255);
+    --color-paper-see-through: rgba(253, 253, 255, .9);
     --color-key: rgb(44, 44, 52);
     --color-accent-neutral: rgba(0, 0, 0, .09);
     --color-accent-fierce: rgb(255, 166, 0);
@@ -610,6 +610,7 @@ body .PEATCMS.progress {
     background-color: var(--color-peatcms);
     left: 0;
     top: 0;
+    z-index: 101; /* just in front of console */
 }
 
 /**
