@@ -1442,7 +1442,7 @@ class Handler extends BaseLogic
                         Help::$OUTPUT_JSON = true;
                         $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
                         // save the file temporarily
-                        $temp_file = tempnam(sys_get_temp_dir(), $instance->getName() . '_');
+                        $temp_file = tempnam(sys_get_temp_dir(), $instance->getPresentationInstance() . '_');
                         $handle1 = fopen('php://input', 'r');
                         $handle2 = fopen($temp_file, 'w');
                         stream_copy_to_stream($handle1, $handle2);

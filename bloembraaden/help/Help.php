@@ -661,40 +661,51 @@ class Help
     public static function export_instance(int $instance_id, LoggerInterface $logger): void
     {
         set_time_limit(0);
-        $export_file = Setup::$UPLOADS . "_export-$instance_id.json";
+        $export_file = Setup::$UPLOADS . ".export-$instance_id.json";
         if (file_exists($export_file)) {
-            $logger->log("Export file $export_file already exists, aborting.");
+            $logger->log("Export file $export_file already exists, aborting");
             die();
         }
         $logger->log("Exporting instance $instance_id");
         $db = self::getDB();
         $tables = $db->fetchTablesToExport();
-        file_put_contents($export_file,'{',FILE_APPEND);
+        $version = Setup::$VERSION;
+        file_put_contents($export_file,"{\n\"version\":\"$version\",\n",FILE_APPEND);
         foreach ($tables as $index => $table) {
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
             $data = json_encode($db->fetchRowsForExport($table_name, $instance_id));
             file_put_contents($export_file, "\"$table_name\":$data,\n", FILE_APPEND);
         }
-        $version = Setup::$VERSION;
-        file_put_contents($export_file, "\"version\":\"$version\"}", FILE_APPEND);
-        $logger->log("Exported to $export_file");
-        chmod($export_file, 0664);
-        $logger->log("Set permissions to 664");
+        file_put_contents($export_file, "\"bloembraaden\":true\n}", FILE_APPEND);
+        $logger->log("Exported to $export_file.");
+        try {
+            chmod($export_file, 0664);
+            $logger->log("Set permissions to 664");
+        } catch(\Throwable) {}
     }
 
     public static function import_instance(string $file_name, LoggerInterface $logger): void
     {
-        set_time_limit(0);
-        if (file_exists($file_name)) {
-            $logger->log($file_name);
-            if (($json = json_decode(file_get_contents($file_name))) && JSON_ERROR_NONE === json_last_error()) {
-                // todo: import into this instance...
+        if (file_exists($file_name)) { // try to keep the $file_name a bit secret
+            set_time_limit(0); // this might take a while
+            $logger->log('Process uploaded file');
+            $handle = @fopen($file_name, 'r');
+            if ($handle) {
+                // fgets read a line until eol, or 'length' bytes of the same line
+                while (($buffer = fgets($handle, 4096)) !== false) {
+                    if ("\n" === mb_substr("$buffer", -1))
+                    $logger->log($buffer);
+                }
+                if (!feof($handle)) {
+                    $logger->log('Error: unexpected fgets() fail');
+                }
+                fclose($handle);
             } else {
-                $logger->log("File $file_name is not valid json, aborting.");
+                $logger->log('Error: couldn’t get a handle on that file');
             }
         } else {
-            $logger->log("File $file_name does not exist, aborting.");
+            $logger->log('File does not exist, aborting');
         }
     }
 
