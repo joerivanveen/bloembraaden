@@ -92,8 +92,6 @@ class Session extends BaseLogic
 
     public function login(string $email, string $pass, bool $as_admin): bool
     {
-        // failed login should always take exactly 2 seconds
-        $start = round(microtime(true) * 1000);
         if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
             if (password_verify($pass, $row->hash)) {
                 if (false === $as_admin) {
@@ -108,9 +106,8 @@ class Session extends BaseLogic
             }
         }
         $this->addMessage(__('Name / pass combination unknown.', 'peatcms'), 'warn');
-        // failed login should always take 2 seconds
-        $time_taken = round(microtime(true) * 1000) - $start;
-        usleep(2000000 - (int)$time_taken * 1000);
+        // delay based on user input against timing attacks
+        usleep(abs(crc32("pseudorandomstr1ng$email$pass") % 1000));
 
         return false;
     }
