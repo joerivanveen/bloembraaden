@@ -1452,7 +1452,7 @@ class Handler extends BaseLogic
                         fclose($handle2);
                         if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import' === $_SERVER['HTTP_X_FILE_ACTION']) {
                             Help::$session->setVar('import_file_name', $temp_file);
-                            $out = array('file_saved' => true);
+                            $out = array('file_saved' => file_exists($temp_file));
                         } else {
                             $el = null;
                             $file_info = finfo_open(FILEINFO_MIME_TYPE);
@@ -1501,8 +1501,8 @@ class Handler extends BaseLogic
             $out->slugs = $GLOBALS['slugs'];
             $out = $this->resolver->cleanOutboundProperties($out);
             if (headers_sent()) {
-                echo "Bloembraaden cannot send response because headers already sent.\nResponse is:\n";
-                var_dump($out);
+                echo "#BLOEMBRAADEN_JSON:#\n";
+                echo json_encode($out);
                 die();
             }
             if (true === Help::$OUTPUT_JSON) {

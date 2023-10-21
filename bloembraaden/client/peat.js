@@ -1059,7 +1059,7 @@ PEATCMS_ajax.prototype.feedbackUpload = function (event, progress_element) {
     //console.log('Upload progress: ' + percent + '%');
     // remove progress indicator when done
     if (100 === percent) {
-        PEAT.grabAttention(progress_element, true, function() {
+        PEAT.grabAttention(progress_element, true, function () {
             PEAT.fadeOut(progress_element);
         });
     }
@@ -1147,12 +1147,26 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
             if (true === xhr.peatcms_track_progress) self.trackProgress(xhr);
             if (xhr.readyState === 4) {
                 if (VERBOSE) if (200 !== xhr.status) console.warn('Received status: ' + xhr.status);
+                const response_text = xhr.responseText;
                 try {
-                    json = JSON.parse(xhr.responseText);
-                    if ('object' !== typeof json) json = {};
+                    json = JSON.parse(response_text);
+                    if ('object' !== typeof json) {
+                        json = {};
+                    }
                 } catch (e) { // data is an empty object here
-                    console.error(e);
-                    console.log('Response was: ' + xhr.responseText);
+                    // @since 0.17.0 allow json response after php warning / notice / error
+                    if (response_text.indexOf('#BLOEMBRAADEN_JSON:#') !== -1) {
+                        try {
+                            json = JSON.parse(response_text.split('#BLOEMBRAADEN_JSON:#')[1]);
+                            if ('object' !== typeof json) json = {};
+                        } catch(e) {
+                            console.error(e);
+                            console.log(`Response was: ${response_text}`);
+                        }
+                    } else {
+                        console.error(e);
+                        console.log(`Response was: ${response_text}`);
+                    }
                 }
                 if (true === xhr.peatcms_track_progress) self.ajaxRemovePending(xhr);
                 if (500 === xhr.status) {
