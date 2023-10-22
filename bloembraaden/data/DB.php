@@ -3927,7 +3927,7 @@ class DB extends Base
         }
         // no need to look further if the slug is not a real slug
         if ($slug !== Help::slugify($slug)) return null;
-        // @since 0.16.5 look in _history
+        // @since 0.17.0 look in _history
         $statement = $this->conn->prepare('SELECT key, table_name FROM _history WHERE instance_id = :instance_id AND table_column = \'slug\' AND value = :value ORDER BY date_created DESC LIMIT 1;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':value', $slug);
@@ -4409,7 +4409,7 @@ class DB extends Base
                 $table_info->getPrimaryKeyColumn()->getName() => $key,
             ));
         }
-        // @since 0.16.5 use _history
+        // @since 0.17.0 use _history
         $now = Setup::getNow(); // use the same timestamp for all columns in this update
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;

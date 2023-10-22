@@ -3079,7 +3079,7 @@ UPDATE "public"."_instagram_media" SET media_url = 're-process-all-insta-images'
 
 COMMIT;
 
--- version 0.16.5
+-- version 0.17.0
 
 BEGIN;
 
