@@ -1446,7 +1446,7 @@ class Handler extends BaseLogic
                         stream_copy_to_stream($handle1, $handle2);
                         fclose($handle1);
                         fclose($handle2);
-                        if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import' === $_SERVER['HTTP_X_FILE_ACTION']) {
+                        if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import_instance' === $_SERVER['HTTP_X_FILE_ACTION']) {
                             Help::$session->setVar('import_file_name', $temp_file);
                             $out = array('file_saved' => file_exists($temp_file));
                         } else {

@@ -287,7 +287,7 @@
                 <input type="hidden" name="instance_id" value="{{instance_id}}"/>
             </form>
             <form action="/__action__/admin_import_export_instance" data-sse="true">
-                <input type="file" name="import_file"/><br/>
+                <input type="file" name="import_file" data-file-action="import_instance"/><br/>
                 <input type="submit" value="Import" title="Import complete instance"/>
             </form>
             <p style="font-size: 85%">Import / export is beta functionality. Open your console to see the logger output.<br/>

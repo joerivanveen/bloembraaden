@@ -1624,7 +1624,7 @@ let PEATCMS_admin = function () {
                         console.error('Fail', data);
                         PEAT.message('Fail', 'error');
                     }
-                }, file_input.files[0]);
+                }, file_input.files[0], null, file_input);
                 // only then submit the form proper, with the filename in the form
             });
         });
