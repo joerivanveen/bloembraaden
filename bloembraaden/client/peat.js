@@ -278,7 +278,7 @@ Address.prototype.getFields = function () {
     return fields;
 }
 Address.prototype.getUserAddress = function (fields) {
-    var i, len, user = PEATCMS_globals.__user__, user_addresses, user_address = {}, address_id;
+    let i, len, user = PEATCMS_globals.__user__, user_addresses, user_address = {}, address_id;
     if (null === fields) return {};
     if (fields.hasOwnProperty('address_id') && (address_id = fields.address_id)) {
         if (user.hasOwnProperty('__addresses__') && (user_addresses = user.__addresses__)) {
@@ -294,7 +294,8 @@ Address.prototype.getUserAddress = function (fields) {
     return {}; // not found
 }
 Address.prototype.updateClientOnly = function (fields) {
-    var i, len, inputs = this.inputs, input, input_name, user_address = this.getUserAddress(fields);
+    const inputs = this.inputs, user_address = this.getUserAddress(fields);
+    let i, len, input, input_name;
     if (fields === null) return;
     // update the user address with all fields always
     for (input_name in fields) {
@@ -315,10 +316,12 @@ Address.prototype.updateClientOnly = function (fields) {
     this.updateClientGenderList(fields);
 }
 Address.prototype.updateClientGenderList = function (fields) {
-    var select_list, options, value, i, len, wrapper = this.wrapper;
+    let options, value, i, len;
+    const wrapper = this.wrapper,
+        select_list = wrapper.querySelector('select[data-field="gender"]');
     if (!fields['address_gender']) return;
     value = fields['address_gender'];
-    if ((select_list = wrapper.querySelector('select[data-field="gender"]'))) {
+    if (select_list) {
         for (i = 0, options = select_list.options, len = options.length; i < len; ++i) {
             if (i > 0 && options[i].value === value) {
                 select_list.selectedIndex = i;
@@ -328,7 +331,7 @@ Address.prototype.updateClientGenderList = function (fields) {
     }
 }
 Address.prototype.updateClientCountryList = function (fields) {
-    var select_list, options, option, i, len, wrapper = this.wrapper;
+    let select_list, options, option, i, len, wrapper = this.wrapper;
     if ((select_list = wrapper.querySelector('select[name="country"]'))
         || (select_list = wrapper.querySelector('select[name="billing_country"]'))) {
         // the first option becomes the chosen one, with all 3 properties filled
@@ -369,7 +372,7 @@ Address.prototype.updateClientCountryList = function (fields) {
     }
 }
 Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
-    var addition, number, postal_code, prev = this.postcode_nl_fields, el, self = this;
+    let addition, number, postal_code, prev = this.postcode_nl_fields, el, self = this;
     if (fields.hasOwnProperty('address_postal_code') && fields.hasOwnProperty('address_number')) {
         addition = fields.hasOwnProperty('address_number_addition') ? fields['address_number_addition'] : null;
         number = fields['address_number'];
@@ -435,7 +438,7 @@ Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
                             el.style.opacity = '1';
                         }
                     } else {
-                        console.error('Postcode.nl error: ' + json.error_message);
+                        console.error('Postcode.nl error:', json.error_message);
                     }
                 }
             }
@@ -469,16 +472,16 @@ function PEATCMS_element(slug, callback) {
 
 PEATCMS_element.prototype.load = function (slug, callback) {
     const self = this;
-    if (slug.charAt(0) !== '/') slug = '/' + slug;
+    if (slug.charAt(0) !== '/') slug = `/${slug}`;
     NAV.ajax(slug, false, function (json) {
-        if (VERBOSE) console.log('Element ' + slug + ' is loading', json);
+        if (VERBOSE) console.log(`Element ${slug} is loading`, json);
         if (json.hasOwnProperty('slug')) {
             // fill the object with this element
             self.state = json;
             json = null;
             self.ready = true;
             // cache me
-            if (VERBOSE) console.log('Setting / refreshing cache for ' + self.state.slug);
+            if (VERBOSE) console.log('Setting / refreshing cache for', self.state.slug);
             NAV.cache(self);
             // callback
             if (typeof callback === 'function') {
@@ -504,12 +507,12 @@ PEATCMS_element.prototype.render = function (callback, full_page) {
     PEAT.render(this, callback, full_page);
 }
 PEATCMS_element.prototype.edit = function (edit_area, callback) {
-    var column_names = this.getColumnNames(),
-        column_name, i, len, fields, el, element_name, config,
+    const column_names = this.getColumnNames(),
         linked_types = this.state['linked_types'],
         self = this;
+    let column_name, i, len, fields, el, element_name, config;
     if (false === this.isEditable()) {
-        console.error('‘' + this.state.slug.toString() + '’ is not editable');
+        console.error(`${this.state.slug.toString()} is not editable`);
         return;
     }
     // remember the edit area
@@ -524,7 +527,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.setAttribute('data-element_type', this.state.type);
     el.classList.add('new', 'edit');
     el.innerText = '+';
-    el.title = 'New ' + this.state.type;
+    el.title = `New ${this.state.type}`;
     el.onclick = function () {
         CMS_admin.createElement(this.getAttribute('data-element_type'));
     };
@@ -611,9 +614,9 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
 }
 
 PEATCMS_element.prototype.delete = function () {
-    var data = {'element_name': this.state.type, 'id': this.state[this.getTableInfo()['primary_key_column']]},
+    const data = {'element_name': this.state.type, 'id': this.state[this.getTableInfo()['primary_key_column']]},
         self = this;
-    if (confirm('Delete ' + this.state.title)) {
+    if (confirm(`Delete ${this.state.title}`)) {
         NAV.ajax('/__action__/delete_element', data, function (json) {
             if (json.hasOwnProperty('success') && true === json.success) {
                 self.edit_area.innerHTML = '';
@@ -625,8 +628,8 @@ PEATCMS_element.prototype.delete = function () {
 }
 
 PEATCMS_element.prototype.hasLinked = function (type, id) {
-    var linked = this.getLinked(type),
-        has = false,
+    const linked = this.getLinked(type);
+    let has = false,
         element,
         element_id;
     for (element in linked) {
@@ -638,14 +641,14 @@ PEATCMS_element.prototype.hasLinked = function (type, id) {
 }
 
 PEATCMS_element.prototype.getLinked = function (type) { // will return empty array if no linked items are found
-    var linked = this.state['__' + type + 's__'];
+    const linked = this.state[`__${type}s__`];
     return (typeof (linked) !== 'undefined') ? linked : [];
 }
 
 PEATCMS_element.prototype.setLinked = function (type, data) {
     // make sure setLinked always sets an array of appropriate elements / types
-    var clean_data = [], // don't directly edit data, we might need it later (eg for message processing by PEATCMS_ajax)
-        i, data_i, property;
+    const clean_data = []; // don't directly edit data, we might need it later (eg for message processing by PEATCMS_ajax)
+    let i, data_i, property;
     for (i in data) {
         if (data.hasOwnProperty(i)) {
             // check if this is actually of the right type, otherwise just don't set it
@@ -657,14 +660,14 @@ PEATCMS_element.prototype.setLinked = function (type, data) {
                         if (data_i.hasOwnProperty(property)) {
                             // don't do the children of the children etc.
                             if (property.indexOf(':') === -1 && property.indexOf('__') === -1)
-                                this.state[type + ':' + property] = data_i[property];
+                                this.state[`${type}:${property}`] = data_i[property];
                         }
                     }
                 }
             }
         }
     }
-    this.state['__' + type + 's__'] = clean_data;
+    this.state[`__${type}s__`] = clean_data;
     if (false === data.hasOwnProperty('full_feedback') || true === data['full_feedback']) {
         NAV.admin_uncache_slug(this.state.slug, true);
     } // @since 0.10.4
@@ -673,10 +676,11 @@ PEATCMS_element.prototype.setLinked = function (type, data) {
     }
 }
 PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, src) {
-    var linkable_area = this.linkable_areas[type],
+    const linkable_area = this.linkable_areas[type],
         linked_elements = this.getLinked(type),
-        linked_element, i, len, children, suggestion, el,
-        children_by_id = [], n, prop, props, x_value_id, h, btn, self = this;
+        self = this, children_by_id = [];
+    let linked_element, i, len, children, suggestion, el,
+        n, prop, props, x_value_id, h, btn;
     // properties can only be added (by propertyvalue) and must be explicitly deleted when no longer wanted
     // type = x_value...
     // build the properties interaction
@@ -788,7 +792,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
         el.querySelectorAll('div').forEach(function (el) {
             el.remove();
         });
-        var title = linkable_area.querySelector('.searchable').value;
+        const title = linkable_area.querySelector('.searchable').value;
         for (i = 0, props = self.x_properties, len = props.length; i < len; ++i) { // an array
             prop = props[i];
             n = document.createElement('div');
@@ -805,10 +809,10 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
                     property_id: parseInt(this.getAttribute('data-property_id')),
                     property_value_title: title
                 }, function (data) {
-                    var el;
+                    const el = linkable_area.querySelector('.searchable');
                     self.setLinked('x_value', data);
                     self.populatePropertiesArea('x_value');
-                    if ((el = linkable_area.querySelector('.searchable'))) {
+                    if (el) {
                         el.select();
                     }
                 });
@@ -1159,7 +1163,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                         try {
                             json = JSON.parse(response_text.split('#BLOEMBRAADEN_JSON:#')[1]);
                             if ('object' !== typeof json) json = {};
-                        } catch(e) {
+                        } catch (e) {
                             console.error(e);
                             console.log(`Response was: ${response_text}`);
                         }
@@ -2922,24 +2926,25 @@ PEATCMS.prototype.getSessionVar = function (name) {
  * @since 0.6.1
  */
 PEATCMS.prototype.updateSessionVarClientOnly = function (name, session_var) {
-    var sess = this.session, times = 0;
-    if (sess[name]) times = sess[name]['times'];
+    const session = this.session
+    let times = 0;
+    if (session[name]) times = session[name]['times'];
     if (session_var.times >= times) {
-        sess[name] = session_var;
+        session[name] = session_var;
         if (VERBOSE) {
-            console.log('Session var ‘' + name + '’ updated:');
-            console.log(session_var);
+            console.log(`Session var ${name} updated:`, session_var);
         }
-    } else {
-        console.warn('Refused session var ‘' + name + '’ because it’s too old');
+    } else if (session_var.value !== session[name].value) {
+        console.warn(`Refused session var ${name} because it’s too old`);
     }
 }
 
 PEATCMS.prototype.setSessionVar = function (name, value, callback) { // NOTE callback is only for ajax, so the server value is updated as well
-    var sess = this.session, times = 0;
+    const session = this.session;
+    let times = 0;
     if (!callback) callback = null;
-    if (sess[name]) times = 1 + sess[name]['times'];
-    sess[name] = {value: value, times: times}; // update it right away, affirm when it’s back from the server
+    if (session[name]) times = 1 + session[name]['times'];
+    session[name] = {value: value, times: times}; // update it right away, affirm when it’s back from the server
     NAV.ajax('/__action__/set_session_var', {name: name, value: value, times: times}, function (data) {
         // ajax updates new session vars automatically, you dan’t have to do that here @since 0.6.1
         if (typeof callback === 'function') callback.call(null, value);
@@ -3131,7 +3136,7 @@ PEATCMS_navigator.prototype.go = function (path, local) {
             new PEATCMS_element(slug, function (el) {
                 let title, path;
                 if (false === el) {
-                    console.warn('The slug ‘' + slug + '’ is not an element');
+                    console.warn(`The slug ${slug} is not an element`);
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                     self.is_navigating = false;
                 } else {
@@ -3146,11 +3151,11 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                             window.history.pushState({
                                 title: title,
                                 path: path
-                            }, title, '/' + path);
+                            }, title, `/${path}`);
                             self.maybeEdit(slug);
                         }
                         PEAT.render(el, function (el) {
-                            if (VERBOSE) console.log('Finished rendering ' + title);
+                            if (VERBOSE) console.log(`Finished rendering ${title}`);
                             self.is_navigating = false;
                             document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
                         });
@@ -3189,7 +3194,7 @@ PEATCMS_navigator.prototype.admin_uncache_slug = function (path, silent) {
 PEATCMS_navigator.prototype.reloadThenRefresh = function (tag) {
     // use ajax to update the tag, upon success refresh the page
     // TODO this is in anticipation of the template improvement that will handle this in renderProgressive
-    NAV.ajax('/' + tag, '', function (json) {
+    NAV.ajax(`/${tag}`, '', function (json) {
         if (json.slug === tag && window.PEATCMS_globals[tag]) {
             window.PEATCMS_globals[tag] = json;
             NAV.refresh();
@@ -3207,10 +3212,10 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             if (slug.hasOwnProperty('__ref')) {
                 path = slug.__ref;
                 if (slug.hasOwnProperty('variant_page')) {
-                    path += '/variant_page' + slug.variant_page;
+                    path += `/variant_page${slug.variant_page}`;
                 }
             }
-            if (VERBOSE) console.log('Put ‘' + path + '’ into the cache from globals');
+            if (VERBOSE) console.log(`Put ${path} into the cache from globals`);
             // cache is built into PEATCMS_ajax
             this.cache({state: unpack_temp(globals.slug)});
             delete globals.slug;
@@ -3250,7 +3255,7 @@ PEATCMS_navigator.prototype.setState = function () {
                 title: title,
                 scrollY: window.scrollY,
                 scrollX: window.scrollX
-            }, title, '/' + path);
+            }, title, `/${path}`);
             if (VERBOSE) console.log('State set regarding scroll position');
         } else {
             console.error('Could not set state, no element found');
@@ -3339,7 +3344,7 @@ PEATCMS_navigator.prototype.submitData = function (slug, data, callback) {
 PEATCMS_navigator.prototype.submitForm = function (form) {
     const self = this, data = PEATCMS.getFormData(form);
     // handle recaptcha if we’re not talking shoppinglist
-    if (form.getAttribute('action').substr(0, 17) !== '/__shoppinglist__') {
+    if (form.getAttribute('action').slice(0, 17) !== '/__shoppinglist__') {
         self.addRecaptchaToData(data, function (data) {
             self.submitFormData(form, data);
         });
@@ -3353,10 +3358,10 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
             event_data = { // nice data for the event after the form is posted
                 bubbles: true,
                 detail: {
-                    "slug": slug, // superfluous, also in form
-                    "data": data, // superfluous, also in form
-                    "form": form,
-                    "json": json,
+                    'slug': slug, // superfluous, also in form
+                    'data': data, // superfluous, also in form
+                    'form': form,
+                    'json': json,
                 },
             };
         form.removeAttribute('data-submitting');

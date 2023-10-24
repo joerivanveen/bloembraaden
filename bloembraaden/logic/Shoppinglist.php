@@ -121,9 +121,9 @@ class Shoppinglist extends BaseLogic
     {
         $output_object = $this->row;
         // slug is mandatory for an element
-        $output_object->slug = '__shoppinglist__/' . $this->name;
+        $output_object->slug = "__shoppinglist__/$this->name";
         // as is path
-        $output_object->path = '__shoppinglist__/' . $this->name;
+        $output_object->path = "__shoppinglist__/$this->name";
         // enrich each row with its variant
         $list_rows = $this->rows; // it's detached now, you can format prices for output in this array
         $amount_row_total = 0;
@@ -143,7 +143,7 @@ class Shoppinglist extends BaseLogic
                     $this->name), 'note'
                 );
                 continue;
-            } else if (false === Setup::$NOT_IN_STOCK_CAN_BE_ORDERED && false === $variant_out->in_stock) {
+            } elseif (false === Setup::$NOT_IN_STOCK_CAN_BE_ORDERED && false === $variant_out->in_stock) {
                 // @since 0.7.6 items that are out of stock will be set to 0, a message can be shown using {{in_stock::not:MESSAGE}}
                 if ($list_row->quantity > 0) {
                     $this->updateQuantity($variant, 0);

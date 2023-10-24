@@ -601,50 +601,48 @@ class Handler extends BaseLogic
                     if (false === isset($post_data->shoppinglist)) {
                         $this->addError('Shoppinglist is not set for order action');
                         $out = true;
-                    } else {
-                        if (isset($post_data->email) && isset($post_data->shipping_country_id)) {
-                            $valid = true;
-                            // validation process
-                            if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
-                                $this->addMessage(sprintf(__('‘%s’ is not recognized as a valid email address', 'peatcms'), $post_data->email), 'warn');
-                                $valid = false;
-                            } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
-                                $this->addMessage(sprintf(__('‘%s’ is not recognized as a country id', 'peatcms'), $post_data->shipping_country_id), 'warn');
-                                $valid = false;
-                            }
-                            if (true === $valid) {
-                                // check the other mandatory fields
-                                foreach ([
-                                             'shipping_address_postal_code',
-                                             'shipping_address_number',
-                                             'shipping_address_street',
-                                             'shipping_address_city',
-                                         ] as $index => $field_name) {
-                                    if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
-                                        $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
-                                        $valid = false;
-                                    }
-                                }
-                            }
-                            if (true === $valid) {
-                                $session =& Help::$session; // point to this session
-                                $shoppinglist = new Shoppinglist($post_data->shoppinglist, $session);
-                                if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
-                                    $session->setVar('order_number', $order_number);
-                                    // out object
-                                    $out = array('success' => true, 'order_number' => $order_number);
-                                    // leave everything be, so the next page (the forms action) will be loaded
-                                } else {
-                                    $this->addError('DB->placeOrder() failed');
-                                    $this->addMessage(__('Order process failed.', 'peatcms'), 'error');
-                                    $out = true;
-                                }
-                            }
-                        } else {
-                            $this->addMessage(__('Please provide a valid emailaddress and choose a shipping country.', 'peatcms'), 'warn');
-                            $this->addError('Posting of inputs named email and shipping_country_id is mandatory.');
-                            $out = true;
+                    } elseif (isset($post_data->email) && isset($post_data->shipping_country_id)) {
+                        $valid = true;
+                        // validation process
+                        if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
+                            $this->addMessage(sprintf(__('‘%s’ is not recognized as a valid email address', 'peatcms'), $post_data->email), 'warn');
+                            $valid = false;
+                        } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
+                            $this->addMessage(sprintf(__('‘%s’ is not recognized as a country id', 'peatcms'), $post_data->shipping_country_id), 'warn');
+                            $valid = false;
                         }
+                        if (true === $valid) {
+                            // check the other mandatory fields
+                            foreach ([
+                                         'shipping_address_postal_code',
+                                         'shipping_address_number',
+                                         'shipping_address_street',
+                                         'shipping_address_city',
+                                     ] as $index => $field_name) {
+                                if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
+                                    $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
+                                    $valid = false;
+                                }
+                            }
+                        }
+                        if (true === $valid) {
+                            $session =& Help::$session; // point to this session
+                            $shoppinglist = new Shoppinglist($post_data->shoppinglist);
+                            if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
+                                $session->setVar('order_number', $order_number);
+                                // out object
+                                $out = array('success' => true, 'order_number' => $order_number);
+                                // leave everything be, so the next page (the forms action) will be loaded
+                            } else {
+                                $this->addError('DB->placeOrder() failed');
+                                $this->addMessage(__('Order process failed.', 'peatcms'), 'error');
+                                $out = true;
+                            }
+                        }
+                    } else {
+                        $this->addMessage(__('Please provide a valid emailaddress and choose a shipping country.', 'peatcms'), 'warn');
+                        $this->addError('Posting of inputs named email and shipping_country_id is mandatory.');
+                        $out = true;
                     }
                 } else {
                     $out = true;
