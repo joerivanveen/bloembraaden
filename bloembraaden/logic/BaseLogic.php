@@ -209,7 +209,7 @@ class BaseLogic extends Base
         }
     }
 
-    protected function completeRowForOutput(): void
+    public function completeRowForOutput(): void
     {
         // override in child classes when necessary
     }

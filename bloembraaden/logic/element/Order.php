@@ -72,7 +72,7 @@ class Order extends BaseElement
         return Help::getDB()->updateColumns('_order', array('html' => $html), $this->getId());
     }
 
-    protected function completeRowForOutput(): void
+    public function completeRowForOutput(): void
     {
         $row =& $this->row;
         $order_number = $row->order_number;

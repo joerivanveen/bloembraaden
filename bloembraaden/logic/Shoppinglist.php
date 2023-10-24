@@ -28,7 +28,7 @@ class Shoppinglist extends BaseLogic
     /**
      * shutdown function is called when php execution ends, so it can update the list in the database when changed
      */
-    public function __shutdown()
+    public function __shutdown(): void
     {
         if (true === $this->hasChanged()) {
             Help::getDB()->upsertShoppingListRows($this->getId(), $this->rows);
@@ -131,7 +131,7 @@ class Shoppinglist extends BaseLogic
         $row_count = 0; // @since 0.7.6. also count the rows
         // @since 0.5.9 take into account changed variants as well
         foreach ($list_rows as $index => $list_row) {
-            $variant = new Variant;
+            $variant = new Variant();
             if (null === $variant->fetchById($list_row->variant_id)
                 // @since 0.7.6 items that are not online are also considered unavailable
                 || false === ($variant_out = $variant->getOutputFull())->online
@@ -203,8 +203,8 @@ class Shoppinglist extends BaseLogic
             }
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
-        // set template_id to default template, if it exists TODO property immediately overwritten??
-        $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
+        // set template_id to default template, if it exists TODO template id is never necessary?
+        //$output_object->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
         $this->row = $output_object;
     }
 

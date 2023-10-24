@@ -95,7 +95,7 @@ class Template extends BaseLogic
         return $this->row->template_id;
     }
 
-    protected function completeRowForOutput(): void
+    public function completeRowForOutput(): void
     {
         if (false === isset($this->row->__instances__)) {
             $this->row->__instances__ = [Help::getDB()->selectRow('_instance', $this->row->instance_id)];
