@@ -676,10 +676,10 @@ PEATCMS_element.prototype.setLinked = function (type, data) {
     }
 }
 PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, src) {
-    const linkable_area = this.linkable_areas[type],
-        linked_elements = this.getLinked(type),
+    const linked_elements = this.getLinked(type),
         self = this, children_by_id = [];
-    let linked_element, i, len, children, suggestion, el,
+    let linkable_area = this.linkable_areas[type],
+        linked_element, i, len, children, suggestion, el,
         n, prop, props, x_value_id, h, btn;
     // properties can only be added (by propertyvalue) and must be explicitly deleted when no longer wanted
     // type = x_value...

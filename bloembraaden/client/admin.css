@@ -717,12 +717,13 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 
 .peatcms_ctrl_key_tip {
     position: absolute;
-    display: inline-block;
+    display: block;
     padding: 0 2px;
     background-color: var(--color-accent-fierce);
     height: 1.5rem;
     line-height: 1.5rem;
     white-space: nowrap;
+    z-index: 101;
 }
 
 #PEATCMS_edit_menu {
