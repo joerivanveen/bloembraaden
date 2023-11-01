@@ -447,6 +447,33 @@ class Help
         return min($max_upload, $max_post, $memory_limit);
     }
 
+    public static function getMemorySize(string $memory, string $multiplier = ''): string
+    {
+        $multiplier = strtolower($multiplier);
+        $unit = substr($memory, -1);
+        if (is_numeric($unit)) {
+            $unit = '';
+        } else {
+            $unit = strtolower($unit);
+            $memory = substr($memory, 0, -1);
+        }
+        if ($unit === $multiplier) return "$memory$multiplier";
+
+        // convert memory to bytes
+        if ($unit == 'g') $memory *= 1024 * 1024 * 1024;
+        elseif ($unit == 'm') $memory *= 1024 * 1024;
+        elseif ($unit == 'k') $memory *= 1024;
+
+        if ('' === $multiplier) return (string)$memory;
+
+        // convert memory to what you want
+        if ($multiplier == 'g') $memory /= (1024 * 1024 * 1024);
+        elseif ($multiplier == 'm') $memory /= (1024 * 1024);
+        elseif ($multiplier == 'k') $memory /= (1024);
+
+        return "$memory$multiplier";
+    }
+
     /**
      * @param string $temp_path path to an existing file
      * @return string|null the path the file is saved under, or null when failure
