@@ -150,7 +150,7 @@ class Setup
         $config = null;
     }
 
-    static public function loadInstanceSettingsFor(int $instance_id): void
+    public static function loadInstanceSettingsFor(int $instance_id): void
     {
         if (self::$instance_id === $instance_id) return;
         if (($row = Help::getDB()->fetchInstanceById($instance_id))) {
@@ -159,7 +159,7 @@ class Setup
         $row = null;
     }
 
-    static public function loadInstanceSettings(Instance $I): void
+    public static function loadInstanceSettings(Instance $I): void
     {
         self::$instance_id = $I->getId(); // this is necessary for DB to output the correct pages and products etc.
         self::$DECIMAL_SEPARATOR = (string)$I->getSetting('decimal_separator');
@@ -187,7 +187,7 @@ class Setup
         $I = null;
     }
 
-    static public function loadTranslations(\MoParser $mo_parser): void
+    public static function loadTranslations(\MoParser $mo_parser): void
     {
         self::$translations = $mo_parser->loadTranslationData(self::$PRESENTATION_INSTANCE, 'XX')['XX'];
     }
