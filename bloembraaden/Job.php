@@ -2,11 +2,6 @@
 declare(strict_types=1);
 
 namespace Bloembraaden;
-//
-if (extension_loaded('newrelic')) {
-    newrelic_name_transaction('Job start');
-    newrelic_background_job(true);
-}
 /**
  * File called by cron job to perform maintenance tasks
  * @since 0.5.7

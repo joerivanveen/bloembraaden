@@ -11,7 +11,7 @@ if (class_exists('Setup')) {
 
 class Setup
 {
-    public static bool $INSTALL, $VERBOSE;
+    public static bool $INSTALL, $VERBOSE, $NEWRELIC_RECORDS_BACKEND = false;
     public static bool $NOT_IN_STOCK_CAN_BE_ORDERED;
     public static int $instance_id, $DECIMAL_DIGITS;
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
@@ -147,6 +147,7 @@ class Setup
         self::$INSTAGRAM = $config->integrations->instagram;
         self::$POSTCODE = $config->integrations->postcode;
         self::$PDFMAKER = $config->integrations->pdfmaker;
+        self::$NEWRELIC_RECORDS_BACKEND = $config->newrelic_records_backend ?? false;
         $config = null;
     }
 

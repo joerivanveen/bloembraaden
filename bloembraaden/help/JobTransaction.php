@@ -12,7 +12,7 @@ class jobTransaction
 
     public function __construct()
     {
-        if (extension_loaded('newrelic')) {
+        if (extension_loaded('newrelic') && Setup::$NEWRELIC_RECORDS_BACKEND) {
             $this->useNewRelic = true;
             $this->newRelicApp = ini_get('newrelic.appname');
         }
