@@ -1529,17 +1529,16 @@ PEATCMS_template.prototype.inOpenTag = function (needle, haystack) {
 }
 
 PEATCMS_template.prototype.renderOutput = function (out, template) {
-    let break_reference = template.__html__ || template.html || '', // todo remove second one when all templates are published
+    const admin = ('undefined' !== typeof CMS_admin);
+    let break_reference = template.__html__ || '', html = break_reference,
         tag_name, output_object, processed_object, type_of_object, value,
-        admin = (typeof CMS_admin === 'object'),
-        html = break_reference,
         // vars needed later:
-        len, i, temp_i, row_i, temp_remember_html, sub_template, row_template, sub_html, build_rows, obj,
-        __count__, add_string, in_open_tag, check_if = [],
+        len, i, temp_i, temp_len, temp_rows, row_i, temp_remember_html, sub_template, row_template, sub_html,
+        build_rows, obj, __count__, in_open_tag, check_if = [], true_part, bracket_count,
         // vars used for | method_name calling
-        start, end, function_name,
+        start, end, function_name, function_peat,
         // vars used by : template show / hide
-        content, parts, equals, is_false, is_nested, str_to_replace;
+        content, parts, equals, is_false, str_to_replace;
     // process out object
     if (out.hasOwnProperty('__ref')) {
         out = unpack_temp(out, 1);
@@ -1551,13 +1550,13 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             // this is a complex element which might contain indexed values that are rows
             if (template.hasOwnProperty(tag_name)) {
                 // for each occurrence in the template, render this out object please
-                //console.log('going to renderOutput this ' + tag_name);
-                //console.log(template[tag_name]);
+                //console.log(`going to renderOutput ${tag_name}`, template[tag_name]);
+                //console.log(output_object);
                 for (i = 0, len = template[tag_name].length; i < len; i++) {
                     sub_template = PEATCMS.cloneShallow(template[tag_name][i]);
-                    break_reference = sub_template.__html__ || sub_template.html || ''; // todo remove second one when templates are published
+                    break_reference = sub_template.__html__ || '';
                     temp_remember_html = break_reference;
-                    in_open_tag = this.inOpenTag(tag_name + '[' + i + ']', html);
+                    in_open_tag = this.inOpenTag(`${tag_name}[${i}]`, html);
                     if (output_object.hasOwnProperty(0)) { // build rows if present
                         //console.log('output with rows: ', output_object);
                         if (output_object.hasOwnProperty('item_count')) {
@@ -1569,20 +1568,23 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                         //output_object.__count__ = __count__;
                         // prepare template for rows
                         sub_template = this.convertTemplateToRow(sub_template);
-                        for (temp_i = 0; temp_i < sub_template.__row__.length; temp_i++) {
-                            row_template = PEATCMS.cloneShallow(sub_template.__row__[temp_i]);
+                        temp_rows = sub_template.__row__;
+                        for (temp_i = 0, temp_len = temp_rows.length; temp_i < temp_len; temp_i++) {
+                            row_template = PEATCMS.cloneShallow(temp_rows[temp_i]);
                             build_rows = '';
                             for (row_i in output_object) {
-                                if (false === output_object.hasOwnProperty(row_i)) continue;
                                 if (false === PEATCMS.isInt(row_i)) continue
+                                if (false === output_object.hasOwnProperty(row_i)) continue;
                                 // this is a row
                                 row_i = parseInt(row_i);
                                 value = output_object[row_i];
-                                if (typeof value === 'string') {
+                                if ('string' === typeof value) {
                                     obj = {value: value};
                                 } else {
                                     // @since 0.7.6 do not render items that are not online
-                                    if (false === admin && value.hasOwnProperty('online') && false === value.online) continue;
+                                    if (false === admin
+                                        && value.hasOwnProperty('online')
+                                        && false === value.online) continue;
                                     obj = value;
                                 }
                                 if (__count__) {
@@ -1591,8 +1593,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 }
                                 if (true === admin && false === in_open_tag) {
                                     if (obj.hasOwnProperty('id')) {
-                                        build_rows += '<span class="PEATCMS_data_stasher" data-peatcms_id="' + obj.id +
-                                            '" data-table_name="' + obj.table_name + '" data-tag="' + tag_name + '"></span>';
+                                        build_rows = `${build_rows}<span class="PEATCMS_data_stasher" data-peatcms_id="${obj.id}" data-table_name="${obj.table_name}" data-tag="${tag_name}"></span>`;
                                     }
                                 }
                                 // if this row doesn't contain any tags that are different for each row,
@@ -1606,7 +1607,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 // }
                                 build_rows += this.renderOutput(obj, row_template);
                             }
-                            sub_template.__html__ = sub_template.__html__.replace('{{__row__[' + temp_i + ']}}', build_rows);
+                            sub_template.__html__ = sub_template.__html__.replace(`{{__row__[${temp_i}]}}`, build_rows);
                         }
                     }
                     sub_html = this.renderOutput(output_object, sub_template);
@@ -1614,29 +1615,30 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     if (sub_html === temp_remember_html) {
                         sub_html = '';
                     }
-                    html = html.replace('{{' + tag_name + '[' + i + ']}}', sub_html);
+                    html = html.replace(`{{${tag_name}[${i}]}}`, sub_html);
                 }
             }
         } else if (['string', 'number', 'boolean'].includes(type_of_object)) {
             check_if.push({tag_name: tag_name, output_object: output_object}); // @since 0.10.7 remember tags to check for if-statements in template last
-            html = PEATCMS.replace('{{' + tag_name + '}}', output_object.toString(), html);
+            html = PEATCMS.replace(`{{${tag_name}}}`, output_object.toString(), html);
             // @since 0.4.6: simple tags can also be processed by a function by using a pipe character |, {{tag|function_name}}
-            while ((start = html.indexOf('{{' + tag_name + '|')) > -1) {
+            while ((start = html.indexOf(`{{${tag_name}|`)) > -1) {
                 start += 3 + tag_name.length;
                 end = html.indexOf('}}', start);
                 function_name = html.substring(start, end);
-                if (typeof this['peat_' + function_name] === 'function') {
-                    processed_object = this['peat_' + function_name](output_object);
+                function_peat = `peat_${function_name}`;
+                if (typeof this[function_peat] === 'function') {
+                    processed_object = this[function_peat](output_object);
                 } else if (typeof window[function_name] === 'function') { /* @since 0.5.9 allow user functions */
                     processed_object = window[function_name](output_object).toString();
                 } else {
                     console.warn('PEATCMS template function "' + function_name + '" not found');
                     processed_object = output_object.toString() + ' <span class="warn">(template function not found: ' + function_name + ')</span>';
                 }
-                html = PEATCMS.replace('{{' + tag_name + '|' + function_name + '}}', processed_object, html);
+                html = PEATCMS.replace(`{{${tag_name}|${function_name}}}`, processed_object, html);
             }
         } else {
-            if (VERBOSE) console.warn('Unrecognized type of tag for ' + tag_name, type_of_object);
+            if (VERBOSE) console.warn(`Unrecognized type of tag for ${tag_name}`, type_of_object);
         }
     }
     for (i = 0, len = check_if.length; i < len; ++i) {
@@ -1644,10 +1646,10 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         tag_name = obj.tag_name;
         output_object = obj.output_object;
         // @since 0.4.12: simple elements can show / hide parts of the template
-        while ((start = html.indexOf('{{' + tag_name + ':')) !== -1) {
+        while ((start = html.indexOf(`{{${tag_name}:`)) !== -1) {
             // @since 0.7.9 you can use ‘equal to’ operator ‘==’
             equals = null;
-            if (html.indexOf('{{' + tag_name + ':==') !== -1) {
+            if (html.indexOf(`{{${tag_name}:==`) !== -1) {
                 start += 5 + tag_name.length;
                 equals = html.substring(start, html.indexOf(':', start)).toLowerCase();
                 is_false = (false === out.hasOwnProperty(tag_name) || String(out[tag_name]).toLowerCase() !== equals);
@@ -1658,7 +1660,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             }
             end = html.indexOf('}}', start);
             if (-1 === end) {
-                html = PEATCMS.replace('{{' + tag_name + ':', '<span class="warn">If-error near ' + tag_name + '</span>', html);
+                html = PEATCMS.replace(`{{${tag_name}:`, '<span class="warn">If-error near ' + tag_name + '</span>', html);
                 continue;
             }
             content = html.substring(start, end);
@@ -1669,12 +1671,16 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     content = html.substring(start, end);
                 }
                 if (-1 === end) {
-                    html = PEATCMS.replace('{{' + tag_name + ':', '<span class="warn">Nested if-error near ' + tag_name + '</span>', html);
+                    html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">Nested if-error near ${tag_name}</span>`, html);
                     continue;
                 }
             }
             parts = content.split(':not:'); // the content can be divided in true and false part using :not:
-            str_to_replace = '{{' + tag_name + ((equals) ? ':==' + equals + ':' : ':') + content + '}}';
+            if (null === equals) {
+                str_to_replace = `{{${tag_name}:${content}}}`;
+            } else {
+                str_to_replace = `{{${tag_name}:==${equals}:${content}}}`;
+            }
             if (is_false) {
                 if (parts.length > 1) { // display the 'false' part
                     html = PEATCMS.replace(str_to_replace, parts[1], html);
@@ -1682,11 +1688,11 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     html = PEATCMS.replace(str_to_replace, '', html);
                 }
             } else { // display the 'true' part
-                let true_part = parts[0];
+                true_part = parts[0];
                 if (-1 !== true_part.indexOf('::value::')) {
                     // subsitute the ::value:: with the actual value for this level only, not the nested levels
                     parts = true_part.split('::value::');
-                    let bracket_count = 0;
+                    bracket_count = 0;
                     for (let p = 0, p_len = parts.length; p < p_len - 1; ++p) {
                         const part = parts[p];
                         bracket_count += part.split('{{').length - part.split('}}').length;
@@ -1720,19 +1726,19 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
 PEATCMS_template.prototype.convertTagsRemaining = function (string) {
     // you only have indexed complex tags left that are for progressive loading, and possibly single tags that are not filled
     // convert indexed tags to a DOMElement that can be accessed later, and cache them in the progressive object
-    var html = string.toString(), // break_reference
-        template = this.template,
+    const template = this.template;
+    let html = string.toString(), // break_reference
         t, index, src, src_id, tags = {};
     for (t in template) {
-        if (template.hasOwnProperty(t) && html.indexOf('{{' + t) > -1) {
+        if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) > -1) {
             tags[t] = [];
             for (index = 0; index < 100; ++index) {
-                src = '{{' + t + '[' + index + ']}}';
+                src = `{{${t}[${index}]}}`;
                 if (html.indexOf(src) === -1) break;
                 // TODO get the condition(s) for loading the tag here (for now simply true)
-                src_id = t + '_' + index;
+                src_id = `${t}_${index}`;
                 tags[t][index] = {'condition': true, 'dom_element_id': src_id};
-                html = html.replace(src, '<option id="' + src_id + '" data-peatcms-placeholder="1"></option>');
+                html = html.replace(src, `<option id="${src_id}" data-peatcms-placeholder="1"></option>`);
             }
         }
     }
@@ -1743,10 +1749,10 @@ PEATCMS_template.prototype.convertTagsRemaining = function (string) {
 }
 
 PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
-    var html = string.toString(), // break_reference
+    let html = string.toString(), // break_reference
         start, next_start, end;
     // remove single tags
-    while ((start = html.indexOf('{{')) !== -1) {
+    while (-1 !== (start = html.indexOf('{{'))) {
         end = html.indexOf('}}', start);
         next_start = html.indexOf('{{', start + 2);
         while (next_start < end && -1 !== next_start) {
@@ -1754,7 +1760,7 @@ PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
             end = html.indexOf('}}', end + 2);
         }
         if (-1 === end) {
-            console.error('tag_error: ' + html.substr(start, 20) + '...');
+            console.error('tag_error: ' + html.slice(start, 20) + '...');
             html = html.replace('{{', ' <span class="error">tag_error</span> ');
         }
         html = PEATCMS.replace(html.substring(start, end + 2), '', html);
@@ -1764,9 +1770,9 @@ PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
 
 PEATCMS_template.prototype.getComplexTagString = function (tag_name, html, offset) {
     // always grab them with an EVEN number of complex tags between them
-    var search = '{%' + tag_name + '%}',
-        start = html.indexOf(search),
-        end, string;
+    const search = `{%${tag_name}%}`,
+        start = html.indexOf(search);
+    let end, string;
     if (!offset) offset = 0; // replacing default value which is not supported < ES6
     if (offset <= start) offset = start + 1; // changed < to <= following server side bugfix
     if (offset < html.length) {
@@ -1779,7 +1785,7 @@ PEATCMS_template.prototype.getComplexTagString = function (tag_name, html, offse
                 return string;
             } else {
                 if (this.doublechecking[string]) {
-                    PEAT.message('Error in ->getComplexTagString for: ' + string, 'error');
+                    PEAT.message(`Error in ->getComplexTagString for: ${string}`, 'error');
                     return PEATCMS.replace(search, '', string);
                 } else {
                     this.doublechecking[string] = true;
@@ -1796,9 +1802,8 @@ PEATCMS_template.prototype.getComplexTagString = function (tag_name, html, offse
 }
 
 PEATCMS_template.prototype.findComplexTagName = function (string) {
-    var html = string.toString(); // break_reference
-    var search = '{%',
-        start = html.indexOf(search);
+    const html = string.toString(); // break_reference
+    let start = html.indexOf('{%');
     if (start > -1) {
         // grab the tagName:
         start += 2;
@@ -1811,17 +1816,17 @@ PEATCMS_template.prototype.findComplexTagName = function (string) {
 
 PEATCMS_template.prototype.hasCorrectlyNestedComplexTags = function (html) { // used to be called hasEvenNumberOfComplexTags
     // all the tags need to form a 'pyramid', always be in pairs, from outside to in, if not they are incorrectly nested
-    var string = html.toString(), // break_reference
+    let string = html.toString(), // break_reference
         tag_name;
     if ((tag_name = this.findComplexTagName(string))) {
-        var search = '{%' + tag_name + '%}',
+        let search = `{%${tag_name}%}`,
             len = search.length,
             pos;
         // remove the outer two occurrences and check if the inner part still ->hasCorrectlyNestedComplexTags
         if (-1 !== (pos = string.indexOf(search))) {
-            string = string.substr(pos + len);
+            string = string.slice(pos + len);
             if (-1 !== (pos = string.lastIndexOf(search))) {
-                string = string.substr(0, pos);
+                string = string.slice(0, pos);
 
                 return this.hasCorrectlyNestedComplexTags(string);
             } else { // there was only one of the tags, that is an error
@@ -1834,11 +1839,11 @@ PEATCMS_template.prototype.hasCorrectlyNestedComplexTags = function (html) { // 
 
 }
 PEATCMS_template.prototype.convertTemplateToRow = function (template) {
-    var break_reference = template.__html__ || template.html || '', // todo remove second one after all templates are published
+    let break_reference = template.__html__ || '',
         html = break_reference;
     // convert the whole line to a row, this will be undone during processing
     // when it turns out this template does not contain tags for the row
-    if (!template.hasOwnProperty('__row__')) {
+    if (false === template.hasOwnProperty('__row__')) {
         break_reference = PEATCMS.cloneShallow(template);
         template.__row__ = [break_reference]; // [] = convert to indexed array
         html = '{{__row__[0]}}';
@@ -1850,9 +1855,9 @@ PEATCMS_template.prototype.convertTemplateToRow = function (template) {
 
 PEATCMS_template.prototype.getInnerHtml = function (node_name, html) {
     // get a certain nodes inner html from the template html, TODO it only returns the first occurrence, maybe return an array?
-    const start = html.indexOf('<' + node_name),
+    const start = html.indexOf(`<${node_name}`),
         length = html.indexOf('>', start) + 1,
-        end = html.indexOf('</' + node_name + '>', start);
+        end = html.indexOf(`</${node_name}>`, start);
     if (start > -1) {
         return html.substring(length, end);
     }
@@ -1861,16 +1866,16 @@ PEATCMS_template.prototype.getInnerHtml = function (node_name, html) {
 
 PEATCMS_template.prototype.getInnerContent = function (tagString) // this assumes the string is correct, there are no checks
 {
-    var start = tagString.indexOf('%}') + 2, // start at the end of the opening tag
+    const start = tagString.indexOf('%}') + 2, // start at the end of the opening tag
         end = tagString.lastIndexOf('{%'); // end at the beginning of the end tag
 
     return tagString.substring(start, end);
 }
 
 PEATCMS_template.prototype.getAttributes = function (node_name, html) {
-    var start = html.indexOf('<' + node_name),
+    const start = html.indexOf(`<${node_name}`),
         end = html.indexOf('>', start + 1) + 1,
-        str = html.substring(start, end) + '</' + node_name + '>';
+        str = html.substring(start, end) + `</${node_name}>`;
     // create empty node from this string and get its attributes using DOMParser
     try {
         return new DOMParser().parseFromString(str, 'text/xml').childNodes[0].attributes;
@@ -1886,8 +1891,9 @@ PEATCMS_template.prototype.getChildNodes = function (node_name, html) {
     return this.getChildNodesRecursive(node_name.toUpperCase(), new DOMParser().parseFromString(html, 'text/html'));
 }
 PEATCMS_template.prototype.getChildNodesRecursive = function (node_name, dom_obj) {
-    var i, len, node, nodes, child_nodes = null;
-    if ((nodes = dom_obj.childNodes)) {
+    let i, len, node, child_nodes = null;
+    const nodes = dom_obj.childNodes;
+    if (nodes) {
         // walk the nodes until you reach the asked one, and return its children
         for (i = 0, len = nodes.length; i < len; ++i) {
             node = nodes[i];
@@ -2541,7 +2547,7 @@ PEATCMS.prototype.renderProgressive = function (tag, slug) // pass the slug to t
 }
 
 PEATCMS.prototype.registerAssetLoad = function () {
-    let self = this;
+    const self = this;
     this.loderunner--;
     // todo optimise this a bit more, this is a poc
     if (0 === this.loderunner && this.document_status !== this.status_codes.complete) {
@@ -2558,8 +2564,8 @@ PEATCMS.prototype.registerAssetLoad = function () {
 }
 
 PEATCMS.prototype.loadHeadNodes = function (head_nodes) {
-    var obj = {}, head_node, i;
-    for (i = 0; i < head_nodes.length; ++i) {
+    let obj = {}, head_node, i, len;
+    for (i = 0, len = head_nodes.length; i < len; ++i) {
         if (head_nodes.hasOwnProperty(i)) {
             head_node = head_nodes[i];
             if (['TITLE', '#text', '#comment'].includes(head_node.nodeName)) continue;
@@ -2573,17 +2579,16 @@ PEATCMS.prototype.loadHeadNodes = function (head_nodes) {
 
 PEATCMS.prototype.findDataStasherInDOM = function (DOMElement, table_name) {
     // go to all previous siblings, then parent then again previous siblings, etc. until you find element with className
-    var el = DOMElement,
-        className = 'PEATCMS_data_stasher';
+    let el = DOMElement;
+    const className = 'PEATCMS_data_stasher';
     while (true) {
         if (el.previousSibling) {
             el = el.previousSibling;
         } else if (el.parentElement) {
             el = el.parentElement;
         } else {
-            console.error(className + ' not found for DOMElement:');
-            console.log(DOMElement);
-            return false;
+            console.error(`${className} not found for DOMElement:`, DOMElement);
+            return null;
         }
         if (typeof el.classList === 'undefined') continue;
         if (el.classList.contains(className)) {

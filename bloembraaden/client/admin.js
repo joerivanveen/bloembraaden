@@ -7,7 +7,6 @@ try {
 // declare global admin
 window.CMS_admin = true;
 
-
 /**
  * PEATCMS_actor is a column in an element
  */
@@ -1350,7 +1349,7 @@ PEATCMS_panels.prototype.resetTools = function () { // make sure the panels are 
 /**
  * PEATCMS_admin object
  */
-let PEATCMS_admin = function () {
+function PEATCMS_admin() {
     const self = this;
     let nodes, node, i, len, element_name, cell, hidden_cells, style;
     this.elements = {};
@@ -1730,7 +1729,7 @@ let PEATCMS_admin = function () {
     this.poll_timeout = setTimeout(this.pollServer, this.poll_timeout_ms * 2);
     window.addEventListener('focus', self.pollServer);
     //
-    if (VERBOSE) console.log('... peatcms admin started');
+    if (VERBOSE) console.log('... peatcms admin activated');
     // into edit mode if requested TODO use panels.restore() or maybe something the user can set
     //if (PEAT.getSessionVar('editing') === true) self.edit();
     // THIS IS A TEST / PRELIMINARY STUFF for editing things like menus / forms / etc.
@@ -2074,11 +2073,12 @@ function peatcms_admin_setup() {
     // add admin flag to html
     PEAT.html_node.classList.add('the_admin_is_present');
     // finally startup
-    CMS_admin = new PEATCMS_admin();
+    window.CMS_admin = new PEATCMS_admin();
     if (VERBOSE) { // subscribe to all the events, and log them in the console
         for (i = 0, len = peatcms_events.length; i < len; ++i) {
             document.addEventListener(peatcms_events[i], PEATCMS_logevent);
         }
+        console.log('... peatcms admin started');
     }
 }
 
@@ -2098,7 +2098,7 @@ function PEATCMS_logevent(evt) {
 if (document.readyState !== 'loading') {
     peatcms_admin_start();
 } else {
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener('DOMContentLoaded', function () {
         peatcms_admin_start();
     });
 }
