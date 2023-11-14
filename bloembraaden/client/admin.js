@@ -1473,7 +1473,7 @@ function PEATCMS_admin() {
                             el.onclick = function (e) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                if (e.ctrlKey) {
+                                if (e.ctrlKey || e.metaKey) {
                                     window.open(this.getAttribute('data-href'));
                                 } else {
                                     NAV.go(this.getAttribute('data-href'), true);
@@ -1709,7 +1709,7 @@ function PEATCMS_admin() {
                 });
             }
         }
-        if (event.ctrlKey) {
+        if (event.ctrlKey || event.metaKey) {
             if (event.key === '/') {
                 self.toggleTools();
             } else if (event.key === ',') {

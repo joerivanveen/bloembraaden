@@ -2636,11 +2636,12 @@ PEATCMS.prototype.swipifyDOMElement = function (el, on_swipe_left, on_swipe_righ
 }
 
 PEATCMS.prototype.ajaxNavigate = function (e) {
-    if (e.ctrlKey === false) { // opening in new tab / window should still be possible
-        e.preventDefault();
-        e.stopPropagation();
-        return NAV.go(this.getAttribute('data-peatcms_href'));
+    if (e.ctrlKey || e.metaKey) { // opening in new tab / window should still be possible
+        return;
     }
+    e.preventDefault();
+    e.stopPropagation();
+    return NAV.go(this.getAttribute('data-peatcms_href'));
 }
 
 PEATCMS.prototype.ajaxMailto = function () {
