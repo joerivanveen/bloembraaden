@@ -3144,11 +3144,11 @@ PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
 PEATCMS_navigator.prototype.go = function (path, local) {
     const self = this;
     let slug;
-    if (!local) local = false; // replacing default value which is not supported < ES6
+    if (local) console.warn('Supplying `local` to NAV.go is deprecated');
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.setState();
-        if (path.indexOf(this.getRoot()) === 0 || true === local) { // this is a local link
+        if (path.indexOf(this.getRoot()) === 0 || 0 !== path.indexOf('http')) { // this is a local link
             slug = this.signalStartNavigating(path);
             new PEATCMS_element(slug, function (el) {
                 let title, path;
@@ -3289,7 +3289,7 @@ PEATCMS_navigator.prototype.getCurrentPath = function () { // returned path uri 
     let href = decodeURIComponent(document.location.href.replace(this.getRoot(true), '')),
         len;
     if (href.indexOf('?') !== -1) href = href.split('?')[0];
-    if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.slice(0, len);// href.substr(0, len);
+    if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.slice(0, len);
     return href;
 }
 PEATCMS_navigator.prototype.getCurrentUri = function () {
