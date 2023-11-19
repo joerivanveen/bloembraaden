@@ -714,6 +714,7 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
             n = linkable_area.childNodes[i];
             children_by_id[n.getAttribute('data-x_value_id')] = n;
         }
+        i = -1; // prepare counter for the last item to remove
     }
     // add the currently linked x_values (properties...)
     for (i in linked_elements) {
