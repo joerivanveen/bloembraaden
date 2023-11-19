@@ -2094,15 +2094,15 @@ var PEATCMS = function () {
     this.addEventListener('peatcms.document_ready', setupAddress);
     // Load the nodes that are in the head to update dynamically
     this.cached_head_nodes = this.loadHeadNodes(document.head.childNodes);
-    if (VERBOSE) console.log('... peatcms started');
     // make stylesheet manipulation easier
     style = document.createElement('style');
     // style.setAttribute("media", "screen")
     // style.setAttribute("media", "only screen and (max-width: 1024px)")
-    style.appendChild(document.createTextNode('')); // WebKit hack :(
+    style.appendChild(document.createTextNode('')); // WebKit hack
     style.id = 'peatcms_dynamic_css';
     document.head.appendChild(style);
     this.stylesheet = new PEAT_style(style.sheet);
+    if (VERBOSE) console.log('... peatcms started');
 }
 PEATCMS.prototype.setStyleRule = function (selector, rule) {
     this.stylesheet.upsertRule(selector, rule);
@@ -2110,41 +2110,50 @@ PEATCMS.prototype.setStyleRule = function (selector, rule) {
 PEATCMS.prototype.lastClicked = function () {
     return window.PEATCMS_globals.peatcms_last_clicked_node;
 }
-PEATCMS.prototype.copyToClipboard = function (str) {
-    var success = false,
-        selected,
-        el = document.createElement('textarea'); // Create a <textarea> element
-    el.setAttribute('readonly', 'true'); // Make it readonly to be tamper-proof
-    el.setAttribute('contenteditable', 'true'); // for ios
-    el.style.position = 'absolute';
-    el.style.left = '-9999px'; // Move outside the screen to make it invisible
-    el.value = str; // Set its value to the string that you want copied
-    document.body.appendChild(el); // Append the <textarea> element to the HTML document
-    selected =
-        document.getSelection().rangeCount > 0 // Check if there is any content selected previously
-            ? document.getSelection().getRangeAt(0) // Store selection if found
-            : false; // Mark as false to know no selection existed before
-    el.select(); // Select the <textarea> content
-    if (document.execCommand('copy')) {
-        success = true;
-    } // Copy - only works as a result of a user action (e.g. click events)
-    if (success === false) { // try something else (iOS, ipad....)
-        var range = document.createRange();
-        range.selectNodeContents(el);
-        var selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        el.setSelectionRange(0, 999999);
+PEATCMS.prototype.copyToClipboard = async function (str) {
+    if (navigator.clipboard) {
+        await navigator.clipboard.writeText(str).then(function () {
+            return true;
+        }).catch(function () {
+            return false;
+        });
+    } else { // todo remove this 'execCommand' shizzle once the clipboard api has sufficient support
+        let success = false,
+            selected;
+        const el = document.createElement('textarea'); // Create a <textarea> element
+        el.setAttribute('readonly', 'true'); // Make it readonly to be tamper-proof
+        el.setAttribute('contenteditable', 'true'); // for ios
+        el.style.position = 'absolute';
+        el.style.left = '-9999px'; // Move outside the screen to make it invisible
+        el.value = str; // Set its value to the string that you want copied
+        document.body.appendChild(el); // Append the <textarea> element to the HTML document
+        selected =
+            document.getSelection().rangeCount > 0 // Check if there is any content selected previously
+                ? document.getSelection().getRangeAt(0) // Store selection if found
+                : false; // Mark as false to know no selection existed before
+        el.select(); // Select the <textarea> content
         if (document.execCommand('copy')) {
             success = true;
         } // Copy - only works as a result of a user action (e.g. click events)
+        if (success === false) { // try something else (iOS, ipad....)
+            var range = document.createRange();
+            range.selectNodeContents(el);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            el.setSelectionRange(0, 999999);
+            if (document.execCommand('copy')) {
+                success = true;
+            } // Copy - only works as a result of a user action (e.g. click events)
+        }
+        document.body.removeChild(el); // Remove the <textarea> element
+        if (selected) { // If a selection existed before copying
+            document.getSelection().removeAllRanges(); // Unselect everything on the HTML document
+            document.getSelection().addRange(selected); // Restore the original selection
+        }
+
+        return success;
     }
-    document.body.removeChild(el); // Remove the <textarea> element
-    if (selected) { // If a selection existed before copying
-        document.getSelection().removeAllRanges(); // Unselect everything on the HTML document
-        document.getSelection().addRange(selected); // Restore the original selection
-    }
-    return success;
 }
 
 /**
@@ -3397,7 +3406,7 @@ var PEAT_style = function (CSSStyleSheet) {
     // make sure you get the actual sheet, not the style thing itself
     if (CSSStyleSheet.sheet) CSSStyleSheet = CSSStyleSheet.sheet;
     this.CSSStyleSheet = CSSStyleSheet;
-    this.rules = this.CSSStyleSheet.cssRules;
+    this.rules = CSSStyleSheet.cssRules;
 }
 
 PEAT_style.prototype.getCurrentValue = function (selector, property) {
@@ -3446,11 +3455,8 @@ PEAT_style.prototype.upsertRule = function (selector, rule) {
             break;
         }
     }
-    if (this.CSSStyleSheet.insertRule) {
-        this.CSSStyleSheet.insertRule(selector + "{" + rule + "}", index);
-    } else {
-        this.CSSStyleSheet.addRule(selector, rule, index);
-    }
+    this.CSSStyleSheet.insertRule(selector + "{" + rule + "}", index);
+
     return this.CSSStyleSheet.cssRules[index].cssText;
 }
 
