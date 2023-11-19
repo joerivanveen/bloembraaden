@@ -43,6 +43,6 @@ class MenuItem extends BaseElement
     {
         // TODO what to do with the template?
         $this->row->template_pointer = (object)array('name' => 'menu_item', 'admin' => true);
-        $this->row->type = $this->type_name;
+        $this->row->type_name = $this->type_name;
     }
 }

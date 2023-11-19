@@ -303,7 +303,7 @@ class BaseElement extends BaseLogic implements Element
             if ($link_element->getSlug() === $before_slug) {
                 $dropped_element = Help::getDB()->fetchElementIdAndTypeBySlug($slug);
                 Help::getDB()->upsertLinked($this->getType(), $this->getId(),
-                    new Type($dropped_element->type), $dropped_element->id, false, $keep_order);
+                    new Type($dropped_element->type_name), $dropped_element->id, false, $keep_order);
                 $keep_order++;
             }
             if ($link_element->getRow()->{$order_column} !== $keep_order) {

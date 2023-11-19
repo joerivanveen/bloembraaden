@@ -1272,13 +1272,13 @@ function unpack_temp(obj) {
 }
 
 function unpack_rec(obj, nest_level) {
-    const slugs = window.PEATCMS_globals.slugs;
     let n, i, len, arr;
     if (nest_level > 2) return obj; // recursion stops here
     for (n in obj) {
         if (obj.hasOwnProperty(n)) {
             if ('__ref' === n && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
-                return unpack_rec(slugs[obj[n]], nest_level); // __ref is considered to be this level
+                // __ref is considered to be this level
+                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj[n]], nest_level));
             }
             if (Array.isArray(obj[n])) {
                 for (i = 0, arr = obj[n], len = arr.length; i < len; ++i) {
@@ -1401,16 +1401,16 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     }
 }
 PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
-    let el, self = this, data = {
+    const el = NAV.getCurrentElement(), self = this, data = {
         render_in_tag: tag,
         timestamp: Date.now()
     };
-    if (null === (el = NAV.getCurrentElement())) {
-        console.warn('Couldn’t get element to send as originator during template.renderProgressive');
-    } else {
+    if (el) {
         // Send info to the server to let it know where the request comes from
-        data.type = el.state.type;
-        data.id = el.state[el.state.type + '_id'];
+        data.type = el.state.type_name;
+        data.id = el.state[`${el.state.type_name}_id`];
+    } else {
+        console.warn('Couldn’t get element to send as originator during template.renderProgressive');
     }
     if ((tag = NAV.tagsCache(slug))) {
         self.renderProgressiveTag(tag);
@@ -2282,7 +2282,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         template_name = template_pointer['name'],
         admin = template_pointer['admin'],
         // TODO as of 0.5.5 the templates are loaded by id when present, fallback to the old way
-        template_cache_name = (out.template_id && out.type !== 'template') ? out.template_id : template_name + '_' + admin,
+        template_cache_name = (out.template_id && out.type_name !== 'template') ? out.template_id : template_name + '_' + admin,
         template = false,
         html, cached_nodes, child_nodes, child_node, child_node_html, new_nodes, new_node, new_node_html, node_walker,
         len, el, data, property_id, attributes, attribute,
@@ -3023,7 +3023,7 @@ PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
     };
     setTimeout(callback, 550);
 }
-PEATCMS.prototype.grabAttention = function (DOMElement, low_key, callback = null) {
+PEATCMS.prototype.grabAttention = function (DOMElement, low_key, callback) {
     const class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
     DOMElement.classList.add(class_name);
     setTimeout(function (el, class_name) {

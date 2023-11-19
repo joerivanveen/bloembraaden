@@ -350,7 +350,7 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
         self = this;
     let filename_saved, button, option;
     // @since 0.10.0 reprocess option for image type
-    if ('image' === self.parent_PEATCMS_element.state.type) {
+    if ('image' === self.parent_PEATCMS_element.state.type_name) {
         process.classList.add('process_area', 'file');
         if (null === (filename_saved = self.parent_PEATCMS_element.state.filename_saved)) {
             process.innerHTML = 'Upload original to process again';

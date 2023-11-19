@@ -260,11 +260,11 @@ class Resolver extends BaseLogic
             // find element by slug
             if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, $no_cache))) {
                 $element_id = (int)$row->id;
-                $type_name = (string)$row->type;
+                $type_name = (string)$row->type_name;
             } elseif (null !== ($slug = Help::getDB()->getCurrentSlugBySlug($term))) {
                 if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
                     $element_id = (int)$row->id;
-                    $type_name = (string)$row->type;
+                    $type_name = (string)$row->type_name;
                     $from_history = true;
                 }
             }

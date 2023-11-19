@@ -21,11 +21,11 @@ class BaseLogic extends Base
         parent::__construct();
         //$this->type_name is set to correct type (e.g. search, page, variant) by child class
         // populate the instance with the row when present
-        if (is_null($row)) {
+        if (null === $row) {
             $this->row = null;
         } else {
             $this->row = $row;
-            if (isset($row->type)) $this->type_name = (string)$row->type;
+            if (isset($row->type_name)) $this->type_name = (string)$row->type_name;
             if (isset($row->template_pointer)) {
                 $this->template_pointer = $row->template_pointer;
             } elseif (isset($row->template_name)) {
@@ -57,12 +57,12 @@ class BaseLogic extends Base
     public function getRow(): \stdClass
     {
         if (is_null($this->row)) {
-            $this->addError("{$this->getType()->typeName()}->getRow() called while row is NULL");
-            $this->row = new \stdClass();
+            $type_name = $this->getType()->typeName();
+            $this->addError("$type_name->getRow() called while row is NULL");
+            $this->row = (object)array('type_name'=>$type_name);
         }
         $return_value = $this->row;
         $return_value->template_pointer = $this->getTemplatePointer();
-        $return_value->type = $this->getType()->typeName();
 
         return $return_value;
     }
@@ -87,7 +87,7 @@ class BaseLogic extends Base
             if (isset($row->ci_ai)) unset($row->ci_ai);
             // constructed fields
             if (!isset($row->template_pointer)) $row->template_pointer = $this->getTemplatePointer();
-            $row->type = $this->getType()->typeName();
+            $row->type_name = $this->getType()->typeName();
             // fields title, excerpt, description and content need to be parsed
             $parser = new Parser();
             $row->excerpt_parsed = $parser->parse($row->excerpt ?? null);

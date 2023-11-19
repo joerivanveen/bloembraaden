@@ -58,7 +58,6 @@ class Search extends BaseElement
         }
         // @since 0.12.0 get results from ci_ai table
         $results = $this->getResults($terms, $clean_types);
-        $this->row->__results__ = $results;
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until) {
             // make elements from results
@@ -117,11 +116,11 @@ class Search extends BaseElement
                     $this->row->{$plural}[] = $element->getOutput();
                     $this->row->item_count += 1;
                 }
+                // set it so the entry will be replaced by the element
+                unset($result->slug);
+                $result->__ref = $element->getSlug();
             }
             if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
-//            echo '<pre>';
-//            var_dump($results);
-//            die('</pre> rjkwel');
         } else {
             $this->row->item_count = $item_count;
         }
@@ -131,6 +130,8 @@ class Search extends BaseElement
         $this->row->slug = implode('/', $terms);
         if (isset($terms[0]) && 'price_from' === $terms[0]) $terms[0] = __('price_from', 'peatcms');
         $this->row->title = htmlentities(implode(' ', $terms));
+        // finally set the results list
+        $this->row->__results__ = $results;
     }
 
     private function getResults(array $clean_terms, array $clean_types): array
@@ -235,9 +236,9 @@ class Search extends BaseElement
         if (0 === count($terms)) return array();
         // probably when one term is present this is a property or a property_value
         if (1 === count($terms)) {
-            if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0])) && 'search' !== $row->type) {
+            if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0])) && 'search' !== $row->type_name) {
                 // only when we definitely found an element for this slug, try to get all attached variants
-                return Help::getDB()->fetchAllVariantIdsFor($row->type, $row->id, $this->getProperties());
+                return Help::getDB()->fetchAllVariantIdsFor($row->type_name, $row->id, $this->getProperties());
             }
         }
         return Help::getDB()->findElementIds('variant', $terms, $this->getProperties());

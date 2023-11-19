@@ -269,7 +269,7 @@ class DB extends Base
                 $values_by_property[$property_name] = array(); // since the properties are sorted and formatted, we can do this
                 foreach ($property_values as $index => $value) {
                     if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
-                        if ('property_value' === $row->type) {
+                        if ('property_value' === $row->type_name) {
                             $values_by_property[$property_name][] = (int)$row->id;
                         }
                     }
@@ -501,7 +501,7 @@ class DB extends Base
         $rows = array();
         // @since 0.6.0 check the cache first
         if (false === $no_cache) {
-            $statement = $this->conn->prepare('SELECT id, type_name as type FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
+            $statement = $this->conn->prepare('SELECT id, type_name FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
             $statement->bindValue(':slug', $slug);
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute(); // error handling necessary?
@@ -509,29 +509,29 @@ class DB extends Base
         }
         if (count($rows) === 0) {
             $statement = $this->conn->prepare('
-                SELECT page_id AS id, \'page\' AS type FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
+                SELECT page_id AS id, \'page\' AS type_name FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
-                SELECT image_id AS id, \'image\' AS type FROM cms_image WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT image_id AS id, \'image\' AS type_name FROM cms_image WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT embed_id AS id, \'embed\' AS type FROM cms_embed WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT embed_id AS id, \'embed\' AS type_name FROM cms_embed WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT file_id AS id, \'file\' AS type FROM cms_file WHERE slug = :slug AND instance_id = :instance_id
+                SELECT file_id AS id, \'file\' AS type_name FROM cms_file WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
-                SELECT menu_id AS id, \'menu\' AS type FROM cms_menu WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT menu_id AS id, \'menu\' AS type_name FROM cms_menu WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT brand_id AS id, \'brand\' AS type FROM cms_brand WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT brand_id AS id, \'brand\' AS type_name FROM cms_brand WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT serie_id AS id, \'serie\' AS type FROM cms_serie WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT serie_id AS id, \'serie\' AS type_name FROM cms_serie WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT product_id AS id, \'product\' AS type FROM cms_product WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT product_id AS id, \'product\' AS type_name FROM cms_product WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT variant_id AS id, \'variant\' AS type FROM cms_variant WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT variant_id AS id, \'variant\' AS type_name FROM cms_variant WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT comment_id AS id, \'comment\' AS type FROM cms_comment WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT comment_id AS id, \'comment\' AS type_name FROM cms_comment WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT property_id AS id, \'property\' AS type FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT property_id AS id, \'property\' AS type_name FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT property_value_id AS id, \'property_value\' AS type FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT property_value_id AS id, \'property_value\' AS type_name FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 
                 ;
             ');
             $statement->bindValue(':slug', $slug);
@@ -3076,7 +3076,7 @@ class DB extends Base
     public function setHomepage(int $instance_id, string $slug): ?\stdClass
     {
         if ($row = $this->fetchElementIdAndTypeBySlug($slug)) {
-            if ($row->type === 'page') {
+            if ('page' === $row->type_name) {
                 if ($this->updateInstance($instance_id, array('homepage_id' => $row->id))) {
                     return $this->fetchInstanceById($instance_id); // return the updated instance
                 } else {
@@ -3085,7 +3085,7 @@ class DB extends Base
             } else {
                 $this->addMessage(
                     sprintf(__('Only pages can be set to homepage, received: %s', 'peatcms'),
-                        var_export($row->type, true)),
+                        var_export($row->type_name, true)),
                     'warn'
                 );
             }

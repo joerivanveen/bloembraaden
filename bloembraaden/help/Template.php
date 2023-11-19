@@ -904,7 +904,7 @@ $html";
      */
     private function getTemplateObjectForElement(\stdClass $out): ?\stdClass
     {
-        if ('template' !== $out->type && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
+        if ('template' !== $out->type_name && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
             if (isset($this->json_by_template_id[$template_id])) {
                 return $this->json_by_template_id[$template_id];
             }
