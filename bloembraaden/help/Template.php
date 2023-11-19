@@ -376,13 +376,17 @@ class Template extends BaseLogic
         $html = $template['__html__'];
         // @since 0.8.0 use __ref
         if (isset($output->__ref)) {
-            $output = $GLOBALS['slugs']->{$output->__ref};
+            $output = (object)array_merge((array)$GLOBALS['slugs']->{$output->__ref}, (array)$output);
             unset($output->__ref);
         }
+//        if (isset($output->__ref)) {
+//            $output = $GLOBALS['slugs']->{$output->__ref};
+//            unset($output->__ref);
+//        }
         //
         $check_if = array(); // @since 0.10.7 remember simple tags to check for if-statements in template last
         foreach ($output as $tag_name => $output_object) { // for each tag in the output object
-            if (in_array($out_type = gettype($output_object), array('string', 'integer', 'boolean'))) {
+            if (in_array($out_type = gettype($output_object), array('string', 'integer', 'double', 'boolean'))) {
                 if ($out_type === 'boolean') {
                     $output_object = $output_object ? 'true' : 'false'; // else the object will be 1 versus 0...
                 } else {
@@ -431,14 +435,15 @@ class Template extends BaseLogic
                                 // for each occurrence in the template
                                 $sub_template_row = $sub_template['__row__'];
                                 foreach ($sub_template_row as $template_index => $row_template) {
-                                    $build_rows = '';
+                                    ob_start();
                                     foreach ($output_object as $row_index => $row_output) {
                                         if (false === is_int($row_index)) continue; // this is not a row
                                         if (true === is_string($row_output)) { // row consists of a single string value.
                                             $obj = (object)array('value' => $row_output);
                                         } else {
                                             if (isset($row_output->__ref)) {
-                                                $row_output = $GLOBALS['slugs']->{$row_output->__ref};
+                                                //$row_output = $GLOBALS['slugs']->{$row_output->__ref};
+                                                $row_output = (object)array_merge((array)$GLOBALS['slugs']->{$row_output->__ref}, (array)$row_output);
                                                 unset($row_output->__ref);
                                             }
                                             // @since 0.7.6 do not render items that are not online
@@ -456,9 +461,9 @@ class Template extends BaseLogic
 //                                                break; // don't process any more rows from this $output_object
 //                                            }
 //                                        }
-                                        $build_rows .= $this->renderOutput($obj, (array)$row_template);
+                                        echo $this->renderOutput($obj, (array)$row_template);
                                     }
-                                    $sub_template['__html__'] = str_replace("{{__row__[$template_index]}}", $build_rows, $sub_template['__html__']);
+                                    $sub_template['__html__'] = str_replace("{{__row__[$template_index]}}", ob_get_clean(), $sub_template['__html__']);
                                 }
                             }
                         }
