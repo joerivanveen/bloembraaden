@@ -736,6 +736,17 @@ class Help
         }
     }
 
+    /**
+     * @param \Exception|string $e
+     * @param string $message_for_frontend
+     * @return void
+     */
+    public static function handleErrorAndStop($e, string $message_for_frontend = 'Bloembraaden fatal error'): void
+    {
+        $boo = new BaseLogic();
+        $boo->handleErrorAndStop($e, $message_for_frontend);
+    }
+
     public static function upgrade(DB $db): void
     {
         $version = $db->getDbVersion();
