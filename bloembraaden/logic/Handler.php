@@ -2034,6 +2034,7 @@ class Handler extends BaseLogic
                             'instance_id' => $instance_id,
                             'title' => __('vat', 'peatcms'),
                             'percentage' => '21',
+                            'online' => true,
                         ));
                         break;
                     default:
