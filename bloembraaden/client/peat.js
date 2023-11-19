@@ -2399,7 +2399,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
             }
         }
         // remove any attributes that were not sent
-        if ((originals = document.body.getAttributeNames())) {
+        if ((originals = PEATCMS.getAttributeNames(document.body))) {
             for (i = 0, len = originals.length; i < len; i++) {
                 if (!new_attrs[originals[i]]) document.body.removeAttribute(originals[i]);
             }
@@ -3540,55 +3540,6 @@ PEAT_style.prototype.convert = function (unit, lostpixels) {
     }
 }
 
-/* TODO refactor these into ponyfills... */
-if (!Date.now) {
-    Date.now = function () {
-        return new Date().getTime();
-    }
-}
-
-if (!Element.prototype.getAttributeNames) {
-    Element.prototype.getAttributeNames = function () {
-        var attributes = this.attributes;
-        var length = attributes.length;
-        var result = new Array(length);
-        for (var i = 0; i < length; i++) {
-            result[i] = attributes[i].name;
-        }
-        return result;
-    };
-}
-if (![].includes) {
-    // noinspection JSUnusedGlobalSymbols
-    Array.prototype.includes = function (searchElement /*, fromIndex*/) {
-        var O = Object(this);
-        var len = parseInt(O.length) || 0;
-        if (len === 0) {
-            return false;
-        }
-        var n = parseInt(arguments[1]) || 0;
-        var k;
-        if (n >= 0) {
-            k = n;
-        } else {
-            k = len + n;
-            if (k < 0) {
-                k = 0;
-            }
-        }
-        var currentElement;
-        while (k < len) {
-            currentElement = O[k];
-            if (searchElement === currentElement ||
-                (searchElement !== searchElement && currentElement !== currentElement)) {
-                return true;
-            }
-            k++;
-        }
-        return false;
-    };
-}
-
 /**
  * ponyfills are static methods of PEATCMS :-)
  */
@@ -3597,8 +3548,8 @@ String.prototype.replaceAll = function (search, replace) {
     return PEATCMS.replace(search, replace, this);
 };
 PEATCMS.replace = function (search, replace, str) {
-    var index = str.indexOf(search),
-        replace_length = replace.length,
+    let index = str.indexOf(search);
+    const replace_length = replace.length,
         search_length = search.length;
     while (index !== -1) {
         str = str.substring(0, index) + replace + str.substring(index + search_length, str.length);
@@ -3613,7 +3564,8 @@ String.prototype.hashCode = function () {
     return PEATCMS.numericHashFromString(this);
 };
 PEATCMS.numericHashFromString = function (str) {
-    var hash = 0, i, chr, len = str.length;
+    let hash = 0, i, chr;
+    const len = str.length;
     if (len === 0) return hash;
     for (i = 0; i < len; i++) {
         chr = str.charCodeAt(i);
@@ -3629,7 +3581,7 @@ Number.prototype.cleanUp = function () {
 }
 PEATCMS.cleanUpNumber = function (nr) {
     // function removes artefacts caused by decimal rounding error
-    var n = nr.toString(), i = n.lastIndexOf('.'), d, index;
+    let n = nr.toString(), i = n.lastIndexOf('.'), d, index;
     if (i > -1) {
         d = n.substring(i);
         if ((index = d.indexOf('00000')) > -1) {
@@ -3670,11 +3622,10 @@ function opacityNode(node, opacity) {
 }
 
 PEATCMS.isInt = function (value) {
-    var x;
     if (isNaN(value)) {
         return false;
     }
-    x = parseFloat(value);
+    const x = parseFloat(value);
     return (x | 0) === x;
 }
 
@@ -3762,6 +3713,20 @@ PEATCMS.getFormDataAsProperties = function (form) {
 function getFormData(form) {
     console.warn('getFormData() is deprecated, use PEATCMS.getFormData()');
     return PEATCMS.getFormData(form);
+}
+
+/**
+ * getAttributeNames can be done on an element directly
+ * TODO restore that when adoption is sufficient https://caniuse.com/?search=getAttributeNames
+ */
+PEATCMS.getAttributeNames = function (el) {
+    const attributes = el.attributes;
+    const length = attributes.length;
+    const result = new Array(length);
+    for (let i = 0; i < length; i++) {
+        result[i] = attributes[i].name;
+    }
+    return result;
 }
 
 // https://stackoverflow.com/a/11077016
