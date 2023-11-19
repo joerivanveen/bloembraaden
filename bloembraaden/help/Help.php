@@ -585,7 +585,7 @@ class Help
     {
         $row->title = "$what | Bloembraaden";
         $row->template_pointer = (object)array('name' => $what, 'admin' => true);
-        $row->type = $what;
+        $row->type_name = $what;
         if (null !== $which) {
             $what .= "/$which";
         }

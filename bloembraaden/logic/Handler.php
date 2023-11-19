@@ -101,7 +101,7 @@ class Handler extends BaseLogic
             // todo maybe you still want to die here, for less resources
         } elseif ($action === 'download') {
             if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[1] ?? '')) {
-                if ($el->type === 'file') {
+                if ('file' === $el->type_name) {
                     $f = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
                     $f->serve();
                 }
@@ -308,7 +308,7 @@ class Handler extends BaseLogic
                     $this->addError(sprintf('process_file: no element found with slug %s', $slug));
                     $sse->log(sprintf(__('Could not process %s, check your logs to know more', 'peatcms'), $slug));
                 }
-                $peat_type = new Type($row->type);
+                $peat_type = new Type($row->type_name);
                 $element = $peat_type->getElement();
                 // null means element is deleted or something
                 if (null === $element->fetchById($row->id)) {
@@ -531,7 +531,7 @@ class Handler extends BaseLogic
                         )))) {
                         $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
                         // note: link the comment to the element (not the other way around) to get the correct order
-                        $element_type = new Type($element_row->type);
+                        $element_type = new Type($element_row->type_name);
                         $element_id = $element_row->id;
                         $element = ($element_type)->getElement()->fetchById($element_id);
                         if (true === $element->link('comment', $comment_id)) {
@@ -1133,7 +1133,7 @@ class Handler extends BaseLogic
                     }
                     unset($element);
                 } elseif ($action === 'admin_put_menu_item') {
-                    if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) and $row->type === 'menu') {
+                    if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
                         $type = new Type('menu');
                         $menu = $type->getElement();
                         if ($menu->fetchById($row->id) instanceof Menu) {
@@ -1461,12 +1461,12 @@ class Handler extends BaseLogic
                             // process it in cms
                             if (isset($_SERVER['HTTP_X_SLUG'])) {
                                 if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
-                                    if (in_array($row->type, array('file', 'image'))) { // update the existing element when file or image
-                                        $el = $this->updateElement($row->type, $post_data, $row->id);
+                                    if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
+                                        $el = $this->updateElement($row->type_name, $post_data, $row->id);
                                     } else { // make a new element and link it to this posted element (if possible)
                                         $el = $this->createElement($default_type);
                                         $el->update($post_data);
-                                        $el->link($row->type, $row->id);
+                                        $el->link($row->type_name, $row->id);
                                     }
                                 }
                             }
@@ -1592,19 +1592,17 @@ class Handler extends BaseLogic
             // prepare object for admin
             $out->__adminerrors__ = Help::getErrorMessages();
             // @since 0.8.2 admin also uses cache
-            $type = $base_element->type;
-            if ('search' !== $type) $out->table_info = $this->getTableInfoForOutput(new Type($type));
-        } else {
-            if (
-                // @since 0.7.6 do not show items that are not online
-                (isset($base_element->online) && false === $base_element->online)
-                // @since 0.8.19 do not show items that are not yet published
-                || (isset($base_element->is_published) and false === $base_element->is_published)
-            ) {
-                $element = new Search();
-                $element->findWeighted(array($base_element->title));
-                $out = $element->getOutputObject();
-            }
+            $type_name = $base_element->type_name;
+            if ('search' !== $type_name) $out->table_info = $this->getTableInfoForOutput(new Type($type_name));
+        } elseif (
+            // @since 0.7.6 do not show items that are not online
+            (isset($base_element->online) && false === $base_element->online)
+            // @since 0.8.19 do not show items that are not yet published
+            || (isset($base_element->is_published) and false === $base_element->is_published)
+        ) {
+            $element = new Search();
+            $element->findWeighted(array($base_element->title));
+            $out = $element->getOutputObject();
         }
         unset($base_element);
         // @since 0.7.9 load the properties in the out object as well
@@ -1630,7 +1628,7 @@ class Handler extends BaseLogic
             header('Content-Length: ' . strlen($response));
             echo $response;
         } else { // use template
-            if (true === $instance->isParked() and false === ADMIN and false === $this->resolver->hasInstruction('admin')) {
+            if (true === $instance->isParked() && false === ADMIN && false === $this->resolver->hasInstruction('admin')) {
                 if (file_exists(CORE . '../htdocs/instance/' . $instance->getPresentationInstance() . '/park.html')) {
                     header('Location: /instance/' . $instance->getPresentationInstance() . '/park.html', TRUE, 307);
                     die();
