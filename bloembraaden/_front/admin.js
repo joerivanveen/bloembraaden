@@ -1513,7 +1513,7 @@ function PEATCMS_admin() {
                 } else {
                     style = document.createElement('link');
                     style.setAttribute('id', 'bloembraaden-default-css');
-                    style.setAttribute('href', '/client/peat.css?version=' + PEATCMS_globals.version || Math.random());
+                    style.setAttribute('href', '/_front/peat.css?version=' + PEATCMS_globals.version || Math.random());
                     style.setAttribute('rel', 'stylesheet');
                     document.head.appendChild(style);
                 }

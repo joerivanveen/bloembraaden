@@ -24,7 +24,7 @@ class MoParser
 
     public function loadTranslationData(string $presentation_instance, string $locale): array
     {
-        $filename = CORE . "../htdocs/instance/$presentation_instance/$presentation_instance.mo";
+        $filename = CORE . "../htdocs/_site/$presentation_instance/$presentation_instance.mo";
         if (false === file_exists($filename) || false === is_readable($filename)) {
             // @since 0.6.16 you can safely run an instance without translations
             return array($locale=>array());

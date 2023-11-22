@@ -45,9 +45,9 @@ class Handler extends BaseLogic
             }
             // $doc = the javascript file we’re going to build
             $doc = '"use strict";var VERSION="' . $version . '";var VERBOSE=' . (Setup::$VERBOSE ? 'true' : 'false') . ";\n";
-            $doc .= file_get_contents(CORE . '../htdocs/instance/' . $instance->getPresentationInstance() . '/script.js');
-            $doc .= file_get_contents(CORE . 'client/peat.js');
-            //if (ADMIN) $doc .= \file_get_contents(CORE . '../htdocs/client/admin.js'); <- added by console later
+            $doc .= file_get_contents(CORE . '../htdocs/_site/' . $instance->getPresentationInstance() . '/script.js');
+            $doc .= file_get_contents(CORE . '_front/peat.js');
+            //if (ADMIN) $doc .= \file_get_contents(CORE . '../htdocs/_front/admin.js'); <- added by console later
             if (ADMIN) {
                 header('Content-Type: text/javascript');
                 echo $doc;
@@ -69,7 +69,7 @@ class Handler extends BaseLogic
             echo $response;
             die();
         } elseif ($action === 'stylesheet') {
-            // TODO the stylesheet is cached in htdocs/instance now, so this is only for admins
+            // TODO the stylesheet is cached in htdocs/_site now, so this is only for admins
             // @since 0.7.6 get cached version when available for non-admins
             $file_location = Setup::$DBCACHE . 'css/' . Setup::$instance_id . '-' . $version . '.css.gz';
             if (false === ADMIN and true === file_exists($file_location)) {
@@ -81,8 +81,8 @@ class Handler extends BaseLogic
                 echo $response;
                 die();
             }
-            $doc = file_get_contents(CORE . 'client/peat.css');
-            $doc .= file_get_contents(CORE . '../htdocs/instance/' . $instance->getPresentationInstance() . '/style.css');
+            $doc = file_get_contents(CORE . '_front/peat.css');
+            $doc .= file_get_contents(CORE . '../htdocs/_site/' . $instance->getPresentationInstance() . '/style.css');
             $response = gzencode($doc, 9);
             $doc = null;
             header('Cache-Control: max-age=2592000'); //30days (60sec * 60min * 24hours * 30days)
@@ -1238,8 +1238,8 @@ class Handler extends BaseLogic
                             $edit_instance = new Instance(Help::getDB()->fetchInstanceById($instance_id));
                         }
                         $file_location = Setup::$DBCACHE . 'css/' . $instance_id . '.css';
-                        $doc = file_get_contents(CORE . 'client/peat.css'); // reset and some basic stuff
-                        $doc .= file_get_contents(CORE . '../htdocs/instance/' . $edit_instance->getPresentationInstance() . '/style.css');
+                        $doc = file_get_contents(CORE . '_front/peat.css'); // reset and some basic stuff
+                        $doc .= file_get_contents(CORE . '../htdocs/_site/' . $edit_instance->getPresentationInstance() . '/style.css');
                         // minify https://idiallo.com/blog/css-minifier-in-php
                         $doc = str_replace(array("\n", "\r", "\t"), '', $doc);
                         // strip out the comments:
@@ -1572,7 +1572,7 @@ class Handler extends BaseLogic
         }
         // variant paging
         if (isset($out->variant_page) && $out->variant_page !== 1) {
-            $out->slugs->{$out->__ref}->path .= '/variant_page' . $out->variant_page;
+            $out->slugs->{$out->__ref}->path .= "/variant_page$out->variant_page";
         }
         // use a properly filled element to check some of the settings
         $base_element = (true === isset($out->__ref)) ? $out->slugs->{$out->__ref} : $out;
@@ -1629,8 +1629,8 @@ class Handler extends BaseLogic
             echo $response;
         } else { // use template
             if (true === $instance->isParked() && false === ADMIN && false === $this->resolver->hasInstruction('admin')) {
-                if (file_exists(CORE . '../htdocs/instance/' . $instance->getPresentationInstance() . '/park.html')) {
-                    header('Location: /instance/' . $instance->getPresentationInstance() . '/park.html', TRUE, 307);
+                if (file_exists(CORE . '../htdocs/_site/' . $instance->getPresentationInstance() . '/park.html')) {
+                    header('Location: /_site/' . $instance->getPresentationInstance() . '/park.html', TRUE, 307);
                     die();
                 } else {
                     die(sprintf(__('Website is parked, but %s is not found.', 'peatcms'), 'park.html'));

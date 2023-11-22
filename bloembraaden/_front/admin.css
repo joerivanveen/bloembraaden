@@ -407,13 +407,13 @@ label.close:hover {
 body .PEATCMS_admin .peatcms_loading,
 body .PEATCMS_admin select.unsaved, /* more explicit to overwrite arrow background image */
 body .PEATCMS_admin .unsaved {
-    background-image: url('/client/logo.png');
+    background-image: url('/_front/logo.png');
     background-repeat: no-repeat;
     background-position: right .7em top 50%, 0 0;
 }
 
 body .PEATCMS_admin .peatcms_loading {
-    background-image: url('/client/logo-anim.gif');
+    background-image: url('/_front/logo-anim.gif');
 }
 
 body .PEATCMS_admin div.peatcms_loading {
@@ -426,7 +426,7 @@ body .PEATCMS_admin [data-peatcms-placeholder] {
     height: 30px;
     width: 30px;
     background-repeat: no-repeat;
-    background-image: url('/client/logo-anim.gif');
+    background-image: url('/_front/logo-anim.gif');
 }
 
 body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {

@@ -223,11 +223,11 @@ class Template extends BaseLogic
         // add the html
         $this->insertIntoHtml($this->convertTagsRemaining($html));
         // add admin scripts
-        $this->insertIntoHtml("<script id='bloembraaden-admin-js' src='/client/admin.js?version=$this->version' async='async'></script>", false);
-        $this->insertIntoHtml("<link rel='stylesheet' id='bloembraaden-admin-css' href='/client/admin.css?version=$this->version'>", false);
+        $this->insertIntoHtml("<script id='bloembraaden-admin-js' src='/_front/admin.js?version=$this->version' async='async'></script>", false);
+        $this->insertIntoHtml("<link rel='stylesheet' id='bloembraaden-admin-css' href='/_front/admin.css?version=$this->version'>", false);
         // add config for editor
-        $default_location = CORE . '../htdocs/instance/editor_config.json';
-        $custom_location = CORE . '../htdocs/instance/' . Setup::$PRESENTATION_INSTANCE . '/editor_config.json';
+        $default_location = CORE . '../htdocs/_site/editor_config.json';
+        $custom_location = CORE . '../htdocs/_site/' . Setup::$PRESENTATION_INSTANCE . '/editor_config.json';
         if (file_exists($default_location)) {
             ob_start();
             echo '<script id="peatcms-editor-config" nonce="';
