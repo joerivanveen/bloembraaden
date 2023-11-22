@@ -3978,7 +3978,7 @@ class DB extends Base
             }
             // take the element and id to select the current slug in the live database
             $row = $rows[0];
-            if ($row = $this->fetchRow("cms_{$row->type}", array('slug'), array("{$row->type}_id" => $row->id))) {
+            if ($row = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type}_id" => $row->id))) {
                 return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
         }
@@ -4152,7 +4152,7 @@ class DB extends Base
         $id_and_type = $this->fetchElementIdAndTypeBySlug($slug);
         if (null === $id_and_type) return false;
         // you must mark stale also for deleted elements, so get this element also when deleted
-        $peat_type = new Type($id_and_type->type);
+        $peat_type = new Type($id_and_type->type_name);
         $element_row = Help::getDB()->fetchRow(
             $peat_type->tableName(),
             array('*'),

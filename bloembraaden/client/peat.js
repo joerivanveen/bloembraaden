@@ -524,10 +524,10 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     }
     // set a reminder (for the 'new' button) which element is being edited
     el = document.createElement('button');
-    el.setAttribute('data-element_type', this.state.type);
+    el.setAttribute('data-element_type', this.state.type_name);
     el.classList.add('new', 'edit');
     el.innerText = '+';
-    el.title = `New ${this.state.type}`;
+    el.title = `New ${this.state.type_name}`;
     el.onclick = function () {
         CMS_admin.createElement(this.getAttribute('data-element_type'));
     };
@@ -551,7 +551,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
     // default when editor config is missing...
-    this.config = (typeof CMS_admin === 'object') ? CMS_admin.getEditorConfig(self.state.type) : {};
+    this.config = (typeof CMS_admin === 'object') ? CMS_admin.getEditorConfig(self.state.type_name) : {};
     if (!(config = this.config)) {
         config = {
             hidden_fields: {
@@ -614,7 +614,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
 }
 
 PEATCMS_element.prototype.delete = function () {
-    const data = {'element_name': this.state.type, 'id': this.state[this.getTableInfo()['primary_key_column']]},
+    const data = {'element_name': this.state.type_name, 'id': this.state[this.getTableInfo()['primary_key_column']]},
         self = this;
     if (confirm(`Delete ${this.state.title}`)) {
         NAV.ajax('/__action__/delete_element', data, function (json) {

@@ -248,7 +248,7 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
         el.classList.add('peatcms_loading', column_name.replace('_id', ''));
         el.setAttribute('data-peatcms_value', this.server_value);
         // load the options and on return update the select list
-        NAV.ajax(selectlist_actions[column_name], {for: this.parent_PEATCMS_element.state.type}, function (json) {
+        NAV.ajax(selectlist_actions[column_name], {for: this.parent_PEATCMS_element.state.type_name}, function (json) {
             const el = self.DOMElement;
             let i, option, temp;
             for (i in json) {
