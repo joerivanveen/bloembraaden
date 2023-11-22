@@ -140,6 +140,9 @@
     line-height: 1.5em;
     letter-spacing: 0;
 }
+.PEATCMS_admin, .PEATCMS_admin * {
+    opacity: 1;
+}
 
 .dark-mode .edit-area *,
 .edit-area * {
