@@ -96,10 +96,11 @@ If you need this fallback, you should configure it in the static site.
 
 It is recommended to put Bloembraaden (the bloembraaden folder) outside of the webroot.
 In the webroot the following is needed:
-- A symlink called ‘client’ pointing to `bloembraaden/client` (outside of webroot).
 - A `robots.txt` file.
 - A `favicon.ico` file.
 - The `index.php` file that will serve the websites.
+
+Setup your webserver to serve the `_front` folder from bloembraaden when `_front` is requested from the webroot. Alternatively, you can use a symlink.
 
 The index.php file only has to require bloembraaden/Web.php like so (point to the place where you have put bloembraaden obviously):
 
@@ -140,7 +141,7 @@ Note the ‘force’ parameter, without it the daemon will stop and do nothing b
 Should multiple daemons be running at the same time for whatever reason, the older ones will notice this within a few seconds and commit suicide.
 
 ### Clients’ websites
-Your clients’ websites’ assets will reside under a folder `/instance` in the webroot, e.g. `/instance/example`.
+Your clients’ websites’ assets will reside under a folder `/_site` in the webroot, e.g. `/_site/example`.
 Each website must contain a `script.js` and `style.css` that will be compiled by bloembraaden.
 
 You can configure 2 optional files:
@@ -148,7 +149,7 @@ You can configure 2 optional files:
 - `example.mo` (and .po if you wish), the translation file for all generic texts. Use PoEdit to generate it from the code.
 
 The website itself is build with simple templates that you put in the admin interface.
-You also point to the `/instance/example` folder through that admin interface.
+You also point to the `/_site/example` folder through that admin interface.
 
 #### Known bugs
 The templating engine has 2 known bugs:
