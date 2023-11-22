@@ -909,7 +909,7 @@ $html";
      */
     private function getTemplateObjectForElement(\stdClass $out): ?\stdClass
     {
-        if ('template' !== $out->type_name && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
+        if ('template' !== ($type_name = $out->type_name) && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
             if (isset($this->json_by_template_id[$template_id])) {
                 return $this->json_by_template_id[$template_id];
             }
@@ -919,6 +919,13 @@ $html";
                     $obj = json_decode($this->getFreshJson());
                 } else { // get the published value
                     $obj = json_decode($this->row->json_prepared);
+                }
+            } elseif (($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
+                // this can only happen when templates are deleted willy nilly...
+                if (($this->row = Help::getDB()->getTemplateRow($template_id))) {
+                    $obj = json_decode($this->getFreshJson());
+                    Help::getDB()->updateElement(new Type($type_name), array('template_id'=>$template_id), $out->id);
+                    $this->addError("Template id updated to $template_id for $out->title_parsed ($type_name)");
                 }
             }
             $this->json_by_template_id[$template_id] = $obj; // can be null if never published or id's changed in the database
