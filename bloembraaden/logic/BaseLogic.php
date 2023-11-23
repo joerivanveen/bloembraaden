@@ -58,7 +58,7 @@ class BaseLogic extends Base
     {
         if (is_null($this->row)) {
             $type_name = $this->getType()->typeName();
-            $this->addError("$type_name->getRow() called while row is NULL");
+            $this->addError("{$type_name}->getRow() called while row is NULL");
             $this->row = (object)array('type_name'=>$type_name);
         }
         $return_value = $this->row;

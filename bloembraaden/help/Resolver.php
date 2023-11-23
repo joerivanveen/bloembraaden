@@ -181,7 +181,7 @@ class Resolver extends BaseLogic
                         return new BaseElement((object)array(
                             'title' => 'Admin login',
                             'template_pointer' => (object)array('name' => 'login', 'admin' => true),
-                            'type' => 'search',
+                            'type_name' => 'search',
                             'slug' => '__admin__',
                         ));
                     }

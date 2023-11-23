@@ -1668,7 +1668,7 @@ class Handler extends BaseLogic
                 'slug' => $out,
                 'slugs' => $GLOBALS['slugs'],
                 'is_account' => $out->is_account,
-                '__user__' => ($user === null) ? (object)null : $user->getOutput(),
+                '__user__' => (null === $user) ? '{}' : $user->getOutput(),
                 '__messages__' => Help::getMessages(),
             ));
             if (true === ADMIN) {
