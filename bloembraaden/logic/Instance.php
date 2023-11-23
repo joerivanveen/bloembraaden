@@ -112,12 +112,13 @@ class Instance extends BaseLogic
 
     /**
      * @param string $which the name of the setting you wish to get
+     * @param null $default will be returned when the setting is not present
      * @return null|mixed returns the original value (@since 0.7.6)
      * @since 0.4.0
      */
-    public function getSetting(string $which)
+    public function getSetting(string $which, $default = null)
     {
-        return $this->row->{$which} ?? null;
+        return $this->row->{$which} ?? $default;
     }
 
     public function isParked(): bool
@@ -131,7 +132,7 @@ class Instance extends BaseLogic
      *
      * @param string $domain
      */
-    private function load(string $domain)
+    private function load(string $domain): void
     {
         // load the instance based on the supplied host
         if (!($this->row = Help::getDB()->fetchInstance($domain))) {

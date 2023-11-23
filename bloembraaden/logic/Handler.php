@@ -1628,9 +1628,10 @@ class Handler extends BaseLogic
             header('Content-Length: ' . strlen($response));
             echo $response;
         } else { // use template
+            $presentation_instance = $instance->getPresentationInstance();
             if (true === $instance->isParked() && false === ADMIN && false === $this->resolver->hasInstruction('admin')) {
-                if (file_exists(CORE . '../htdocs/_site/' . $instance->getPresentationInstance() . '/park.html')) {
-                    header('Location: /_site/' . $instance->getPresentationInstance() . '/park.html', TRUE, 307);
+                if (file_exists(CORE . "../htdocs/_site/$presentation_instance/park.html")) {
+                    header("Location: /_site/$presentation_instance/park.html", TRUE, 307);
                     die();
                 } else {
                     die(sprintf(__('Website is parked, but %s is not found.', 'peatcms'), 'park.html'));
@@ -1642,10 +1643,16 @@ class Handler extends BaseLogic
             $out->nonce = Help::randomString(32);
             $out->version = Setup::$VERSION;
             $out->root = $instance->getDomain(true);
-            $out->presentation_instance = $instance->getPresentationInstance();
+            $out->presentation_instance = $presentation_instance;
             // @since 0.7.9 get the user and setup account related stuff
             $user = $session->getUser();
-            $out->is_account = ($user !== null);
+            if (null === $user) {
+                $user_output = '{}';
+                $out->is_account = false;
+            } else {
+                $user_output = $user->getOutput();
+                $out->is_account = true;
+            }
             // @since 0.8.18 TODO make a mechanism to distinguish session values that must be directly output...
             $out->dark_mode = $session->getValue('dark_mode');
             // render in template
@@ -1657,18 +1664,19 @@ class Handler extends BaseLogic
             // render server values for the site to be picked up by javascript client
             $temp->renderGlobalsOnce(array(
                 'version' => Setup::$VERSION,
+                'version_timestamp' => strtotime($instance->getSetting('date_published', '')),
                 'nonce' => $out->nonce,
                 'decimal_separator' => Setup::$DECIMAL_SEPARATOR,
                 'radix' => Setup::$RADIX,
                 'google_tracking_id' => $instance->getSetting('google_tracking_id'),
                 'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key'),
                 'root' => $out->root,
-                'presentation_instance' => $out->presentation_instance,
+                'presentation_instance' => $presentation_instance,
                 'session' => $session->getVars(),
                 'slug' => $out,
                 'slugs' => $GLOBALS['slugs'],
                 'is_account' => $out->is_account,
-                '__user__' => (null === $user) ? '{}' : $user->getOutput(),
+                '__user__' => $user_output,
                 '__messages__' => Help::getMessages(),
             ));
             if (true === ADMIN) {

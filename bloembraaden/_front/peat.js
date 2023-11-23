@@ -2291,10 +2291,10 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         // meta name, meta http-equiv and meta property can only be in the head once (per name and property)
         // rel=canonical may only be in the head once as well
         only_once = {
-            "name": true,
-            "http-equiv": true,
-            "property": true,
-            "rel": "canonical"
+            'name': true,
+            'http-equiv': true,
+            'property': true,
+            'rel': 'canonical'
         }, key, old_property_id, i, i2, i2_len, i2_found = false;
     // set status
     if (this.document_status !== this.status_codes.rendering) {
@@ -2303,12 +2303,16 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
     }
     // load template if not in cache
     if (!this.templates[template_cache_name]) {
-        if (VERBOSE) console.log('Loading template ' + template_cache_name);
-        // TODO as of 0.5.5 the templates are loaded by id when present with fallback to the old way
-        data = {'template_id': template_cache_name, 'template_name': template_name, 'admin': admin};
-        NAV.ajax('/__action__/get_template/', data, function (data) {
+        if (VERBOSE) console.log(`Loading template ${template_cache_name}`);
+        const cachebuster = window.PEATCMS_globals.version_timestamp || '0';
+        // as of 0.5.5 the templates are loaded by id when present with fallback to the old way
+        NAV.ajax(`/__action__/get_template/?_c=${cachebuster}`, {
+            template_id: template_cache_name,
+            template_name: template_name,
+            admin: admin
+        }, function (data) {
             if (!data['__html__']) {
-                console.error('Loading template ‘' + template_name + '’ failed');
+                console.error(`Loading template ‘${template_name}’ failed`);
                 self.ajaxifyDOMElements(document); // ajaxify the static thing, and send document_ready none the less...
                 document.dispatchEvent(new CustomEvent('peatcms.document_ready', {
                     bubbles: true,
@@ -2326,9 +2330,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         return false;
     } else {
         template = this.templates[template_cache_name];
-        if (VERBOSE) {
-            console.log('Templator ‘' + template_cache_name + '’ from cache:', template);
-        }
+        if (VERBOSE) console.log(`Templator ‘${template_cache_name}’ from cache:`, template);
         // cache which template is currently active
         this.template_cache_name = template_cache_name;
     }
