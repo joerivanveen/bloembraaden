@@ -232,13 +232,19 @@ class Template extends BaseLogic
             ob_start();
             echo '<script id="peatcms-editor-config" nonce="';
             echo $output->nonce;
-            echo '">var peatcms_editor_config=';
+            echo '">';
+            echo PHP_EOL;
+            echo 'const peatcms_editor_config=';
             echo file_get_contents($default_location);
             if (file_exists($custom_location)) {
-                echo ';var peatcms_editor_config_custom=';
+                echo ';';
+                echo PHP_EOL;
+                echo 'const peatcms_editor_config_custom=';
                 echo file_get_contents($custom_location);
             }
-            echo ';</script>';
+            echo ';';
+            echo PHP_EOL;
+            echo '</script>';
             $this->insertIntoHtml(ob_get_clean());
         }
     }
