@@ -550,6 +550,13 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     };
     el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
+    // header
+    if (! (el = document.getElementById('edit_area_header'))) {
+        el = document.createElement('header');
+        el.id = 'edit_area_header';
+        edit_area.parentNode.insertAdjacentElement('afterbegin', el);
+    }
+    el.innerHTML = this.state.type_name;
     // default when editor config is missing...
     this.config = (typeof CMS_admin === 'object') ? CMS_admin.getEditorConfig(self.state.type_name) : {};
     if (!(config = this.config)) {
@@ -978,12 +985,12 @@ PEATCMS_element.prototype.getTableInfo = function () {
 }
 
 PEATCMS_element.prototype.getColumns = function () {
-    var table_info = this.getTableInfo();
+    const table_info = this.getTableInfo();
     return table_info.hasOwnProperty('columns') ? table_info.columns : [];
 }
 
 PEATCMS_element.prototype.getColumnNames = function () {
-    var table_info = this.getTableInfo();
+    const table_info = this.getTableInfo();
     return table_info.hasOwnProperty('names') ? table_info.names : [];
 }
 
@@ -997,7 +1004,7 @@ PEATCMS_element.prototype.getColumnValue = function (column_name) {
 
 PEATCMS_element.prototype.getElementName = function () {
     const table_info = this.getTableInfo();
-    return table_info['table_name'].substr(4); // remove 'cms_' to get elementname from table
+    return table_info['table_name'].slice(4); // remove 'cms_' to get elementname from table
 }
 
 PEATCMS_element.prototype.getElementId = function () {

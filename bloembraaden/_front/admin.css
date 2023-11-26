@@ -931,10 +931,17 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     box-shadow: none;
 }
 
+#edit_area_header,
 #admin_sidebar label.close { /* the close button */
     position: absolute;
     top: 0;
     z-index: 101;
+}
+#edit_area_header {
+    padding: .1rem .21rem;
+    left: 15px; /* room for close button */
+    background-color: var(--color-paper);
+    color: var(--color-peatcms-light);
 }
 
 #admin_sidebar button.edit {
