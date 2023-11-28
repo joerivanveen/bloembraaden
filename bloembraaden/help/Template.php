@@ -926,7 +926,7 @@ $html";
                 } else { // get the published value
                     $obj = json_decode($this->row->json_prepared);
                 }
-            } elseif (($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
+            } elseif (isset($out->id) && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
                 // this can only happen when templates are deleted willy nilly...
                 if (($this->row = Help::getDB()->getTemplateRow($template_id))) {
                     $obj = json_decode($this->getFreshJson());
