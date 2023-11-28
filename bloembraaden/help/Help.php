@@ -773,15 +773,14 @@ class Help
                         if (JSON_ERROR_NONE === json_last_error()) {
                             $value = reset($json);
                             $table_name = key($json);
-                            if (false === in_array($table_name, $tables)) {
-                                $logger->log("Table $table_name is never imported");
-                                $string = '';
-                                continue;
-                            }
                             if (is_array($value)) { // value is the rows of the table
                                 $logger->log("handle table $table_name");
                                 $info = $db->getTableInfo($table_name);
-                                if ('_order_number' === $table_name) {
+                                if (false === in_array($table_name, $tables)) {
+                                    $logger->log("Table $table_name is never imported");
+                                    $string = '';
+                                    continue;
+                                } elseif ('_order_number' === $table_name) {
                                     // just import this, has no id column
                                     foreach ($value as $key => $row) {
                                         // todo how to insert order numbers?
