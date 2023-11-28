@@ -25,8 +25,9 @@ class Daemon
         } else {
             $force = isset($_GET['force']);
         }
-        if (false === $force) {
-            $last_alive = Help::getDB()->getSystemValue('daemon_last_alive');
+        if (false === $force
+            && ($last_alive = Help::getDB()->getSystemValue('daemon_last_alive'))
+        ) {
             $this->log("DAEMON last alive $last_alive");
             if (strtotime($last_alive) > Setup::getNow() - (3 * self::MAX_LOOP_SECONDS)) {
                 die("DAEMON still running\n");
