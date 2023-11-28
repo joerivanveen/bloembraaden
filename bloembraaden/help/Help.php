@@ -734,7 +734,9 @@ class Help
         $memory_limit = .5 * (int)self::getMemorySize(ini_get('memory_limit'));
         $files = array($file_name);
         $db = self::getDB();
-        $tables = $db->fetchTablesToExport();
+        $tables = array_map(function ($value) {
+            return $value->table_name;
+        }, $db->fetchTablesToExport());
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
@@ -883,7 +885,7 @@ class Help
                 $logger->log('Error: couldn’t get a handle on that file');
             }
             // cleanup the file when it is no longer in the queue
-            if (false === in_array($file_name, $files))  {
+            if (false === in_array($file_name, $files)) {
                 unlink($file_name);
             }
         }
