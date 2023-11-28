@@ -688,51 +688,205 @@ class Help
     public static function export_instance(int $instance_id, LoggerInterface $logger): void
     {
         set_time_limit(0);
-        $export_file = Setup::$UPLOADS . ".export-$instance_id.json";
+        $instance_name = Setup::$PRESENTATION_INSTANCE;
+        $folder_name = self::import_export_folder();
+        $export_file = "$folder_name.export-$instance_name.json";
         if (file_exists($export_file)) {
             $logger->log("Export file $export_file already exists, aborting");
             die();
         }
-        $logger->log("Exporting instance $instance_id");
+        $logger->log("Exporting instance $instance_name");
         $db = self::getDB();
         $tables = $db->fetchTablesToExport();
         $version = Setup::$VERSION;
-        file_put_contents($export_file,"{\n\"version\":\"$version\",\n",FILE_APPEND);
+        $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
+        file_put_contents($export_file, "{\n\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", FILE_APPEND);
         foreach ($tables as $index => $table) {
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
             $data = json_encode($db->fetchRowsForExport($table_name, $instance_id));
-            file_put_contents($export_file, "\"$table_name\":$data,\n", FILE_APPEND);
+            file_put_contents($export_file, ",\"$table_name\":$data\n", FILE_APPEND);
         }
-        file_put_contents($export_file, "\"bloembraaden\":true\n}", FILE_APPEND);
+        file_put_contents($export_file, '}', FILE_APPEND);
         $logger->log("Exported to $export_file.");
         try {
             chmod($export_file, 0664);
-            $logger->log("Set permissions to 664");
-        } catch(\Throwable) {}
+            $logger->log('Set permissions to 664');
+        } catch (\Throwable) {
+        }
+    }
+
+    public static function import_export_folder(): string
+    {
+        $folder_name = Setup::$DBCACHE . 'import_export/';
+        if (false === file_exists($folder_name)) {
+            mkdir($folder_name);
+        }
+        return $folder_name;
     }
 
     public static function import_instance(string $file_name, LoggerInterface $logger): void
     {
-        if (file_exists($file_name)) { // try to keep the $file_name a bit secret
+        if (false === file_exists($file_name)) {
+            $logger->log('File does not exist, aborting');
+            return;
+        }
+        $memory_limit = .5 * (int)self::getMemorySize(ini_get('memory_limit'));
+        $files = array($file_name);
+        $db = self::getDB();
+        $tables = $db->fetchTablesToExport();
+        /**
+         * ignore _id columns that are false
+         * _id columns that are string, translate from that other column
+         * other id columns must be filled with translation arrays:
+         * [
+         *   old id => new id,
+         * ]
+         * if a table has any id columns (other than its own) that are not yet translated,
+         * park the table for later, reload it then to try again.
+         */
+        $ids = array(
+            'homepage_id' => 'page_id',
+            'session_id' => false,
+            'google_tracking_id' => false,
+            'payment_tracking_id' => false,
+            'template_id_order_confirmation' => 'template_id',
+            'template_id_payment_confirmation' => 'template_id',
+            'template_id_internal_confirmation' => 'template_id',
+        );
+        // what instance id are we performing the import on?
+        $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
+        // read file
+        while (file_exists($file_name = array_shift($files))) {
             set_time_limit(0); // this might take a while
-            $logger->log('Process uploaded file');
+            $logger->log("Process file $file_name");
             $handle = @fopen($file_name, 'r');
+            $string = '';
             if ($handle) {
                 // fgets read a line until eol, or 'length' bytes of the same line
                 while (($buffer = fgets($handle, 4096)) !== false) {
-                    if ("\n" === mb_substr("$buffer", -1))
-                    $logger->log($buffer);
+                    $string .= $buffer;
+                    $buffer = null;
+                    if ("\n" === mb_substr($string, -1)) {
+                        $string = trim($string, "\t\r\n\,");
+                        $json = (array)json_decode("{{$string}}");
+                        if (JSON_ERROR_NONE === json_last_error()) {
+                            $value = reset($json);
+                            $table_name = key($json);
+                            if (false === in_array($table_name, $tables)) {
+                                $logger->log("Table $table_name is never imported");
+                                $string = '';
+                                continue;
+                            }
+                            if (is_array($value)) { // value is the rows of the table
+                                $logger->log("handle table $table_name");
+                                $info = $db->getTableInfo($table_name);
+                                if ('_order_number' === $table_name) {
+                                    // just import this, has no id column
+                                    foreach ($value as $key => $row) {
+                                        // todo how to insert order numbers?
+                                        $logger->log('todo how to insert order numbers?');
+                                        $logger->log(var_export($row, true));
+                                    }
+                                    $string = '';
+                                    continue;
+                                }
+                                $id_column_name = $info->getIdColumn()->getName();
+                                $import_this = true;
+                                // check the columns, if any _id column is present, it has to be translated
+                                foreach ($info->getColumnNames() as $index => $column_name) {
+                                    if ($column_name === $id_column_name) continue;
+                                    if ('instance_id' === $column_name) continue;
+                                    if (isset($ids[$column_name])) {
+                                        $column_name_to_check = $ids[$column_name];
+                                        if (false === $column_name_to_check) continue;
+                                        if (is_string($column_name_to_check)
+                                            && false === isset($ids[$column_name_to_check])) {
+                                            $import_this = false;
+                                            break;
+                                        }
+                                    } elseif ('_id' === substr($column_name, -3)) {
+                                        $import_this = false;
+                                        break;
+                                    }
+                                }
+                                if (true === $import_this) {
+                                    if (($affected = $db->delete($table_name, $instance_id))) {
+                                        $logger->log("Cleared $affected rows from $table_name");
+                                    }
+                                    $logger->log("importing table $table_name");
+                                    // import the table line by line and register the id->id translation
+                                    $ids[$id_column_name] = array();
+                                    foreach ($value as $key => $row) {
+                                        $row = (array)$row;
+                                        $old_id = (int)$row[$id_column_name];
+                                        // todo translate values in the row between versions?
+                                        foreach ($row as $col_name => $col_value) {
+                                            if ($id_column_name === $col_name) {
+                                                unset($row[$col_name]);
+                                            } elseif (true === isset($ids[$col_name])) {
+                                                $col_trans = $col_name;
+                                                if (is_string($ids[$col_name])) {
+                                                    $col_trans = $ids[$col_name];
+                                                    if (false === is_array($ids[$col_trans])) {
+                                                        self::handleErrorAndStop("No ids found for column $col_name translated to $col_trans");
+                                                    }
+                                                }
+                                                if (is_array($ids_for_col = $ids[$col_trans])) {
+                                                    // 0 is possible as a default value for id's
+                                                    if (0 === $col_value) {
+                                                        $row[$col_name] = 0;
+                                                    } else {
+                                                        if (false === isset($ids_for_col[$col_value])) {
+                                                            $logger->log(var_export($ids, true));
+                                                            self::handleErrorAndStop("id $col_value not found for column $col_name");
+                                                        }
+                                                        $row[$col_name] = $ids_for_col[$col_value];
+                                                    }
+                                                }
+                                            } elseif ('instance_id' === $col_name) {
+                                                $row['instance_id'] = $instance_id; // we are now this instance id
+                                            }
+                                        }
+                                        $new_id = $db->insertRowAndReturnKey($table_name, $row);
+                                        $ids[$id_column_name][$old_id] = $new_id;
+                                    }
+                                } else {
+                                    $logger->log("save table $table_name for later");
+                                    // register this table for importing later and write the object to disk
+                                    $folder_name = self::import_export_folder();
+                                    $file_name = "$folder_name$instance_id-$table_name.json";
+                                    if (false === file_exists($file_name)) {
+                                        file_put_contents($file_name, "$string\n");
+                                    }
+                                    $files[] = $file_name;
+                                }
+                                //$logger->log(var_export($value, true));
+                            } else {
+                                $logger->log("$table_name: $value");
+                            }
+                        } else {
+                            $logger->log('That is no json, cannot import');
+                        }
+                        $logger->log(var_export($files, true));
+                        $string = '';
+                    } elseif (memory_get_usage(true) > $memory_limit) {
+                        // if the memory is running out, warn and stop
+                        $logger->log('Working on ' . substr($string, 0, 50) . '...');
+                        $logger->log('Memory is running out, increase memory for php, aborting');
+                        break;
+                    }
                 }
-                if (!feof($handle)) {
+                if (false === feof($handle)) {
                     $logger->log('Error: unexpected fgets() fail');
                 }
-                fclose($handle);
             } else {
                 $logger->log('Error: couldn’t get a handle on that file');
             }
-        } else {
-            $logger->log('File does not exist, aborting');
+            // cleanup the file when it is no longer in the queue
+            if (false === in_array($file_name, $files))  {
+                unlink($file_name);
+            }
         }
     }
 

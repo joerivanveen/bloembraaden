@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -204,7 +204,7 @@ class Table extends Base
 
     public function getType(): Type
     {
-        if (! isset($this->type)) {
+        if (!isset($this->type)) {
             $this->type = new Type($this->info->getTableName());
         }
 
@@ -277,7 +277,7 @@ class TableInfo
         foreach ($columns as $index => $column) {
             $column_name = (string)$column->name;
             // hidden columns that are never output
-            if ($column_name === 'ci_ai') {
+            if ('ci_ai' === $column_name) {
                 $this->has_ci_ai_column = true;
                 continue;
             }
@@ -307,11 +307,10 @@ class TableInfo
             if ($this->getColumnByName($column_name)->getDefault() === 'serial') {
                 $this->id_column = $column_name;
                 $column->editable = false;
-            } else { // instance_id only means "per instance" if it's not the id column, because that would be table _instance
-                if ('instance_id' === $column_name) {
-                    $this->per_instance = true;
-                    $column->editable = false;
-                }
+            } elseif ('instance_id' === $column_name) {
+                // instance_id only means "per instance" if it's not the id column, because that would be table _instance
+                $this->per_instance = true;
+                $column->editable = false;
             }
             if ($column->editable === false) $this->getColumnByName($column_name)->setEditable(false);
         }

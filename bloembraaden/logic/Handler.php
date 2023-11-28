@@ -1531,6 +1531,8 @@ class Handler extends BaseLogic
 
     public function View()
     {
+//        $apcuAvailable = function_exists('apcu_enabled') && apcu_enabled();
+//        die($apcuAvailable);
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();
         if (isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {

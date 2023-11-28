@@ -3376,7 +3376,7 @@ class DB extends Base
     public function clearSlug(string $slug = null, Type $element = null, int $id = 0, int $depth = 0): string
     {
         if (null === $element) $element = new Type('search');
-        if (null === $slug or '' === $slug) $slug = $element->typeName() . '-' . (string)$id;
+        if (null === $slug || '' === $slug) $slug = $element->typeName() . '-' . (string)$id;
         if ($depth === 0) {
             // make it a safe slug (no special characters)
             $slug = Help::slugify($slug);
@@ -3452,7 +3452,7 @@ class DB extends Base
             SELECT DISTINCT t.table_name FROM information_schema.tables t
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_media');
+            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_media');
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
@@ -4380,6 +4380,15 @@ class DB extends Base
         $row_count = $statement->rowCount();
         $statement = $this->conn->prepare('DELETE FROM _stale WHERE instance_id = ?;');
         $statement->execute(array($instance_id));
+        $statement = null;
+
+        return $row_count;
+    }
+
+    public function delete(string $table_name, int $instance_id): int {
+        $statement = $this->conn->prepare("DELETE FROM $table_name WHERE $instance_id = ?");
+        $statement->execute(array($instance_id));
+        $row_count = $statement->rowCount();
         $statement = null;
 
         return $row_count;
