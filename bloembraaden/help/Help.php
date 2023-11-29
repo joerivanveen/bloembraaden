@@ -966,7 +966,7 @@ class Help
         // now set the version
         $db->run(sprintf('update _system set version = \'%s\';', $version));
         // @since 0.7.7 clear data cache
-        $files = glob(Setup::$DBCACHE . '*.info.serialized'); // get all file names
+        $files = glob(Setup::$DBCACHE . '*.serialized'); // get all table info files
         foreach ($files as $file) { // iterate files
             if (is_file($file)) {
                 unlink($file); // delete file
