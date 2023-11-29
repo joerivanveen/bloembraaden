@@ -195,7 +195,7 @@ class Resolver extends BaseLogic
                     if (null === ($user = $session->getUser())) {
                         return new BaseElement((object)array(
                             'title' => __('User', 'peatcms'),
-                            'type' => 'user',
+                            'type_name' => 'user',
                             'slug' => '__user__',
                         ));
                     } else {
@@ -223,13 +223,13 @@ class Resolver extends BaseLogic
                             $slug = '__order__/page:' . $page;
                             $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page_size);
                         }
-                        if (count($orders) === 1) {
+                        if (1 === count($orders)) {
                             $order = new Order($orders[0]);
 
                             return new BaseElement((object)array(
                                 'title' => __('Order detail', 'peatcms'),
                                 'template_pointer' => (object)array('name' => 'order', 'admin' => true),
-                                'type' => 'order',
+                                'type_name' => 'order',
                                 'order_id' => $order->getId(),
                                 'slug' => '__order__/' . $order->getOrderNumber(),
                                 '__order__' => array($order->getOutput()),
@@ -238,7 +238,7 @@ class Resolver extends BaseLogic
                             return new BaseElement((object)array(
                                 'title' => __('Order overview', 'peatcms'),
                                 'template_pointer' => (object)array('name' => 'order_overview', 'admin' => true),
-                                'type' => 'search',
+                                'type_name' => 'search',
                                 'slug' => $slug,
                                 '__orders__' => $orders,
                                 '__pages__' => $pages ?? array(),
