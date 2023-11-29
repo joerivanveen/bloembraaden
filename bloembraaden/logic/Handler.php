@@ -329,7 +329,7 @@ class Handler extends BaseLogic
         } elseif ('admin_import_export_instance' === $action) {
             $props = $this->resolver->getProperties();
             $sse = new SseLogger();
-            if (!($admin = Help::$session->getAdmin()) instanceof Admin) {
+            if (false === ($admin = Help::$session->getAdmin()) instanceof Admin) {
                 $sse->log(__('Import / export can only be accessed by admin.', 'peatcms'));
                 $sse->addError('Import / export can only be accessed by admin.');
             } elseif (true === isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
@@ -341,6 +341,8 @@ class Handler extends BaseLogic
                 }
             } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
                 Help::import_instance($import_file_name, $sse);
+                $rows_affected = Help::getDB()->clear_cache_for_instance(Setup::$instance_id);
+                $sse->log(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
             } else {
                 $sse->log(__('Nothing to do.', 'peatcms'));
             }
@@ -979,18 +981,18 @@ class Handler extends BaseLogic
                         $out = array('slug' => $path);
                     }
                 } elseif ($action === 'admin_clear_cache_for_instance') {
-                    if (isset($post_data->instance_id) and $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
                         $this->addMessage(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
                     }
                 } elseif ($action === 'admin_export_templates_by_name') {
-                    if (isset($post_data->instance_id) and $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $content = Help::getDB()->getTemplates($instance_id);
                         $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
                         $out = array('download' => array('content' => $content, 'file_name' => $file_name));
                     }
                 } elseif ($action === 'admin_import_templates_by_name') {
-                    if (isset($post_data->instance_id) and $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         if (isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
                             $count_done = 0;
                             foreach ($templates as $key => $posted_row) {

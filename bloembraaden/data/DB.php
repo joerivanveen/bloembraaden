@@ -3452,7 +3452,7 @@ class DB extends Base
             SELECT DISTINCT t.table_name FROM information_schema.tables t
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_media');
+            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media');
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
@@ -3694,6 +3694,7 @@ class DB extends Base
             $new_slug = $this->clearSlug($col_val['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
             $col_val['slug'] = $new_slug;
         }
+        if (isset($col_val['date_updated'])) unset($col_val['date_updated']);
         $data = $table->formatColumnsAndData($col_val, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
         if (true === in_array('slug', $data['discarded'])) unset($new_slug);
@@ -4385,7 +4386,8 @@ class DB extends Base
         return $row_count;
     }
 
-    public function delete(string $table_name, int $instance_id): int {
+    public function deleteForInstance(string $table_name, int $instance_id): int {
+        if ('_instance' === $table_name) return 0; // you cannot delete the instance itself this way
         $statement = $this->conn->prepare("DELETE FROM $table_name WHERE $instance_id = ?");
         $statement->execute(array($instance_id));
         $row_count = $statement->rowCount();
