@@ -763,8 +763,10 @@ class Help
         );
         // what instance id are we performing the import on?
         $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
+        $repeat = -1;
         // read file
         while (($file_name = array_shift($files)) && file_exists($file_name)) {
+            ++$repeat;
             $logger->log("Process file $file_name");
             $handle = @fopen($file_name, 'r');
             $string = '';
@@ -823,6 +825,7 @@ class Help
                                     }
                                 }
                                 if (true === $import_this || 0 === count($value)) {
+                                    $repeat = -1;
                                     if ('_instance' !== $table_name) {
                                         if (($affected = $db->deleteForInstance($table_name, $instance_id))) {
                                             $logger->log("Cleared $affected rows from $table_name");
@@ -914,6 +917,10 @@ class Help
                 }
             } else {
                 $logger->log('Error: couldn’t get a handle on that file');
+            }
+            //$logger->log('repeat: ' . $repeat . ' / ' . count($files));
+            if ($repeat === count($files)) {
+                Help::handleErrorAndStop('Endless loop detected during import', 'Endless loop detected, aborting');
             }
         }
         // cleanup
