@@ -15,6 +15,45 @@ class Base
     {
     }
 
+    protected function obtainLock(string $identifier): bool
+    {
+        $locks = (array)Help::$session->getValue('locks');
+        // if you already have it in your session, proceed
+        if (in_array($identifier, $locks)) {
+            return true;
+        }
+        // if nobody else has it, lock it tight, else return false
+        $file_name = Setup::$DBCACHE . '.' . rawurlencode($identifier) . '.lock';
+        if (false === file_exists($file_name)) {
+            file_put_contents($file_name, '', LOCK_EX);
+        } else {
+            return false;
+        }
+        // add to session
+        $locks[] = $identifier;
+        Help::$session->setVar('locks', $locks);
+        return true;
+    }
+
+    protected function releaseLock(string $identifier): void
+    {
+        // remove from session
+        $locks = (array)Help::$session->getValue('locks');
+        if (in_array($identifier, $locks)) {
+            unset($locks[$identifier]);
+            // unlock it, but if you did not have it there, record an error
+            $file_name = Setup::$DBCACHE . '.' . rawurlencode($identifier) . '.lock';
+            if (false === file_exists($file_name)) {
+                $this->addError("Could not release lock $identifier");
+            } else {
+                unlink($file_name);
+            }
+            Help::$session->setVar('locks', $locks);
+        } else {
+            $this->addError("Lock $identifier not found in session to release");
+        }
+    }
+
     /**
      * Messages are meant for client, so should be localized and not contain sensitive information
      *

@@ -1906,7 +1906,7 @@ PEATCMS_admin.prototype.createElement = function (type) {
             if (data.hasOwnProperty('slug')) {
                 //self.edit(data.slug);
                 self.panels.open('sidebar'); // navigation will load edit_area
-                NAV.go(data.slug, true);
+                NAV.go(data.slug);
             } else {
                 console.warn('Edit for new item failed');
                 if (VERBOSE) console.log(data);

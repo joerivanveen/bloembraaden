@@ -3371,20 +3371,23 @@ class DB extends Base
      * @param ?Type $element optional default null the element you check the slug for
      * @param int $id optional the id of the element you're checking the slug for
      * @param int $depth optional default 0 keeps count of recursiveness, function fails at 100 tries
-     * @return string the cleared slug safe to use, per instance, with an index behind it if necessary
+     * @return string the cleared slug safe to use, per instance, with a prefix index if necessary
      */
     public function clearSlug(string $slug = null, Type $element = null, int $id = 0, int $depth = 0): string
     {
         if (null === $element) $element = new Type('search');
-        if (null === $slug || '' === $slug) $slug = $element->typeName() . '-' . (string)$id;
+        if (null === $slug || '' === $slug) $slug = "{$element->typeName()}-$id";
         if ($depth === 0) {
             // make it a safe slug (no special characters)
             $slug = Help::slugify($slug);
         }
         $slug = substr($slug, 0, 127);
+        $instance_id = Setup::$instance_id;
+        if (false === $this->obtainLock("clearSlug-$instance_id")) {
+            $this->handleErrorAndStop("Could not obtain lock to clear slug $slug for instance $instance_id", 'Operation is locked');
+        }
         $rows = $this->getTablesWithSlugs();
         $found = false;
-        $instance_id = Setup::$instance_id;
         // loop through the tables to see if any exist that have this slug (that are not this $element and $id)
         foreach ($rows as $key => $row) {
             $table_name = $row->table_name;
@@ -3421,6 +3424,8 @@ class DB extends Base
                 return $this->clearSlug("$depth-$slug", $element, $id, $depth);
             }
         }
+
+        $this->releaseLock("clearSlug-$instance_id");
 
         // return the cleared slug, since it hasn't been $found apparently
         return $slug;
