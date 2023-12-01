@@ -11,6 +11,7 @@ class Help
 {
     private static DB $db;
     private static array $errors = array();
+    private static array $values = array();
     private static array $messages = array(); // indexed array of objects {message:..,count:..,level:..}
 
     public static Session $session;
@@ -33,6 +34,28 @@ class Help
         }
 
         return static::$db;
+    }
+
+    /**
+     * @param string $identifier
+     * @param $value
+     * @return void
+     */
+    public static function setValue(string $identifier, $value): void
+    {
+        self::$values[$identifier] = $value;
+    }
+
+    /**
+     * @param string $identifier
+     * @return mixed|null
+     */
+    public static function getValue(string $identifier): mixed
+    {
+        if (array_key_exists($identifier, ($values = self::$values))) {
+            return $values[$identifier];
+        }
+        return null;
     }
 
     /**
