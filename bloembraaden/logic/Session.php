@@ -62,11 +62,11 @@ class Session extends BaseLogic
     }
 
     /**
-     * __destruct this class on shutdown
+     * Remember messages and save updated vars to database for next request
      */
-    public function __shutdown()
+    public function __shutdown(): void
     {
-        // save lingering messages to db for later use
+        // save lingering messages for later use
         if (Help::hasMessages()) {
             $this->setVar('peatcms_messages', Help::getMessagesAsJson(), 0);
         }
@@ -110,7 +110,7 @@ class Session extends BaseLogic
                 } elseif ($this->admin = new Admin($row->id)) {
                         return $this->refreshAfterLogin(array('admin_id' => $row->id));
                 }
-                $this->addError(sprintf('Email %s checks out in password_verify(), but no user is found.', $email));
+                $this->addError("Email $email checks out in password_verify(), but no user is found.");
                 $this->addMessage(__('Name / pass checks out, but no user found.', 'peatcms'), 'error');
             }
         }
@@ -217,7 +217,7 @@ class Session extends BaseLogic
     {
         if (true === isset($this->vars[$name]) && ($var = $this->vars[$name])) {
             if ($var->value === $value) return;
-            if ($times === 0) {
+            if (0 === $times) {
                 $times = $var->times;
             } elseif ($var->times > $times) {
                 return; // don’t update if the current value is newer
@@ -235,6 +235,8 @@ class Session extends BaseLogic
     public function delVar(string $name): void
     {
         unset($this->vars[$name]);
+        // remember to delete this on shutdown
+        $this->vars_updated[] = $name;
     }
 
     public function getUser(): ?User
@@ -316,11 +318,7 @@ class Session extends BaseLogic
 
     private function getCookie(string $name): ?string
     {
-        if (isset($_COOKIE[$name])) {
-            return $_COOKIE[$name];
-        }
-
-        return null;
+        return $_COOKIE[$name] ?? null;
     }
 
     private function setCookie(string $name, string $value): bool
@@ -330,11 +328,10 @@ class Session extends BaseLogic
             'expires' => time() + 31536000,
             'path' => '/',
             'domain' => '',
-            'secure' => true,     // or false
-            'httponly' => true,    // or false
-            'samesite' => 'Lax' // None || Lax  || Strict <- strict breaks session after payment and other incoming links... BAD
+            'secure' => true, // or false
+            'httponly' => true, // or false
+            'samesite' => 'Lax' // None || Lax  || Strict <- strict breaks session after payment and other incoming links
         ));
-        //time() + 31536000, '/', '', true, true);
     }
 
     /**
