@@ -30,7 +30,7 @@ class Session extends BaseLogic
         $this->user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
         // check for cookie and create it if not present
         $this->token = $this->getCookie('BLOEMBRAADEN');
-        if (!$this->token || strlen($this->token) !== 32) {
+        if (null === $this->token || strlen($this->token) !== 32) {
             $this->token = $this->newSession();
             $this->setCookie('BLOEMBRAADEN', $this->token);
         }
@@ -43,7 +43,9 @@ class Session extends BaseLogic
                 $this->handleErrorAndStop($this->getLastError(), __('Could not start session.', 'peatcms'));
             }
         }
-        if (!$this->getValue('csrf_token')) $this->setVar('csrf_token', Help::randomString(9), 0);
+        if (null === $this->getValue('csrf_token')) {
+            $this->setVar('csrf_token', Help::randomString(9), 0);
+        }
         // get lingering messages (if any)
         if (null !== ($messages_as_json = $this->getValue('peatcms_messages', true))) {
             if ($messages = json_decode($messages_as_json)) {
@@ -67,6 +69,13 @@ class Session extends BaseLogic
         // save lingering messages to db for later use
         if (Help::hasMessages()) {
             $this->setVar('peatcms_messages', Help::getMessagesAsJson(), 0);
+        }
+        // update session vars in database
+        $updated_vars = $this->getUpdatedVars();
+        $session_id = $this->getId();
+        foreach ($updated_vars as $name=>$var) {
+            if (null === $var) $var = (object)array('delete'=>true);
+            Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
     }
 
@@ -93,7 +102,7 @@ class Session extends BaseLogic
     public function login(string $email, string $pass, bool $as_admin): bool
     {
         if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
-            if (password_verify($pass, $row->hash)) {
+            if (true === password_verify($pass, $row->hash)) {
                 if (false === $as_admin) {
                     if ($this->user = new User($row->id)) {
                         return $this->refreshAfterLogin(array('user_id' => $row->id));
@@ -144,14 +153,14 @@ class Session extends BaseLogic
     /**
      * @param string $name the name of the variable you want to get
      * @param bool $with_remove default false, use true if you want to remove the variable from session immediately
-     * @return mixed|null the value you put into it in the first place
+     * @return \stdClass|null the value you put into it in the first place
      * @since 0.1.0, @since 0.5.12 it returns the whole var including the times
      */
-    public function getVar(string $name, bool $with_remove = false)
+    public function getVar(string $name, bool $with_remove = false): ?\stdClass
     {
         if (isset($this->vars[$name])) {
             $var = $this->vars[$name]; // mixed
-            if ($with_remove) $this->delVar($name);
+            if (true === $with_remove) $this->delVar($name);
 
             return $var;
         } else {
@@ -165,16 +174,12 @@ class Session extends BaseLogic
      * @return mixed|null the value you put into it in the first place
      * @since 0.5.12
      */
-    public function getValue(string $name, bool $with_remove = false)
+    public function getValue(string $name, bool $with_remove = false): mixed
     {
-        if (isset($this->vars[$name])) {
-            $var = $this->vars[$name]->value; // mixed
-            if ($with_remove) $this->delVar($name);
-
-            return $var;
-        } else {
-            return null;
+        if (($var = $this->getVar($name, $with_remove))) {
+            return $var->value;
         }
+        return null;
     }
 
     /**
@@ -208,9 +213,9 @@ class Session extends BaseLogic
      * @param mixed $value can be of any type, will be jsonencoded by DB class for persistent storage
      * @param int $times @since 0.5.12 default 0: when updating without $times or with 0 the current value is maintained
      */
-    public function setVar(string $name, mixed $value, int $times = 0)
+    public function setVar(string $name, mixed $value, int $times = 0): void
     {
-        if (isset($this->vars[$name]) && ($var = $this->vars[$name])) {
+        if (true === isset($this->vars[$name]) && ($var = $this->vars[$name])) {
             if ($var->value === $value) return;
             if ($times === 0) {
                 $times = $var->times;
@@ -218,20 +223,18 @@ class Session extends BaseLogic
                 return; // don’t update if the current value is newer
             }
         }
-        // @since 0.5.13 update immediately TODO update the vars_updated on shutdown...
-        $this->vars[$name] = Help::getDB()->updateSessionVar($this->getId(), $name, (object)array('value' => $value, 'times' => $times));
-        // @since 0.6.1 remember updated vars to update on the client as well
+        $this->vars[$name] = (object)array('value' => $value, 'times' => $times);
+        // @since 0.6.1 remember updated vars
         $this->vars_updated[] = $name;
     }
 
-    public function delVar($name)
+    /**
+     * @param string $name
+     * @return void
+     */
+    public function delVar(string $name): void
     {
-        if (! isset($this->vars[$name])) return;
-        // @since 0.5.13 update immediately
-        $this->vars[$name]->delete = true;
-        if (null === Help::getDB()->updateSessionVar($this->getId(), $name, $this->vars[$name])) {
-            unset($this->vars[$name]);
-        }
+        unset($this->vars[$name]);
     }
 
     public function getUser(): ?User
@@ -271,18 +274,18 @@ class Session extends BaseLogic
     public function load(bool $register_access = true): bool
     {
         // get all the stuff from the database
-        if ($session = Help::getDB()->fetchSession($this->token)) {
+        if ($session_row = Help::getDB()->fetchSession($this->token)) {
             // get user
-            if ($session->user_id > 0) {
-                $this->user = new User($session->user_id);
+            if ($session_row->user_id > 0) {
+                $this->user = new User($session_row->user_id);
                 // this user is gone:
                 if ($this->user->getId() === 0) {
                     $this->user = null; // attention this is not auto-updated in the db for this session
                 }
             }
             // get admin
-            if ($session->admin_id > 0) {
-                $this->admin = new Admin($session->admin_id);
+            if ($session_row->admin_id > 0) {
+                $this->admin = new Admin($session_row->admin_id);
                 // if admin no longer exists
                 if ($this->admin->getId() === 0) {
                     $this->admin = null; // attention this is not auto-updated in the db for this session
@@ -291,12 +294,12 @@ class Session extends BaseLogic
                 }
             }
             // get vars
-            if (isset($session->vars)) {
-                $this->vars = $session->vars;
+            if (isset($session_row->vars)) {
+                $this->vars = $session_row->vars;
             }
-            $this->session_id = $session->session_id; // must always be present, this is NOT the token, just an int for identifying internally
+            $this->session_id = $session_row->session_id; // must always be present, this is NOT the token, just an int for identifying internally
             if (true === $register_access) {
-                if ($this->ip_address !== $session->ip_address) {
+                if ($this->ip_address !== $session_row->ip_address) {
                     Help::getDB()->registerSessionAccess($this->token, $this->ip_address);
                 } else {
                     Help::getDB()->registerSessionAccess($this->token);
@@ -342,8 +345,8 @@ class Session extends BaseLogic
     private function newSession(): string
     {
         // get fresh token, insert a new session row in database, keep trying until success (meaning the token is unique)
-        if (!($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
-            if (!($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+        if (null === ($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+            if (null === ($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
                 // when failed twice there is something very fishy going on
                 $this->handleErrorAndStop(Help::getDB()->getLastError(),
                     __('Unable to create unique session id.', 'peatcms'));
