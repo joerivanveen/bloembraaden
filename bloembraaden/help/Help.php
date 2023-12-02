@@ -727,14 +727,31 @@ class Help
         foreach ($tables as $index => $table) {
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
-            $data = json_encode($db->fetchRowsForExport($table_name, $instance_id));
-            file_put_contents($export_file, ",\"$table_name\":$data\n", FILE_APPEND);
+            // use the prepared statement to fetch and save row by row, to prevent memory exhaustion
+            $statement = $db->fetchRowsForExport($table_name, $instance_id);
+            file_put_contents($export_file, ",\"$table_name\":[", FILE_APPEND);
+            $row_count = $statement->rowCount();
+            // write row by row to buffer, save every 20 rows to file
+            ob_start();
+            $row_number = 0;
+            while (($row = $statement->fetch(5))) {
+                ++$row_number;
+                echo json_encode($row);
+                if ($row_number < $row_count) echo ',';
+                if (0 === $row_number % 20) {
+                    file_put_contents($export_file, ob_get_clean(), FILE_APPEND);
+                    ob_start();
+                }
+            }
+            // end nicely and save remaining to file
+            echo "]\n";
+            file_put_contents($export_file, ob_get_clean(), FILE_APPEND);
         }
         file_put_contents($export_file, '}', FILE_APPEND);
         $logger->log("Exported to $export_file.");
         try {
-            chmod($export_file, 0664);
-            $logger->log('Set permissions to 664');
+            chmod($export_file, 0666);
+            $logger->log('Set permissions to 666');
         } catch (\Throwable) {
         }
     }

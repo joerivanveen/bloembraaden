@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 namespace Bloembraaden;
+use PgSql\Result;
+
 class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
@@ -3467,7 +3469,7 @@ class DB extends Base
         return $tables;
     }
 
-    public function fetchRowsForExport(string $table_name, int $instance_id): array
+    public function fetchRowsForExport(string $table_name, int $instance_id): \PDOStatement
     {
         if (
             false !== ($is_x_table = strpos($table_name, '_x_'))
@@ -3489,10 +3491,8 @@ class DB extends Base
             $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = ?;");
         }
         $statement->execute(array($instance_id));
-        $rows = $statement->fetchAll(5);
-        $statement = null;
 
-        return $rows;
+        return $statement;
     }
 
     /**
