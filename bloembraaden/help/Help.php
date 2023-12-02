@@ -723,31 +723,29 @@ class Help
         $tables = $db->fetchTablesToExport();
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
-        file_put_contents($export_file, "{\n\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", FILE_APPEND);
+        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", FILE_APPEND);
         foreach ($tables as $index => $table) {
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
             // use the prepared statement to fetch and save row by row, to prevent memory exhaustion
             $statement = $db->fetchRowsForExport($table_name, $instance_id);
-            file_put_contents($export_file, ",\"$table_name\":[", FILE_APPEND);
-            $row_count = $statement->rowCount();
+            file_put_contents($export_file, "\"table\":{\"table_name\":\"$table_name\",\"row_count\":{$statement->rowCount()}}\n", FILE_APPEND);
             // write row by row to buffer, save every 20 rows to file
             ob_start();
             $row_number = 0;
             while (($row = $statement->fetch(5))) {
                 ++$row_number;
+                echo "\"$row_number\":";
                 echo json_encode($row);
-                if ($row_number < $row_count) echo ',';
+                echo "\n";
                 if (0 === $row_number % 20) {
                     file_put_contents($export_file, ob_get_clean(), FILE_APPEND);
                     ob_start();
                 }
             }
-            // end nicely and save remaining to file
-            echo "]\n";
+            // save remaining to file
             file_put_contents($export_file, ob_get_clean(), FILE_APPEND);
         }
-        file_put_contents($export_file, '}', FILE_APPEND);
         $logger->log("Exported to $export_file.");
         try {
             chmod($export_file, 0666);
@@ -772,7 +770,7 @@ class Help
             return;
         }
         set_time_limit(0); // this might take a while
-        $memory_limit = .5 * (int)self::getMemorySize(ini_get('memory_limit'));
+        $memory_limit = .25 * (int)self::getMemorySize(ini_get('memory_limit'));
         $files = array($file_name);
         $folder_name = self::import_export_folder();
         $db = self::getDB();
@@ -791,6 +789,7 @@ class Help
          */
         $ids = array(
             'homepage_id' => 'page_id',
+            'reply_to_id' => 'comment_id',
             'session_id' => false,
             'admin_id' => false,
             'google_tracking_id' => false,
@@ -810,7 +809,10 @@ class Help
             $logger->log("Process file $file_name");
             $handle = @fopen($file_name, 'r');
             $string = '';
+            $table_name = '';
             if ($handle) {
+                $row_index = 0;
+                $row_treat = 'save'; // skip, wait, save
                 // fgets read a line until eol, or 'length' bytes of the same line
                 while (($buffer = fgets($handle, 4096)) !== false) {
                     $string .= $buffer;
@@ -820,26 +822,26 @@ class Help
                         $json = (array)json_decode("{{$string}}");
                         if (JSON_ERROR_NONE === json_last_error()) {
                             $value = reset($json);
-                            $table_name = key($json);
-                            if (is_array($value)) { // value is the rows of the table
+                            $key = key($json);
+                            if ('table' === $key) {
+                                $table_name = $value->table_name;
+                                $row_count = $value->row_count;
+                                $row_treat = 'save';
                                 $logger->log("Handle table $table_name");
                                 $info = $db->getTableInfo($table_name);
                                 if (false === in_array($table_name, $tables)) {
                                     $logger->log("Table $table_name is never imported");
                                     $string = '';
+                                    $row_treat = 'skip';
                                     continue;
                                 } elseif ('_order_number' === $table_name) {
-                                    // just import this, has no id column
-                                    foreach ($value as $key => $row) {
-                                        // todo how to insert order numbers?
-                                        $logger->log('Todo how to insert order numbers?');
-                                        $logger->log(var_export($row, true));
-                                    }
+                                    // todo how to insert order numbers?
+                                    $logger->log('Todo how to insert order numbers?');
                                     $string = '';
+                                    $row_treat = 'skip';
                                     continue;
                                 }
                                 $id_column_name = $info->getIdColumn()->getName();
-                                $import_this = true;
                                 // check the columns, if any _id column is present, it has to be translated
                                 foreach ($info->getColumnNames() as $index => $column_name) {
                                     if ($id_column_name === $column_name) continue;
@@ -855,90 +857,96 @@ class Help
                                         if (is_string($column_name_to_check)
                                             && false === isset($ids[$column_name_to_check])) {
                                             $logger->log("Column $column_name -> $column_name_to_check not filled yet");
-                                            $import_this = false;
+                                            $row_treat = 'wait';
                                             break;
                                         }
                                     } elseif ('_id' === substr($column_name, -3)) {
                                         $logger->log("Column $column_name not filled with ids yet");
-                                        $import_this = false;
+                                        $row_treat = 'wait';
                                         break;
                                     }
                                 }
-                                if (true === $import_this || 0 === count($value)) {
+                                if ('save' === $row_treat || 0 === $row_count) {
                                     $repeat = -1;
                                     if ('_instance' !== $table_name) {
                                         if (($affected = $db->deleteForInstance($table_name, $instance_id))) {
                                             $logger->log("Cleared $affected rows from $table_name");
                                         }
-                                        $logger->log("Importing table $table_name");
+                                        $logger->log("Importing table $table_name ($row_count rows)");
                                         // import the table line by line and register the id->id translation
                                         $ids[$id_column_name] = array();
                                     }
-                                    foreach ($value as $key => $row) {
-                                        $row = (array)$row;
-                                        $old_id = (int)$row[$id_column_name];
-                                        // todo translate values in the row between versions?
-                                        foreach ($row as $col_name => $col_value) {
-                                            // $col_trans will be the name of the original id column we need
-                                            if ('sub_' === substr($col_name, 0, 4)) {
-                                                $col_trans = substr($col_name, 4);
-                                            } else {
-                                                $col_trans = $col_name;
-                                            }
-                                            if ($id_column_name === $col_name) {
-                                                unset($row[$col_name]);
-                                            } elseif (true === isset($ids[$col_trans])) {
-                                                if (is_string($ids[$col_trans])) {
-                                                    $col_trans = $ids[$col_trans];
-                                                    if (false === is_array($ids[$col_trans])) {
-                                                        self::handleErrorAndStop("No ids found for column $col_name translated to $col_trans");
-                                                    }
-                                                }
-                                                if (is_array($ids_for_col = $ids[$col_trans])) {
-                                                    // 0 is possible as a default value for id's
-                                                    if (0 === $col_value) {
-                                                        $row[$col_name] = 0;
-                                                    } else {
-                                                        if (false === isset($ids_for_col[$col_value])) {
-                                                            //$logger->log(var_export($ids, true));
-                                                            $logger->log("Id $col_value not found for column $col_name");
-                                                            continue; // if the id was no longer in the original, no need to import
-                                                        }
-                                                        $row[$col_name] = $ids_for_col[$col_value];
-                                                    }
-                                                }
-                                            } elseif ('instance_id' === $col_name) {
-                                                $row['instance_id'] = $instance_id; // we are now this instance id
-                                            } elseif ('client_id' === $col_name) {
-                                                $row['client_id'] = Help::$session->getInstance()->getClientId();
-                                            }
-                                        }
-                                        if ('_instance' === $table_name) {
-                                            // only update the instance if there is one row
-                                            if (1 === count($value)) {
-                                                unset($row['instance_id']);
-                                                $db->updateColumns('_instance', $row, $instance_id);
-                                                $logger->log("Updated instance $instance_id");
-                                            } else {
-                                                $logger->log('Cannot update instance');
-                                            }
-                                        } else {
-                                            $new_id = $db->insertRowAndReturnKey($table_name, $row);
-                                            $ids[$id_column_name][$old_id] = $new_id;
-                                        }
-                                    }
-                                } else {
+                                } elseif ('wait' === $row_treat) {
                                     $logger->log("Save table $table_name for later");
                                     // register this table for importing later and write the object to disk
                                     $file_name = "$folder_name$instance_id.$table_name.json";
                                     if (false === file_exists($file_name)) {
-                                        file_put_contents($file_name, "$string\n");
+                                        file_put_contents($file_name, "$string\n", LOCK_EX);
+                                    } else {
+                                        $row_treat = 'skip'; // no need to save all the rows to this file again
                                     }
                                     $files[] = $file_name;
                                 }
+                                // we’re done with the table row
+                                $string = '';
+                                continue;
+                            }
+                            if (is_object($value)) { // value is a row ($key = index...)
+                                ++$row_index;
+                                if ('save' === $row_treat) {
+                                    $row = (array)$value;
+                                    $old_id = (int)$row[$id_column_name];
+                                    // todo translate values in the row between versions?
+                                    foreach ($row as $col_name => $col_value) {
+                                        // $col_trans will be the name of the original id column we need
+                                        if ('sub_' === substr($col_name, 0, 4)) {
+                                            $col_trans = substr($col_name, 4);
+                                        } else {
+                                            $col_trans = $col_name;
+                                        }
+                                        if ($id_column_name === $col_name) {
+                                            unset($row[$col_name]);
+                                        } elseif (true === isset($ids[$col_trans])) {
+                                            if (is_string($ids[$col_trans])) {
+                                                $col_trans = $ids[$col_trans];
+                                                if (false === is_array($ids[$col_trans])) {
+                                                    self::handleErrorAndStop("No ids found for column $col_name translated to $col_trans");
+                                                }
+                                            }
+                                            if (is_array($ids_for_col = $ids[$col_trans])) {
+                                                // 0 is possible as a default value for id's
+                                                if (0 === $col_value) {
+                                                    $row[$col_name] = 0;
+                                                } else {
+                                                    if (false === isset($ids_for_col[$col_value])) {
+                                                        //$logger->log(var_export($ids, true));
+                                                        $logger->log("Id $col_value not found for column $col_name");
+                                                        continue; // if the id was no longer in the original, no need to import
+                                                    }
+                                                    $row[$col_name] = $ids_for_col[$col_value];
+                                                }
+                                            }
+                                        } elseif ('instance_id' === $col_name) {
+                                            $row['instance_id'] = $instance_id; // we are now this instance id
+                                        } elseif ('client_id' === $col_name) {
+                                            $row['client_id'] = Help::$session->getInstance()->getClientId();
+                                        }
+                                    }
+                                    if ('_instance' === $table_name) {
+                                        unset($row['instance_id']);
+                                        $db->updateColumns('_instance', $row, $instance_id);
+                                        $logger->log("Updated instance $instance_id");
+                                    } else {
+                                        $new_id = $db->insertRowAndReturnKey($table_name, $row);
+                                        $ids[$id_column_name][$old_id] = $new_id;
+                                    }
+                                } elseif ('wait' === $row_treat) {
+                                    // save to the existing file
+                                    file_put_contents($file_name, "$string\n", FILE_APPEND);
+                                }
                                 //$logger->log(var_export($value, true));
                             } else {
-                                $logger->log("$table_name: $value");
+                                $logger->log("$key: $value");
                             }
                         } else {
                             $logger->log('Row is not json, skipping');
