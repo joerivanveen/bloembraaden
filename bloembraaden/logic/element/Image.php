@@ -53,16 +53,19 @@ class Image extends BaseElement
         $path = Setup::$UPLOADS;
         if (isset($this->row->filename_saved)) {
             $path .= $this->row->filename_saved;
+        } elseif (isset($this->row->src)) { // provision for instagram images...
+            $src = $this->row->src;
+            $data['src'] = $src; // we want this saved in the end
+            $path .= $src;
         } else {
-            // provision for instagram images...
-            $data['src'] = $this->row->src; // we want this saved in the end
-            $path .= $this->row->src;
+            $logger->log('Original no longer available');
+            return false;
         }
         // check physical (image) file
         if (false === file_exists($path)) {
-            $logger->log('path does not exist');
+            $logger->log('Path does not exist');
             if (false === $this->forgetOriginalFile()) {
-                $logger->log('database not updated');
+                $logger->log('Database not updated');
             }
 
             return false;
@@ -73,7 +76,7 @@ class Image extends BaseElement
             $logger->log('Exif image type not recognized');
             // because the file is not recognizable for processing, we have to lose it
             if (false === $this->forgetOriginalFile()) {
-                $logger->log('database not updated');
+                $logger->log('Database not updated');
             }
 
             return false;

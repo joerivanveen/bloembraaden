@@ -1041,6 +1041,7 @@ class Help
             }
         }
         // todo translate the image src_ entries, so a job can pick them up and download and save etc.
+        // use that to also remove image src files that are no longer referenced
     }
 
     /**

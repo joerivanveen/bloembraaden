@@ -1953,11 +1953,10 @@ class DB extends Base
 
     public function jobFetchImagesForProcessing(int $how_many = 15): array
     {
-        // images that are not processed (WHERE)
-        // and images that are saved under a different name than their slug (OR)
         $statement = $this->conn->prepare("SELECT * FROM cms_image 
-            WHERE (date_processed IS NULL AND filename_saved IS NOT NULL)
-            OR (RIGHT(LEFT(src_large, -5), LENGTH(slug)) <> slug)
+            WHERE filename_saved IS NOT NULL
+            AND (date_processed IS NULL
+                OR (RIGHT(LEFT(src_large, -5), LENGTH(slug)) <> slug))
             ORDER BY date_updated DESC LIMIT $how_many");
         $statement->execute();
         $rows = $statement->fetchAll(5);
