@@ -59,7 +59,7 @@ class Image extends BaseElement
             $path .= $this->row->src;
         }
         // check physical (image) file
-        if (!file_exists($path)) {
+        if (false === file_exists($path)) {
             $logger->log('path does not exist');
             if (false === $this->forgetOriginalFile()) {
                 $logger->log('database not updated');
@@ -78,7 +78,19 @@ class Image extends BaseElement
 
             return false;
         }
-        list($width, $height) = getimagesize($path);
+        $image_info = getimagesize($path);
+        $width = $image_info[0];
+        $height = $image_info[1];
+        $bits = $image_info['bits'];
+        $channels = $image_info['channels'];
+        $memory_needed = $width * $height * $bits * $channels * 1.5;
+        $memory_limit = Help::getMemorySize(ini_get('memory_limit') ?: '8M');
+        if (memory_get_usage(true) + $memory_needed > $memory_limit) {
+            $logger->log('Cannot load image in memory');
+            $logger->log('Used: ' . Help::getMemorySize((string)memory_get_usage(true),'M'));
+            $logger->log('Needed: ' . Help::getMemorySize((string)$memory_needed,'M'));
+            $logger->log('Limit: ' . Help::getMemorySize($memory_limit,'M'));
+        }
         switch (true) {
             case $type === IMAGETYPE_JPEG:
                 $image = imagecreatefromjpeg($path);
@@ -209,7 +221,7 @@ class Image extends BaseElement
                 if ($brightness < 45) {
                     $css_class .= ' bloembraaden-dark';
                 }
-                $css_class .=  ' bloembraaden-brightness-' . min(floor($brightness / 7.9), 10);
+                $css_class .= ' bloembraaden-brightness-' . min(floor($brightness / 7.9), 10);
                 $data['css_class'] = trim(preg_replace('/( )+/', ' ', $css_class));
             }
             imagedestroy($newImage);
