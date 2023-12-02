@@ -3654,10 +3654,11 @@ class DB extends Base
             $col_val['slug'] = $new_slug;
         }
         $data = $table->formatColumnsAndData($col_val, true);
+        if (0 === ($column_count = count($data['columns']))) return null;
         // maybe (though unlikely) the slug was provided in $col_val but not actually in the table
         if (true === in_array('slug', $data['discarded'])) unset($new_slug);
         $column_list = implode(',', $data['columns']);
-        $in_placeholders = str_repeat('?,', count($data['columns']) - 1); // NOTE you need one more ? at the end of this
+        $in_placeholders = str_repeat('?,', $column_count - 1); // NOTE you need one more ? at the end of this
         // update
         try {
             $primary_key_column_name = $table->getInfo()->getPrimaryKeyColumn()->getName();
