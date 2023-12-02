@@ -53,28 +53,35 @@ class Resolver extends BaseLogic
                 return true;
             }));
         }
-        // 0.5.3 / if you change this, check if the templates can still be saved
-        $post_data = json_decode(file_get_contents('php://input'), false);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $output_json = true; // if you receive json you can bet it wants json back
-        } else { // this is at least used when files are uploaded and for the login page __admin__
+        // for fileupload...
+        if (true === isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+            $csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN']);
+            $post_data = null;
+        } else {
+            // 0.5.3 / if you change this, check if the templates can still be saved
+            $post_data = json_decode(file_get_contents('php://input'), false);
+        }
+        // null when file is uploaded, or when no json is provided in php://input
+        if (null === $post_data) {
+            // this is at least used when files are uploaded and for the login page __admin__
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
+            if (isset($csrf_token)) $post_data->csrf_token = $csrf_token;
             $output_json = isset($post_data->json) && true === $post_data->json;
+        } else {
+            $output_json = true; // if you receive json you can bet it wants json back
         }
         // remember for everyone, only needed when output is imminent:
         if (true === $output_json) Help::$OUTPUT_JSON = true;
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
-        if (isset($this->instructions['action'])) {
+        if (true === isset($this->instructions['action'])) {
             if (count($uri) > 0) {
                 $this->instructions['action'] = htmlentities($uri[0]);
             } else {
                 $this->instructions['action'] = 'ok';
             }
-        } elseif (isset($post_data->action)) {
+        } elseif (true === isset($post_data->action)) {
             $this->instructions['action'] = $post_data->action;
         }
-        // for fileupload...
-        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) $post_data->csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN']);
         //
         $this->post_data = $post_data;
         // cleanup terms and properties
