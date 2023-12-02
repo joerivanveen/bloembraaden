@@ -856,6 +856,7 @@ class Help
         // what instance id are we performing the import on?
         $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
         $repeat = -1;
+        $row_index = 0;
         // read file
         while (($file_name = array_shift($files)) && file_exists($file_name)) {
             ++$repeat;
@@ -864,7 +865,6 @@ class Help
             $string = '';
             $table_name = '';
             if ($handle) {
-                $row_index = 0;
                 $row_treat = 'save'; // skip, wait, save
                 // fgets read a line until eol, or 'length' bytes of the same line
                 while (($buffer = fgets($handle, 4096)) !== false) {
@@ -877,6 +877,8 @@ class Help
                             $value = reset($json);
                             $key = key($json);
                             if ('table' === $key) {
+                                $logger->log("$row_index rows imported");
+                                $row_index = 0;
                                 $table_name = $value->table_name;
                                 $row_count = $value->row_count;
                                 $row_treat = 'save';
@@ -945,8 +947,8 @@ class Help
                                 continue;
                             }
                             if (is_object($value)) { // value is a row ($key = index...)
-                                ++$row_index;
                                 if ('save' === $row_treat) {
+                                    ++$row_index;
                                     $row = (array)$value;
                                     $old_id = (int)$row[$id_column_name];
                                     // todo translate values in the row between versions?
@@ -1020,10 +1022,11 @@ class Help
                 $logger->log('Error: couldn’t get a handle on that file');
             }
             //$logger->log('repeat: ' . $repeat . ' / ' . count($files));
-            if ($repeat === count($files)) {
+            if ($repeat > count($files)) {
                 Help::handleErrorAndStop('Endless loop detected during import', 'Endless loop detected, aborting');
             }
         }
+        $logger->log("$row_index rows imported");
         // cleanup
         $files = glob("$folder_name$instance_id.*.json");
         foreach ($files as $index => $file) {
