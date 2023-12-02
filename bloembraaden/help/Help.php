@@ -708,6 +708,59 @@ class Help
         return $unpacked;
     }
 
+    public static function obtainLock(string $identifier, bool $persist = false): bool
+    {
+        $identifier = ".locks.$identifier";
+        $file_name = Setup::$DBCACHE . rawurlencode($identifier);
+
+        if (true === $persist) {
+            $lock = self::$session->getValue($identifier);
+        } else {
+            $lock = self::getValue($identifier);
+        }
+        // if you already have it, proceed
+        if (true === $lock) {
+            return true;
+        }
+        // if nobody else has it, lock it tight, else return false
+        if (false === file_exists($file_name)) {
+            // TODO have locks work over multiple servers...
+            file_put_contents($file_name, '', LOCK_EX);
+        } else {
+            return false;
+        }
+        // add to current session / request
+        if (true === $persist) {
+            self::$session->setVar($identifier, true);
+        } else {
+            self::setValue($identifier, true);
+            // if not persisting, release the lock always when the request is done
+            register_shutdown_function(static function() use ($file_name) { unlink($file_name); });
+        }
+
+        return true;
+    }
+
+    public static function releaseLock(string $identifier): void
+    {
+        $identifier = ".locks.$identifier";
+        $file_name = Setup::$DBCACHE . rawurlencode($identifier);
+
+        // remove lock
+        $lock = self::getValue($identifier) ?: self::$session->getValue($identifier, true);
+        if (true === $lock) {
+            // unlock it, but if you did not have it there, record an error
+            if (false === file_exists($file_name)) {
+                self::addError(new \Exception("Could not release $identifier"));
+            } else {
+                unlink($file_name);
+            }
+        } else {
+            self::addError(new \Exception("Lock $identifier not found for release"));
+        }
+    }
+
+
     public static function export_instance(int $instance_id, LoggerInterface $logger): void
     {
         set_time_limit(0);

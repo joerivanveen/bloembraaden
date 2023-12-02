@@ -3385,7 +3385,7 @@ class DB extends Base
         }
         $slug = substr($slug, 0, 127);
         $instance_id = Setup::$instance_id;
-        if (false === $this->obtainLock("clearSlug-$instance_id")) {
+        if (false === Help::obtainLock("clearSlug-$instance_id")) {
             $this->handleErrorAndStop("Could not obtain lock to clear slug $slug for instance $instance_id", 'Operation is locked');
         }
         $rows = $this->getTablesWithSlugs();
@@ -3427,7 +3427,7 @@ class DB extends Base
             }
         }
 
-        $this->releaseLock("clearSlug-$instance_id");
+        Help::releaseLock("clearSlug-$instance_id");
 
         // return the cleared slug, since it hasn't been $found apparently
         return $slug;
