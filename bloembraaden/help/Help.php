@@ -763,6 +763,9 @@ class Help
 
     public static function export_instance(int $instance_id, LoggerInterface $logger): void
     {
+        if (false === Help::obtainLock("export.$instance_id")) {
+            self::handleErrorAndStop("Could not obtain lock exporting instance $instance_id", 'Error: export already running');
+        }
         set_time_limit(0);
         $instance_name = Setup::$PRESENTATION_INSTANCE;
         $folder_name = self::import_export_folder();
@@ -822,6 +825,11 @@ class Help
             $logger->log('File does not exist, aborting');
             return;
         }
+        // what instance id are we performing the import on?
+        $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
+        if (false === Help::obtainLock("import.$instance_id")) {
+            self::handleErrorAndStop("Could not obtain lock importing instance $instance_id", 'Error: import already running');
+        }
         set_time_limit(0); // this might take a while
         $memory_limit = .25 * (int)self::getMemorySize(ini_get('memory_limit'));
         $files = array($file_name);
@@ -853,8 +861,6 @@ class Help
             'template_id_payment_confirmation' => 'template_id',
             'template_id_internal_confirmation' => 'template_id',
         );
-        // what instance id are we performing the import on?
-        $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
         $repeat = -1;
         $row_index = 0;
         // read file
