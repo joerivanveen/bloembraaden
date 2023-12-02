@@ -129,7 +129,7 @@ class Daemon
                             $path = urldecode(substr($filename, 0, -11));
                             $src = new Search();
                             $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
-                            echo "Refreshed $path\n";
+                            //echo "Refreshed $path\n";
                         }
                     }
                     $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done

@@ -1040,6 +1040,7 @@ class Help
                 unlink($file); // delete file
             }
         }
+        // todo translate the image src_ entries, so a job can pick them up and download and save etc.
     }
 
     /**

@@ -476,14 +476,14 @@ if ('1' === $interval) { // interval should be '1'
                 echo 'DB update failed';
             }
         } else {
-            Help::addError(new \Exception('Instagram media update failed with status ' . $status_code));
+            Help::addError(new \Exception("Instagram media update failed with status $status_code"));
             echo 'Nothing done, got status ', $status_code;
         }
         echo PHP_EOL;
     }
     // @since 0.7.4 get all images (media...) that are not yet cached and put them on your own server
     $trans->start('Caching instagram media');
-    echo 'Caching media_urls for instagram... ' . PHP_EOL;
+    echo 'Caching media_urls for instagram... ', PHP_EOL;
     $rows = $db->jobGetInstagramMediaUrls(true, 15);
     $logger = new StdOutLogger();
     foreach ($rows as $index => $row) {
@@ -567,10 +567,10 @@ if ('1' === $interval) { // interval should be '1'
         $img = new InstagramImage($row);
         echo $img->getSlug();
         if (true === $img->process($logger)) {
-            echo ' SUCCES' . PHP_EOL;
+            echo ' SUCCES', PHP_EOL;
         } else {
             // the src will be set to null by ->process, and so it will be picked up by ->jobGetInstagramMediaUrls
-            echo ' FAILED' . PHP_EOL;
+            echo ' FAILED', PHP_EOL;
         }
         $logger->out();
     }
@@ -582,9 +582,9 @@ if ('1' === $interval) { // interval should be '1'
         Setup::$instance_id = $row->instance_id;
         echo $img->getSlug();
         if (true === $img->process($logger)) {
-            echo ' SUCCESS' . PHP_EOL;
+            echo ' SUCCESS', PHP_EOL;
         } else {
-            echo ' FAILED' . PHP_EOL;
+            echo ' FAILED', PHP_EOL;
         }
         $logger->out();
     }
@@ -596,17 +596,17 @@ if ('1' === $interval) { // interval should be '1'
         echo $row->slug;
         if (file_exists($upload . $row->filename_saved)) {
             if (false === unlink($upload . $row->filename_saved)) {
-                echo ' could not be removed' . PHP_EOL;
+                echo ' could not be removed', PHP_EOL;
                 continue;
             }
         } else {
-            echo ' did not exist' . PHP_EOL;
+            echo ' did not exist', PHP_EOL;
         }
         if (false === $db->updateColumns('cms_image', array('filename_saved' => null), $row->image_id)) {
-            echo ' ERROR UPDATING DB' . PHP_EOL;
+            echo ' ERROR UPDATING DB', PHP_EOL;
             continue;
         }
-        echo ' ok' . PHP_EOL;
+        echo ' ok', PHP_EOL;
     }
 } elseif ('hourly' === $interval) { // interval should be hourly
     // check all the js and css in the cache, delete old ones
