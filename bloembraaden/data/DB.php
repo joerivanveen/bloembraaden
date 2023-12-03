@@ -3461,13 +3461,13 @@ class DB extends Base
         if (false === $include_user_data) {
             $never = array_merge($never, array('_order', '_order_number', '_order_variant', '_user'));
         }
-        $tables_not_exported = implode(',', $never);
+        $tables_not_exported = implode('\',\'', $never);
         // get all tables that contain a slug column, except tables where slug is used as foreign key
         $statement = $this->conn->prepare("
             SELECT DISTINCT t.table_name FROM information_schema.tables t
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name NOT IN($tables_not_exported);
+            AND t.table_name NOT IN('$tables_not_exported');
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
