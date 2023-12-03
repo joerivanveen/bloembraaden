@@ -781,7 +781,7 @@ class Help
         $tables = $db->fetchTablesToExport($include_user_data);
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
-        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", FILE_APPEND);
+        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n\"Include user data\":$include_user_data\n", FILE_APPEND);
         foreach ($tables as $index => $table) {
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
