@@ -3689,7 +3689,11 @@ PEATCMS.getFormData = function (form) {
         element, value, i, len, obj = {}
     for (i = 0, len = elements.length; i < len; i++) {
         element = elements[i];
-        value = element.value;
+        if('checkbox' === element.type) {
+            value = element.checked;
+        } else {
+            value = element.value;
+        }
         if (PEATCMS.isInt(value)) {
             value = parseInt(value);
         } else if ('true' === value) {
@@ -3701,7 +3705,7 @@ PEATCMS.getFormData = function (form) {
     }
     // @since 0.11.0 dataset will be posted as well
     for (i in data) {
-        if (!data.hasOwnProperty(i)) continue;
+        if (false === data.hasOwnProperty(i)) continue;
         if ('peatcms_ajaxified' === i) continue;
         if ('submitting' === i) continue;
         value = data[i];

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Bloembraaden;
+
 use PgSql\Result;
 
 class DB extends Base
@@ -3454,14 +3455,19 @@ class DB extends Base
         return $this->tables_with_slugs;
     }
 
-    public function fetchTablesToExport(): array
+    public function fetchTablesToExport(bool $include_user_data = false): array
     {
+        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instance_domain');
+        if (false === $include_user_data) {
+            $never = array_merge($never, array('_order', '_order_number', '_order_variant', '_user'));
+        }
+        $tables_not_exported = implode(',', $never);
         // get all tables that contain a slug column, except tables where slug is used as foreign key
         $statement = $this->conn->prepare("
             SELECT DISTINCT t.table_name FROM information_schema.tables t
             INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
             WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name NOT IN('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instance_domain');
+            AND t.table_name NOT IN($tables_not_exported);
         ");
         $statement->bindValue(':schema', $this->db_schema);
         $statement->execute();
@@ -4394,7 +4400,8 @@ class DB extends Base
         return $row_count;
     }
 
-    public function deleteForInstance(string $table_name, int $instance_id): int {
+    public function deleteForInstance(string $table_name, int $instance_id): int
+    {
         if ('_instance' === $table_name) return 0; // you cannot delete the instance itself this way
 
         $info = $this->getTableInfo($table_name);

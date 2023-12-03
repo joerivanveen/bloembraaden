@@ -763,7 +763,7 @@ class Help
     }
 
 
-    public static function export_instance(int $instance_id, LoggerInterface $logger): void
+    public static function export_instance(int $instance_id, LoggerInterface $logger, bool $include_user_data): void
     {
         if (false === Help::obtainLock("export.$instance_id")) {
             self::handleErrorAndStop("Could not obtain lock exporting instance $instance_id", 'Error: export already running');
@@ -778,7 +778,7 @@ class Help
         }
         $logger->log("Exporting instance $instance_name");
         $db = self::getDB();
-        $tables = $db->fetchTablesToExport();
+        $tables = $db->fetchTablesToExport($include_user_data);
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
         file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", FILE_APPEND);

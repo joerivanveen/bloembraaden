@@ -278,21 +278,19 @@ class Handler extends BaseLogic
         } elseif ('invoice' === $action) {
             if (!Help::$session->getAdmin() instanceof Admin) {
                 $this->addMessage(__('Invoice can only be accessed by admin', 'peatcms'), 'warn');
-            } else {
-                if (isset($this->resolver->getProperties()['order_number'])) {
-                    $order_number = htmlentities(trim($this->resolver->getProperties()['order_number'][0]));
-                    $filename = Help::getInvoiceFileName($order_number);
-                    //#TRANSLATORS this is the invoice title, %s is the order number
-                    $filename_for_client = Help::slugify(sprintf(__('Invoice for order %s', 'peatcms'), $order_number));
-                    if (true === file_exists($filename)) {
-                        header('Content-Type: application/pdf');
-                        header('Content-Disposition: attachment; filename="' . $filename_for_client . '.pdf"');
-                        header('Content-Length: ' . filesize($filename));
-                        readfile($filename);
-                        die();
-                    } else {
-                        $this->addMessage(sprintf(__('File not found: %s', 'peatcms'), basename($filename)));
-                    }
+            } elseif (isset($this->resolver->getProperties()['order_number'])) {
+                $order_number = htmlentities(trim($this->resolver->getProperties()['order_number'][0]));
+                $filename = Help::getInvoiceFileName($order_number);
+                //#TRANSLATORS this is the invoice title, %s is the order number
+                $filename_for_client = Help::slugify(sprintf(__('Invoice for order %s', 'peatcms'), $order_number));
+                if (true === file_exists($filename)) {
+                    header('Content-Type: application/pdf');
+                    header('Content-Disposition: attachment; filename="' . $filename_for_client . '.pdf"');
+                    header('Content-Length: ' . filesize($filename));
+                    readfile($filename);
+                    die();
+                } else {
+                    $this->addMessage(sprintf(__('File not found: %s', 'peatcms'), basename($filename)));
                 }
             }
         } elseif ('process_file' === $action) {
@@ -334,10 +332,11 @@ class Handler extends BaseLogic
                 $sse->addError('Import / export can only be accessed by admin.');
             } elseif (true === isset($props['instance_id'][0]) && ($instance_id = (int)$props['instance_id'][0])) {
                 if (true === $admin->isRelatedInstanceId($instance_id)) {
-                    Help::export_instance($instance_id, $sse);
+                    $include_user_data = true === isset($props['include_user_data'][0]) && 'true' === $props['include_user_data'][0];
+                    Help::export_instance($instance_id, $sse, $include_user_data);
                 } else {
                     $sse->log(__('You may not import / export that instance.', 'peatcms'));
-                    $sse->addError("Current admin may not import / export instance $instance_id");
+                    $sse->addError("{$admin->getRow()->name} may not import / export instance $instance_id");
                 }
             } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
                 // TODO check if the instance is empty, if not, request a special user-agent string

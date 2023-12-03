@@ -284,6 +284,7 @@
         </header>
         <form action="/__action__/admin_import_export_instance" data-sse="true">
             <input type="submit" value="Export" title="Export complete instance"/>
+            <input type="checkbox" name="include_user_data" id="export_user_data_{{instance_id}}"><label for="export_user_data_{{instance_id}}"> include user data</label>
             <input type="hidden" name="instance_id" value="{{instance_id}}"/>
         </form>
         <form action="/__action__/admin_import_export_instance" data-sse="true">
