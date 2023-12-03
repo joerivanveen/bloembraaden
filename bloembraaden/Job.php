@@ -552,6 +552,11 @@ if ('1' === $interval) { // interval should be '1'
     $trans->start('Purge deleted');
     echo $db->jobPurgeDeleted((int)$interval), PHP_EOL;
     // delete cross table entries with orphaned id’s
+    // get all _x_ tables
+    // get all columns ending in _id, remove sub_ from beginning if present
+    // perform an 'exists' on the table_name + id
+    // cache the result, obviously
+    // if one of the id's no longer exists, remove this row by its key
 
     // fill in reverse dns-es
     $trans->start('Reverse dns for sessions');

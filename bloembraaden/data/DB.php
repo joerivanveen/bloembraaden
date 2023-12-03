@@ -3665,13 +3665,13 @@ class DB extends Base
      * @return int|string|null
      * @since 0.6.2, wrapper for insertRowAndReturnLastId
      */
-    public function insertRowAndReturnKey(string $table_name, array $data): int|string|null
+    public function insertRowAndReturnKey(string $table_name, array $data, bool $is_bulk = false): int|string|null
     {
-        return $this->insertRowAndReturnLastId($table_name, $data);
+        return $this->insertRowAndReturnLastId($table_name, $data, $is_bulk);
     }
 
     // TODO the return value kan be integer (mostly) or varchar (e.g. session), how to account for this?
-    private function insertRowAndReturnLastId(string $table_name, array $col_val = null): int|string|null
+    private function insertRowAndReturnLastId(string $table_name, array $col_val = null, bool $is_bulk = false): int|string|null
     {
         $table = new Table($this->getTableInfo($table_name));
         // reCacheWithWarmup the slug, maybe used for a search page
@@ -3696,8 +3696,11 @@ class DB extends Base
             $statement = null;
             if (1 === count($rows)) {
                 $row_id = $rows[0]->{$primary_key_column_name};
-                if (isset($new_slug)) $this->reCacheWithWarmup($new_slug);
-                $this->addToHistory($table, $row_id, $col_val, true);
+
+                if (false === $is_bulk) {
+                    if (isset($new_slug)) $this->reCacheWithWarmup($new_slug);
+                    $this->addToHistory($table, $row_id, $col_val, true);
+                }
 
                 return $row_id;
             } elseif (0 === count($rows)) {

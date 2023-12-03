@@ -865,10 +865,10 @@ class Help
             'template_id_internal_confirmation' => 'template_id',
         );
         $repeat = -1;
-        $row_index = 0;
         // read file
         while (($file_name = array_shift($files)) && file_exists($file_name)) {
             ++$repeat;
+            $row_index = 0;
             $logger->log("Process file $file_name");
             $handle = @fopen($file_name, 'r');
             $string = '';
@@ -886,8 +886,10 @@ class Help
                             $value = reset($json);
                             $key = key($json);
                             if ('table' === $key) {
-                                $logger->log("$row_index rows imported");
-                                $row_index = 0;
+                                if ($row_index > 0) {
+                                    $logger->log("$row_index rows imported");
+                                    $row_index = 0;
+                                }
                                 $table_name = $value->table_name;
                                 $row_count = $value->row_count;
                                 $row_treat = 'save';
@@ -999,7 +1001,7 @@ class Help
                                         $db->updateColumns('_instance', $row, $instance_id);
                                         $logger->log("Updated instance $instance_id");
                                     } else {
-                                        $new_id = $db->insertRowAndReturnKey($table_name, $row);
+                                        $new_id = $db->insertRowAndReturnKey($table_name, $row, true);
                                         $ids[$id_column_name][$old_id] = $new_id;
                                     }
                                 } elseif ('wait' === $row_treat) {
@@ -1027,8 +1029,8 @@ class Help
             if ($repeat > count($files)) {
                 Help::handleErrorAndStop('Endless loop detected during import', 'Endless loop detected, aborting');
             }
+            $logger->log("$row_index rows imported");
         }
-        $logger->log("$row_index rows imported");
         // routine to refresh order numbers
         if (true === $update_order_numbers
             && true === $db->refreshOrderNumbers($instance_id)
