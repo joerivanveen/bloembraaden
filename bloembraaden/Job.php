@@ -550,7 +550,10 @@ if ('1' === $interval) { // interval should be '1'
     $update_feeds($feeds);
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('Purge deleted');
-    echo $db->jobPurgeDeleted((int)$interval) . PHP_EOL;
+    echo $db->jobPurgeDeleted((int)$interval), PHP_EOL;
+    // delete cross table entries with orphaned id’s
+
+    // fill in reverse dns-es
     $trans->start('Reverse dns for sessions');
     $sessions = $db->fetchSessionsWithoutReverseDns();
     foreach ($sessions as $key => $session) {

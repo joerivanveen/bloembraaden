@@ -42,7 +42,7 @@ class Resolver extends BaseLogic
 
                     return false;
                 } elseif (0 === strpos($value, 'variant_page')) {
-                    if (!isset($this->variant_page)) {
+                    if (false === isset($this->variant_page)) {
                         $variant_page = (int)substr($value, 12);
                         $this->variant_page = ($variant_page < 1) ? 1 : $variant_page;
                     }
@@ -65,8 +65,8 @@ class Resolver extends BaseLogic
         if (null === $post_data) {
             // this is at least used when files are uploaded and for the login page __admin__
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
-            if (isset($csrf_token)) $post_data->csrf_token = $csrf_token;
-            $output_json = isset($post_data->json) && true === $post_data->json;
+            if (true === isset($csrf_token)) $post_data->csrf_token = $csrf_token;
+            $output_json = true === isset($post_data->json) && true === $post_data->json;
         } else {
             $output_json = true; // if you receive json you can bet it wants json back
         }

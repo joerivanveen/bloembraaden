@@ -340,9 +340,16 @@ class Handler extends BaseLogic
                     $sse->addError("Current admin may not import / export instance $instance_id");
                 }
             } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
-                Help::import_instance($import_file_name, $sse);
+                // TODO check if the instance is empty, if not, request a special user-agent string
+
+                Help::import_into_this_instance($import_file_name, $sse);
+                // clear cache
                 $rows_affected = Help::getDB()->clear_cache_for_instance(Setup::$instance_id);
                 $sse->log(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
+                // publish templates
+                if (true === Help::publishTemplates(Setup::$instance_id)) {
+                    $sse->log('Published the templates for you');
+                }
             } else {
                 $sse->log(__('Nothing to do.', 'peatcms'));
             }
@@ -818,12 +825,10 @@ class Handler extends BaseLogic
                         $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
                         if ($action === 'delete_address') {
                             $out = array('success' => true);
+                        } elseif (null === $out) {
+                            $this->addMessage(__('Error retrieving updated address', 'peatcms'), 'error');
                         } else {
-                            if (null === $out) {
-                                $this->addMessage(__('Error retrieving updated address', 'peatcms'), 'error');
-                            } else {
-                                $out->success = true;
-                            }
+                            $out->success = true;
                         }
                     } else {
                         $this->addMessage(__('Address could not be updated', 'peatcms'), 'warn');
@@ -1228,55 +1233,7 @@ class Handler extends BaseLogic
                         $this->addMessage('Please supply an instance_id', 'warn');
                         $out = true;
                     } elseif ($admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        // update the instance with global published value
-                        if (false === Help::getDB()->updateColumns('_instance', array(
-                                'date_published' => 'NOW()'
-                            ), $instance_id)) {
-                            $this->addMessage(__('Could not update date published', 'peatcms'), 'warn');
-                        }
-                        // @since 0.9.4 cache css file on disk when all templates are published, to be included later
-                        $edit_instance = $instance;
-                        if ($instance->getId() !== $instance_id) {
-                            $edit_instance = new Instance(Help::getDB()->fetchInstanceById($instance_id));
-                        }
-                        $file_location = Setup::$DBCACHE . 'css/' . $instance_id . '.css';
-                        $doc = file_get_contents(CORE . '_front/peat.css'); // reset and some basic stuff
-                        $doc .= file_get_contents(CORE . '../htdocs/_site/' . $edit_instance->getPresentationInstance() . '/style.css');
-                        // minify https://idiallo.com/blog/css-minifier-in-php
-                        $doc = str_replace(array("\n", "\r", "\t"), '', $doc);
-                        // strip out the comments:
-                        $doc = preg_replace("/\/\*.*?\*\//", '', $doc); // .*? means match everything (.) as many times as possible (*) but non-greedy (?)
-                        // reduce multiple spaces to 1
-                        $doc = preg_replace("/\s{2,}/", ' ', $doc);
-                        // remove some spaces that are never necessary, that is, only when not in an explicit string
-                        $doc = preg_replace("/, (?!')/", ',', $doc);
-                        $doc = preg_replace("/: (?!')/", ':', $doc);
-                        $doc = preg_replace("/; (?!')/", ';', $doc);
-                        // the curly brace is probably always ok to attach to its surroundings snugly
-                        $doc = str_replace(' { ', '{', $doc);
-                        // write plain css to disk, will be included in template and gzipped along with it
-                        if (false === file_put_contents($file_location, $doc, LOCK_EX)) {
-                            $this->addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $file_location), 'warn');
-                        }
-                        if ('' === file_get_contents($file_location)) {
-                            unlink($file_location);
-                            $this->handleErrorAndStop('Saving css failed', __('Saving css failed', 'peatcms'));
-                        }
-                        // get all templates for this instance_id, loop through them and publish
-                        $rows = Help::getDB()->getTemplates($instance_id);
-                        foreach ($rows as $index => $row) {
-                            $temp = new Template($row);
-                            if (false === $temp->publish()) {
-                                $this->addMessage(__('Publishing failed.', 'peatcms'), 'error');
-                                $out = true;
-                                break;
-                            }
-                        }
-                        if (!$out) {
-                            $this->addMessage(__('Publishing done', 'peatcms'));
-                            $out = array('success' => true);
-                        }
-                        unset($rows);
+                        $out = array('success' => Help::publishTemplates($instance_id));
                     } else {
                         $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
                         $out = true;

@@ -735,7 +735,9 @@ class Help
         } else {
             self::setValue($identifier, true);
             // if not persisting, release the lock always when the request is done
-            register_shutdown_function(static function() use ($file_name) { unlink($file_name); });
+            register_shutdown_function(static function () use ($file_name) {
+                unlink($file_name);
+            });
         }
 
         return true;
@@ -819,19 +821,18 @@ class Help
         return $folder_name;
     }
 
-    public static function import_instance(string $file_name, LoggerInterface $logger): void
+    public static function import_into_this_instance(string $file_name, LoggerInterface $logger): void
     {
         if (false === file_exists($file_name)) {
             $logger->log('File does not exist, aborting');
             return;
         }
         // what instance id are we performing the import on?
-        $instance_id = Setup::$instance_id; // can only import native instance, TODO check permissions
+        $instance_id = Setup::$instance_id; // can only import native instance
         if (false === Help::obtainLock("import.$instance_id")) {
             self::handleErrorAndStop("Could not obtain lock importing instance $instance_id", 'Error: import already running');
         }
         set_time_limit(0); // this might take a while
-        $memory_limit = .25 * (int)self::getMemorySize(ini_get('memory_limit'));
         $files = array($file_name);
         $folder_name = self::import_export_folder();
         $db = self::getDB();
@@ -995,6 +996,8 @@ class Help
                                     }
                                     if ('_instance' === $table_name) {
                                         unset($row['instance_id']);
+                                        unset($row['domain']); // you cannot use the same domain for another instance, just leave it be
+                                        $row['name'] .= ' (IMPORTED)';
                                         $db->updateColumns('_instance', $row, $instance_id);
                                         $logger->log("Updated instance $instance_id");
                                     } else {
@@ -1014,11 +1017,6 @@ class Help
                         }
                         //$logger->log(var_export($files, true));
                         $string = '';
-                    } elseif (memory_get_usage(true) > $memory_limit) {
-                        // if the memory is running out, warn and stop
-                        $logger->log('Working on ' . substr($string, 0, 50) . '...');
-                        $logger->log('Memory is running out, increase memory for php, aborting');
-                        break;
                     }
                 }
                 if (false === feof($handle)) {
@@ -1053,6 +1051,56 @@ class Help
     {
         $boo = new BaseLogic();
         $boo->handleErrorAndStop($e, $message_for_frontend);
+    }
+
+    public static function publishTemplates(int $instance_id): bool
+    {
+        // update the instance with global published value
+        if (false === Help::getDB()->updateColumns('_instance', array(
+                'date_published' => 'NOW()'
+            ), $instance_id)) {
+            self::addMessage(__('Could not update date published', 'peatcms'), 'warn');
+        }
+        // @since 0.9.4 cache css file on disk when all templates are published, to be included later
+        $edit_instance = new Instance(Help::getDB()->fetchInstanceById($instance_id));
+        $file_location = Setup::$DBCACHE . "css/$instance_id.css";
+        $doc = file_get_contents(CORE . '_front/peat.css'); // reset and some basic stuff
+        $doc .= file_get_contents(CORE . "../htdocs/_site/{$edit_instance->getPresentationInstance()}/style.css");
+        // minify https://idiallo.com/blog/css-minifier-in-php
+        $doc = str_replace(array("\n", "\r", "\t"), '', $doc);
+        // strip out the comments:
+        $doc = preg_replace("/\/\*.*?\*\//", '', $doc); // .*? means match everything (.) as many times as possible (*) but non-greedy (?)
+        // reduce multiple spaces to 1
+        $doc = preg_replace("/\s{2,}/", ' ', $doc);
+        // remove some spaces that are never necessary, that is, only when not in an explicit string
+        $doc = preg_replace("/, (?!')/", ',', $doc);
+        $doc = preg_replace("/: (?!')/", ':', $doc);
+        $doc = preg_replace("/; (?!')/", ';', $doc);
+        // the curly brace is probably always ok to attach to its surroundings snugly
+        $doc = str_replace(' { ', '{', $doc);
+        // write plain css to disk, will be included in template and gzipped along with it
+        if (false === file_put_contents($file_location, $doc, LOCK_EX)) {
+            self::addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $file_location), 'warn');
+        }
+        if ('' === file_get_contents($file_location)) {
+            unlink($file_location);
+            self::handleErrorAndStop('Saving css failed', __('Saving css failed', 'peatcms'));
+        }
+        // get all templates for this instance_id, loop through them and publish
+        $rows = Help::getDB()->getTemplates($instance_id);
+        foreach ($rows as $index => $row) {
+            $temp = new Template($row);
+            if (false === $temp->publish()) {
+                self::addMessage(__('Publishing failed.', 'peatcms'), 'error');
+                unset($rows);
+
+                return false;
+            }
+        }
+        self::addMessage(__('Publishing done', 'peatcms'));
+        unset($rows);
+
+        return true;
     }
 
     public static function upgrade(DB $db): void
