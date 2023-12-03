@@ -3341,9 +3341,8 @@ class DB extends Base
             // if you are here we are going to assume it worked
             return $var;
         } else {
-            $statement = $this->conn->prepare('DELETE FROM _sessionvars WHERE session_id = ? AND name = ? AND times <= ?;');
-            // a newer one might have been inserted under the same name
-            $statement->execute(array($session_id, $name, $var->times));
+            $statement = $this->conn->prepare('DELETE FROM _sessionvars WHERE session_id = ? AND name = ?;');
+            $statement->execute(array($session_id, $name));
             $statement = null;
 
             return null; // success... $var is gone now

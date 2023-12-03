@@ -1208,7 +1208,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                 if (true === json.hasOwnProperty('__session__')) {
                     obj = json['__session__'];
                     for (i in obj) {
-                        if (obj.hasOwnProperty(i)) PEAT.updateSessionVarClientOnly(i, obj[i]);
+                        if (obj.hasOwnProperty(i) && obj[i]) PEAT.updateSessionVarClientOnly(i, obj[i]);
                     }
                 }
                 // in case of a template object the returned messages and adminerrors are template parts

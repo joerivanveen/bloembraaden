@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -73,8 +73,8 @@ class Session extends BaseLogic
         // update session vars in database
         $updated_vars = $this->getUpdatedVars();
         $session_id = $this->getId();
-        foreach ($updated_vars as $name=>$var) {
-            if (null === $var) $var = (object)array('delete'=>true);
+        foreach ($updated_vars as $name => $var) {
+            if (null === $var) $var = (object)array('delete' => true);
             Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
     }
@@ -108,7 +108,7 @@ class Session extends BaseLogic
                         return $this->refreshAfterLogin(array('user_id' => $row->id));
                     }
                 } elseif ($this->admin = new Admin($row->id)) {
-                        return $this->refreshAfterLogin(array('admin_id' => $row->id));
+                    return $this->refreshAfterLogin(array('admin_id' => $row->id));
                 }
                 $this->addError("Email $email checks out in password_verify(), but no user is found.");
                 $this->addMessage(__('Name / pass checks out, but no user found.', 'peatcms'), 'error');
