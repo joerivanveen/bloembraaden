@@ -751,10 +751,8 @@ class Help
         // remove lock
         $lock = self::getValue($identifier) ?: self::$session->getValue($identifier, true);
         if (true === $lock) {
-            // unlock it, but if you did not have it there, record an error
-            if (false === file_exists($file_name)) {
-                self::addError(new \Exception("Could not release $identifier"));
-            } else {
+            if (true === file_exists($file_name)) {
+                // it might already been released early, if this is from shutdown routine...
                 unlink($file_name);
             }
         } else {
