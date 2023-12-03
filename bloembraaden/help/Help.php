@@ -834,12 +834,13 @@ class Help
             self::handleErrorAndStop("Could not obtain lock importing instance $instance_id", 'Error: import already running');
         }
         set_time_limit(0); // this might take a while
+        $update_order_numbers = false;
         $files = array($file_name);
         $folder_name = self::import_export_folder();
         $db = self::getDB();
         $tables = array_map(function ($value) {
             return $value->table_name;
-        }, $db->fetchTablesToExport());
+        }, $db->fetchTablesToExport(true));
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
@@ -897,12 +898,8 @@ class Help
                                     $string = '';
                                     $row_treat = 'skip';
                                     continue;
-                                } elseif ('_order_number' === $table_name) {
-                                    // todo how to insert order numbers?
-                                    $logger->log('Todo how to insert order numbers?');
-                                    $string = '';
-                                    $row_treat = 'skip';
-                                    continue;
+                                } elseif ('_order' === $table_name) {
+                                    $update_order_numbers = true;
                                 }
                                 $id_column_name = $info->getIdColumn()->getName();
                                 // check the columns, if any _id column is present, it has to be translated
@@ -1032,6 +1029,12 @@ class Help
             }
         }
         $logger->log("$row_index rows imported");
+        // routine to refresh order numbers
+        if (true === $update_order_numbers
+            && true === $db->refreshOrderNumbers($instance_id)
+        ) {
+            $logger->log('Updated order numbers table');
+        }
         // cleanup
         $files = glob("$folder_name$instance_id.*.json");
         foreach ($files as $index => $file) {

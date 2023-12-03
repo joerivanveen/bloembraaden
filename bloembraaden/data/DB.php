@@ -1805,6 +1805,24 @@ class DB extends Base
         return $order_number;
     }
 
+    public function refreshOrderNumbers(int $instance_id): bool
+    {
+        $year = (new \DateTime())->format("Y");
+        $this->deleteForInstance('_order_number', $instance_id);
+        $statement = $this->conn->prepare('SELECT order_number FROM _order WHERE instance_id=:instance_id AND LEFT(order_number, 4) = :year;');
+        $statement->bindValue(':instance_id', $instance_id);
+        $statement->bindValue(':year', $year);
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = $this->conn->prepare('INSERT INTO _order_number (instance_id, order_number) VALUES(?, ?);');
+        foreach ($rows as $index=>$row) {
+            $statement->execute(array($instance_id, $row->order_number));
+        }
+        $statement = null;
+
+        return true;
+    }
+
     /**
      * @param string $order_number
      * @param int $instance_id @since 0.9.0 allow jobs to fetch orders for multiple instances
@@ -3457,7 +3475,7 @@ class DB extends Base
 
     public function fetchTablesToExport(bool $include_user_data = false): array
     {
-        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instance_domain');
+        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instance_domain', '_order_number');
         if (false === $include_user_data) {
             $never = array_merge($never, array('_order', '_order_number', '_order_variant', '_user'));
         }
