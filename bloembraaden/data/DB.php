@@ -3,13 +3,11 @@ declare(strict_types=1);
 
 namespace Bloembraaden;
 
-use PgSql\Result;
-
 class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
-    private array $table_infos, $stale_slugs, $tables_with_slugs;
+    private array $table_infos, $stale_slugs, $tables_with_slugs, $id_exists;
     public const TABLES_WITHOUT_HISTORY = array(
         '_ci_ai',
         '_session',
@@ -1815,7 +1813,7 @@ class DB extends Base
         $statement->execute();
         $rows = $statement->fetchAll(5);
         $statement = $this->conn->prepare('INSERT INTO _order_number (instance_id, order_number) VALUES(?, ?);');
-        foreach ($rows as $index=>$row) {
+        foreach ($rows as $index => $row) {
             $statement->execute(array($instance_id, $row->order_number));
         }
         $statement = null;
@@ -3495,7 +3493,7 @@ class DB extends Base
         return $tables;
     }
 
-    public function fetchRowsForExport(string $table_name, int $instance_id): \PDOStatement
+    public function queryRowsForExport(string $table_name, int $instance_id): \PDOStatement
     {
         if (
             false !== ($is_x_table = strpos($table_name, '_x_'))
@@ -3529,14 +3527,14 @@ class DB extends Base
      * @return array|\stdClass null when failed, row object when single = true, array with row objects otherwise
      * @since 0.0.0
      */
-    private function fetchRows(string $table_name, array $columns, array $where = array(), bool $single = false)
+    private function fetchRows(string $table_name, array $columns, array $where = array(), bool $single = false): array|\stdClass|null
     {
         // TODO when admin chosen online must be taken into account
         // TODO use data_popvote to order desc when available
         // $columns is an indexed array holding column names as strings,
         // $where is an array with key => value pairs holding column_name => value
-        $table = new Table($this->getTableInfo($table_name)); // fatal error is thrown when the table_name is wrong
-        $table_info = $table->getInfo();
+        $table_info = $this->getTableInfo($table_name); // fatal error is thrown when the table_name is wrong
+        $table = new Table($table_info);
         // normalize / check columns and where data
         if (count($columns) !== 0) {
             if ($columns[0] === '*') { // get all the columns
@@ -3613,7 +3611,6 @@ class DB extends Base
     {
         $table_info = $this->getTableInfo($table_name); // fatal error is thrown when table_name is wrong
         // TODO use internal functionality, the problem is that you need to ignore instance_id sometimes
-        // TODO maybe setup an admin db interface or something?
         // or we use it like this, but then with some checks
         $primary_key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         $sql = "SELECT * FROM $table_name WHERE $primary_key_column_name = ?;";
@@ -3653,7 +3650,14 @@ class DB extends Base
         return count($this->updateRowsWhereAndReturnKeys($table_name, $data, $where));
     }
 
-    // wrapper for private method updateRowAndReturnSuccess
+    /**
+     * Wrapper for private method updateRowAndReturnSuccess
+     *
+     * @param string $table_name
+     * @param array $data
+     * @param $key
+     * @return bool success
+     */
     public function updateColumns(string $table_name, array $data, $key): bool
     {
         return $this->updateRowAndReturnSuccess($table_name, $data, $key);
@@ -3720,8 +3724,8 @@ class DB extends Base
 
     private function updateRowAndReturnSuccess(string $table_name, array $col_val, $key): bool
     {
-        $table = new Table($this->getTableInfo($table_name)); // fatal error is thrown when table_name is wrong
-        $table_info = $table->getInfo();
+        $table_info = $this->getTableInfo($table_name); // fatal error is thrown when table_name is wrong
+        $table = new Table($table_info);
         $key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // reCacheWithWarmup the old slug, clear this slug and reCacheWithWarmup the new slug as well (as it may be used for a search page)
         if (isset($col_val['slug'])) {
@@ -3787,8 +3791,9 @@ class DB extends Base
 
     private function updateRowsWhereAndReturnKeys(string $table_name, array $data, array $where): array
     {
-        $table = new Table($this->getTableInfo($table_name));
-        $key_column_name = $table->getInfo()->getPrimaryKeyColumn()->getName();
+        $table_info = $this->getTableInfo($table_name);
+        $table = new Table($table_info);
+        $key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         $where = $table->formatColumnsAndData($where, true);
         $where_statement = implode(' AND ', $where['parameterized']);
         if ('' !== $where_statement) $where_statement = "WHERE $where_statement";
@@ -3808,10 +3813,9 @@ class DB extends Base
 
     private function deleteRowAndReturnSuccess(string $table_name, $key): bool
     {
-        $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
-        $table_info = $table->getInfo();
+        $table_info = $this->getTableInfo($table_name); // throws fatal error when table_name is wrong
         // push current entry to history
-        $old_row = $this->addToHistory($table, $key, array('deleted' => true)); // returns current row
+        $old_row = $this->addToHistory(new Table($table_info), $key, array('deleted' => true)); // returns current row
         $primary_key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // delete the row
         if ($table_info->hasStandardColumns()) { // if the deleted column exists, use that
@@ -3834,8 +3838,8 @@ class DB extends Base
 
     private function deleteRowWhereAndReturnAffected($table_name, array $where, array $where_not = array()): int
     {
-        $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
-        $primary_key_column = $table->getInfo()->getPrimaryKeyColumn()->getName();
+        $table_info = $this->getTableInfo($table_name); // throws fatal error when table_name is wrong
+        $primary_key_column = $table_info->getPrimaryKeyColumn()->getName();
         $columns_to_select = array_merge(array($primary_key_column), array_keys($where_not));
         $rows = $this->fetchRows($table_name, $columns_to_select, $where);
         $rows_affected = 0;
@@ -3851,6 +3855,26 @@ class DB extends Base
         return $rows_affected;
     }
 
+    /**
+     * This bypasses all caching and soft delete systems, so pay attention using it
+     *
+     * @param $table_name
+     * @param $id
+     * @return bool whether the row with this id was deleted or did not exist at all, should be true
+     */
+    public function deleteRowImmediately($table_name, $id): bool
+    {
+        $table_info = $this->getTableInfo($table_name); // throws error if it does not exist
+        $id_column_name = $table_info->getIdColumn()->getName();
+        $statement = $this->conn->prepare("DELETE FROM $table_name WHERE $id_column_name = ?;");
+        $statement->execute(array($id));
+        if ($statement->rowCount() > 1) {
+            $this->handleErrorAndStop("deleteRowImmediately deleted {$statement->rowCount()} rows!");
+        }
+
+        return true;
+    }
+
     private function rowExists(string $table_name, array $where): bool
     {
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
@@ -3862,6 +3886,18 @@ class DB extends Base
         $statement = null;
 
         return $return_value;
+    }
+
+    public function idExists(string $id_column, int $id_value): bool
+    {
+        if (isset($this->id_exists[$id_column][$id_value])) return $this->id_exists[$id_column][$id_value];
+        $type = new Type(substr($id_column, 0, -3)); // strip the standard _id from the column name
+        $statement = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM {$type->tableName()} WHERE {$id_column} = ?);");
+        $statement->execute(array($id_value));
+        $this->id_exists[$id_column][$id_value] = ($exists = (bool)$statement->fetchColumn(0));
+        $statement = null;
+var_dump($this->id_exists);
+        return $exists;
     }
 
     /**
@@ -3894,6 +3930,37 @@ class DB extends Base
         }
 
         return $this->table_infos[$table_name];
+    }
+
+    public function jobFetchCrossTables(): array
+    {
+        // get all tables with _x_ in the name
+        $statement = $this->conn->prepare("
+            SELECT t.table_name FROM information_schema.tables t
+            WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+            AND t.table_name LIKE '%_x_%'
+        ");
+        $statement->bindValue(':schema', $this->db_schema);
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        return $rows;
+    }
+
+    public function queryAllRows(string $table_name, array $columns = array('*')): \PDOStatement
+    {
+        if (0 === count($columns)) $this->handleErrorAndStop('No columns to query');
+        $table_info = $this->getTableInfo($table_name);
+        if ('*' === $columns[0]) {
+            $columns_str = '*';
+        } else {
+            $columns_str = implode(',', $columns);
+        }
+        $statement = $this->conn->prepare("SELECT {$table_info->getIdColumn()->getName()} as id, $columns_str FROM $table_name;");
+        $statement->execute();
+
+        return $statement;
     }
 
     /**

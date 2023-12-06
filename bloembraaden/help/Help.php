@@ -787,7 +787,7 @@ class Help
             $table_name = $table->table_name;
             $logger->log("Exporting $table_name");
             // use the prepared statement to fetch and save row by row, to prevent memory exhaustion
-            $statement = $db->fetchRowsForExport($table_name, $instance_id);
+            $statement = $db->queryRowsForExport($table_name, $instance_id);
             file_put_contents($export_file, "\"table\":{\"table_name\":\"$table_name\",\"row_count\":{$statement->rowCount()}}\n", FILE_APPEND | LOCK_EX);
             // write row by row to buffer, save every 20 rows to file
             ob_start();

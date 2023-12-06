@@ -317,7 +317,7 @@ if ('1' === $interval) { // interval should be '1'
     // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
     if (null !== ($rows = $db->fetchInstagramDeauthorized())) {
         foreach ($rows as $index => $row) {
-            $user_id = (int) $row->user_id;
+            $user_id = (int)$row->user_id;
             $db->invalidateInstagramFeedSpecsByUserId($user_id);
             $db->deleteInstagramMediaByUserId($user_id);
             $db->updateColumns('_instagram_auth', array('deleted' => true), $row->instagram_auth_id);
@@ -525,7 +525,7 @@ if ('1' === $interval) { // interval should be '1'
     $updated_feeds = array(); // each feed has to be updated only once here
     $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
         foreach ($feeds as $index => $specs) {
-            echo ($feed_name = $specs->feed_name);
+            echo($feed_name = $specs->feed_name);
             if (isset($updated_feeds[$feed_name])) {
                 echo ' already done' . PHP_EOL;
                 continue;
@@ -552,12 +552,40 @@ if ('1' === $interval) { // interval should be '1'
     $trans->start('Purge deleted');
     echo $db->jobPurgeDeleted((int)$interval), PHP_EOL;
     // delete cross table entries with orphaned id’s
-    // get all _x_ tables
-    // get all columns ending in _id, remove sub_ from beginning if present
-    // perform an 'exists' on the table_name + id
-    // cache the result, obviously
-    // if one of the id's no longer exists, remove this row by its key
-
+    $trans->start('Clear cross (_x_) tables');
+    $tables = array_map(static function ($row) {
+        return $row->table_name;
+    }, $db->jobFetchCrossTables());
+    foreach ($tables as $index => $table_name) {
+        // get all the id's
+        $info = $db->getTableInfo($table_name);
+        $cols = $info->getColumnNames();
+        $id_column_name = $info->getIdColumn()->getName();
+        $foreign_id_cols = array();
+        foreach ($cols as $col_index => $col_name) {
+            if ($id_column_name === $col_name) continue;
+            $id_name = $col_name;
+            // replace 'sub_' at the beginning to get the original id column
+            $pos = strpos($col_name, 'sub_');
+            if ($pos !== false) {
+                $id_name = substr($col_name, 4);
+            }
+            if (str_ends_with($col_name, '_id')) {
+                $foreign_id_cols[] = array('original' => $col_name, 'real' => $id_name);
+            }
+        }
+        $statement = $db->queryAllRows($table_name);
+        while (($row = $statement->fetch(5))) {
+            foreach ($foreign_id_cols as $id_col_index => $col) {
+                // find out if an id exists for this real id_column with value of the original x-table column
+                if (false === $db->idExists($col['real'], $row->{$col['original']})) {
+                    $db->deleteRowImmediately($table_name, $row->id);
+                    echo "Deleted from $table_name because {$col['real']} {$row->{$col['original']}} does not exist\n";
+                    continue 2;
+                }
+            }
+        }
+    }
     // fill in reverse dns-es
     $trans->start('Reverse dns for sessions');
     $sessions = $db->fetchSessionsWithoutReverseDns();
@@ -676,9 +704,9 @@ if ('1' === $interval) { // interval should be '1'
             $return_value = json_decode($result);
             if (json_last_error() !== JSON_ERROR_NONE || false === isset($return_value->access_token)) {
                 echo sprintf(
-                        'Instagram refresh token error, status %1$s, body %2$s',
-                        $status_code, var_export($return_value, true)
-                    ), PHP_EOL;
+                    'Instagram refresh token error, status %1$s, body %2$s',
+                    $status_code, var_export($return_value, true)
+                ), PHP_EOL;
             } else {
                 // and update it in the db
                 $expires = isset($return_value->expires_in) ?
