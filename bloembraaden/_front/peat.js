@@ -551,7 +551,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
     // header
-    if (! (el = document.getElementById('edit_area_header'))) {
+    if (!(el = document.getElementById('edit_area_header'))) {
         el = document.createElement('header');
         el.id = 'edit_area_header';
         edit_area.parentNode.insertAdjacentElement('afterbegin', el);
@@ -1374,12 +1374,11 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     let t, i, len, progressor, el, elements;
     if (!slug) slug = tag; // default to the same, @since 0.5.15 you can specify a different slug to render in the tag
     // since 0.5.2 option to render the parts specific to one slug only, e.g. for updating of shoppinglist
-    // TODO since this can only be called after all the tags have been rendered once, make a mechanism so it doesn't fail
     if (tag) {
         if (true === tags.hasOwnProperty(tag)) {
             self.renderProgressiveLoad(slug, tag);
         } else {
-            if (VERBOSE) console.warn('No template for ' + tag);
+            if (VERBOSE) console.warn(`No template for ${tag}`);
         }
         return;
     } // else, render all tags remaining (since 0.4.0)
@@ -1409,10 +1408,12 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     }
 }
 PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
-    const el = NAV.getCurrentElement(), self = this, data = {
-        render_in_tag: tag,
-        timestamp: Date.now()
-    };
+    const el = NAV.getCurrentElement(),
+        self = this,
+        data = {
+            render_in_tag: tag,
+            timestamp: Date.now()
+        };
     if (el) {
         // Send info to the server to let it know where the request comes from
         data.type = el.state.type_name;
@@ -1424,17 +1425,17 @@ PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
         self.renderProgressiveTag(tag);
     } else {
         if (0 === slug.indexOf('__') && -1 === slug.indexOf('/')) {
-            console.warn(slug, 'cannot be rendered progressive');
+            console.warn(`${slug} cannot be rendered progressive`);
             PEAT.registerAssetLoad(slug);
             return;
         }
-        NAV.ajax('/' + slug, data, function (json) {
+        NAV.ajax(`/${slug}`, data, function (json) {
             self.renderProgressiveTag(json);
         });
     }
 }
 PEATCMS_template.prototype.renderProgressiveTag = function (json) {
-    var i, len, tags, tag, render_in_tag, html, el, slug,
+    let i, len, tags, tag, render_in_tag, html, el, slug,
         node, node_name, nodes, nodes_i, nodes_index, nodes_len, parent_node,
         cache_name, cached_nodes, cache_text;
     json = unpack_temp(json);
@@ -1449,12 +1450,9 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                 if (!(el = tag.element)) continue; // this is the option tag in the DOM holding the place for this partial template
                 if (!(parent_node = el.parentNode)) continue; // @since 0.7.7 check and cache the parent node
                 el.classList.remove('peatcms_loading');
-                if (VERBOSE) {
-                    console.log('Rendering ' + slug + ' in ' + render_in_tag);
-                    console.log(json);
-                }
+                if (VERBOSE) console.log(`Rendering ${slug} in ${render_in_tag}`, json);
                 html = this.removeSingleTagsRemaining(this.renderOutput(json, this.template[render_in_tag][tag.index]));
-                cache_name = slug + '_' + tag.index;
+                cache_name = `${slug}_${tag.index}`;
                 try {
                     nodes = new DOMParser().parseFromString(html, 'text/html').body.childNodes;
                     cached_nodes = [];
@@ -1509,7 +1507,7 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
             }
             PEAT.registerAssetLoad(render_in_tag);
         } else {
-            console.error('Returned slug ‘' + slug + '’ not found in progressive tags.');
+            console.error(`Returned slug ${slug} not found in progressive tags.`);
         }
     } else {
         console.error('No slug found in json returned for progressive loading.');
@@ -1613,7 +1611,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                                 //         break; // don't process any more rows from this output_object
                                 //     }
                                 // }
-                                build_rows += this.renderOutput(obj, row_template);
+                                build_rows += this.removeComplexTagsRemaining(this.renderOutput(obj, row_template));
                             }
                             sub_template.__html__ = sub_template.__html__.replace(`{{__row__[${temp_i}]}}`, build_rows);
                         }
@@ -1622,6 +1620,8 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                     // remove entirely if no content was added
                     if (sub_html === temp_remember_html) {
                         sub_html = '';
+                    } else {
+                        sub_html = this.removeComplexTagsRemaining(sub_html);
                     }
                     html = html.replace(`{{${tag_name}[${i}]}}`, sub_html);
                 }
@@ -1640,8 +1640,8 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 } else if (typeof window[function_name] === 'function') { /* @since 0.5.9 allow user functions */
                     processed_object = window[function_name](output_object).toString();
                 } else {
-                    console.warn('PEATCMS template function "' + function_name + '" not found');
-                    processed_object = output_object.toString() + ' <span class="warn">(template function not found: ' + function_name + ')</span>';
+                    console.warn(`PEATCMS template function ${function_name} not found`);
+                    processed_object = `${output_object.toString()} <span class="warn">(template function not found: ${function_name})</span>`;
                 }
                 html = PEATCMS.replace(`{{${tag_name}|${function_name}}}`, processed_object, html);
             }
@@ -1738,7 +1738,7 @@ PEATCMS_template.prototype.convertTagsRemaining = function (string) {
     let html = string.toString(), // break_reference
         t, index, src, src_id, tags = {};
     for (t in template) {
-        if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) > -1) {
+        if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) !== -1) {
             tags[t] = [];
             for (index = 0; index < 100; ++index) {
                 src = `{{${t}[${index}]}}`;
@@ -1754,6 +1754,34 @@ PEATCMS_template.prototype.convertTagsRemaining = function (string) {
     tags = null;
     // return the updated html
     return this.removeSingleTagsRemaining(html);
+}
+
+PEATCMS_template.prototype.removeComplexTagsRemaining = function(string) {
+    const template = this.template;
+    let html = string.toString(), // break_reference
+        t, index = 0, src;
+    // let end, start, src_str;
+    // for (index = 0; index < 100; ++index) {
+    //     src = `[${index}]}}`;
+    //     while (-1 !== (end = html.indexOf(src))) {
+    //         start = html.lastIndexOf('{{', end);
+    //         src_str = html.slice(start, end + src.length);
+    //         console.warn(src_str);
+    //         html = html.replace(src_str, '');
+    //     }
+    // }
+    // return html;
+    for (t in template) {
+        console.warn(t);
+        if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) !== -1) {
+            for (index = 0; index < 100; ++index) {
+                src = `{{${t}[${index}]}}`;
+                if (html.indexOf(src) === -1) break;
+                html = html.replace(src, '');
+            }
+        }
+    }
+    return html;
 }
 
 PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
@@ -3689,7 +3717,7 @@ PEATCMS.getFormData = function (form) {
         element, value, i, len, obj = {}
     for (i = 0, len = elements.length; i < len; i++) {
         element = elements[i];
-        if('checkbox' === element.type) {
+        if ('checkbox' === element.type) {
             value = element.checked;
         } else {
             value = element.value;

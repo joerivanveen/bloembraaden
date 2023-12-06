@@ -70,7 +70,8 @@ class Template extends BaseLogic
                         $template_file,
                         gzencode($json_prepared, 9), // compress as well
                         LOCK_EX
-                    )) {
+                    )
+                ) {
                     $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), $template_file), 'error');
 
                     return false;
@@ -467,7 +468,7 @@ class Template extends BaseLogic
 //                                                break; // don't process any more rows from this $output_object
 //                                            }
 //                                        }
-                                        echo $this->renderOutput($obj, (array)$row_template);
+                                        echo $this->removeComplexTagsRemaining($this->renderOutput($obj, (array)$row_template));
                                     }
                                     $sub_template['__html__'] = str_replace("{{__row__[$template_index]}}", ob_get_clean(), $sub_template['__html__']);
                                 }
@@ -477,6 +478,8 @@ class Template extends BaseLogic
                         // remove entirely if no content was added
                         if ($sub_html === $temp_remember_html) {
                             $sub_html = '';
+                        } else {
+                            $sub_html = $this->removeComplexTagsRemaining($sub_html);
                         }
                         $html = str_replace("{{{$tag_name}[$index]}}", $sub_html, $html);
                     }
@@ -864,6 +867,22 @@ $html";
             $html = str_replace($search, '', $html);
         }
 
+        return $html;
+    }
+
+    private function removeComplexTagsRemaining(string $html): string
+    {
+        for ($index = 0; $index < 100; ++$index) {
+            $search = "[$index]}}";
+            if (false === strpos($html, $search)) break; // don't loop any further if the indexes became too high
+            // grab all the tags to replace
+            $arr = explode($search, $html);
+            foreach ($arr as $key => $html_part) {
+                $tag_name = substr($html_part, strrpos($html_part, '{{') + 2);
+                $replacer = "{{{$tag_name}$search";
+                $html = str_replace($replacer, '', $html);
+            }
+        }
         return $html;
     }
 
