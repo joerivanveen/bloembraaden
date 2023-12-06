@@ -1772,7 +1772,6 @@ PEATCMS_template.prototype.removeComplexTagsRemaining = function(string) {
     // }
     // return html;
     for (t in template) {
-        console.warn(t);
         if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) !== -1) {
             for (index = 0; index < 100; ++index) {
                 src = `{{${t}[${index}]}}`;
