@@ -87,12 +87,16 @@ class Image extends BaseElement
         $bits = $image_info['bits'];
         $channels = $image_info['channels'];
         $memory_needed = $width * $height * $bits * $channels * 1.5;
-        $memory_limit = Help::getMemorySize(ini_get('memory_limit') ?: '8M');
-        if (memory_get_usage(true) + $memory_needed > $memory_limit) {
-            $logger->log('Cannot load image in memory');
-            $logger->log('Used: ' . Help::getMemorySize((string)memory_get_usage(true),'M'));
-            $logger->log('Needed: ' . Help::getMemorySize((string)$memory_needed,'M'));
-            $logger->log('Limit: ' . Help::getMemorySize($memory_limit,'M'));
+        $memory_limit = (int)Help::getMemorySize(ini_get('memory_limit') ?: '128M');
+        if ($memory_needed > $memory_limit) {
+            $memory_needed_M = Help::getMemorySize((string)$memory_needed,'M');
+            if ($memory_needed <= Setup::$MAX_MEMORY_LIMIT) {
+                $logger->log("Increasing memory to $memory_needed_M");
+                ini_set('memory_limit', $memory_needed_M);
+            } else {
+                $logger->log("Image too large for memory, needs $memory_needed_M");
+                $logger->log('Current limit: ' . Help::getMemorySize((string)$memory_limit,'M'));
+            }
         }
         switch (true) {
             case $type === IMAGETYPE_JPEG:
@@ -114,8 +118,11 @@ class Image extends BaseElement
             case $type === IMAGETYPE_WEBP:
                 $image = imagecreatefromwebp($path);
                 $data['extension'] = 'webp';
+                break;
+            default:
+                $this->addError("Image type $type cannot be processed");
+                return false;
         }
-        if (false === isset($image)) return false; // to satisfy phpstorm regarding '$image might not be defined'
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
         // rotate and flip if necessary @since 0.11.0
         // https://stackoverflow.com/questions/52174789/warning-exif-read-dataphp3kladx-file-not-supported-in-home-i-public-html-ori
@@ -148,17 +155,17 @@ class Image extends BaseElement
         if (false === file_exists($my_path)) {
             if (false === mkdir($my_path, 0755, true)) {
                 $logger->log('ERROR on filesystem');
-                $this->handleErrorAndStop(sprintf('Could not mkdir %s', $my_path));
+                $this->handleErrorAndStop("Could not mkdir $my_path");
             }
         }
         // process and save the 5 sizes TODO compact this somewhere <- don't forget to include the check on existence
         foreach ($this->sizes as $size => $pixels) { // (e.g. 'small' => 400)
             set_time_limit(30);
-            $subdir = $my_path . $size . '/';
+            $subdir = "$my_path$size/";
             if (false === file_exists($subdir)) {
                 if (false === mkdir($subdir, 0755, true)) {
                     $logger->log('ERROR on filesystem');
-                    $this->handleErrorAndStop(sprintf('Could not mkdir %s', $subdir));
+                    $this->handleErrorAndStop("Could not mkdir $subdir");
                 }
             }
             if ($width > $height) { // landscape
@@ -186,7 +193,7 @@ class Image extends BaseElement
             imagefill($newImage, 0, 0, $color);
             imagesavealpha($newImage, true);
             //ROUTINE
-            $logger->log(sprintf('Resizing original to %s × %s', $newWidth, $newHeight));
+            $logger->log("Resizing original to $newWidth × $newHeight");
             imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
             // save the img
             $newPath = $subdir . $src; // webp path
@@ -194,9 +201,9 @@ class Image extends BaseElement
             $index = 1;
             while (file_exists($newPath)) {
                 $index++;
-                $newPath = $subdir . $index . '-' . $src;
+                $newPath = "$subdir$index-$src";
             }
-            $logger->log(sprintf('Saving to %s', $newPath));
+            $logger->log("Saving to $newPath");
             // save as jpg and as webp only @since 0.5.9
             $success = imagewebp($newImage, $newPath, $quality);
             if (true === $success) { // now save as jpg for fallback, without any alpha stuff
@@ -233,9 +240,9 @@ class Image extends BaseElement
             // remember values
             if (true === $success) {
                 $logger->log('Saved fallback jpg image');
-                $data['src_' . $size] = $relativePath;
-                $data['width_' . $size] = $newWidth;
-                $data['height_' . $size] = $newHeight;
+                $data["src_$size"] = $relativePath;
+                $data["width_$size"] = $newWidth;
+                $data["height_$size"] = $newHeight;
             } else {
                 $this->addError(sprintf(__('Could not save image %s', 'peatcms'), $newPath));
 
@@ -243,6 +250,7 @@ class Image extends BaseElement
             }
         }
         imagedestroy($image);
+        ini_set('memory_limit', Help::getMemorySize((string)$memory_limit, 'M'));
         // update the element
         $data['date_processed'] = 'NOW()';
         if (true === $this->update($data)) {

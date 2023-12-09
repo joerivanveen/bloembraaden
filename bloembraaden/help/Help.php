@@ -454,22 +454,6 @@ class Help
         return Setup::$INVOICE . "/{$instance_id}_$order_number.pdf";
     }
 
-    /*public static function humanFileSize($bytes, int $decimals = 2): string
-    {
-        $sz = 'BKMGTP';
-        $factor = (int)floor((strlen($bytes) - 1) / 3);
-
-        return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$sz[$factor];
-    }*/
-    public static function calculateUploadLimit(): int
-    {
-        $max_upload = floatval(ini_get('upload_max_filesize'));
-        $max_post = floatval(ini_get('post_max_size'));
-        $memory_limit = floatval(ini_get('memory_limit'));
-
-        return min($max_upload, $max_post, $memory_limit);
-    }
-
     public static function getMemorySize(string $memory, string $multiplier = ''): string
     {
         $multiplier = strtolower($multiplier);
@@ -483,16 +467,18 @@ class Help
         if ($unit === $multiplier) return "$memory$multiplier";
 
         // convert memory to bytes
-        if ($unit == 'g') $memory *= 1024 * 1024 * 1024;
-        elseif ($unit == 'm') $memory *= 1024 * 1024;
-        elseif ($unit == 'k') $memory *= 1024;
+        if ($unit === 'g') $memory *= 1024 * 1024 * 1024;
+        elseif ($unit === 'm') $memory *= 1024 * 1024;
+        elseif ($unit === 'k') $memory *= 1024;
 
         if ('' === $multiplier) return (string)$memory;
 
         // convert memory to what you want
-        if ($multiplier == 'g') $memory /= (1024 * 1024 * 1024);
-        elseif ($multiplier == 'm') $memory /= (1024 * 1024);
-        elseif ($multiplier == 'k') $memory /= (1024);
+        if ($multiplier === 'g') $memory /= (1024 * 1024 * 1024);
+        elseif ($multiplier === 'm') $memory /= (1024 * 1024);
+        elseif ($multiplier === 'k') $memory /= (1024);
+
+        $memory = ceil($memory);
 
         return "$memory$multiplier";
     }
