@@ -47,6 +47,8 @@
       "api_url": "https://chrome.browserless.io/pdf"
     }
   },
+  "newrelic_records_backend": false,
+  "max_memory_limit": "1g",
   "VERBOSE": true,
   "dbcache": "/path/to/writable/cache/",
   "cdnpath": "/static/files/",
