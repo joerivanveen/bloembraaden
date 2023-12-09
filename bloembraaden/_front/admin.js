@@ -1476,7 +1476,7 @@ function PEATCMS_admin() {
                                 if (e.ctrlKey || e.metaKey) {
                                     window.open(this.getAttribute('data-href'));
                                 } else {
-                                    NAV.go(this.getAttribute('data-href'), true);
+                                    NAV.go(this.getAttribute('data-href'));
                                 }
                             };
                             btn = document.createElement('button');
@@ -1573,7 +1573,7 @@ function PEATCMS_admin() {
         inputs.forEach(function (input) {
             input.onkeyup = function (e) {
                 if (e.key === 'Enter') {
-                    NAV.go('/__order__/' + input.value, true);
+                    NAV.go('/__order__/' + input.value);
                 }
             }
         });

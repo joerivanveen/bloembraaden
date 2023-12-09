@@ -546,7 +546,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.classList.add('edit');
     el.title = 'Show';
     el.onclick = function () {
-        NAV.go(self.state.slug, true)
+        NAV.go(self.state.slug)
     };
     el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
@@ -4020,7 +4020,7 @@ PEATCMS.setupCarousels = function () {
         /* nav buttons */
         if ((el = car.querySelector('.carousel-close'))) {
             el.addEventListener('click', function () {
-                NAV.go('/', true);
+                NAV.go('/');
             });
         }
         if ((el = car.querySelector('.carousel-right'))) {
