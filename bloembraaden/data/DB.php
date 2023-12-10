@@ -9,6 +9,7 @@ class DB extends Base
     private ?\PDO $conn;
     private array $table_infos, $stale_slugs, $tables_with_slugs, $id_exists;
     public const TABLES_WITHOUT_HISTORY = array(
+        '_history',
         '_ci_ai',
         '_session',
         '_sessionvars',
@@ -3231,7 +3232,18 @@ class DB extends Base
     public function jobDeleteOldSessions(int $interval_in_days = 30): int
     {
         $statement = $this->conn->prepare("
-            DELETE FROM _session WHERE admin_id = 0 and user_id = 0 and date_accessed < NOW() - interval '$interval_in_days days';
+            DELETE FROM _session WHERE admin_id = 0 AND user_id = 0 AND date_accessed < NOW() - interval '$interval_in_days days';
+        ");
+        $statement->execute();
+        $affected = $statement->rowCount();
+        $statement = null;
+
+        return $affected;
+    }
+
+    public function jobDeleteOldHistory(int $interval_in_days = 30): int {
+        $statement = $this->conn->prepare("
+            DELETE FROM _history WHERE date_created < NOW() - interval '$interval_in_days days' AND table_column <> 'slug'
         ");
         $statement->execute();
         $affected = $statement->rowCount();
@@ -4075,10 +4087,6 @@ var_dump($this->id_exists);
         $statement->execute();
         if ($rows = $statement->fetchAll(5)) {
             $statement = null;
-            // monitor how many times this occurs
-            if (extension_loaded('newrelic')) {
-                newrelic_notice_error("slug $slug looked up in history database for " . Setup::$PRESENTATION_INSTANCE);
-            }
             // take the element and id to select the current slug in the live database
             $row = $rows[0];
             if ($row = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type}_id" => $row->id))) {
