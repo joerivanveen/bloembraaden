@@ -3908,7 +3908,7 @@ class DB extends Base
         $statement->execute(array($id_value));
         $this->id_exists[$id_column][$id_value] = ($exists = (bool)$statement->fetchColumn(0));
         $statement = null;
-var_dump($this->id_exists);
+
         return $exists;
     }
 
