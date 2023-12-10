@@ -4061,7 +4061,6 @@ class DB extends Base
         // TODO remove the following logic except 'return null' when _history is filled
         // look in the history database, get all tables that contain a slug column
         // those tables must also have the standard columns (data_updated, etc.)
-        // TODO this seems incredibly slow but can also be somewhere else, looking up a slug from history :-(
         $statement = Setup::getHistoryDatabaseConnection()->prepare("
             SELECT t . table_name FROM information_schema . tables t
             INNER JOIN information_schema . columns c ON c . table_name = t . table_name and c . table_schema = :schema
@@ -4074,10 +4073,10 @@ class DB extends Base
         // construct a sql statement inner joining all the entries, ordered by date_updated so you only get the most recent entry
         ob_start(); // will hold sql statement
         foreach ($rows as $key => $row) {
-            if (0 !== strpos($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
+            if (false === str_starts_with($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
             if (ob_get_length()) echo 'UNION ALL ';
             $element_name = substr($row->table_name, 4);//str_replace('cms_', '', $row->table_name);
-            echo "SELECT {$element_name}_id as id, '$element_name' as type, date_updated 
+            echo "SELECT {$element_name}_id as id, '$element_name' as type_name, date_updated 
                 FROM cms_$element_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
         }
         echo 'ORDER BY date_updated DESC LIMIT 1;';
@@ -4086,10 +4085,23 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
         if ($rows = $statement->fetchAll(5)) {
-            $statement = null;
-            // take the element and id to select the current slug in the live database
             $row = $rows[0];
-            if ($row = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type}_id" => $row->id))) {
+            // auto-migrate: register this change in the current _history table
+            $statement = $this->conn->prepare('
+                INSERT INTO _history (admin_name, admin_id, user_name, user_id, instance_id, table_name, table_column, key, value)
+                VALUES(\'system\', 0, \'-\', 0, :instance_id, :table_name, \'slug\', :key, :value)
+            ');
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->bindValue(':table_name', "cms_{$row->type_name}");
+            $statement->bindValue(':key', $row->id);
+            $statement->bindValue(':value', $slug);
+            $statement->execute();
+            if (extension_loaded('newrelic')) {
+                $migrated = 1 === $statement->rowCount() ? 'migrated' : 'looked up';
+                newrelic_notice_error("slug $slug $migrated in history for " . Setup::$PRESENTATION_INSTANCE);
+            }
+            // take the element and id to select the current slug in the live database
+            if ($row = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type_name}_id" => $row->id))) {
                 return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
         }

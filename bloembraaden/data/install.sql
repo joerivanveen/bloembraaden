@@ -3101,6 +3101,11 @@ CREATE TABLE "public"."_history"
 CREATE INDEX if not exists "index_history_table_column" ON "public"."_history" USING btree ("instance_id", "table_column" Asc NULLS Last);
 CREATE INDEX if not exists "index_history_table_name_key" ON "public"."_history" USING btree ("instance_id", "table_name", "key" Asc NULLS Last);
 
+COMMIT;
+
+-- version 0.18.0
+
+BEGIN;
 
 COMMIT;
 
