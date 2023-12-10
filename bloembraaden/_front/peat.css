@@ -422,7 +422,9 @@ body select::-ms-expand {
     user-select: none;
 }
 .carousel .slide {
+    flex: 0 0 auto;
     cursor: grab;
+    height: 100%;
 }
 .carousel[data-mouse-is-down] .slide {
     cursor: grabbing;
