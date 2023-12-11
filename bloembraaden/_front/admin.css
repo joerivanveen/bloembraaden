@@ -1,30 +1,30 @@
 :root {
-    --color-peatcms: rgb(48, 63, 123);
-    --color-peatcms-transparent: rgba(48, 63, 123, .4);
-    --color-peatcms-light: rgb(164, 164, 164);
-    --color-paper: rgb(253, 253, 255);
-    --color-paper-see-through: rgba(253, 253, 255, .9);
-    --color-key: rgb(44, 44, 52);
-    --color-accent-neutral: rgba(0, 0, 0, .09);
-    --color-accent-fierce: rgb(255, 166, 0);
-    --color-no: rgb(200, 0, 0);
-    --color-no-bg: rgba(200, 0, 0, .25);
-    --color-ok: rgb(0, 180, 60);
-    --color-ok-bg: rgba(0, 180, 60, .25);
+    --admin-color-accent: rgb(48, 63, 123);
+    --admin-color-accent-transparent: rgba(48, 63, 123, .4);
+    --admin-color-accent-light: rgb(164, 164, 164);
+    --admin-color-paper: rgb(253, 253, 255);
+    --admin-color-paper-see-through: rgba(253, 253, 255, .9);
+    --admin-color-key: rgb(44, 44, 52);
+    --admin-color-accent-neutral: rgba(0, 0, 0, .09);
+    --admin-color-accent-fierce: rgb(255, 166, 0);
+    --admin-color-no: rgb(200, 0, 0);
+    --admin-color-no-bg: rgba(200, 0, 0, .25);
+    --admin-color-ok: rgb(0, 180, 60);
+    --admin-color-ok-bg: rgba(0, 180, 60, .25);
 }
 
 .dark-mode {
-    --color-peatcms: rgb(108, 149, 252);
-    --color-peatcms-transparent: rgba(108, 149, 252, .4);
-    --color-peatcms-light: rgb(76, 76, 76);
-    --color-paper: rgb(44, 44, 52);
-    --color-paper-see-through: rgba(44, 44, 52, .9);
-    --color-key: rgb(224, 224, 224);
-    --color-accent-neutral: rgba(0, 0, 0, .27);
-    --color-no: rgb(180, 0, 0);
-    --color-no-bg: rgba(180, 0, 0, .42);
-    --color-ok: rgb(0, 145, 45);
-    --color-ok-bg: rgba(0, 145, 45, .25);
+    --admin-color-accent: rgb(108, 149, 252);
+    --admin-color-accent-transparent: rgba(108, 149, 252, .4);
+    --admin-color-accent-light: rgb(76, 76, 76);
+    --admin-color-paper: rgb(44, 44, 52);
+    --admin-color-paper-see-through: rgba(44, 44, 52, .9);
+    --admin-color-key: rgb(224, 224, 224);
+    --admin-color-accent-neutral: rgba(0, 0, 0, .27);
+    --admin-color-no: rgb(180, 0, 0);
+    --admin-color-no-bg: rgba(180, 0, 0, .42);
+    --admin-color-ok: rgb(0, 145, 45);
+    --admin-color-ok-bg: rgba(0, 145, 45, .25);
 }
 
 .bloembraaden-icon {
@@ -41,7 +41,7 @@
 
 .bloembraaden-icon .st0 {
     opacity: 0.81;
-    fill: var(--color-peatcms);
+    fill: var(--admin-color-accent);
 }
 
 /*
@@ -53,11 +53,11 @@
 }
 
 #PEATCMS_admin_page td {
-    color: var(--color-key);
+    color: var(--admin-color-key);
 }
 
 #PEATCMS_admin_page [type="file"] {
-    color: var(--color-key);
+    color: var(--admin-color-key);
 }
 
 /*
@@ -82,7 +82,7 @@
 }
 
 #PEATCMS_admin_page {
-    background-color: var(--color-paper);
+    background-color: var(--admin-color-paper);
     background-image: none;
     min-height: 100vh;
     padding: 1rem;
@@ -146,7 +146,7 @@
 
 .dark-mode .edit-area *,
 .edit-area * {
-    color: var(--color-key);
+    color: var(--admin-color-key);
 }
 
 #admin_console_button {
@@ -157,18 +157,18 @@
     width: 100%;
     max-width: 100%;
     margin: auto;
-    background-color: var(--color-paper);
+    background-color: var(--admin-color-paper);
 }
 
 /**
  * generic
  */
 [data-done="true"] {
-    color: var(--color-ok) !important;
+    color: var(--admin-color-ok) !important;
 }
 
 [data-done="false"] {
-    color: var(--color-no) !important;
+    color: var(--admin-color-no) !important;
 }
 
 .PEATCMS_admin [data-disabled="1"] {
@@ -193,11 +193,11 @@
     min-width: 160px;
     width: 50vw;
     border: 0;
-    border-bottom: solid 1px var(--color-key);
+    border-bottom: solid 1px var(--admin-color-key);
 }
 
 #PEATCMS_admin_page input[type=button]:hover {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /**
@@ -206,7 +206,7 @@
 #peatcms_publish {
     margin: .25rem .5rem;
     padding: .25rem;
-    background-color: var(--color-peatcms);
+    background-color: var(--admin-color-accent);
     border-radius: .25rem;
     position: absolute;
     top: 2.08rem;
@@ -216,17 +216,17 @@
 #peatcms_publish:after {
     content: 'publish';
     font-weight: bold;
-    color: var(--color-paper);
+    color: var(--admin-color-paper);
 }
 
 #peatcms_publish.published {
-    background-color: var(--color-accent-neutral);
+    background-color: var(--admin-color-accent-neutral);
 }
 
 .template.published:after,
 #peatcms_publish.published:before {
     content: '\2713';
-    color: var(--color-ok);
+    color: var(--admin-color-ok);
     font-weight: bold;
     margin-left: .2em;
 }
@@ -234,7 +234,7 @@
 #peatcms_publish.published:after {
     content: 'published';
     font-weight: normal;
-    color: var(--color-peatcms-light);
+    color: var(--admin-color-accent-light);
 }
 
 .template {
@@ -247,7 +247,7 @@
 
 .template > * {
     padding-right: .5rem;
-    color: var(--color-key);
+    color: var(--admin-color-key);
     display: table-cell;
 }
 
@@ -322,18 +322,18 @@
 /*#PEATCMS_admin_menu_editor .toggle,
 .PEATCMS_admin.menu_editor ul li*/
 .menu_editor ul li {
-    background-color: var(--color-paper);
-    box-shadow: 0 2px 4px var(--color-accent-neutral);
+    background-color: var(--admin-color-paper);
+    box-shadow: 0 2px 4px var(--admin-color-accent-neutral);
     padding: 0 6px;
     margin: 0 0 3px 0;
-    border: 1px solid var(--color-accent-neutral);
+    border: 1px solid var(--admin-color-accent-neutral);
     list-style-type: none;
     border-top: 2px solid transparent;
 }
 
 #PEATCMS_admin_page.menu_editor ul li div.drop_area {
     height: 10px;
-    background-color: var(--color-accent-neutral);
+    background-color: var(--admin-color-accent-neutral);
     margin-left: 3%;
     width: 97%;
 }
@@ -351,18 +351,18 @@
 #PEATCMS_admin_menu_editor .toggle {
     max-height: 40px;
     margin-top: 1em;
-    background-color: var(--color-paper);
+    background-color: var(--admin-color-paper);
 }
 
 #PEATCMS_admin_menu_editor .toggle.dragover {
-    border-color: var(--color-peatcms);
+    border-color: var(--admin-color-accent);
 }
 
 /**
  * Console
  */
 .offline {
-    border-left: solid .2em var(--color-accent-neutral);
+    border-left: solid .2em var(--admin-color-accent-neutral);
 }
 
 .PEATCMS_admin .offline {
@@ -371,7 +371,7 @@
 
 
 .PEATCMS_admin .online {
-    border-left: solid .2em var(--color-peatcms);
+    border-left: solid .2em var(--admin-color-accent);
 }
 
 /*.PEATCMS_admin .button.edit,
@@ -381,7 +381,7 @@
 
 .PEATCMS_admin .button.edit:hover,
 .PEATCMS_admin button.edit:hover {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }*/
 .edit + .edit {
     margin-left: .3rem;
@@ -392,14 +392,14 @@
 .PEATCMS_admin a:active,
 .PEATCMS_admin a:visited,
 .PEATCMS_admin .link {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
     text-decoration: underline;
     cursor: pointer;
 }
 
 /* panel close buttons */
 label.close:hover {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /*.PEATCMS_editable.unsaved,
@@ -461,15 +461,15 @@ input[type="checkbox"] + label:before {
     height: 12px;
     line-height: 12px;
     border-radius: 6px;
-    background-color: var(--color-accent-neutral);
-    color: var(--color-paper);
+    background-color: var(--admin-color-accent-neutral);
+    color: var(--admin-color-paper);
     text-align: left;
     transition: background-color .4s;
-    box-shadow: 0 .1em 1em var(--color-accent-neutral) inset;
+    box-shadow: 0 .1em 1em var(--admin-color-accent-neutral) inset;
 }
 
 input[type="checkbox"]:checked + label:before {
-    background-color: var(--color-peatcms);
+    background-color: var(--admin-color-accent);
     text-align: right;
 }
 
@@ -478,11 +478,11 @@ input[type="checkbox"].peatcms_loading + label:before {
 }
 
 input[type="checkbox"].peatcms_danger:checked + label:before {
-    background-color: var(--color-no);
+    background-color: var(--admin-color-no);
 }
 
 body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /**/
@@ -491,7 +491,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
     width: calc(100% - .5em);
     padding: .25em;
     border: transparent;
-    color: var(--color-key);
+    color: var(--admin-color-key);
     font-weight: bold;
 }
 
@@ -514,8 +514,8 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 
 .PEATCMS_data_stasher {
     position: absolute;
-    /*    border: solid 3px var(--color-peatcms);
-        color: var(--color-peatcms);
+    /*    border: solid 3px var(--admin-color-accent);
+        color: var(--admin-color-accent);
         border-radius: 10px;
         height: 0;
         width: 10px;
@@ -524,7 +524,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 
 .PEATCMS_admin ul li.dragover,
 .PEATCMS_admin .order.dragover {
-    border-top: solid 2px var(--color-peatcms);
+    border-top: solid 2px var(--admin-color-accent);
 }
 
 /*.admin.menu_editor ul li span.drag_handle,
@@ -532,7 +532,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 .drag_handle {
     cursor: grab;
     font-weight: bold;
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /*.admin.menu_editor ul li span.drag_handle:active,
@@ -543,7 +543,7 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 
 .PEATCMS_admin h3.divider {
     display: block;
-    color: var(--color-key);
+    color: var(--admin-color-key);
     font-size: 125%;
     padding-top: .5em;
     padding-bottom: .2em;
@@ -588,20 +588,20 @@ body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
 .drop_area {
     width: 90%;
     height: 200px;
-    border: dotted 3px var(--color-peatcms-light);
+    border: dotted 3px var(--admin-color-accent-light);
     overflow: hidden; /* for the progress indicator */
 }
 
 .drop_area.dragover {
-    border-color: var(--color-peatcms);
+    border-color: var(--admin-color-accent);
 }
 
 .drop_area .progress {
     width: 100%;
     height: 100%;
     margin-top: 100%;
-    background-color: var(--color-peatcms-transparent);
-    color: var(--color-paper);
+    background-color: var(--admin-color-accent-transparent);
+    color: var(--admin-color-paper);
     font-size: 10px;
 }
 
@@ -610,7 +610,7 @@ body .PEATCMS.progress {
     width: 5px;
     height: 100vh;
     margin-top: 100%;
-    background-color: var(--color-peatcms);
+    background-color: var(--admin-color-accent);
     left: 0;
     top: 0;
     z-index: 101; /* just in front of console */
@@ -645,7 +645,7 @@ body .PEATCMS_admin header,
 body .PEATCMS_admin div,
 body .PEATCMS_admin span,
 body .PEATCMS_admin p {
-    color: var(--color-key);
+    color: var(--admin-color-key);
 }
 
 /* admin items that are only visible when hovering */
@@ -664,11 +664,11 @@ body .PEATCMS_admin p {
     position: fixed;
     bottom: .5em;
     left: .5em;
-    background-color: var(--color-paper-see-through);
-    color: var(--color-key);
+    background-color: var(--admin-color-paper-see-through);
+    color: var(--admin-color-key);
     padding: .25em;
     border-radius: 2em;
-    border: solid 3px var(--color-peatcms);
+    border: solid 3px var(--admin-color-accent);
     z-index: 100;
     line-height: 0;
     text-align: center;
@@ -691,7 +691,7 @@ body .PEATCMS_admin p {
     background-color: inherit;
     border-radius: 0;
     border: 0;
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
     cursor: pointer;
     padding: .1rem .21rem;
     box-shadow: none;
@@ -705,9 +705,9 @@ body .PEATCMS_admin p {
 .PEATCMS_admin ::file-selector-button:hover,
 input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin button:hover {
-    /*outline: solid 2px var(--color-accent-fierce);
+    /*outline: solid 2px var(--admin-color-accent-fierce);
     outline-offset: -2px;*/
-    color: var(--color-accent-fierce);
+    color: var(--admin-color-accent-fierce);
 }
 
 #admin_console_button .hoverstate {
@@ -722,7 +722,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     position: absolute;
     display: block;
     padding: 0 2px;
-    background-color: var(--color-accent-fierce);
+    background-color: var(--admin-color-accent-fierce);
     height: 1.5rem;
     line-height: 1.5rem;
     white-space: nowrap;
@@ -732,19 +732,19 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 #PEATCMS_edit_menu {
     cursor: pointer;
     position: fixed; /* because boundingRect = relative to view */
-    background-color: var(--color-paper-see-through);
-    border: solid 3px var(--color-peatcms);
+    background-color: var(--admin-color-paper-see-through);
+    border: solid 3px var(--admin-color-accent);
     padding: 0 .25em;
     border-radius: 2em;
     margin: -1px 4px;
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /**
  * the various screens / consoles that can be activated by admin
  */
 .PEATCMS_admin .console_screen {
-    background-color: var(--color-paper);
+    background-color: var(--admin-color-paper);
     position: fixed;
     bottom: 0;
     left: 0;
@@ -753,7 +753,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin .console_screen .cell {
     display: table-cell;
     padding: .2em .5em;
-    background-color: var(--color-paper); /* to prevent overflow:hidden to be shown in the next .harmonica cell */
+    background-color: var(--admin-color-paper); /* to prevent overflow:hidden to be shown in the next .harmonica cell */
 }
 
 .PEATCMS_admin .console_screen .cell header {
@@ -769,7 +769,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 .PEATCMS_admin .console_screen .cell:not(:first-child) {
-    border-left: solid 1px var(--color-accent-neutral);
+    border-left: solid 1px var(--admin-color-accent-neutral);
 }
 
 .PEATCMS_admin .console_screen .cell.harmonica {
@@ -781,12 +781,12 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin .console_screen .cell.harmonica.active {
     width: 260px;
     max-width: 260px;
-    border-left-color: var(--color-peatcms);
+    border-left-color: var(--admin-color-accent);
 }
 
 .PEATCMS_admin .console_screen .cell.active header *,
 .PEATCMS_admin .console_screen .cell.active header {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
     height: auto;
 }
 
@@ -829,7 +829,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     height: 0;
     bottom: -3px; /* size of the border-top */
     width: 100%;
-    border-top: solid 3px var(--color-peatcms);
+    border-top: solid 3px var(--admin-color-accent);
     z-index: 100;
     overflow: hidden;
 }
@@ -839,7 +839,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     width: 0;
     left: -4px;
     height: 100%;
-    /*border-right: inset 3px var(--color-peatcms);*/
+    /*border-right: inset 3px var(--admin-color-accent);*/
     z-index: 100;
     float: left;
     display: inline-block;
@@ -850,7 +850,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     float: right;
     width: 3px;
     height: 100vh;
-    background-color: var(--color-peatcms);
+    background-color: var(--admin-color-accent);
 }
 
 #admin_sidebar .edit-area {
@@ -876,7 +876,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .edit-area .button.delete,
 .edit-area button.delete,
 .PEATCMS_admin input[type="button"].delete {
-    color: var(--color-no);
+    color: var(--admin-color-no);
     font-weight: bold;
     cursor: pointer;
 }
@@ -891,13 +891,13 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     position: absolute;
     top: 5px;
     right: 5px;
-    border: solid 5px var(--color-peatcms); /* fill color is currently in javascript indicating the relative position */
+    border: solid 5px var(--admin-color-accent); /* fill color is currently in javascript indicating the relative position */
     border-radius: 20px;
 }
 
 .edit-area #admin_date_popvote button {
-    color: var(--color-paper);
-    text-shadow: 0 0 1px var(--color-key);
+    color: var(--admin-color-paper);
+    text-shadow: 0 0 1px var(--admin-color-key);
 }
 
 /* open / close box for .x_value in properties */
@@ -908,7 +908,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     height: 0;
     border-left: solid .32rem transparent;
     border-right: solid .32rem transparent;
-    border-top: solid .43rem var(--color-peatcms);
+    border-top: solid .43rem var(--admin-color-accent);
     background-color: transparent;
     cursor: pointer;
 }
@@ -940,8 +940,8 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 #edit_area_header {
     padding: .1rem .21rem;
     left: 15px; /* room for close button */
-    background-color: var(--color-paper);
-    color: var(--color-peatcms-light);
+    background-color: var(--admin-color-paper);
+    color: var(--admin-color-accent-light);
 }
 
 #admin_sidebar button.edit {
@@ -957,9 +957,9 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin textarea {
     border: none;
     outline: none;
-    border-bottom: solid 1px var(--color-peatcms);
-    color: var(--color-key);
-    box-shadow: 0 2px 4px 0 inset var(--color-accent-neutral);
+    border-bottom: solid 1px var(--admin-color-accent);
+    color: var(--admin-color-key);
+    box-shadow: 0 2px 4px 0 inset var(--admin-color-accent-neutral);
     padding: .25em;
     margin-bottom: .25em;
     width: calc(100% - .5em);
@@ -988,7 +988,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin button:focus-visible,
 .PEATCMS_admin label:focus-visible,
 .PEATCMS_admin a:focus-visible {
-    outline: solid 2px var(--color-accent-fierce);
+    outline: solid 2px var(--admin-color-accent-fierce);
     outline-offset: -2px;
     animation: none;
 }
@@ -1032,8 +1032,8 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 .PEATCMS_admin select {
-    background-color: var(--color-paper);
-    color: var(--color-key);
+    background-color: var(--admin-color-paper);
+    color: var(--admin-color-key);
 }
 
 #PEATCMS_admin_page input[type=text].PEATCMS_editable.small {
@@ -1052,7 +1052,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 #admin_console input[type=text].searchable,
 #admin_sidebar input[type=text]*/
 .PEATCMS_admin input[type=text].searchable {
-    background-color: var(--color-accent-neutral);
+    background-color: var(--admin-color-accent-neutral);
     border-bottom: 0;
 }
 
@@ -1063,7 +1063,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 body .PEATCMS_admin span.template_status {
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
     text-transform: uppercase;
 }
 
@@ -1105,7 +1105,7 @@ body .PEATCMS_admin span.template_status {
 #PEATCMS_admin_page .footer {
     font-size: .8em;
     text-align: center;
-    color: var(--color-peatcms);
+    color: var(--admin-color-accent);
 }
 
 /**
@@ -1136,7 +1136,7 @@ body .PEATCMS_admin span.template_status {
 .payment-table .header,
 .order-table .header {
     display: table-row;
-    background-color: var(--color-peatcms-transparent);
+    background-color: var(--admin-color-accent-transparent);
 }
 
 .payment-table .header > *,
@@ -1156,15 +1156,15 @@ body .PEATCMS_admin span.template_status {
 }
 
 .order-table .row:not([data-emailed]) {
-    background-color: var(--color-accent-neutral);
+    background-color: var(--admin-color-accent-neutral);
 }
 
 .order-table .row[data-paid] {
-    background-color: var(--color-ok-bg);
+    background-color: var(--admin-color-ok-bg);
 }
 
 .payment-table .row:not([data-processed]) {
-    background-color: var(--color-no-bg);
+    background-color: var(--admin-color-no-bg);
 }
 
 textarea.code {
@@ -1187,7 +1187,7 @@ header.payment {
 
 .PEATCMS_admin .paging a.peatcms-current-slug {
     text-decoration: none;
-    outline: solid 1px var(--color-key);
+    outline: solid 1px var(--admin-color-key);
 }
 
 
