@@ -15,12 +15,12 @@ if (!$interval) {
     die('interval needed');
 }
 // backwards compatibility:
-if (0 === strpos($interval, 'interval=')) {
+if (str_starts_with($interval, 'interval=')) {
     $interval = str_replace('interval=', '', $interval);
 }
 // the work starts here
 $start_timer = microtime(true);
-$db = new DB;
+$db = new DB();
 define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
@@ -550,7 +550,7 @@ if ('1' === $interval) { // interval should be '1'
     $update_feeds($feeds);
 } elseif ('5' === $interval) { // interval should be 5
     $trans->start('Purge deleted');
-    echo $db->jobPurgeDeleted((int)$interval), PHP_EOL;
+    echo $db->jobPurgeDeleted((int)$interval ?: 5), PHP_EOL;
     // delete cross table entries with orphaned id’s
     $trans->start('Clear cross (_x_) tables');
     $tables = array_map(static function ($row) {
@@ -683,6 +683,8 @@ if ('1' === $interval) { // interval should be '1'
     echo $db->jobDeleteOrphanedLists(), PHP_EOL;
     $trans->start('Remove orphaned shoppinglist rows (variants)');
     echo $db->jobDeleteOrphanedShoppinglistVariants(), PHP_EOL;
+    $trans->start('Remove old _history rows');
+    echo $db->jobDeleteOldHistory(), ' rows deleted', PHP_EOL;
     // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
     $trans->start('Refresh instagram access token');
     // @since 0.7.2
