@@ -37,6 +37,12 @@ class DB extends Base
         'serie',
         'variant',
     );
+    public const REDACTED_COLUMN_NAMES = array(
+        'password_hash',
+        'recaptcha_site_key',
+        'recaptcha_secret_key',
+        'access_token',
+    );
 
     public function __construct()
     {
@@ -4556,9 +4562,11 @@ class DB extends Base
             // booleans get butchered in $statement->execute(), interestingly, NULL values don't
             if (is_bool($value)) {
                 $value = ($value ? '1' : '0');
+            } elseif (in_array($column_name, $this::REDACTED_COLUMN_NAMES)) {
+                $value = 'REDACTED';
             } else {
                 $value = (string)$value;
-                if ('NOW()' === $value && 0 === strpos($column_name, 'date_')) {
+                if ('NOW()' === $value && str_starts_with($column_name, 'date_')) {
                     $value = date('Y-m-d H:i:s', $now);
                 }
             }
@@ -4594,26 +4602,6 @@ class DB extends Base
                     $table_name, $column_name, $value));
             }
         }
-//        // 2) insert the row into history database
-//        try {
-//            $columns_list = implode(', ', $table_info->getColumnNames());
-//            $values = array();
-//            $parameters = array();
-//            foreach ($table_info->getColumnNames() as $key => $column_name) {
-//                if (is_bool($row->{$column_name})) { // booleans get butchered in $statement->execute(), interestingly, NULL values don't
-//                    $values[] = ($row->{$column_name} ? '1' : '0');
-//                } else {
-//                    $values[] = $row->{$column_name};
-//                }
-//                $parameters[] = '?';
-//            }
-//            $parameters = implode(', ', $parameters);
-//            $statement = Setup::getHistoryDatabaseConnection()->prepare("INSERT INTO $table_name ($columns_list) VALUES ($parameters);");
-//            $statement->execute($values);
-//            $statement = null;
-//        } catch (\Exception $e) {
-//            $this->addError($e->getMessage());
-//        }
 
         return $row;
     }

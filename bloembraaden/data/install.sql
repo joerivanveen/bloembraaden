@@ -3107,5 +3107,7 @@ COMMIT;
 
 BEGIN;
 
+ALTER TABLE _history DROP COLUMN IF EXISTS history_id;
+
 COMMIT;
 
