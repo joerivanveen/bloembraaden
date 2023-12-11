@@ -4051,7 +4051,7 @@ class DB extends Base
             $statement = null;
             $row = $rows[0];
             $table_name = $row->table_name;
-            if (0 === strpos($table_name, 'cms_')) {
+            if (str_starts_with($table_name, 'cms_')) {
                 $element_name = substr($table_name, 4);
                 if (($row = $this->fetchRow($table_name, array('slug'), array("{$element_name}_id" => $row->key)))) {
                     return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
@@ -4085,24 +4085,25 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
         if ($rows = $statement->fetchAll(5)) {
-            $row = $rows[0];
-            // auto-migrate: register this change in the current _history table
-            $statement = $this->conn->prepare('
-                INSERT INTO _history (admin_name, admin_id, user_name, user_id, instance_id, table_name, table_column, key, value)
-                VALUES(\'system\', 0, \'-\', 0, :instance_id, :table_name, \'slug\', :key, :value)
-            ');
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->bindValue(':table_name', "cms_{$row->type_name}");
-            $statement->bindValue(':key', $row->id);
-            $statement->bindValue(':value', $slug);
-            $statement->execute();
-            if (extension_loaded('newrelic')) {
-                $migrated = 1 === $statement->rowCount() ? 'migrated' : 'looked up';
-                newrelic_notice_error("slug $slug $migrated in history for " . Setup::$PRESENTATION_INSTANCE);
-            }
             // take the element and id to select the current slug in the live database
-            if ($row = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type_name}_id" => $row->id))) {
-                return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
+            $row = $rows[0];
+            if ($obj = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type_name}_id" => $row->id))) {
+                // auto-migrate: register this change in the current _history table
+                $statement = $this->conn->prepare('
+                    INSERT INTO _history (admin_name, admin_id, user_name, user_id, instance_id, table_name, table_column, key, value)
+                    VALUES(\'system\', 0, \'-\', 0, :instance_id, :table_name, \'slug\', :key, :value)
+                ');
+                $statement->bindValue(':instance_id', Setup::$instance_id);
+                $statement->bindValue(':table_name', "cms_{$row->type_name}");
+                $statement->bindValue(':key', $row->id);
+                $statement->bindValue(':value', $slug);
+                $statement->execute();
+                if (extension_loaded('newrelic')) {
+                    $migrated = 1 === $statement->rowCount() ? 'migrated' : 'looked up';
+                    newrelic_notice_error("slug $slug $migrated in history for " . Setup::$PRESENTATION_INSTANCE);
+                }
+                //
+                return $obj->slug; // you know it might be offline or deleted, but you handle that after the redirect.
             }
         }
         $statement = null;
