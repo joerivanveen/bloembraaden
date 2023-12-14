@@ -958,11 +958,11 @@ class Handler extends BaseLogic
                         unset($element);
                         $out = array('success' => $success);
                     }
-                } elseif ($action === 'admin_get_elements') {
+                } elseif ('admin_get_elements' === $action) {
                     $out = array('rows' => $this->getElements($post_data->element));
-                } elseif ($action === 'admin_get_element_suggestions') {
+                } elseif ('admin_get_element_suggestions' === $action) {
                     $out = $this->getElementSuggestions($post_data->element, $post_data->src);
-                } elseif ($action === 'admin_get_element') {
+                } elseif ('admin_get_element' === $action) {
                     $peat_type = new Type($post_data->element);
                     $element = $peat_type->getElement();
                     if ($element->fetchById((int)$post_data->id)) {
@@ -974,7 +974,7 @@ class Handler extends BaseLogic
                         }
                         unset($element);
                     }
-                } elseif ($action === 'admin_uncache') {
+                } elseif ('admin_uncache' === $action) {
                     if (isset($post_data->path)) {
                         $path = $post_data->path;
                         if (true === Help::getDB()->reCacheWithWarmup($path)) {
@@ -1056,18 +1056,18 @@ class Handler extends BaseLogic
                     $element = $peat_type->getElement();
                     if ($element->fetchById((int)$post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            if ($action === 'admin_linkable_link') {
-                                $unlink = (isset($post_data->unlink) and true === $post_data->unlink);
+                            if ('admin_linkable_link' === $action) {
+                                $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);
                                 if ($element->link($post_data->sub_element, $post_data->sub_id, $unlink)) {
                                     $out = $element->getLinked();
                                 } else {
                                     $this->addError('Could not link that');
                                     $out = true;
                                 }
-                            } elseif ($action === 'admin_linkable_order') {
+                            } elseif ('admin_linkable_order' === $action) {
                                 $full_feedback = (false !== $post_data->full_feedback);
                                 $out = $element->orderLinked($post_data->linkable_type, $post_data->slug, $post_data->before_slug, $full_feedback);
-                            } elseif ($action === 'admin_x_value_link') {
+                            } elseif ('admin_x_value_link' === $action) {
                                 // make the entry in x_value table :-)
                                 if ($element->linkX((int)$post_data->property_id, (int)$post_data->property_value_id)) {
                                     $out = $element->getLinked('x_value');
@@ -1075,16 +1075,16 @@ class Handler extends BaseLogic
                                     $this->addError('Property link error');
                                     $out = true;
                                 }
-                            } elseif ($action === 'admin_x_value_order') {
+                            } elseif ('admin_x_value_order' === $action) {
                                 $out = $element->orderXValue($post_data->x_value_id, $post_data->before_x_value_id);
-                            } elseif ($action === 'admin_x_value_remove') {
+                            } elseif ('admin_x_value_remove' === $action) {
                                 if (isset($post_data->x_value_id) and $x_value_id = (int)$post_data->x_value_id) {
                                     // todo move this to a method in baseelement
                                     Help::getDB()->deleteXValueLink($peat_type, $element->getId(), $x_value_id);
                                     $element->reCache();
                                     $out = $element->getLinked('x_value');
                                 }
-                            } elseif ($action === 'admin_x_value_create') {
+                            } elseif ('admin_x_value_create' === $action) {
                                 // todo move this to a method in baseelement
                                 if (isset($post_data->property_value_title) && isset($post_data->property_id)) {
                                     $title = $post_data->property_value_title;
@@ -1093,39 +1093,36 @@ class Handler extends BaseLogic
                                     if (false === $admin->isRelatedElement($property)) {
                                         $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
                                         $out = true;
-                                    } else {
-                                        // create a property value
-                                        if (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
-                                            'title' => $title,
-                                            'slug' => Help::slugify($title),
-                                            'content' => __('Auto generated property value', 'peatcms'),
-                                            'excerpt' => '',
-                                            'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
-                                            'online' => true // for here the default is true, or else we can’t add simply from edit screen
-                                        )))) {
-                                            // link to the supplied property
-                                            if (true === $property->link('property_value', $property_value_id)) {
-                                                // create x_value entry
-                                                if (!Help::getDB()->insertRowAndReturnKey(
-                                                    $peat_type->tableName() . '_x_properties',
-                                                    array(
-                                                        $peat_type->idColumn() => $element->getId(),
-                                                        'property_id' => $property_id,
-                                                        'property_value_id' => $property_value_id,
-                                                        'online' => true
-                                                    )
-                                                )) {
-                                                    $this->addMessage(sprintf(__('Could not link property value to %s', 'peatcms'), $element->getTypeName()), 'error');
-                                                }
-                                                $element->reCache();
-                                            } else {
-                                                $this->addMessage(sprintf(__('Could not link property value to %s', 'peatcms'), 'property'), 'error');
+                                    } elseif (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
+                                        'title' => $title,
+                                        'slug' => Help::slugify($title),
+                                        'content' => __('Auto generated property value', 'peatcms'),
+                                        'excerpt' => '',
+                                        'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
+                                        'online' => true // for here the default is true, or else we can’t add simply from edit screen
+                                    )))) { // create a property value
+                                        // link to the supplied property
+                                        if (true === $property->link('property_value', $property_value_id)) {
+                                            // create x_value entry
+                                            if (!Help::getDB()->insertRowAndReturnKey(
+                                                $peat_type->tableName() . '_x_properties',
+                                                array(
+                                                    $peat_type->idColumn() => $element->getId(),
+                                                    'property_id' => $property_id,
+                                                    'property_value_id' => $property_value_id,
+                                                    'online' => true
+                                                )
+                                            )) {
+                                                $this->addMessage(sprintf(__('Could not link property value to %s', 'peatcms'), $element->getTypeName()), 'error');
                                             }
-                                            // return the x_value entries (linked)
-                                            $out = $element->getLinked('x_value');
+                                            $element->reCache();
                                         } else {
-                                            $this->addMessage(__('Could not create new property value', 'peatcms'), 'error');
+                                            $this->addMessage(sprintf(__('Could not link property value to %s', 'peatcms'), 'property'), 'error');
                                         }
+                                        // return the x_value entries (linked)
+                                        $out = $element->getLinked('x_value');
+                                    } else {
+                                        $this->addMessage(__('Could not create new property value', 'peatcms'), 'error');
                                     }
                                 }
                             }
@@ -1824,7 +1821,7 @@ class Handler extends BaseLogic
     {
         if ('x_value' === $type_name) {
             return Help::getDB()->fetchPropertiesRowSuggestions($term);
-        } elseif ($type = new Type($type_name)) {
+        } elseif (($type = new Type($type_name))) {
             if (strlen($term) >= Search::MIN_TERM_LENGTH && 'menu_item' !== $type_name) {
                 $src = new Search();
                 $src->findWeighted(array($term), 0, array($type_name), false);

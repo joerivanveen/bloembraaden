@@ -199,7 +199,7 @@ class BaseElement extends BaseLogic implements Element
         foreach ($linked_types as $linked_type_name => $relation) {
             if ('x_value' === $linked_type_name) { // linked property values are a special breed...
                 if ('properties' === $relation) {
-                    if (!isset($this->row->__x_values__)) {
+                    if ( false === isset($this->row->__x_values__)) {
                         // to improve performance we only get property slug and title, and property_value slug and title
                         $this->row->__x_values__ = Help::getDB()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
                         $this->row->__x_values__['item_count'] = count($this->row->__x_values__);
@@ -210,7 +210,7 @@ class BaseElement extends BaseLogic implements Element
                     foreach ($relation as $index => $element_name) {
                         $linked_type = new Type($element_name);
                         $plural_tag = "__{$element_name}s__";
-                        if (!isset($this->row->{$plural_tag})) {
+                        if (false === isset($this->row->{$plural_tag})) {
                             $this->row->{$plural_tag} = array();
                             if (($tmp = Help::getDB()->fetchElementRowsLinkedX(
                                 $peat_type, $id, $linked_type, $this->variant_page_size, $this->variant_page_counter, $this->getProperties()
@@ -228,14 +228,14 @@ class BaseElement extends BaseLogic implements Element
                 // property values are only shown one deep, and always shown all, so decouple $nested_level
                 $nested_level = ('property_value' === $linked_type_name) ? 2 : $this->nested_level;
                 $plural_tag = "__{$linked_type_name}s__"; // this is for the template etc., '__files__' in stead of 'file'
-                if (!isset($this->row->{$plural_tag})) {
+                if (false === isset($this->row->{$plural_tag})) {
                     $this->row->{$plural_tag} = array();
                     if (($tmp = Help::getDB()->fetchElementRowsLinked(
                         $peat_type, $id, $linked_type, $relation, $this->variant_page_size, $this->variant_page_counter
                     ))) {
                         // in the deepest level, only display the first record (e.g. first image) when requested
                         // NOTE use $this->nested_level to check for the loop or the one, not $nested_level
-                        if ($this->nested_level > 1 and true === $this->nested_show_first_only) {
+                        if ($this->nested_level > 1 && true === $this->nested_show_first_only) {
                             if (count($tmp) > 0) {
                                 $this->row->{$plural_tag}[] = $linked_type->getElement($tmp[0])->getOutput($nested_level);
                                 $this->row->{$plural_tag}['item_count'] = 1;

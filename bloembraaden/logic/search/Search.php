@@ -172,7 +172,7 @@ class Search extends BaseElement
         usort($terms, function ($a, $b) {
             if (is_numeric($a) && !is_numeric($b))
                 return 1;
-            else if (!is_numeric($a) && is_numeric($b))
+            elseif (!is_numeric($a) && is_numeric($b))
                 return -1;
             else
                 return ($a < $b) ? -1 : 1;

@@ -1926,7 +1926,19 @@ class DB extends Base
     {
         if (false === $element instanceof BaseElement) return true;
         if (false === in_array($element->getTypeName(), self::TYPES_WITH_CI_AI)) return true; // success, we do not need to update
-        if (true === $element->getRow()->deleted) return true; // deleted items are not updated
+        // @since 0.18.0 delete immediately to not pollute search results
+        $row = $element->getRow();
+        if (true === $row->deleted) {
+            $statement = $this->conn->prepare("
+                DELETE FROM _ci_ai 
+                WHERE type_name = :type_name AND _ci_ai.id = :id;
+            ");
+            $statement->bindValue(':type_name', $element->getTypeName());
+            $statement->bindValue(':id', $row->id);
+            $statement->execute();
+            $statement = null;
+            return true; // any amount of deleted rows means a success
+        }
         $out = $element->getOutputFull();
         $ci_ai = Help::removeAccents(mb_strtolower($this->getMeaningfulSearchString($out)));
         // @since 0.12.0 maintain _ci_ai table
@@ -2442,7 +2454,7 @@ class DB extends Base
                 "{$type_name}_id" => $id,
                 "sub_{$sub_type_name}_id" => $sub_id,
             );
-            if ($row = $this->fetchRow($link_table, array($id_column), $where)) { // update
+            if (($row = $this->fetchRow($link_table, array($id_column), $where))) { // update
                 $update_array = array('deleted' => $delete);
                 if (false === $delete) {
                     $update_array[$order_column] = $order;
