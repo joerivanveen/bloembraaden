@@ -912,8 +912,8 @@ class Handler extends BaseLogic
                 /**
                  * Admin actions, permission needs to be checked every time
                  */
-                if ($action === 'update_element') {
-                    if ($element = $this->getElementById($post_data->element, $post_data->id)) {
+                if ('update_element' === $action) {
+                    if (($element = $this->getElementById($post_data->element, $post_data->id))) {
                         if (true === $admin->isRelatedElement($element)) {
                             // @since 0.8.19 check the prices
                             if (in_array($post_data->column_name, array('price', 'price_from'))) {
@@ -933,13 +933,13 @@ class Handler extends BaseLogic
                             $out = $element->row;
                         }
                     }
-                } elseif ($action === 'create_element') {
+                } elseif ('create_element' === $action) {
                     if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
                         $out = $element->row;
                     } else {
-                        $this->handleErrorAndStop(sprintf('Create element ‘%s’ failed', $post_data->element));
+                        $this->handleErrorAndStop("Create element $post_data->element failed");
                     }
-                } elseif ($action === 'delete_element') {
+                } elseif ('delete_element' === $action) {
                     if (isset($post_data->element_name) && isset($post_data->id)) {
                         $success = false;
                         $type = new Type($post_data->element_name);

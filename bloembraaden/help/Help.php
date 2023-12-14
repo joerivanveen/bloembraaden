@@ -722,7 +722,7 @@ class Help
             self::setValue($identifier, true);
             // if not persisting, release the lock always when the request is done
             register_shutdown_function(static function () use ($file_name) {
-                unlink($file_name);
+                @unlink($file_name);
             });
         }
 
