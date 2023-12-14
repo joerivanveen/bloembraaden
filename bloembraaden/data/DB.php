@@ -411,7 +411,8 @@ class DB extends Base
             //$term = Help::removeAccents($term); // already done when terms are clean
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
-            foreach ($temp = $statement->fetchAll(5) as $index_row => $row) {
+            $temp = $statement->fetchAll(5);
+            foreach ($temp as $index_row => $row) {
                 $rows[$row->slug] = $row;
             }
             unset ($temp);
@@ -611,8 +612,8 @@ class DB extends Base
         $src = Help::removeAccents(mb_strtolower($src));
         $instance_id = Setup::$instance_id;
         $statement = $this->conn->prepare("
-            SELECT p.property_id, pv.property_value_id, CONCAT(p.title, ': ', v.title) AS title, 
-            v.slug, (v.online AND p.online) AS online FROM cms_property p 
+            SELECT DISTINCT p.property_id, pv.property_value_id, CONCAT(p.title, ': ', v.title) AS title, 
+            v.slug, (v.online AND p.online) AS online, v.date_updated FROM cms_property p 
             INNER JOIN cms_property_x_property_value pv ON p.property_id = pv.sub_property_id 
             INNER JOIN cms_property_value v ON v.property_value_id = pv.property_value_id 
             INNER JOIN _ci_ai scp ON scp.type_name = 'property' AND scp.id = p.property_id
