@@ -613,6 +613,7 @@ if ('1' === $interval) { // interval should be '1'
     echo PHP_EOL;
     // regular images
     $trans->start('Process images that need processing');
+    // TODO import images with filename_saved 'IMPORT', using the static_root
     foreach ($db->jobFetchImagesForProcessing() as $index => $row) {
         $img = new Image($row);
         Setup::$instance_id = $row->instance_id;

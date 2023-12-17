@@ -3260,7 +3260,8 @@ class DB extends Base
         return $affected;
     }
 
-    public function jobDeleteOldHistory(int $interval_in_days = 30): int {
+    public function jobDeleteOldHistory(int $interval_in_days = 30): int
+    {
         $statement = $this->conn->prepare("
             DELETE FROM _history WHERE date_created < NOW() - interval '$interval_in_days days' AND table_column <> 'slug'
         ");
@@ -3697,6 +3698,7 @@ class DB extends Base
     /**
      * @param string $table_name
      * @param array $data
+     * @param bool $is_bulk when true prevents caching adding to history
      * @return int|string|null
      * @since 0.6.2, wrapper for insertRowAndReturnLastId
      */
@@ -4541,6 +4543,32 @@ class DB extends Base
         $statement = null;
 
         return $row_count;
+    }
+
+    public function insertHistoryEntry(\stdClass $row): bool
+    {
+        if (true === isset($row->user_id, $row->user_name, $row->table_name, $row->table_column, $row->key, $row->value, $row->date_created)) {
+            $statement = $this->conn->prepare('
+                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value, date_created) 
+                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :date_created);
+            ');
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->bindValue(':admin_id', 0);
+            $statement->bindValue(':admin_name', 'IMPORT');
+            $statement->bindValue(':user_id', $row->user_id);
+            $statement->bindValue(':user_name', $row->user_name);
+            $statement->bindValue(':table_name', $row->table_name);
+            $statement->bindValue(':table_column', $row->table_column);
+            $statement->bindValue(':key', (int)$row->key);
+            $statement->bindValue(':value', $row->value);
+            $statement->bindValue(':date_created', $row->date_created);
+            $success = $statement->execute();
+            $statement = null;
+
+            return $success;
+        } else {
+            return false;
+        }
     }
 
     /**

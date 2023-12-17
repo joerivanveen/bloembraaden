@@ -889,29 +889,31 @@ class Help
                                 } elseif ('_order' === $table_name) {
                                     $update_order_numbers = true;
                                 }
-                                $id_column_name = $info->getIdColumn()->getName();
-                                // check the columns, if any _id column is present, it has to be translated
-                                foreach ($info->getColumnNames() as $index => $column_name) {
-                                    if ($id_column_name === $column_name) continue;
-                                    if ('instance_id' === $column_name) continue;
-                                    if ('client_id' === $column_name) continue;
-                                    // for the check sub_ _id columns in _x_ tables should be treated as the _id column
-                                    if ('sub_' === substr($column_name, 0, 4)) {
-                                        $column_name = substr($column_name, 4);
-                                    }
-                                    if (isset($ids[$column_name])) {
-                                        $column_name_to_check = $ids[$column_name];
-                                        if (false === $column_name_to_check) continue;
-                                        if (is_string($column_name_to_check)
-                                            && false === isset($ids[$column_name_to_check])) {
-                                            $logger->log("Column $column_name -> $column_name_to_check not filled yet");
+                                if ('_history' !== $table_name) { // no id column, no checks necessary
+                                    $id_column_name = $info->getIdColumn()->getName();
+                                    // check the columns, if any _id column is present, it has to be translated
+                                    foreach ($info->getColumnNames() as $index => $column_name) {
+                                        if ($id_column_name === $column_name) continue;
+                                        if ('instance_id' === $column_name) continue;
+                                        if ('client_id' === $column_name) continue;
+                                        // for the check sub_ _id columns in _x_ tables should be treated as the _id column
+                                        if (str_starts_with($column_name, 'sub_')) {
+                                            $column_name = substr($column_name, 4);
+                                        }
+                                        if (isset($ids[$column_name])) {
+                                            $column_name_to_check = $ids[$column_name];
+                                            if (false === $column_name_to_check) continue;
+                                            if (is_string($column_name_to_check)
+                                                && false === isset($ids[$column_name_to_check])) {
+                                                $logger->log("Column $column_name -> $column_name_to_check not filled yet");
+                                                $row_treat = 'wait';
+                                                break;
+                                            }
+                                        } elseif (str_ends_with($column_name, '_id')) {
+                                            $logger->log("Column $column_name not filled with ids yet");
                                             $row_treat = 'wait';
                                             break;
                                         }
-                                    } elseif ('_id' === substr($column_name, -3)) {
-                                        $logger->log("Column $column_name not filled with ids yet");
-                                        $row_treat = 'wait';
-                                        break;
                                     }
                                 }
                                 if ('save' === $row_treat || 0 === $row_count) {
@@ -941,13 +943,12 @@ class Help
                             }
                             if (is_object($value)) { // value is a row ($key = index...)
                                 if ('save' === $row_treat) {
-                                    ++$row_index;
                                     $row = (array)$value;
                                     $old_id = (int)$row[$id_column_name];
                                     // todo translate values in the row between versions?
                                     foreach ($row as $col_name => $col_value) {
                                         // $col_trans will be the name of the original id column we need
-                                        if ('sub_' === substr($col_name, 0, 4)) {
+                                        if (str_starts_with($col_name, 'sub_')) {
                                             $col_trans = substr($col_name, 4);
                                         } else {
                                             $col_trans = $col_name;
@@ -984,11 +985,23 @@ class Help
                                         unset($row['instance_id']);
                                         unset($row['domain']); // you cannot use the same domain for another instance, just leave it be
                                         $row['name'] .= ' (IMPORTED)';
-                                        $db->updateColumns('_instance', $row, $instance_id);
-                                        $logger->log("Updated instance $instance_id");
+                                        if (true === $db->updateColumns('_instance', $row, $instance_id)) {
+                                            ++$row_index;
+                                            $logger->log("Updated instance $instance_id");
+                                        }
+                                    } elseif ('_history' === $table_name) {
+                                        if (true === $db->insertHistoryEntry((object)$row)) {
+                                            ++$row_index;
+                                        }
                                     } else {
+                                        if ('cms_image' === $table_name) {
+                                            $row['filename_saved'] = "IMPORT"; // to trigger the import job
+                                        }
                                         $new_id = $db->insertRowAndReturnKey($table_name, $row, true);
-                                        $ids[$id_column_name][$old_id] = $new_id;
+                                        if (null !== $new_id) {
+                                            ++$row_index;
+                                            $ids[$id_column_name][$old_id] = $new_id;
+                                        }
                                     }
                                 } elseif ('wait' === $row_treat) {
                                     // save to the existing file
