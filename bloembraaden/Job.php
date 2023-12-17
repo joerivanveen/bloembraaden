@@ -680,6 +680,7 @@ switch ($interval) {
         // regular images
         $trans->start('Process images that need processing');
         foreach ($db->jobFetchImagesForProcessing() as $index => $row) {
+            if ('IMPORT' === $row->filename_saved) continue;
             $img = new Image($row);
             Setup::$instance_id = $row->instance_id;
             echo $img->getSlug();
