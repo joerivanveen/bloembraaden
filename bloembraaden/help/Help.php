@@ -765,7 +765,8 @@ class Help
         $tables = $db->fetchTablesToExport($include_user_data);
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
-        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n", LOCK_EX);
+        $static_root = Setup::$CDNROOT;
+        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n,\"static_root\":\"$static_root\"\n", LOCK_EX);
         if (true === $include_user_data) {
             file_put_contents($export_file, "\"Include user data\":1\n", FILE_APPEND | LOCK_EX);
         }
@@ -810,6 +811,7 @@ class Help
 
     public static function import_into_this_instance(string $file_name, LoggerInterface $logger): void
     {
+        // todo import files as well...
         if (false === file_exists($file_name)) {
             $logger->log('File does not exist, aborting');
             return;
@@ -820,6 +822,7 @@ class Help
             self::handleErrorAndStop("Could not obtain lock importing instance $instance_id", 'Error: import already running');
         }
         set_time_limit(0); // this might take a while
+        $static_root = null;
         $update_order_numbers = false;
         $files = array($file_name);
         $folder_name = self::import_export_folder();
@@ -889,7 +892,7 @@ class Help
                                 } elseif ('_order' === $table_name) {
                                     $update_order_numbers = true;
                                 }
-                                if ('_history' !== $table_name) { // no id column, no checks necessary
+                                if ('_history' !== $table_name) { // history has no id column, no checks necessary
                                     $id_column_name = $info->getIdColumn()->getName();
                                     // check the columns, if any _id column is present, it has to be translated
                                     foreach ($info->getColumnNames() as $index => $column_name) {
@@ -1009,6 +1012,9 @@ class Help
                                 }
                                 //$logger->log(var_export($value, true));
                             } else {
+                                if ('static_root' === $key) {
+                                    $static_root = $value;
+                                }
                                 $logger->log("$key: $value");
                             }
                         } else {
@@ -1036,6 +1042,17 @@ class Help
         ) {
             $logger->log('Updated order numbers table');
         }
+        // prepare images for import
+        if (null === $static_root) {
+            $logger->log('ERROR: static root missing in import file, cannot import images');
+        } else {
+            $db->updateElementsWhere(
+                new Type('image'),
+                array('static_root' => $static_root),
+                array('instance_id' => $instance_id, 'filename_saved' => 'IMPORT')
+            );
+            $logger->log('Prepared images for import');
+        }
         // cleanup
         $files = glob("$folder_name$instance_id.*.json");
         foreach ($files as $index => $file) {
@@ -1043,8 +1060,6 @@ class Help
                 unlink($file); // delete file
             }
         }
-        // todo translate the image src_ entries, so a job can pick them up and download and save etc.
-        // use that to also remove image src files that are no longer referenced
     }
 
     /**

@@ -3996,6 +3996,17 @@ class DB extends Base
         return $statement;
     }
 
+    public function queryImagesForImport(): \PDOStatement
+    {
+        $statement = $this->conn->prepare('
+            SELECT image_id, instance_id, slug, src_tiny, src_small, src_medium, src_large, src_huge, static_root
+            FROM cms_image WHERE filename_saved = \'IMPORT\';
+        ');
+        $statement->execute();
+
+        return $statement;
+    }
+
     /**
      * Fetches the columns with their types and defaults and the primary key column of a table for use in queries
      *

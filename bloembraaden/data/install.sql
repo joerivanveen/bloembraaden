@@ -3109,5 +3109,7 @@ BEGIN;
 
 ALTER TABLE _history DROP COLUMN IF EXISTS history_id;
 
+ALTER TABLE cms_image ADD COLUMN IF NOT EXISTS "static_root" character varying(255);
+
 COMMIT;
 
