@@ -322,10 +322,6 @@ switch ($interval) {
             while (microtime(true) - $start_timer < 60 && ($row = $images->fetch(5))) {
                 $instance_id = $row->instance_id;
                 $static_root = $row->static_root;
-                if (null === $static_root) {
-                    echo "Cannot get image $row->slug without static root\n";
-                    continue;
-                }
                 $update_data = array();
                 if (false === file_exists("$static_path$instance_id")) mkdir("$static_path$instance_id");
                 if (false === str_ends_with($static_root, '/')) $static_root = "$static_root/";
@@ -345,7 +341,15 @@ switch ($interval) {
                         )
                     ));
                     $headers = get_headers($image_src, true, $context);
-                    if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
+                    if (false === isset($headers[0])) {
+                        continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
+                    }
+                    $headers_0 = $headers[0];
+                    if (str_contains($headers_0, ' 503 ') || str_contains($headers_0, ' 429 ')) {
+                        echo ' HIT RATE LIMIT, paused importing.', PHP_EOL;
+                        break 2;
+                    }
+                    if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
                         if (false === copy($image_src, "$static_path$save_path", $context)){
                             echo ' ERROR';
                         }
@@ -357,7 +361,7 @@ switch ($interval) {
                     $image_src = substr($image_src, 0, -4) . 'jpg';
                     $save_path = substr($save_path, 0, -4) . 'jpg';
                     $headers = get_headers($image_src, true, $context);
-                    if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
+                    if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
                         if (false === copy($image_src, "$static_path$save_path", $context)){
                             echo ' ERROR';
                         } else {
@@ -366,8 +370,8 @@ switch ($interval) {
                     } else {
                         echo ' NOT FOUND', PHP_EOL, var_export($headers, true);
                     }
+                    echo PHP_EOL;
                 }
-                echo PHP_EOL;
                 $update_data['filename_saved'] = null;
                 $update_data['static_root'] = null;
                 $update_data['date_processed'] = 'NOW()';

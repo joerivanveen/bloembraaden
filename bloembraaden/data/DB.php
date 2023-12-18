@@ -4000,7 +4000,7 @@ class DB extends Base
     {
         $statement = $this->conn->prepare('
             SELECT image_id, instance_id, slug, src_tiny, src_small, src_medium, src_large, src_huge, static_root
-            FROM cms_image WHERE filename_saved = \'IMPORT\';
+            FROM cms_image WHERE filename_saved = \'IMPORT\' AND static_root IS NOT NULL;
         ');
         $statement->execute();
 
