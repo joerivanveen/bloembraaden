@@ -313,11 +313,17 @@ switch ($interval) {
         echo "\n";
         $trans->start('Empty expired lockers');
         echo $db->jobEmptyExpiredLockers(), PHP_EOL;
-        // TODO import images with filename_saved 'IMPORT', using the static_root
         // Import images, takes precedence over Instagram data refreshment
         $images = $db->queryImagesForImport();
         if ($images->rowCount() > 0) {
             $trans->start('Import images');
+            // make sure you accept webp images to be able to copy them
+            $stream_context = stream_context_create(array(
+                'http'=>array(
+                    'method'=>'GET',
+                    'header'=>"Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*\r\n"
+                )
+            ));
             $static_path = Setup::$CDNPATH;
             while (microtime(true) - $start_timer < 60 && ($row = $images->fetch(5))) {
                 $instance_id = $row->instance_id;
@@ -332,15 +338,8 @@ switch ($interval) {
                     // todo remember the paths so you dont need to check every time
                     if (false === file_exists("$static_path$save_path")) mkdir("$static_path$save_path");
                     $save_path = $save_path . basename($image_src);
-                    echo "copy $image_src to $save_path";
-                    // make sure you accept webp images to be able to copy them
-                    $context = stream_context_create(array(
-                        'http'=>array(
-                            'method'=>'GET',
-                            'header'=>"Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*\r\n"
-                        )
-                    ));
-                    $headers = get_headers($image_src, true, $context);
+                    echo "Copy $image_src to $save_path";
+                    $headers = get_headers($image_src, true, $stream_context);
                     if (false === isset($headers[0])) {
                         continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
                     }
@@ -350,7 +349,7 @@ switch ($interval) {
                         break 2;
                     }
                     if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $context)){
+                        if (false === copy($image_src, "$static_path$save_path", $stream_context)){
                             echo ' ERROR';
                         }
                     } else {
@@ -360,9 +359,9 @@ switch ($interval) {
                     echo PHP_EOL, 'Copy fallback jpg image:';
                     $image_src = substr($image_src, 0, -4) . 'jpg';
                     $save_path = substr($save_path, 0, -4) . 'jpg';
-                    $headers = get_headers($image_src, true, $context);
+                    $headers = get_headers($image_src, true, $stream_context);
                     if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $context)){
+                        if (false === copy($image_src, "$static_path$save_path", $stream_context)){
                             echo ' ERROR';
                         } else {
                             echo ' SUCCESS';
@@ -381,6 +380,7 @@ switch ($interval) {
             }
             if (microtime(true) - $start_timer > 55) break;
         }
+        $images = null;
         // Refresh Instagram media
         $trans->start('Refresh instagram data');
         // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
