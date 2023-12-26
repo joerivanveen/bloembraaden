@@ -3507,7 +3507,7 @@ class DB extends Base
     {
         $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instance_domain', '_order_number');
         if (false === $include_user_data) {
-            $never = array_merge($never, array('_order', '_order_number', '_order_variant', '_user'));
+            $never = array_merge($never, array('_payment_status_update', '_address', '_shoppinglist', '_shoppinglist_variant', '_order', '_order_number', '_order_variant', '_user'));
         }
         $tables_not_exported = implode('\',\'', $never);
         // get all tables that contain a slug column, except tables where slug is used as foreign key

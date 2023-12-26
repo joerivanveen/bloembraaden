@@ -885,7 +885,7 @@ class Help
                                 $logger->log("Handle table $table_name");
                                 $info = $db->getTableInfo($table_name);
                                 if (false === in_array($table_name, $tables)) {
-                                    $logger->log("Table $table_name is never imported");
+                                    $logger->log("Table $table_name is not imported");
                                     $string = '';
                                     $row_treat = 'skip';
                                     continue;
