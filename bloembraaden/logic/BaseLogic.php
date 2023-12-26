@@ -123,7 +123,7 @@ class BaseLogic extends Base
     {
         $out = $this->getOutputObject();
         // cache the slug if it’s not a dynamic one (containing ‘__’)
-        if (isset($out->__ref) and false === strpos($out->__ref, '__')) {
+        if (isset($out->__ref) && false === str_contains($out->__ref, '__')) {
             $db = Help::getDB();
             // update slug...
             $slug = $out->__ref;

@@ -1537,7 +1537,7 @@ class Handler extends BaseLogic
         $base_element = (true === isset($out->__ref)) ? $out->slugs->{$out->__ref} : $out;
         if (true === ADMIN) {
             // security: check access
-            if (isset($base_element->instance_id) and $base_element->instance_id !== Setup::$instance_id) {
+            if (isset($base_element->instance_id) && $base_element->instance_id !== Setup::$instance_id) {
                 if (false === Help::$session->getAdmin()->isRelatedInstanceId($base_element->instance_id)) {
                     $this->handleErrorAndStop(
                         sprintf('admin %1$s tried to access %2$s (instance_id %3$s)',
@@ -1557,7 +1557,7 @@ class Handler extends BaseLogic
             // @since 0.7.6 do not show items that are not online
             (isset($base_element->online) && false === $base_element->online)
             // @since 0.8.19 do not show items that are not yet published
-            || (isset($base_element->is_published) and false === $base_element->is_published)
+            || (isset($base_element->is_published) && false === $base_element->is_published)
         ) {
             $element = new Search();
             $element->findWeighted(array($base_element->title));
