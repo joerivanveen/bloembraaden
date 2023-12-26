@@ -22,7 +22,9 @@ class Search extends BaseElement
 
     /**
      * @param array $terms
-     * @param int|null $hydrate_until null means hydrate all, else hydrate only if less than $hydrate_until items are found
+     * @param int|null $hydrate_until null means hydrate all,
+     * positive int means hydrate only if less than $hydrate_until items are found
+     * negative int will limit search results to that quantity (abs) and hydrate
      * @param array $types
      * @param bool $ignore_types
      */
@@ -59,7 +61,8 @@ class Search extends BaseElement
         // @since 0.12.0 get results from ci_ai table
         $results = $this->getResults($terms, $clean_types);
         $item_count = count($results);
-        if (null === $hydrate_until || $item_count <= $hydrate_until) {
+        if (null === $hydrate_until || $item_count <= $hydrate_until || $hydrate_until < 0) {
+            $hydrate_until = abs($hydrate_until);
             // make elements from results
             foreach ($results as $i => $result) {
                 $type_name = $result->type_name;
@@ -116,9 +119,10 @@ class Search extends BaseElement
                     $this->row->{$plural}[] = $element->getOutput();
                     $this->row->item_count += 1;
                 }
-                // set it so the entry will be replaced by the element
+                // set it so the entry in results list will be replaced by the element
                 unset($result->slug);
                 $result->__ref = $element->getSlug();
+                if ($this->row->item_count === $hydrate_until) break;
             }
             if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
         } else {
@@ -351,7 +355,7 @@ class Search extends BaseElement
     {
         if (count($terms) > 0) {
             // fill the row object with nice stuff, that will be returned by getOutput()
-            $this->findWeighted($terms, $limit);
+            $this->findWeighted($terms, -$limit);
             $rows = $this->row->__variants__ ?? [];
             //$rows = Help::getDB()->findElements('variant', $terms);
         } else {
