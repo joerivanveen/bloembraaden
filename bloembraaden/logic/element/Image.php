@@ -250,7 +250,6 @@ class Image extends BaseElement
             }
         }
         imagedestroy($image);
-        ini_set('memory_limit', Help::getMemorySize((string)$memory_limit, 'M'));
         // update the element
         $data['date_processed'] = 'NOW()';
         if (true === $this->update($data)) {
