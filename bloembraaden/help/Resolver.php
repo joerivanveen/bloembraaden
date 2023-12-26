@@ -23,7 +23,7 @@ class Resolver extends BaseLogic
             //Setup::$instance_id = $instance_id;
             Setup::loadInstanceSettings(new Instance($row));
         }
-        $GLOBALS['slugs'] = new \stdClass;
+        $GLOBALS['slugs'] = new \stdClass();
         // urldecode means get utf-8 characters of requested path + querystring
         $request_uri = strip_tags(mb_strtolower(urldecode($request_uri)));
         // deconstruct path + querystring
@@ -37,11 +37,11 @@ class Resolver extends BaseLogic
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
                 if ('' === $value) {
                     return false;
-                } elseif (0 === strpos($value, '__')) {
+                } elseif (str_starts_with($value, '__')) {
                     $this->instructions[str_replace('__', '', $value)] = true;
 
                     return false;
-                } elseif (0 === strpos($value, 'variant_page')) {
+                } elseif (str_starts_with($value, 'variant_page')) {
                     if (false === isset($this->variant_page)) {
                         $variant_page = (int)substr($value, 12);
                         $this->variant_page = ($variant_page < 1) ? 1 : $variant_page;
@@ -261,7 +261,7 @@ class Resolver extends BaseLogic
         $num_terms = count($terms);
         if (0 === $num_terms) { // homepage is requested
             $type_name = 'page';
-            $element_id = $session->getInstance()->getHomepageId();
+            $element_id = Help::$session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             $term = $terms[0];
             // find element by slug
