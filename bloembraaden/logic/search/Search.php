@@ -62,7 +62,6 @@ class Search extends BaseElement
         $results = $this->getResults($terms, $clean_types);
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until || $hydrate_until < 0) {
-            $hydrate_until = abs($hydrate_until);
             // make elements from results
             foreach ($results as $i => $result) {
                 $type_name = $result->type_name;
@@ -122,7 +121,8 @@ class Search extends BaseElement
                 // set it so the entry in results list will be replaced by the element
                 unset($result->slug);
                 $result->__ref = $element->getSlug();
-                if ($this->row->item_count === $hydrate_until) break;
+                // todo not calculate this every iteration
+                if (isset($hydrate_until) && $this->row->item_count === abs($hydrate_until)) break;
             }
             if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
         } else {
