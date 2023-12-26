@@ -48,7 +48,8 @@ class Setup
     public static function logErrors(): void
     {
         if (($e = error_get_last())) {
-            Help::addError(new \Exception($e['message'], $e['type']));
+            $message = "{$e['message']} ({$e['file']}:{$e['line']})";
+            Help::addError(new \Exception($message, $e['type']));
             if (Help::$LOGGER instanceof LoggerInterface) Help::$LOGGER->log(sprintf(__('An error occurred in %s.', 'peatcms'), $e['file']));
         }
 

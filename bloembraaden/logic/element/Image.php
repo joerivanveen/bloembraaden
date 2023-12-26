@@ -91,7 +91,7 @@ class Image extends BaseElement
         if ($memory_needed > $memory_limit) {
             $memory_needed_M = Help::getMemorySize((string)$memory_needed,'M');
             if ($memory_needed <= Setup::$MAX_MEMORY_LIMIT) {
-                $logger->log("Increasing memory to $memory_needed_M");
+                $logger->log("Increasing memory to $memory_needed_M (standard is $memory_limit)");
                 ini_set('memory_limit', $memory_needed_M);
             } else {
                 $logger->log("Image too large for memory, needs $memory_needed_M");
