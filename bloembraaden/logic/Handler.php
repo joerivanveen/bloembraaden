@@ -854,14 +854,17 @@ class Handler extends BaseLogic
                 }
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ($action === 'detail' && $this->resolver->hasInstruction('order')) {
-                // session values can be manipulated so you need to check if this order belongs to the session
-                if (($order_number = Help::$session->getValue('order_number'))
-                    && ($row = Help::getDB()->getOrderByNumber($order_number))
+                // session values can be manipulated, so you need to check if this order belongs to the session
+                $order_number = Help::$session->getValue('order_number');
+                if (null === $order_number) {
+                    $out = array('slug' => '__order__');
+                } elseif (
+                    ($row = Help::getDB()->getOrderByNumber($order_number))
                     && $row->session_id === Help::$session->getId()
                 ) {
                     $out = (new Order($row))->getOutput();
                 } else {
-                    $this->addError(sprintf(__('Order %s not found for this session', 'peatcms'), $order_number));
+                    $this->addError("Order $order_number not found for this session");
                     $out = array('slug' => "__order__/$order_number");
                 }
             } elseif ('payment_start' === $action) {
