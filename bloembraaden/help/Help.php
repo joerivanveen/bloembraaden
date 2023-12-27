@@ -564,17 +564,17 @@ class Help
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             $result = (array)json_decode(curl_exec($ch));
             curl_close($ch);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                if ($result['success'] === false) {
-                    Help::addMessage(var_export($result['error-codes'], true), 'warn');
+            if (0 === json_last_error()) {
+                if (false === $result['success']) {
+                    $recaptcha_errors = $result['error-codes'];
+                    Help::addError(new \Exception('Recaptcha error: ' . var_export($recaptcha_errors, true)));
+                    Help::addMessage(sprintf(__('Recaptcha error (%s)', 'peatcms'), $recaptcha_errors[0] ?? 'unknown'), 'error');
 
                     return false;
-                } else {
-                    if (floatval($result['score']) < $recaptcha_pass_score) {
-                        Help::addMessage(sprintf(__('%1$s score %2$s too low', 'peatcms'), 'reCaptcha', $result['score']), 'warn');
+                } elseif (floatval($result['score']) < $recaptcha_pass_score) {
+                    Help::addMessage(sprintf(__('%1$s score %2$s too low', 'peatcms'), 'reCaptcha', $result['score']), 'warn');
 
-                        return false;
-                    }
+                    return false;
                 }
             } else {
                 Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'reCaptcha json'), 'warn');
