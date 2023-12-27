@@ -10,7 +10,7 @@ class Order extends BaseElement
 
     public function __construct(\stdClass $row = null)
     {
-        if ($row === null) $this->handleErrorAndStop(sprintf('Attempting to instantiate %s with $row null', 'Order'));
+        if ($row === null) $this->handleErrorAndStop('Attempting to instantiate Order with $row null');
         parent::__construct($row);
         $this->type_name = 'order';
     }
@@ -77,7 +77,7 @@ class Order extends BaseElement
         $row =& $this->row;
         $order_number = $row->order_number;
         // slug is mandatory for an element
-        $row->slug = '__order__/' . $order_number;
+        $row->slug = "__order__/$order_number";
         // get the template_id (if present)
         $row->template_id = Help::getDB()->getDefaultTemplateIdFor('order');
         // get the rows as well
@@ -128,9 +128,11 @@ class Order extends BaseElement
         foreach ($vat as $percentage_index => $amount) {
             $vat_amount = $amount - ($amount / (1 + ($percentage_index / 100)));
             $amount_grand_total -= $vat_amount;
-            $percentage_tag = 'vat_percentage_' . $percentage_index;
+            $percentage_tag = "vat_percentage_$percentage_index";
             $row->{$percentage_tag} = Help::asMoney($vat_amount);
         }
         $row->amount_grand_total_ex_vat = Help::asMoney($amount_grand_total);
+        // @since 0.18.1 remove session_id, not really a secret, but no need to leak it either
+        unset($row->session_id);
     }
 }

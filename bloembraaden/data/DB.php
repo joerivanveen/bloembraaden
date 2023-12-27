@@ -1643,7 +1643,7 @@ class DB extends Base
     /**
      * @param Shoppinglist $shoppinglist
      * @param Session $session
-     * @param array $vars all the vars that are explicitly needed for the ordering process, client-friendly validation must be done already
+     * @param array $vars all the vars that are explicitly needed for the ordering process, client-friendly validation should be done already
      * @return string|null
      * @since 0.5.12
      */
@@ -1656,14 +1656,14 @@ class DB extends Base
             if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
             if ($this->hasError()) return null;
-            // setup the necessary vars
+            // set up the necessary vars
             $instance_id = Setup::$instance_id;
             $country = $this->getCountryById((int)$vars['shipping_country_id']);
             $amount_row_total = 0;
             $shipping_costs = 0;
             $quantity_total = 0; // @since 0.7.6. also count the quantity, maybe there are only empty rows, you can’t order those
             $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0($instance_id);
-            //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if clause)
+            //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if-clause)
             foreach ($order_rows as $index => $row) {
                 $amount_row_total += Help::getAsFloat($row->price) * $row->quantity;
                 $quantity_total += $row->quantity;
@@ -1679,7 +1679,7 @@ class DB extends Base
                 $shipping_costs = Help::getAsFloat($country->shipping_costs);
                 $amount_grand_total += $shipping_costs;
             }
-            // setup the order_number
+            // set up the order_number
             if (null === ($order_number = $this->createUniqueOrderNumber($instance_id))) {
                 $this->addMessage(__('Could not create unique order_number', 'peatcms'));
                 $this->addError('Could not create unique order_number');
@@ -1752,9 +1752,10 @@ class DB extends Base
             return $order_number;
         } else {
             $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
-        }
+            $this->addError("No rows in shoppinglist {$shoppinglist->getId()}");
 
-        return null;
+            return null;
+        }
     }
 
     /**
