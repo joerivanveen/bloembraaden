@@ -786,7 +786,7 @@ class Template extends BaseLogic
             // insert our tag
             $html = "<!-- 
     
-Bloembraaden.io, made by humans for humans
+Bloembraaden.io, let’s make you a stunning website
 
 -->
  

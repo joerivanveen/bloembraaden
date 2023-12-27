@@ -1,6 +1,6 @@
 
 # Bloembraaden
-_We’ve got your backend._
+_Let’s make you a stunning website._
 
 When you know html, css and vanilla javascript,
 and you know how to realise your vision with them,
@@ -83,7 +83,7 @@ Writable folders for:
 Point to those folders in the config.
 
 ## Web server
-Setup a webserver. We recommend NGINX.
+Set up a webserver. We recommend NGINX.
 We use php-fpm with php 8.1 (8.0 is the minimum version for Bloembraaden).
 You can have it process index.php at all times, Bloembraaden will determine what content to show.
 
@@ -94,13 +94,13 @@ You can optimise that virtual host for static files, only images will be served 
 Bloembraaden saves all images as webp with fallback to jpg (same filename, but .jpg extension in stead of .webp).
 If you need this fallback, you should configure it in the static site.
 
-It is recommended to put Bloembraaden (the bloembraaden folder) outside of the webroot.
+It is recommended to put Bloembraaden (the bloembraaden folder) outside the webroot.
 In the webroot the following is needed:
 - A `robots.txt` file.
 - A `favicon.ico` file.
 - The `index.php` file that will serve the websites.
 
-Setup your webserver to serve the `_front` folder from bloembraaden when `_front` is requested from the webroot. Alternatively, you can use a symlink.
+Set up your webserver to serve the `_front` folder from bloembraaden when `_front` is requested from the webroot. Alternatively, you can use a symlink.
 
 The index.php file only has to require bloembraaden/Web.php like so (point to the place where you have put bloembraaden obviously):
 
@@ -119,7 +119,7 @@ Noindex: /__action__
 
 ### Async operations
 Many operations such as mailing and database cleaning are performed asynchronously. These are handled by the files `Daemon.php` and `Job.php`.
-Please setup a crontab for the web user (e.g. nginx) like so:
+Please set up a crontab for the web user (e.g. nginx) like so:
 `crontab -e -u nginx`
 And put in the five lines that are currently needed for Bloembraaden:
 ```
@@ -159,7 +159,7 @@ Just add a css class to one of the regions to have them differ and process corre
 Unfortunately there is no workaround, this has to be fixed. Working on it.
 
 ### SSL
-Both static as well as the Bloembraaden site / vhost must use ssl. Bloembraaden does not work without ssl.
+Both static and the Bloembraaden site / vhost must use ssl. Bloembraaden does not work without ssl.
 When you add sites in the Bloembraaden admin, currently you need to configure their ssl separately on the server.
 
 ## Database
@@ -189,13 +189,13 @@ Set `install` to `true` in the config and go to:
     BLOEMBRAADEN_ADMIN_PASSWORD=difficult
     MAIN_URL=your_main_domain.tld
 
-Bloembraaden will contact the database and setup a first ‘instance’.
+Bloembraaden will contact the database and set up a first ‘instance’.
 
 ⚠ Please use an actual difficult password.
-Do not forget these credentials, because you will not be able to login without them.
+Do not forget these credentials, because you will not be able to log in without them.
 
 Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
-You should now switch off the install flag (set it to `false`).
+You should now switch off the ‘install’ flag (set it to `false`).
 
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.

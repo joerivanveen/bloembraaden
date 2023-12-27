@@ -451,7 +451,7 @@ class DB extends Base
     public function findSpecialVariants(string $case): array
     {
         if ('price_from' === $case) { // select only variants that have a from price
-            $online = (defined('ADMIN') && ADMIN) ? '' : 'AND online = TRUE';
+            $online = (true === defined('ADMIN') && true === ADMIN) ? '' : 'AND online = TRUE';
             $statement = $this->conn->prepare("
                         SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
                         WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $online
