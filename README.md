@@ -26,7 +26,7 @@ if you’d rather be creative than maintaining your server.
 ## What does it do
 
 Bloembraaden is an elegant cms that serves ‘single page apps’ using templating.
-It does not force anything on you, there are no ‘themes’, you must start from scratch.
+It does not force anything on you, there are no ‘themes’, you will start from scratch.
 
 It provides the backend / cms for your client and some integrations like Instagram, payment providers, Google services.
 
@@ -174,7 +174,7 @@ At this point there are still some queries that do not use an index, we are work
 
 ### New relic
 You can install new relic on your server and Bloembraaden will use it to report errors and stuff.
-You don’t have to setup anything, Bloembraaden checks for ‘extension_loaded’.
+You don’t have to set up anything, Bloembraaden checks for ‘extension_loaded’.
 However, you **must** switch off the browser ‘auto instrument’ feature in newrelics .ini file, because it is incompatible with the Bloembraaden javascript compilation.
 
 ## Initial install

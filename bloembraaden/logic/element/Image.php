@@ -88,7 +88,9 @@ class Image extends BaseElement
         $channels = $image_info['channels'];
         $memory_needed = $width * $height * $bits * $channels * 1.5;
         $memory_limit = (int)Help::getMemorySize(ini_get('memory_limit') ?: '128M');
-        if ($memory_needed > $memory_limit) {
+        if (-1 === $memory_limit) {
+            $logger->log('Memory is unlimited, probably not intentionally');
+        } elseif ($memory_needed > $memory_limit) {
             $memory_needed_M = Help::getMemorySize((string)$memory_needed,'M');
             if ($memory_needed <= Setup::$MAX_MEMORY_LIMIT) {
                 $logger->log("Increasing memory to $memory_needed_M (standard is $memory_limit)");

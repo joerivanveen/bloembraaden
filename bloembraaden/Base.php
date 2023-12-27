@@ -32,6 +32,7 @@ class Base
     public function addError(string $error_message): void
     {
         $domain = Setup::$INSTANCE_DOMAIN ?? Setup::$instance_id;
+        if (true === isset($_SERVER['REQUEST_URI'])) $domain .= $_SERVER['REQUEST_URI'];
         Help::addError(new \Exception("$error_message [$domain]"));
 
         $this->has_error = true;
