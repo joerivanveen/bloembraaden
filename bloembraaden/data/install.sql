@@ -3113,3 +3113,8 @@ ALTER TABLE cms_image ADD COLUMN IF NOT EXISTS "static_root" character varying(2
 
 COMMIT;
 
+-- version 0.18.1
+
+BEGIN;
+
+COMMIT;
