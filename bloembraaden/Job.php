@@ -31,6 +31,62 @@ switch ($interval) {
         // @since 0.9.0: added creation of invoice and sending payment confirmation to client
         $mailgun_custom_domain = '___';
         $mailer = null;
+        /**
+         * @param Mailer $mailer
+         * @param \stdClass $row
+         * @param int $instance_id
+         * @param \stdClass $order_output_object
+         * @return void
+         */
+        $cc_confirmation_copy_to = static function (
+            Mailer $mailer,
+            \stdClass $row,
+            int $instance_id,
+            \stdClass $order_output_object
+        ) use ($db) {
+            // send the internal mail to the internal addresses...
+            if (true === $mailer->hasError()) return;
+            if (null === $mailer->get('to')) return; // apparently, no mail was sent :-P
+            echo '=== cc confirmation copy to ===', PHP_EOL;
+            if ('' !== trim($row->confirmation_copy_to)) {
+                // create internal mail
+                if (null !== ($template_id = $row->template_id_internal_confirmation)) {
+                    try {
+                        $temp = new Template($db->getTemplateRow($template_id, $instance_id));
+                        $html = $temp->renderObject($order_output_object);
+                        $mailer->set(array(
+                            'text' => Help::html_to_text($html),
+                            'html' => $html
+                        ));
+                    } catch (\Exception $e) {
+                        Help::addError($e);
+                    }
+                } else {
+                    $text = var_export($order_output_object, true);
+                    $mailer->set(array(
+                        'text' => $text,
+                        'html' => $text
+                    ));
+                }
+                // make order easy to answer to
+                $mailer->set(array(
+                    'reply_to' => $row->user_email
+                ));
+                // send to all addresses
+                foreach (explode(',', $row->confirmation_copy_to) as $email_address) {
+                    $email_address = trim($email_address);
+                    if (false === filter_var($email_address, FILTER_VALIDATE_EMAIL)) continue;
+                    $mailer->set(array(
+                        'to' => $email_address
+                    ));
+                    var_dump($mailer->send());
+                    if ($mailer->hasError()) {
+                        Help::addError($mailer->getLastError());
+                        break;
+                    }
+                }
+            }
+        };
         $rows = $db->jobGetUnconfirmedOrders();
         foreach ($rows as $index => $row) {
             if ($row->mailgun_custom_domain !== $mailgun_custom_domain) {
@@ -46,12 +102,13 @@ switch ($interval) {
                 }
             }
             if (isset($row->order_number)) {
+                $order_number = $row->order_number;
+                if (false === Help::obtainLock("mailjob.order.$order_number")) continue;
                 $instance_id = $row->instance_id;
                 if (Setup::$instance_id !== $instance_id) {
                     Setup::loadInstanceSettings(new Instance($db->fetchInstanceById($instance_id)));
                 }
                 // determine what to do with the order
-                $order_number = $row->order_number;
                 echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
                 // make sure the dates are in the current timezone, and also use a generic format
                 $row->date_created = date('Y-m-d H:i:s', strtotime($row->date_created));
@@ -128,9 +185,11 @@ switch ($interval) {
                         'emailed_order_confirmation_success' => $out->success,
                         'emailed_order_confirmation_response' => json_encode($out),
                     ), $row->order_id);
+                    // carbon copy the web shop owner
+                    $cc_confirmation_copy_to($mailer, $row, $instance_id, $order_output_object);
                     continue;
                 }
-                // 3) mail payment confirmation // Note: (false === $row->emailed_payment_confirmation) is understood
+                // 3) mail payment confirmation
                 if (true === $row->payment_confirmed_bool) {
                     echo 'Payment confirmation', PHP_EOL;
                     // 2) create invoice
@@ -206,90 +265,61 @@ switch ($interval) {
                         file_put_contents($filename, $result, LOCK_EX);
                         // you have to be sure there is an invoice, if there is not, continue, because it will not be able to send the invoice
                     }
-                    // the invoice is created (above), so you can now e-mail it (when requested)
-                    if (false === $row->confirmation_of_payment) {
-                        $out = (object)(array(
-                            'success' => false,
-                            'status_code' => 0,
-                            'message' => 'send payment confirmation switched off in settings',
-                        ));
-                    } elseif (false === $mailer->hasError()) {
-                        $mailer->clear();
-                        if (true === $row->send_invoice_as_pdf && false === $row->create_invoice) {
-                            // this combination makes no sense
-                            $row->send_invoice_as_pdf = false;
-                        }
-                        $order_output_object->invoice_id = $row->payment_sequential_number;
-                        // make a confirmation mail for the client
-                        $html = $payment_confirmation_short_text;
-                        if (null !== ($template_id = $row->template_id_payment_confirmation)) {
-                            try {
-                                $temp = new Template($db->getTemplateRow($template_id, $instance_id));
-                                $html = $temp->renderObject($order_output_object);
-                            } catch (\Exception $e) {
-                                Help::addError($e);
+                    if (false === $row->emailed_payment_confirmation) {
+                        // the invoice is created (above), so you can now e-mail it (when requested)
+                        if (false === $row->confirmation_of_payment) {
+                            $out = (object)(array(
+                                'success' => false,
+                                'status_code' => 0,
+                                'message' => 'send payment confirmation switched off in settings',
+                            ));
+                        } elseif (false === $mailer->hasError()) {
+                            $mailer->clear();
+                            if (true === $row->send_invoice_as_pdf && false === $row->create_invoice) {
+                                // this combination makes no sense
+                                $row->send_invoice_as_pdf = false;
                             }
-                        }
-                        $mailer->set(array(
-                            'to' => $row->user_email,
-                            'to_name' => $row->billing_address_name,
-                            'from' => $row->mail_verified_sender,
-                            'subject' => $payment_confirmation_short_text,
-                            'text' => Help::html_to_text($html),
-                            'html' => $html,
-                        ));
-                        if ($row->send_invoice_as_pdf) {
-                            $mailer->attach(
-                                "$invoice_title.pdf",
-                                'application/pdf',
-                                file_get_contents($filename)
-                            );
-                        }
-                        $out = $mailer->send();
-                        // send the internal mail to the internal addresses...
-                        if ('' !== trim($row->confirmation_copy_to)) {
-                            // create internal mail
-                            if (null !== ($template_id = $row->template_id_internal_confirmation)) {
+                            $order_output_object->invoice_id = $row->payment_sequential_number;
+                            // make a confirmation mail for the client
+                            $html = $payment_confirmation_short_text;
+                            if (null !== ($template_id = $row->template_id_payment_confirmation)) {
                                 try {
                                     $temp = new Template($db->getTemplateRow($template_id, $instance_id));
                                     $html = $temp->renderObject($order_output_object);
-                                    $mailer->set(array(
-                                        'text' => Help::html_to_text($html),
-                                        'html' => $html
-                                    ));
                                 } catch (\Exception $e) {
                                     Help::addError($e);
                                 }
                             }
-                            // make order easy to answer to
                             $mailer->set(array(
-                                'reply_to' => $row->user_email
+                                'to' => $row->user_email,
+                                'to_name' => $row->billing_address_name,
+                                'from' => $row->mail_verified_sender,
+                                'subject' => $payment_confirmation_short_text,
+                                'text' => Help::html_to_text($html),
+                                'html' => $html,
                             ));
-                            // send to all addresses
-                            foreach (explode(',', $row->confirmation_copy_to) as $email_address) {
-                                $email_address = trim($email_address);
-                                if (false === filter_var($email_address, FILTER_VALIDATE_EMAIL)) continue;
-                                $mailer->set(array(
-                                    'to' => $email_address
-                                ));
-                                var_dump($mailer->send());
-                                if ($mailer->hasError()) {
-                                    Help::addError($mailer->getLastError());
-                                    break;
-                                }
+                            if ($row->send_invoice_as_pdf) {
+                                $mailer->attach(
+                                    "$invoice_title.pdf",
+                                    'application/pdf',
+                                    file_get_contents($filename)
+                                );
                             }
+                            $out = $mailer->send();
+                        } else {
+                            $out = (object)array('success' => false, 'reason' => 'mailer has error');
                         }
-                    } else {
-                        $out = (object)array('success' => false, 'reason' => 'mailer has error');
+                        var_dump($out);
+                        $db->updateColumns('_order', array(
+                            'emailed_payment_confirmation' => true,
+                            'emailed_payment_confirmation_success' => $out->success,
+                            'emailed_payment_confirmation_response' => json_encode($out),
+                        ), $row->order_id);
+                        // carbon copy the web shop owner
+                        $cc_confirmation_copy_to($mailer, $row, $instance_id, $order_output_object);
                     }
-                    var_dump($out);
-                    $db->updateColumns('_order', array(
-                        'emailed_payment_confirmation' => true,
-                        'emailed_payment_confirmation_success' => $out->success,
-                        'emailed_payment_confirmation_response' => json_encode($out),
-                    ), $row->order_id);
                 }
-            }
+            } // todo: log mail into _history? use obtainLock to prevent multiple e-mails when timeout > 60 seconds
         }
         unset($mailer);
         $trans->start('Create missing search index records');
@@ -319,9 +349,9 @@ switch ($interval) {
             $trans->start('Import images');
             // make sure you accept webp images to be able to copy them
             $stream_context = stream_context_create(array(
-                'http'=>array(
-                    'method'=>'GET',
-                    'header'=>"Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*\r\n"
+                'http' => array(
+                    'method' => 'GET',
+                    'header' => "Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*\r\n"
                 )
             ));
             $static_path = Setup::$CDNPATH;
@@ -349,7 +379,7 @@ switch ($interval) {
                         break 2;
                     }
                     if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $stream_context)){
+                        if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
                             echo ' ERROR';
                         }
                     } else {
@@ -361,7 +391,7 @@ switch ($interval) {
                     $save_path = substr($save_path, 0, -4) . 'jpg';
                     $headers = get_headers($image_src, true, $stream_context);
                     if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $stream_context)){
+                        if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
                             echo ' ERROR';
                         } else {
                             echo ' SUCCESS';
@@ -374,7 +404,7 @@ switch ($interval) {
                 $update_data['filename_saved'] = null;
                 $update_data['static_root'] = null;
                 $update_data['date_processed'] = 'NOW()';
-                if (false === $db->updateColumns('cms_image', $update_data, $row->image_id)){
+                if (false === $db->updateColumns('cms_image', $update_data, $row->image_id)) {
                     echo 'ERROR could not update database', PHP_EOL;
                 }
             }

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -108,7 +108,7 @@ class Mailer extends Base
             );
 
             return true;
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->addError($e->getMessage());
         }
         return false;
@@ -203,8 +203,20 @@ class Mailer extends Base
         return $return_value;
     }
 
-    public function clear() {
+    public function clear()
+    {
         $this->fields = array();
         $this->attachments = array();
+    }
+
+    /**
+     * @param string|null $key
+     * @return array|mixed|null
+     */
+    public function get(?string $key = null)
+    {
+        if (null === $key) return $this->fields;
+
+        return $this->fields[$key] ?? null;
     }
 }
