@@ -347,7 +347,7 @@ class Handler extends BaseLogic
                 $sse->log(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
                 // publish templates
                 if (true === Help::publishTemplates(Setup::$instance_id)) {
-                    $sse->log('Published the templates for you');
+                    $sse->log('Publishing the templates for you');
                 }
             } else {
                 $sse->log(__('Nothing to do.', 'peatcms'));
