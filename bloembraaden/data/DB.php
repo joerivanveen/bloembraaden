@@ -4159,27 +4159,11 @@ class DB extends Base
     {
         if ('' === (string)($slug = $row->__ref)) return;
         $json = json_encode($row);
-        // switch update or insert
         $statement = $this->conn->prepare('
-            SELECT EXISTS (SELECT 1 FROM _cache WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page);
+            INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page) 
+            VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page);
         ');
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->bindValue(':slug', $slug);
-        $statement->bindValue(':variant_page', $variant_page);
-        $statement->execute();
-        $exists = (bool)$statement->fetchColumn(0);
-        if (true === $exists) { // update TODO go to an insert-only model and delete crap later
-            $statement = $this->conn->prepare('
-                UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, 
-                id = :id, since = now(), variant_page_json = null
-                WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;
-            ');
-        } else { // insert
-            $statement = $this->conn->prepare('
-                INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page) 
-                VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page);
-            ');
-        }
+
         $statement->bindValue(':row_as_json', $json);
         $statement->bindValue(':type_name', $type_name);
         $statement->bindValue(':id', $id);
@@ -4189,6 +4173,28 @@ class DB extends Base
         $statement->execute();
         $json = null;
         $statement = null;
+    }
+
+    /**
+     * Set paging / pages in cache row for the slug
+     * @param string $slug
+     * @param string $json properly formatted json containing all the variant_pages for this slug
+     * @return int
+     * @since 0.8.5
+     */
+    public function updateVariantPageJsonInCache(string $slug, string $json): int
+    {
+        $statement = $this->conn->prepare(
+            'UPDATE _cache SET variant_page_json = :json WHERE slug = :slug AND instance_id = :instance_id;'
+        );
+        $statement->bindValue(':slug', $slug);
+        $statement->bindValue(':json', $json);
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->execute();
+        $affected = $statement->rowCount();
+        $statement = null;
+
+        return $affected;
     }
 
     /**
@@ -4202,29 +4208,29 @@ class DB extends Base
     public function cached(string $slug, int $variant_page = 1): ?\stdClass
     {
         $statement = $this->conn->prepare('SELECT row_as_json, since, variant_page_json FROM _cache 
-                    WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;');
+                    WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page
+                    ORDER BY since DESC LIMIT 1;');
         $statement->bindValue(':instance_id', (Setup::$instance_id));
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $variant_page);
         $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-        if (count($rows) > 0) {
-            $row = $rows[0];
-            $obj = json_decode($row->row_as_json);
-            $obj->x_cache_timestamp = strtotime($row->since); // @since 0.8.2
-            if (isset($row->variant_page_json)) {
-                $obj->__variant_pages__ = json_decode($row->variant_page_json);
-            } else {
-                $obj->__variant_pages__ = array(); // @since 0.8.6
-            }
-            $rows = null;
-
-            return $obj;
+        if (0 === $statement->rowCount()) {
+            $statement = null;
+            return null;
         }
-        $rows = null;
+        $row = $statement->fetchAll(5)[0];
+        $statement = null;
 
-        return null;
+        $obj = json_decode($row->row_as_json);
+        $obj->x_cache_timestamp = strtotime($row->since); // @since 0.8.2
+        if (isset($row->variant_page_json)) {
+            $obj->__variant_pages__ = json_decode($row->variant_page_json);
+        } else {
+            $obj->__variant_pages__ = array(); // @since 0.8.6
+        }
+        $row = null;
+
+        return $obj;
     }
 
     /**
@@ -4236,7 +4242,7 @@ class DB extends Base
      */
     public function cachex(string $slug, int $in_browser_timestamp): bool
     {
-        $statement = $this->conn->prepare('SELECT since FROM _cache WHERE instance_id = :instance_id AND slug = :slug;');
+        $statement = $this->conn->prepare('SELECT since FROM _cache WHERE instance_id = :instance_id AND slug = :slug LIMIT 1;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
@@ -4433,28 +4439,6 @@ class DB extends Base
                 AND c1.type_name = c2.type_name
                 AND c1.ci_ai_id <> c2.ci_ai_id;
         ');
-        $statement->execute();
-        $affected = $statement->rowCount();
-        $statement = null;
-
-        return $affected;
-    }
-
-    /**
-     * Set paging / pages in cache row for the slug
-     * @param string $slug
-     * @param string $json properly formatted json containing all the variant_pages for this slug
-     * @return int
-     * @since 0.8.5
-     */
-    public function updateVariantPageJsonInCache(string $slug, string $json): int
-    {
-        $statement = $this->conn->prepare(
-            'UPDATE _cache SET variant_page_json = :json WHERE slug = :slug AND instance_id = :instance_id;'
-        );
-        $statement->bindValue(':slug', $slug);
-        $statement->bindValue(':json', $json);
-        $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
