@@ -420,7 +420,6 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
                 slug = self.parent_PEATCMS_element.state.slug || null;
                 if (NAV.getCurrentSlug() === slug) {
                     NAV.refresh();
-                    NAV.maybeEdit(slug);
                 } else {
                     PEAT.message('Done processing ' + decodeURI(slug), 'note');
                 }
