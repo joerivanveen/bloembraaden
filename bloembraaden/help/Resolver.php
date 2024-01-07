@@ -214,20 +214,21 @@ class Resolver extends BaseLogic
                     if ($session->isAdmin()) {
                         // you can only get orders for the current instance so no need to check the admin further
                         if (isset($this->getTerms()[0])) {
-                            $src = '%' . $this->getTerms()[0]; // look up by last characters
+                            $term = $this->getTerms()[0];
+                            $src = "%$term"; // look up by last characters
                             // look for (multiple) orders
                             $orders = Help::getDB()->fetchElementRowsWhere(
                                 new Type('order'),
                                 array('order_number' => $src),
                             );
-                            $slug = '__order__/' . $this->getTerms()[0];
+                            $slug = "__order__/$term";
                         } else {
                             // all the orders (with paging)
                             $page = (int)($this->getProperties()['page'][0] ?? 1);
                             $page_size = 250;
                             $peat_type = new Type('order');
                             $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
-                            $slug = '__order__/page:' . $page;
+                            $slug = "__order__/page:$page";
                             $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page_size);
                         }
                         if (1 === count($orders)) {
@@ -238,7 +239,7 @@ class Resolver extends BaseLogic
                                 'template_pointer' => (object)array('name' => 'order', 'admin' => true),
                                 'type_name' => 'order',
                                 'order_id' => $order->getId(),
-                                'slug' => '__order__/' . $order->getOrderNumber(),
+                                'slug' => "__order__/{$order->getOrderNumber()}",
                                 '__order__' => array($order->getOutput()),
                             ));
                         } else {
