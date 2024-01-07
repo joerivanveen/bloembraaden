@@ -766,7 +766,7 @@ class Help
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
         $static_root = Setup::$CDNROOT;
-        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\",\n\"Export date\":\"$date_as_string\",\n\"version\":\"$version\"\n,\"static_root\":\"$static_root\"\n", LOCK_EX);
+        file_put_contents($export_file, "\"Bloembraaden instance\":\"$instance_name\"\n\"Export date\":\"$date_as_string\"\n\"version\":\"$version\"\n\"static_root\":\"$static_root\"\n", LOCK_EX);
         if (true === $include_user_data) {
             file_put_contents($export_file, "\"Include user data\":1\n", FILE_APPEND | LOCK_EX);
         }
@@ -971,7 +971,6 @@ class Help
                                                     $row[$col_name] = 0;
                                                 } else {
                                                     if (false === isset($ids_for_col[$col_value])) {
-                                                        //$logger->log(var_export($ids, true));
                                                         $logger->log("Id $col_value not found for column $col_name");
                                                         continue; // if the id was no longer in the original, no need to import
                                                     }

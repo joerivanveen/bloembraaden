@@ -3544,7 +3544,7 @@ class DB extends Base
                 $foreign_id = substr("{$foreign_table}_id", 1);
             }
             $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE $foreign_id IN
-                    (SELECT $foreign_id FROM $foreign_table WHERE $instance_id = ?);");
+                    (SELECT $foreign_id FROM $foreign_table WHERE instance_id = ?);");
         } else {
             $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = ?;");
         }
