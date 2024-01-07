@@ -250,19 +250,22 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
         // load the options and on return update the select list
         NAV.ajax(selectlist_actions[column_name], {for: this.parent_PEATCMS_element.state.type_name}, function (json) {
             const el = self.DOMElement;
-            let i, option, temp;
+            let i, option, temp, option_value_exists = false;
             for (i in json) {
                 if (json.hasOwnProperty(i) && (temp = json[i]) && temp.hasOwnProperty(column_name)) {
                     option = document.createElement('option');
                     option.text = temp.name || temp.title;
                     option.value = temp[column_name];
                     el.options[el.length] = option;
-                    if (temp[column_name] === self.server_value) el.selectedIndex = el.length - 1;
+                    if (temp[column_name] === self.server_value) {
+                        el.selectedIndex = el.length - 1;
+                        option_value_exists = true;
+                    }
                 }
             }
             el.classList.remove('peatcms_loading');
             if (el.options[1]) {
-                if (self.server_value === 0) { // select first one by default
+                if (self.server_value === 0 || false === option_value_exists) { // select first one by default
                     self.changedTo(el.options[1].value);
                 }
                 el.options[0].remove(); // remove nonsense option
