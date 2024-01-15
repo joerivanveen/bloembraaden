@@ -3959,82 +3959,83 @@ document.addEventListener('peatcms.document_complete', function () {
  * The carousels you can swipe
  */
 PEATCMS.setupCarousels = function () {
-    const setupCarousel = function (car) {
-        let el, slides, slide, i, len;
-        const identifier = PEATCMS.numericHashFromString(car.innerText),
+    const setupCarousel = function (wrapper) {
+        let el, slides, slide, i, len, strip;
+        const identifier = PEATCMS.numericHashFromString(wrapper.innerText),
             x = localStorage.getItem(identifier) || 0;
-        PEAT.scrollTo(x, 0, car);
-        car.identifier = identifier;
-        car.bb_scrollX = 0;
-        car.bb_mouseX = 0;
-        car.total_delta = 0;
-        if (car.hasAttribute('data-carousel-setup')) return;
-        car.setAttribute('data-carousel-setup', '0');
-        slides = car.getElementsByClassName('slide');
+        if (wrapper.hasAttribute('data-carousel-setup')) return;
+        wrapper.setAttribute('data-carousel-setup', '0');
+        if (!(strip = wrapper.querySelector('.strip'))) strip = wrapper; // no wrapper = backwards compatibility
+        PEAT.scrollTo(x, 0, strip);
+        strip.identifier = identifier;
+        strip.bb_scrollX = 0;
+        strip.bb_mouseX = 0;
+        strip.total_delta = 0;
+        slides = strip.getElementsByClassName('slide');
         //if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
-        if (!(car.scrollWidth > car.offsetWidth)) {
-            PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
+        if (!(strip.scrollWidth > strip.offsetWidth)) {
+            PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
         } else {
-            PEATCMS.opacityNode(car.querySelector('.carousel-right'), 1);
+            PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 1);
         }
         for (i = 0, len = slides.length; i < len; ++i) {
             slide = slides[i];
             slide.addEventListener('mousedown', function (e) {
                 e.preventDefault();
-                car.bb_mouseX = e.clientX;
-                PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
+                strip.bb_mouseX = e.clientX;
+                PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
             });
             slide.addEventListener('touchstart', function () {
-                PEATCMS.opacityNode(car.querySelector('.carousel-right'), 0);
+                PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
             }, {passive: true});
             slide.addEventListener('mouseup', function (e) {
                 e.preventDefault();
-                car.removeAttribute('data-mouse-is-down');
+                strip.removeAttribute('data-mouse-is-down');
                 // remember scroll position
-                localStorage.setItem(car.identifier, car.scrollLeft);
+                localStorage.setItem(strip.identifier, strip.scrollLeft);
             });
             slide.addEventListener('mousemove', function (e) {
                 let delta, xPos;
                 e.preventDefault();
                 if (e.buttons > 0) {
-                    car.setAttribute('data-mouse-is-down', '1');
-                    delta = car.bb_mouseX - (xPos = e.clientX);
-                    car.total_delta += delta;
-                    car.bb_mouseX = xPos;
-                    car.scrollBy(delta, 0);
+                    strip.setAttribute('data-mouse-is-down', '1');
+                    delta = strip.bb_mouseX - (xPos = e.clientX);
+                    strip.total_delta += delta;
+                    strip.bb_mouseX = xPos;
+                    strip.scrollBy(delta, 0);
                 } else {
-                    car.removeAttribute('data-mouse-is-down');
+                    strip.removeAttribute('data-mouse-is-down');
                 }
             });
             slide.querySelectorAll('.slide a > *').forEach(function (el) {
                 el.addEventListener('click', function (e) {
                     // @since 0.12.0 prevent links and such from triggering clicks when used for moving
-                    if (Math.abs(car.total_delta) > 5) {
+                    if (Math.abs(strip.total_delta) > 5) {
                         e.preventDefault();
                         e.stopPropagation();
                     }
-                    car.total_delta = 0;
+                    strip.total_delta = 0;
                 })
             });
         }
         /* nav buttons */
-        if ((el = car.querySelector('.carousel-close'))) {
+        if ((el = wrapper.querySelector('.carousel-close'))) {
             el.addEventListener('click', function () {
                 NAV.go('/');
             });
         }
-        if ((el = car.querySelector('.carousel-right'))) {
+        if ((el = wrapper.querySelector('.carousel-right'))) {
             el.addEventListener('click', function () {
-                PEAT.scrollTo(car.scrollLeft + car.clientWidth, 0, car);
+                PEAT.scrollTo(strip.scrollLeft + strip.clientWidth, 0, strip);
             });
         }
-        if ((el = car.querySelector('.carousel-left'))) {
+        if ((el = wrapper.querySelector('.carousel-left'))) {
             el.addEventListener('click', function () {
-                PEAT.scrollTo(-1 * car.clientWidth + car.scrollLeft, 0, car);
+                PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
             });
         }
         // signal done, maybe you want to target this in css
-        car.setAttribute('data-carousel-setup', '1');
+        wrapper.setAttribute('data-carousel-setup', '1');
     }
     let elements, i, len;
     /* carousel slides when present */
