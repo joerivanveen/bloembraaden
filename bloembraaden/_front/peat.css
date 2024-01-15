@@ -21,6 +21,7 @@ table, caption, tbody, tfoot, thead, tr, th, td {
     vertical-align: baseline;
     color: #000;
 }
+
 html, body {
     font-family: Arial, Helvetica, sans-serif;
     line-height: 1.6em;
@@ -114,6 +115,7 @@ h5 {
 h6 {
     font-weight: bold;
 }
+
 [data-peatcms-placeholder] {
     display: none !important;
 }
@@ -123,6 +125,7 @@ html, body {
     width: 100%;
     font-size: 16px;
 }
+
 /**
  * handy standard css classes
  */
@@ -227,7 +230,7 @@ html, body {
     padding: 5px;
     color: #fff;
     border-radius: 5px; /* same as message */
-    background-color: rgb(90,90,90);
+    background-color: rgb(90, 90, 90);
     font-weight: bold;
     width: auto;
     height: auto;
@@ -269,13 +272,14 @@ input[type="password"] {
     outline-offset: -1px;
 }
 
-input[type="checkbox"]{
+input[type="checkbox"] {
     padding: 0;
     width: .5rem;
     height: .5rem;
-    background-color: rgba(0,0,0,.1);
+    background-color: rgba(0, 0, 0, .1);
 }
-input[type="checkbox"]:checked{
+
+input[type="checkbox"]:checked {
     background-color: rgb(48, 63, 123);
 }
 
@@ -287,6 +291,7 @@ input[type="date"],
 input[type="password"] {
     outline: solid 1px #484844;
 }
+
 button,
 input[type="submit"] {
     padding: .25em .5em;
@@ -304,6 +309,7 @@ input[type="submit"] {
 .bloembraaden-fade-out {
     animation: bloembraaden_fade_out .5s forwards ease-in-out;
 }
+
 @keyframes bloembraaden_fade_out {
     10% {
         opacity: 1;
@@ -421,11 +427,13 @@ body select::-ms-expand {
     -ms-user-select: none;
     user-select: none;
 }
+
 .carousel .slide {
     flex: 0 0 auto;
     cursor: grab;
     height: 100%;
 }
+
 .carousel[data-mouse-is-down] .slide {
     cursor: grabbing;
 }
