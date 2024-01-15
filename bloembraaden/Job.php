@@ -787,7 +787,7 @@ switch ($interval) {
         $trans->start('Remove orphaned shoppinglist rows (variants)');
         echo $db->jobDeleteOrphanedShoppinglistVariants(), PHP_EOL;
         $trans->start('Remove old _history rows');
-        echo $db->jobDeleteOldHistory(), PHP_EOL;
+        echo $db->jobDeleteOldHistory(300), PHP_EOL;
         // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
         $trans->start('Refresh instagram access token');
         // @since 0.7.2
