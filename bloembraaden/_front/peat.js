@@ -3963,7 +3963,7 @@ PEATCMS.setupCarousels = function () {
         let el, slides, slide, i, len;
         const identifier = PEATCMS.numericHashFromString(car.innerText),
             x = localStorage.getItem(identifier) || 0;
-        car.scrollTo(x, 0);
+        PEAT.scrollTo(x, 0, car);
         car.identifier = identifier;
         car.bb_scrollX = 0;
         car.bb_mouseX = 0;
