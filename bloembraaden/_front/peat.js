@@ -4025,12 +4025,12 @@ PEATCMS.setupCarousels = function () {
         }
         if ((el = car.querySelector('.carousel-right'))) {
             el.addEventListener('click', function () {
-                PEAT.scrollTo((window.innerWidth - 20), 0, car);
+                PEAT.scrollTo(car.scrollLeft + car.clientWidth, 0, car);
             });
         }
         if ((el = car.querySelector('.carousel-left'))) {
             el.addEventListener('click', function () {
-                PEAT.scrollTo(-1 * (window.innerWidth - 20), 0, car);
+                PEAT.scrollTo(-1 * car.clientWidth + car.scrollLeft, 0, car);
             });
         }
         // signal done, maybe you want to target this in css
