@@ -3961,23 +3961,16 @@ document.addEventListener('peatcms.document_complete', function () {
 PEATCMS.setupCarousels = function () {
     const setupCarousel = function (wrapper) {
         let el, slides, slide, i, len, strip;
-        const identifier = PEATCMS.numericHashFromString(wrapper.innerText),
+        const identifier = PEATCMS.numericHashFromString(wrapper.innerText).toString(),
             x = localStorage.getItem(identifier) || 0;
         if (wrapper.hasAttribute('data-carousel-setup')) return;
         wrapper.setAttribute('data-carousel-setup', '0');
-        if (!(strip = wrapper.querySelector('.strip'))) strip = wrapper; // no wrapper = backwards compatibility
-        PEAT.scrollTo(x, 0, strip);
+        if (!(strip = wrapper.querySelector('.strip'))) strip = wrapper; // no wrapper = backwards compatible
         strip.identifier = identifier;
         strip.bb_scrollX = 0;
         strip.bb_mouseX = 0;
         strip.total_delta = 0;
         slides = strip.getElementsByClassName('slide');
-        //if (!(slides.length > 0 && slides[0].offsetWidth + 20 > car.offsetWidth)) {
-        if (!(strip.scrollWidth > strip.offsetWidth)) {
-            PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
-        } else {
-            PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 1);
-        }
         for (i = 0, len = slides.length; i < len; ++i) {
             slide = slides[i];
             slide.addEventListener('mousedown', function (e) {
@@ -3991,8 +3984,6 @@ PEATCMS.setupCarousels = function () {
             slide.addEventListener('mouseup', function (e) {
                 e.preventDefault();
                 strip.removeAttribute('data-mouse-is-down');
-                // remember scroll position
-                localStorage.setItem(strip.identifier, strip.scrollLeft);
             });
             slide.addEventListener('mousemove', function (e) {
                 let delta, xPos;
@@ -4034,6 +4025,36 @@ PEATCMS.setupCarousels = function () {
                 PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
             });
         }
+        /**
+         * register scrolling on the carousel element
+         */
+        function scrollReg() {
+            const scrollLeft = strip.scrollLeft;
+            // remember scroll position
+            localStorage.setItem(strip.identifier, scrollLeft);
+            // set attributes for css
+            if (scrollLeft < 1) {
+                wrapper.setAttribute('data-scrolled', '0');
+                wrapper.setAttribute('data-scrolled-start', '1');
+            } else {
+                wrapper.setAttribute('data-scrolled', scrollLeft.toString());
+                if (wrapper.hasAttribute('data-scrolled-start')) wrapper.removeAttribute('data-scrolled-start');
+            }
+            console.warn(scrollLeft + strip.offsetWidth, strip.scrollWidth);
+            if (scrollLeft + strip.offsetWidth + 1 >= strip.scrollWidth) {
+                wrapper.setAttribute('data-scrolled-end', '1');
+            } else {
+                if (wrapper.hasAttribute('data-scrolled-end')) wrapper.removeAttribute('data-scrolled-end');
+            }
+        }
+        wrapper.setAttribute('data-scrolled', '0');
+        wrapper.setAttribute('data-scrolled-start', '1');
+        strip.addEventListener('scroll', function(e) {
+            clearTimeout(wrapper.scroll_timeout);
+            wrapper.scroll_timeout = setTimeout(scrollReg, 417);
+        });
+        if (x > 0) strip.scrollTo(x, 0);
+        scrollReg(); // set it up once after loading the page
         // signal done, maybe you want to target this in css
         wrapper.setAttribute('data-carousel-setup', '1');
     }
