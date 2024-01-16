@@ -4407,17 +4407,17 @@ class DB extends Base
     public function removeDuplicatesFromCache(): int
     {
         // https://stackoverflow.com/a/12963112
-        // delete (accidental) duplicates from cache table, rows that are exactly the same... should not happen but hey
+        // delete (older) duplicates from cache table
         $statement = $this->conn->prepare('
             DELETE FROM _cache c1 USING (
-              SELECT MAX(ctid) as ctid, slug, instance_id, variant_page
+              SELECT MAX(since) as since, slug, instance_id, variant_page
                 FROM _cache
                 GROUP BY slug, instance_id, variant_page HAVING COUNT(*) > 1
               ) c2
               WHERE c1.slug = c2.slug 
                 AND c1.variant_page = c2.variant_page
                 AND c1.instance_id = c2.instance_id
-                AND c1.ctid <> c2.ctid;
+                AND c1.since <> c2.since;
         ');
         $statement->execute();
         $affected = $statement->rowCount();
