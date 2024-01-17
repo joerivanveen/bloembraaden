@@ -4055,6 +4055,7 @@ PEATCMS.setupCarousels = function () {
         });
         if (x > 0) strip.scrollTo(x, 0);
         scrollReg(); // set it up once after loading the page
+        window.addEventListener('resize', scrollReg);
         // signal done, maybe you want to target this in css
         wrapper.setAttribute('data-carousel-setup', '1');
     }
