@@ -4040,7 +4040,6 @@ PEATCMS.setupCarousels = function () {
                 wrapper.setAttribute('data-scrolled', scrollLeft.toString());
                 if (wrapper.hasAttribute('data-scrolled-start')) wrapper.removeAttribute('data-scrolled-start');
             }
-            console.warn(scrollLeft + strip.offsetWidth, strip.scrollWidth);
             if (scrollLeft + strip.offsetWidth + 1 >= strip.scrollWidth) {
                 wrapper.setAttribute('data-scrolled-end', '1');
             } else {
