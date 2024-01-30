@@ -24,6 +24,7 @@ class Parser extends Base
         '###' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h3'),
         '##' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h2'),
         '#' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h1'),
+        '–––' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-minuses'),
         '---' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-minuses'),
         '+++' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-pluses'),
         '***' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-stars'),
@@ -43,6 +44,8 @@ class Parser extends Base
         '*' => array('new_line' => false, 'allow_space' => false, 'tag' => 'strong'),
         '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-circ bloembraaden-circ'),
         '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-curr bloembraaden-curr'),
+        '[ ]' => array('new_line' => false, 'allow_space' => false, 'tag' => 'check'),
+        '[x]' => array('new_line' => false, 'allow_space' => false, 'tag' => 'check'),
         '![' => array('new_line' => false, 'allow_space' => true, 'tag' => 'img'),
         '[' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '<' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
@@ -87,8 +90,12 @@ class Parser extends Base
             $text = str_replace(" \n", "\n", $text);
         }
         $this->text = $text;
-        $this->log('parse ' . (($as_sub_parser) ? 'as sub parser' : 'as master'));
-        if (false === $as_sub_parser) $this->text = "\n" . $this->text . "\n";
+        if (false === $as_sub_parser) {
+            $this->log('parse as master');
+            $this->text = "\n$this->text\n";
+        } else {
+            $this->log('parse as sub parser');
+        }
         $this->len = strlen($this->text);
         $this->pointer = 0;
         $this->slacker = 0; // slacker runs behind the pointer, pointing until where text has been processed into html
@@ -126,17 +133,17 @@ class Parser extends Base
             );
         }
         $tag = $cmd['tag'];
-        $this->log('tag: (' . $tag . ') ');
+        $this->log("tag: ($tag) ");
         if ($tag === 'EOL') { // check if there is a blank line following
             if (false !== ($next_EOL = strpos($text, "\n", $pointer + 1))) {
                 $line = substr($text, $pointer + 1, $next_EOL - $pointer - 1);
-                $this->log('checking next line: ' . $next_EOL . ' ' . var_export($line, true));
+                $this->log("checking next line: $next_EOL " . var_export($line, true));
                 if ('' === $line || '' === str_replace(array("\t", ' '), '', $line)) { // the next line is blank
                     return $this->runCommand(array(
                             'tag' => 'BLANK_LINE',
                             'new_line' => false,
                             'allow_space' => true,
-                            'signature' => "\n" . $line . "\n",
+                            'signature' => "\n$line\n",
                         )
                     );
                 }
@@ -151,172 +158,159 @@ class Parser extends Base
             }
         }
         $sig = $cmd['signature'];
-        $this->log('CMD [tag]: ' . $tag);
+        $this->log("CMD [tag]: $tag");
         ob_start();
         if (isset($cmd['single'])) { // single means single character replacement
             echo $this->flush();
             echo $cmd['tag'];
         } elseif (false === $cmd['new_line']) {
             echo $this->flush();
-            if ($tag === 'BLANK_LINE') { // close all previous tags
+            if ('BLANK_LINE' === $tag) { // close all previous tags
                 echo $this->closeTags();
-            } elseif ($tag === 'EOL') { // remember this EOL for the flusher
+            } elseif ('EOL' === $tag) { // remember this EOL for the flusher
                 if (in_array($this->getOpenTag(), array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
                     echo $this->closeTag();
                 }
                 $this->holding_eol = true;
-            } elseif ($tag === 'pre') {
+            } elseif ('pre' === $tag) {
                 if ($this->getOpenTag() === 'pre') { // close the current tag
                     echo $this->closeTag();
                 } else {
                     echo $this->openTag($tag);
                 }
-            } else {
-                if ($tag === 'img') {
+            } elseif ('check' === $tag) {
+                if ('[x]' === $sig) {
+                    echo '<input type="checkbox" checked="checked"/>';
+                } else {
+                    echo '<input type="checkbox"/>';
+                }
+            } elseif ('img' === $tag) {
+                $this->echoParagraphWhenNecessary();
+                // img: the first entry between the bracket construction ![] MUST be an integer, denoting which
+                // of the linked images needs to be displayed, one-based in the order you gave them in the edit screen
+                // all other entries (separated by a space) will be classnames added to the image,
+                // alt text will be provided by the image element
+                $pointer += 2;
+                if (-1 !== ($end = $this->nextPartOfCommand($text, ']', $pointer))) {
+                    $str_command = trim(substr($text, $pointer, $end - $pointer));
+                    $index = (int)$str_command; // default to 0...
+                    echo '{%image:';
+                    echo $index;
+                    echo '%}<img src="{{slug}}" alt="{{excerpt}}" class="';
+                    echo $str_command;
+                    echo '"/>{%image:';
+                    echo $index;
+                    echo '%}';
+                }
+                $end++;
+                $this->pointer = $end;
+                $sig = '';
+            } elseif ('a' === $tag) {
+                $pointer = $this->pointer;
+                if (true === $this->holding_eol) {
+                    if ($this->getOpenTag()) echo '<br/>';
+                    $this->holding_eol = false;
+                }
+                // the following types of links can be in the text
+                // [an example](http://example.com/ "Title")
+                // [About](/about/)
+                // [an example][id] or [an example] [id]
+                // (separate line) -> [id]: <http://www.google.com>
+                // [Google]
+                // (separate line) ->  [Google]: http://google.com/ "Title here"
+                // separate line can also be on 2 lines
+                // the pointer is at the first [ now..., or < for that matter...
+                if ('<' === $sig) {
+                    $pointer++;
+                    if (-1 !== ($end = $this->nextPartOfCommand($text, '>', $pointer))) {
+                        $url = substr($text, $pointer, $end - $pointer);
+                        // link cannot contain spaces (it may contain EOLS however!):
+                        if (false === strpos($url, ' ')) {
+                            $this->echoParagraphWhenNecessary();
+                            echo '<a href="';
+                            echo $url;
+                            echo '">';
+                            echo $url;
+                            echo '</a>';
+                            $end++;
+                            $this->pointer = $end;
+                            $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
+                        } // if it contains spaces, it's something else, just continue
+                    }
+                } elseif // $sig must be '['
+                    // if you're on one of the separate lines, you need to skip it entirely:
+                ($text[$pointer - 1] === "\n"
+                    && null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ']:', $pointer))
+                ) {
+                    //echo $this->flush();
+                    // check if the title for this link is on the next line, because then you need to skip that too
+                    $next_EOL = $positions[1];
+                    $next_line = trim(substr($text, $next_EOL,
+                        ($next_next_EOL = strpos($text, "\n", $next_EOL + 1)) - $next_EOL));
+                    if (($len = strlen($next_line)) > 2 and $next_line[0] === '"' and $next_line[$len - 1] === '"') {
+                        $next_EOL = $next_next_EOL;
+                    }
+                    $this->pointer = $next_EOL;
+                    $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
+                } else {
                     $this->echoParagraphWhenNecessary();
-                    // img: the first entry between the bracket construction ![] MUST be an integer, denoting which
-                    // of the linked images needs to be displayed, one-based in the order you gave them in the edit screen
-                    // all other entries (separated by a space) will be classnames added to the image,
-                    // alt text will be provided by the image element
-                    $pointer += 2;
-                    if (-1 !== ($end = $this->nextPartOfCommand($text, ']', $pointer))) {
-                        $str_command = trim(substr($text, $pointer, $end - $pointer));
-                        echo '{%image:';
-                        echo $str_command[0];
-                        echo '%}<img src="{{slug}}" alt="{{excerpt}}" class="';
-                        echo $str_command;
-                        echo '"/>{%image:';
-                        echo $str_command[0];
-                        echo '%}';
-                    }
-                    $end++;
-                    $this->pointer = $end;
-                    $sig = '';
-                } elseif ($tag === 'a') {
-                    $pointer = $this->pointer;
-                    if (true === $this->holding_eol) {
-                        if ($this->getOpenTag()) echo '<br/>';
-                        $this->holding_eol = false;
-                    }
-                    // the following types of links can be in the text
-                    // [an example](http://example.com/ "Title")
-                    // [About](/about/)
-                    // [an example][id] or [an example] [id]
-                    // (separate line) -> [id]: <http://www.google.com>
-                    // [Google]
-                    // (separate line) ->  [Google]: http://google.com/ "Title here"
-                    // separate line can also be on 2 lines
-                    // the pointer is at the first [ now..., or < for that matter...
-                    if ($sig === '<') {
-                        $pointer++;
-                        if (-1 !== ($end = $this->nextPartOfCommand($text, '>', $pointer))) {
-                            $url = substr($text, $pointer, $end - $pointer);
-                            // link cannot contain spaces (it may contain EOLS however!):
-                            if (false === strpos($url, ' ')) {
-                                $this->echoParagraphWhenNecessary();
-                                echo '<a href="';
-                                echo $url;
-                                echo '">';
-                                echo $url;
-                                echo '</a>';
-                                $end++;
-                                $this->pointer = $end;
-                                $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
-                            } // if it contains spaces, it's something else, just continue
+                    // if this is an indexed link, build it here
+                    if (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']['), $pointer))
+                        || null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = '] ['), $pointer))
+                    ) {
+                        $tag_sig_position = $positions[0];
+                        if (($closing_position = $this->nextPartOfCommand($text, ']', $tag_sig_position + 1))
+                            === ($starting_position = $tag_sig_position + strlen($tag_sig))) {
+                            $link_id = substr($text, $pointer + 1, $tag_sig_position - $pointer - 1);
+                        } else {
+                            $link_id = substr($text, $starting_position, $closing_position - $starting_position);
                         }
-                    } elseif // $sig must be '['
-                        // if you're on one of the separate lines, you need to skip it entirely:
-                    ($text[$pointer - 1] === "\n"
-                        and null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ']:', $pointer))) {
-                        //echo $this->flush();
-                        // check if the title for this link is on the next line, because then you need to skip that too
+                        $str_command = substr($text, $pointer, $closing_position - $pointer);
+                        echo $this->getLinkById($link_id,
+                            substr($str_command, 1, strpos($str_command, ']') - 1));
+                        $pointer += strlen($str_command) + 1; // go to the end of the whole tag construction
+                        $this->pointer = $pointer;
+                        $sig = '';
+                    } elseif // inline is also fine:
+                    (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']('), $pointer))
+                        || null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = '] ('), $pointer))
+                    ) {
+                        $tag_sig_position = $positions[0];
+                        $tag_sig_end = $tag_sig_position + strlen($tag_sig);
                         $next_EOL = $positions[1];
-                        $next_line = trim(substr($text, $next_EOL,
-                            ($next_next_EOL = strpos($text, "\n", $next_EOL + 1)) - $next_EOL));
-                        if (($len = strlen($next_line)) > 2 and $next_line[0] === '"' and $next_line[$len - 1] === '"') {
-                            $next_EOL = $next_next_EOL;
-                        }
-                        $this->pointer = $next_EOL;
-                        $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
-                    } else {
-                        $this->echoParagraphWhenNecessary();
-                        // if this is an indexed link, build it here
-                        if (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']['), $pointer))
-                            || null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = '] ['), $pointer))) {
-                            $tag_sig_position = $positions[0];
-                            if (($closing_position = $this->nextPartOfCommand($text, ']', $tag_sig_position + 1))
-                                === ($starting_position = $tag_sig_position + strlen($tag_sig))) {
-                                $link_id = substr($text, $pointer + 1, $tag_sig_position - $pointer - 1);
+                        $pointer++;
+                        $end = $this->nextPartOfCommand($text, ')', $tag_sig_end);
+                        // TODO check how many is duplicate from ->getLinkById()...
+                        if ($end < $next_EOL) {
+                            //echo $this->flush();
+                            $href = trim(substr($text, $tag_sig_end, $end - $tag_sig_end));
+                            if (strlen($href) === 0) {
+                                $this->addMessage(sprintf(
+                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                                    $pointer,
+                                    substr($text, $pointer - 5, 20)
+                                ), 'warn');
+                                $end = $next_EOL; // skip it
                             } else {
-                                $link_id = substr($text, $starting_position, $closing_position - $starting_position);
-                            }
-                            $str_command = substr($text, $pointer, $closing_position - $pointer);
-                            echo $this->getLinkById($link_id,
-                                substr($str_command, 1, strpos($str_command, ']') - 1));
-                            $pointer += strlen($str_command) + 1; // go to the end of the whole tag construction
-                            $this->pointer = $pointer;
-                            $sig = '';
-                        } elseif // inline is also fine:
-                        (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']('), $pointer))
-                            || null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = '] ('), $pointer))) {
-                            $tag_sig_position = $positions[0];
-                            $tag_sig_end = $tag_sig_position + strlen($tag_sig);
-                            $next_EOL = $positions[1];
-                            $pointer++;
-                            $end = $this->nextPartOfCommand($text, ')', $tag_sig_end);
-                            // TODO check how many is duplicate from ->getLinkById()...
-                            if ($end < $next_EOL) {
-                                //echo $this->flush();
-                                $href = trim(substr($text, $tag_sig_end, $end - $tag_sig_end));
-                                if (strlen($href) === 0) {
-                                    $this->addMessage(sprintf(
-                                        __('Incorrect link format at %1$s near %2$s', 'peatcms'),
-                                        $pointer,
-                                        substr($text, $pointer - 5, 20)
-                                    ), 'warn');
-                                    $end = $next_EOL; // skip it
-                                } else {
-                                    // this may contain a "title" (between double quotes)
-                                    if (false !== ($pos = strpos($href, '"', 1))) {
-                                        // title should end in a double quote, so also remove last character
-                                        $title = substr($href, $pos + 1, strlen($href) - $pos - 2);
-                                        $href = rtrim(substr($href, 0, $pos));
-                                    }
-                                    echo '<a href="';
-                                    echo $href;
-                                    if (isset($title)) {
-                                        echo '" title="';
-                                        echo htmlspecialchars($title);
-                                    }
-                                    echo '">';
-                                    // @since 0.6.17 other tags must be possible inside a link text
-                                    echo (new Parser($this->logger))->parse(substr($text, $pointer, $tag_sig_position - $pointer), true);
-                                    echo '</a>';
+                                // this may contain a "title" (between double quotes)
+                                if (false !== ($pos = strpos($href, '"', 1))) {
+                                    // title should end in a double quote, so also remove last character
+                                    $title = substr($href, $pos + 1, strlen($href) - $pos - 2);
+                                    $href = rtrim(substr($href, 0, $pos));
                                 }
-                                $end++;
-                                $this->pointer = $end;
-                                $sig = '';
-                            } else {
-                                $this->addMessage(sprintf(
-                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
-                                    $pointer,
-                                    substr($text, $pointer - 5, 20)
-                                ), 'warn');
+                                echo '<a href="';
+                                echo $href;
+                                if (isset($title)) {
+                                    echo '" title="';
+                                    echo htmlspecialchars($title);
+                                }
+                                echo '">';
+                                // @since 0.6.17 other tags must be possible inside a link text
+                                echo (new Parser($this->logger))->parse(substr($text, $pointer, $tag_sig_position - $pointer), true);
+                                echo '</a>';
                             }
-                        } // get the link for when the link text is also the id
-                        elseif (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ']', $pointer))){
-                            $link_id = substr($text, $pointer + 1, $positions[0] - $pointer - 1);
-                            if (null !== ($link = $this->getLinkById($link_id, $link_id))) {
-                                echo $link;
-                            } else {
-                                $this->addMessage(sprintf(
-                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
-                                    $pointer,
-                                    substr($text, $pointer - 5, 20)
-                                ), 'warn');
-                            }
-                            $pointer += strlen("[$link_id]") + 1; // go to the end of the whole tag construction
-                            $this->pointer = $pointer;
+                            $end++;
+                            $this->pointer = $end;
                             $sig = '';
                         } else {
                             $this->addMessage(sprintf(
@@ -325,15 +319,34 @@ class Parser extends Base
                                 substr($text, $pointer - 5, 20)
                             ), 'warn');
                         }
-                    }
-                } else {
-                    if ($tag === $this->getOpenTag()) { // close the current tag
-                        echo $this->closeTag();
+                    } // get the link for when the link text is also the id
+                    elseif (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ']', $pointer))) {
+                        $link_id = substr($text, $pointer + 1, $positions[0] - $pointer - 1);
+                        if (null !== ($link = $this->getLinkById($link_id, $link_id))) {
+                            echo $link;
+                        } else {
+                            $this->addMessage(sprintf(
+                                __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                                $pointer,
+                                substr($text, $pointer - 5, 20)
+                            ), 'warn');
+                        }
+                        $pointer += strlen("[$link_id]") + 1; // go to the end of the whole tag construction
+                        $this->pointer = $pointer;
+                        $sig = '';
                     } else {
-                        $this->echoParagraphWhenNecessary();
-                        echo $this->openTag($tag, $cmd);
+                        $this->addMessage(sprintf(
+                            __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                            $pointer,
+                            substr($text, $pointer - 5, 20)
+                        ), 'warn');
                     }
                 }
+            } elseif ($tag === $this->getOpenTag()) { // close the current tag
+                echo $this->closeTag();
+            } else {
+                $this->echoParagraphWhenNecessary();
+                echo $this->openTag($tag, $cmd);
             }
         } else { // these are tags that follow a newline character
             $this->holding_eol = false; // the last enter is part of the command, not of the contents
@@ -397,17 +410,17 @@ class Parser extends Base
         while ($this->pointer < $this->len) {
             if (false === $this->escaped) {
                 $pointer = $this->pointer;
-                $this->log($pointer . ': ' . $text[$pointer]);
+                $this->log("$pointer: $text[$pointer]");
                 foreach ($this->commands as $sig => $command) {
                     if ($sig === substr($text, $pointer, strlen($sig))) { // found this command
-                        if ($command['tag'] === 'ol') {
+                        if ('ol' === $command['tag']) {
                             // this is a special case, no other tag is complicated in this manner...
                             if (false !== ($line_start = \strrpos($text, "\n", $pointer - $this->len))) {
                                 $line_start++;
                                 $substr = substr($text, $line_start, $pointer - $line_start);
                                 if (is_numeric($substr)) {
                                     //if ((int)$substr > 0) {
-                                    $this->log('<strong>found sig</strong>: ' . $substr . '. ' . ' at: ' . $this->pointer);
+                                    $this->log("<strong>found sig</strong>: $substr at: $this->pointer");
                                     $this->pointer = $line_start;
                                     unset ($text);
 
@@ -416,14 +429,15 @@ class Parser extends Base
                                 continue;
                             }
                         }
-                        if (false === $command['new_line'] || $text[$pointer - 1] === "\n") {
+                        if ((false === $command['new_line']) || "\n" === $text[$pointer - 1]) {
                             // also check if the tags are in the right position when required by allow_space
-                            if (true === $command['allow_space'] ||
+                            $sig_len = strlen($sig) + 1;
+                            if ((true === $command['allow_space']) ||
                             ($command['tag'] === $this->getOpenTag()) ?
                                 $text[$pointer - 1] !== ' ' :
-                                ($pointer + 1 < $this->len && $text[$pointer + 1] !== ' ')
+                                ($pointer + $sig_len < $this->len && $text[$pointer + $sig_len] !== ' ')
                             ) {
-                                $this->log('<strong>found sig</strong>: ' . var_export($sig, true) . ' at: ' . $this->pointer);
+                                $this->log('<strong>found sig</strong>: ' . var_export($sig, true) . " at: $this->pointer");
                                 unset ($text);
 
                                 return array_merge($command, array('signature' => $sig));
