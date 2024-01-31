@@ -180,9 +180,9 @@ class Parser extends Base
                 }
             } elseif ('check' === $tag) {
                 if ('[x]' === $sig) {
-                    echo '<input type="checkbox" checked="checked"/>';
+                    echo '<input type="checkbox" class="bloembraaden parsed" checked="checked"/>';
                 } else {
-                    echo '<input type="checkbox"/>';
+                    echo '<input type="checkbox" class="bloembraaden parsed"/>';
                 }
             } elseif ('img' === $tag) {
                 $this->echoParagraphWhenNecessary();
@@ -225,7 +225,7 @@ class Parser extends Base
                     if (-1 !== ($end = $this->nextPartOfCommand($text, '>', $pointer))) {
                         $url = substr($text, $pointer, $end - $pointer);
                         // link cannot contain spaces (it may contain EOLS however!):
-                        if (false === strpos($url, ' ')) {
+                        if (false === str_contains($url, ' ')) {
                             $this->echoParagraphWhenNecessary();
                             echo '<a href="';
                             echo $url;
@@ -415,7 +415,7 @@ class Parser extends Base
                     if ($sig === substr($text, $pointer, strlen($sig))) { // found this command
                         if ('ol' === $command['tag']) {
                             // this is a special case, no other tag is complicated in this manner...
-                            if (false !== ($line_start = \strrpos($text, "\n", $pointer - $this->len))) {
+                            if (false !== ($line_start = strrpos($text, "\n", $pointer - $this->len))) {
                                 $line_start++;
                                 $substr = substr($text, $line_start, $pointer - $line_start);
                                 if (is_numeric($substr)) {
@@ -475,7 +475,7 @@ class Parser extends Base
      */
     private function getLinkById(string $id, string $link_text): string
     {
-        //looks for markdown link by index somewhere (anywhere) in $text
+        //looks for Markdown link by index somewhere (anywhere) in $text
         $text = $this->text;
         $needle = "\n[$id]:";
         $pos = strpos($text, $needle);
@@ -487,7 +487,7 @@ class Parser extends Base
             $end = $this->nextPartOfCommand($text, ' "', $pos);
             if ($end !== -1) { // check if there is a title for the link
                 $href = trim(substr($text, $pos, $end - $pos));
-                if (false !== strpos($href, ' ')) { // a link cannot contain spaces, so this " is from something else
+                if (true === str_contains($href, ' ')) { // a link cannot contain spaces, so this " is from something else
                     $end = strpos($text, "\n", $pos);
                     $href = trim(substr($text, $pos, $end - $pos));
                 } else {
@@ -674,7 +674,7 @@ class Parser extends Base
                     }
                 }
             }
-            $this->log('<em>flushing:</em> ' . $str);
+            $this->log("<em>flushing:</em> $str");
 
             return $str;
         }
