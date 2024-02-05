@@ -85,7 +85,7 @@ class Image extends BaseElement
         $width = $image_info[0];
         $height = $image_info[1];
         $bits = $image_info['bits'];
-        $channels = $image_info['channels'];
+        $channels = $image_info['channels'] ?? 1;
         $memory_needed = $width * $height * $bits * $channels * 1.5;
         $memory_limit = (int)Help::getMemorySize(ini_get('memory_limit') ?: '128M');
         if (-1 === $memory_limit) {
