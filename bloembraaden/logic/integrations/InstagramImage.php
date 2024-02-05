@@ -6,7 +6,12 @@ namespace Bloembraaden;
 
 class InstagramImage extends Image
 {
-    protected array $sizes;
+    public const SIZES =  array(
+        'large' => 1800,
+        'medium' => 900,
+        'small' => 600,
+        'tiny' => 300,
+    );
 
     public function __construct(\stdClass $row = null)
     {
@@ -15,12 +20,6 @@ class InstagramImage extends Image
         }
         parent::__construct($row);
         $this->type_name = 'instagram_image';
-        $this->sizes = array(
-            'large' => 1800,
-            'medium' => 900,
-            'small' => 600,
-            'tiny' => 300,
-        );
     }
 
     public function create(?bool $online = true): ?int
@@ -30,6 +29,7 @@ class InstagramImage extends Image
 
     public function update(array $data): bool
     {
+        unset($data['extension']); // might be there, no need to be saved, prevent the warning in the logs
         return Help::getDB()->updateColumns('_instagram_media', $data, $this->row->media_id);
     }
 

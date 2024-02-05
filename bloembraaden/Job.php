@@ -39,9 +39,9 @@ switch ($interval) {
          * @return void
          */
         $cc_confirmation_copy_to = static function (
-            Mailer $mailer,
+            Mailer    $mailer,
             \stdClass $row,
-            int $instance_id,
+            int       $instance_id,
             \stdClass $order_output_object
         ) use ($db) {
             // send the internal mail to the internal addresses...
@@ -319,7 +319,7 @@ switch ($interval) {
                         $cc_confirmation_copy_to($mailer, $row, $instance_id, $order_output_object);
                     }
                 }
-            } // todo: log mail into _history? use obtainLock to prevent multiple e-mails when timeout > 60 seconds
+            } // todo: log mail into _history?
         }
         unset($mailer);
         $trans->start('Create missing search index records');
@@ -537,9 +537,11 @@ switch ($interval) {
                         'media_url' => $media_url,
                         'flag_for_update' => false,
                     );
-                    if ($media_url !== $row->media_url) {
-                        $update_data['src'] = null; // have it processed again
-                    }
+                    // @since 0.18.2 we are not reprocessing images anymore, since you cannot change them on instagram,
+                    // and the url changes are only due to load balancing and such
+//                    if ($media_url !== $row->media_url) {
+//                        $update_data['src'] = null; // have it processed again
+//                    }
                     // update the entry
                     if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
                         // remember you updated this user_id, so their feeds can be refreshed
@@ -594,7 +596,6 @@ switch ($interval) {
             $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
             if ($status_code === 200) {
                 $size = sha1($media_url) . '.jpg';
-                //echo $src;
                 // save the image and update src
                 if (file_put_contents($save_path . $size, $result)) {
                     $row->src = $size;
@@ -751,23 +752,23 @@ switch ($interval) {
         $trans->start('Handle js and css cache');
         foreach (array('js', 'css') as $sub_directory) {
             $dir = new \DirectoryIterator(Setup::$DBCACHE . $sub_directory);
-            foreach ($dir as $index => $file_info) {
-                if (!$file_info->isDot() && 'gz' === $file_info->getExtension()) {
+            foreach ($dir as $index => $fileinfo) {
+                if (!$fileinfo->isDot() && 'gz' === $fileinfo->getExtension()) {
                     // these are compressed js and css files with a timestamp, delete all files
                     // with an older timestamp than the latest one for the instance, or of an older version
-                    $pieces = explode('-', $file_info->getFilename());
+                    $pieces = explode('-', $fileinfo->getFilename());
                     $instance_id = $pieces[0];
                     $version = $pieces[1];
                     if (version_compare(Setup::$VERSION, $version) !== 0) {
-                        unlink($file_info->getPathname());
-                        echo 'Deleted ', $file_info->getFilename(), PHP_EOL;
+                        unlink($fileinfo->getPathname());
+                        echo 'Deleted ', $fileinfo->getFilename(), PHP_EOL;
                         continue;
                     }
                     $timestamp = explode('.', end($pieces))[0];
                     if (($row = $db->fetchInstanceById((int)$instance_id))) {
                         if (isset($row->date_published) && strtotime($row->date_published) > $timestamp) {
-                            unlink($file_info->getPathname());
-                            echo 'Deleted ', $file_info->getFilename(), PHP_EOL;
+                            unlink($fileinfo->getPathname());
+                            echo 'Deleted ', $fileinfo->getFilename(), PHP_EOL;
                         }
                     }
                 }
@@ -832,6 +833,104 @@ switch ($interval) {
             echo 'no tokens to refresh', PHP_EOL;
         }
         $rows = null;
+        // duplicate code, to finish the current job
+        $trans->start('Report current job');
+        echo date('Y-m-d H:i:s');
+        echo " (ended)\n";
+        printf("Job completed in %s seconds\n", number_format(microtime(true) - $start_timer, 2));
+        $trans->flush();
+        /* start the folder cleaning process */
+        set_time_limit(0); // this might take a while
+        $trans->start('Clean uploads folder');
+        $dir = new \DirectoryIterator(Setup::$UPLOADS);
+        $deleted = 0;
+        foreach ($dir as $index => $fileinfo) {
+            if ($fileinfo->isDot()) continue;
+            $filename = $fileinfo->getFilename();
+            echo $index, ': ', $filename;
+            if ('jpg' === $fileinfo->getExtension()) {
+                if (false === $db->rowExists('_instagram_media', array(
+                        'src' => $filename,
+                    ))
+                ) {
+                    echo ' deleted ', $fileinfo->getRealPath();
+                    unlink($fileinfo->getRealPath());
+                    ++$deleted;
+                }
+            } elseif ('' === $fileinfo->getExtension() && 20 === strlen($filename)) {
+                if (false === $db->rowExists('cms_image', array(
+                        'filename_saved' => $filename,
+                    ))
+                ) {
+                    echo ' deleted ', $fileinfo->getRealPath();
+                    unlink($fileinfo->getRealPath());
+                    ++$deleted;
+                }
+            }
+            if (0 === $index % 1000) {
+                $trans->flush();
+                $trans->start('Clean uploads folder (continued)');
+            }
+            echo PHP_EOL;
+            usleep(300000); // wait 300 ms
+        }
+        echo $deleted, ' orphaned files deleted from file system', PHP_EOL;
+        $trans->start('Clean static folder');
+        $deleted = 0;
+        $cleanFolder = static function ($folder) use ($db, $trans, $deleted) {
+            if ('0' === basename($folder)) { // instagram images
+                $sizes = InstagramImage::SIZES;
+                $table_name = '_instagram_media';
+            } else { // regular images
+                $sizes = Image::SIZES;
+                $table_name = 'cms_image';
+            }
+            $size = key($sizes);
+            $a_week_ago = time() - 604800;
+            if (false === file_exists("$folder/$size")) return;
+            $dir = new \DirectoryIterator("$folder/$size");
+            foreach ($dir as $index => $fileinfo) {
+                if ($fileinfo->isDot()) continue;
+                if ('webp' !== $fileinfo->getExtension()) continue;
+                $filename = $fileinfo->getFilename();
+                $instance = basename($folder);
+                echo $index, ': ', "$instance/$size/$filename";
+                echo str_repeat(' ', max(1, 120 - mb_strlen($filename)));
+                if ($fileinfo->getCTime() > $a_week_ago) {
+                    echo 'too recent', PHP_EOL;
+                    continue;
+                }
+                if (false === $db->rowExists($table_name, array(
+                        "src_$size" => "$instance/$size/$filename",
+                    ))
+                ) {
+                    echo 'DELETED';
+                    foreach ($sizes as $size_name => $pixels) {
+                        $path = "$folder/$size_name/$filename";
+                        if (false === file_exists($path)) continue;
+                        unlink($path);
+                        // unlink the fallback jpg as well, when it exists
+                        $path = substr($path, 0, -4) . 'jpg';
+                        if (true === file_exists($path)) unlink($path);
+                        // report
+                        echo ' ', $size_name;
+                    }
+                    ++$deleted;
+                }
+                echo PHP_EOL;
+                if (0 === $index % 1000) {
+                    $trans->flush();
+                    $trans->start('Clean static folder (continued)');
+                }
+                usleep(300000); // wait 300 ms
+            }
+        };
+        $dir = new \DirectoryIterator(Setup::$CDNPATH);
+        foreach ($dir as $index => $fileinfo) {
+            if ($fileinfo->isDot()) continue;
+            $cleanFolder($fileinfo->getRealPath());
+        }
+        echo $deleted, ' orphaned images deleted', PHP_EOL;
         break;
     case 'temp':
         echo 'Notice: this is a temp job, only for testing', PHP_EOL;
@@ -847,7 +946,7 @@ switch ($interval) {
         foreach ($rows as $index => $row) {
             $headers = get_headers($row->media_url);
             if (is_array($headers) and isset($headers[0])) {
-                if (false === strpos($headers[0], ' 200 OK')) {
+                if (false === str_contains($headers[0], ' 200 OK')) {
                     $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
                     echo 'flagged for update: ', $row->media_id, PHP_EOL;
                 }

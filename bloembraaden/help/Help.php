@@ -1010,6 +1010,8 @@ class Help
                                     file_put_contents($file_name, "$string\n", FILE_APPEND);
                                 }
                                 //$logger->log(var_export($value, true));
+                            } elseif (is_array($value)) {
+                                $logger->log("$key: Array, no longer supported");
                             } else {
                                 if ('static_root' === $key) {
                                     $static_root = $value;

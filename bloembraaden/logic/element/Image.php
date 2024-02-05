@@ -4,19 +4,18 @@ declare(strict_types=1);
 namespace Bloembraaden;
 class Image extends BaseElement
 {
-    protected array $sizes;
+    public const SIZES =array(
+        'huge' => 4000,
+        'large' => 1600,
+        'medium' => 800,
+        'small' => 400,
+        'tiny' => 200,
+    ); // TODO in config or something?
 
     public function __construct(\stdClass $properties = null)
     {
         parent::__construct($properties);
         $this->type_name = 'image';
-        $this->sizes = array(
-            'huge' => 4000,
-            'large' => 1600,
-            'medium' => 800,
-            'small' => 400,
-            'tiny' => 200,
-        ); // TODO in config or something?
     }
 
     public function create(?bool $online = true): ?int
@@ -161,7 +160,7 @@ class Image extends BaseElement
             }
         }
         // process and save the 5 sizes TODO compact this somewhere <- don't forget to include the check on existence
-        foreach ($this->sizes as $size => $pixels) { // (e.g. 'small' => 400)
+        foreach (self::SIZES as $size => $pixels) { // (e.g. 'small' => 400)
             set_time_limit(30);
             $subdir = "$my_path$size/";
             if (false === file_exists($subdir)) {
@@ -178,15 +177,13 @@ class Image extends BaseElement
                     $newWidth = $pixels;
                     $newHeight = (int)floor($pixels * $height / $width);
                 }
-            } else {
-                if ($height < $pixels) {
+            } elseif ($height < $pixels) {
                     $newHeight = $height;
                     $newWidth = $width;
                 } else {
                     $newHeight = $pixels;
                     $newWidth = (int)floor($pixels * $width / $height);
                 }
-            }
             // create resized image
             $logger->log('Preparing new image');
             $newImage = imagecreatetruecolor($newWidth, $newHeight);
@@ -322,10 +319,10 @@ class Image extends BaseElement
     {
         // TODO make this better
         $cdnroot = Setup::$CDNROOT;
-        $this->row->src_tiny = $cdnroot . $this->row->src_tiny;
-        $this->row->src_small = $cdnroot . $this->row->src_small;
-        $this->row->src_medium = $cdnroot . $this->row->src_medium;
-        $this->row->src_large = $cdnroot . $this->row->src_large;
-        $this->row->src_huge = $cdnroot . $this->row->src_huge;
+        $this->row->src_tiny = "$cdnroot{$this->row->src_tiny}";
+        $this->row->src_small = "$cdnroot{$this->row->src_small}";
+        $this->row->src_medium = "$cdnroot{$this->row->src_medium}";
+        $this->row->src_large = "$cdnroot{$this->row->src_large}";
+        $this->row->src_huge = "$cdnroot{$this->row->src_huge}";
     }
 }

@@ -2292,11 +2292,10 @@ class DB extends Base
             } else {
                 $table_name = 'cms_menu_item_x_menu';
             }
-        } else { // if toggle is requested, remember if it existed
-            if (false === $this->rowExists('cms_menu_item_x_menu', $where_not_deleted)) {
-                if (false === $this->rowExists('cms_menu_item_x_menu_item', $where_not_deleted)) {
-                    $table_name = 'cms_menu_item_x_menu';
-                }
+        } elseif (false === $this->rowExists('cms_menu_item_x_menu', $where_not_deleted)) {
+            // if toggle is requested, remember if it existed
+            if (false === $this->rowExists('cms_menu_item_x_menu_item', $where_not_deleted)) {
+                $table_name = 'cms_menu_item_x_menu';
             }
         }
         // remove every trace of this menu item, yes we're doing the crude approach, because it's too complicated otherwise
@@ -3910,7 +3909,7 @@ class DB extends Base
         return true;
     }
 
-    private function rowExists(string $table_name, array $where): bool
+    public function rowExists(string $table_name, array $where): bool
     {
         $table = new Table($this->getTableInfo($table_name)); // throws fatal error when table_name is wrong
         $where = $table->formatColumnsAndData($where, true);

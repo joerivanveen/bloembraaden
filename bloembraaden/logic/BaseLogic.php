@@ -158,7 +158,7 @@ class BaseLogic extends Base
                 }
                 $json = json_encode($pages);
                 $pages = null;
-                if ($count !== ($affected = $db->updateVariantPageJsonInCache($slug, $json))) {
+                if ($count > ($affected = $db->updateVariantPageJsonInCache($slug, $json))) {
                     $this->addError("Updated $affected rows in cache for $slug");
                 }
             }

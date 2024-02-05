@@ -22,13 +22,13 @@ class Setup
     private static int $seconds_delta;
     private static ?PDO $DB_MAIN_CONN = null, $DB_HIST_CONN = null;
     private static stdClass $DB_MAIN, $DB_HIST;
-    public const AVAILABLE_TIMEZONES = [
+    public const AVAILABLE_TIMEZONES = array(
         'Europe/London',
         'Europe/Amsterdam',
         'Europe/Brussels',
         'Europe/Paris',
         'Europe/Berlin',
-    ];
+    );
     private const DB_INIT_TRIES = 5;
 
     public function __construct()
