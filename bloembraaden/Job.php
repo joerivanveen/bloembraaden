@@ -839,7 +839,9 @@ switch ($interval) {
         echo " (ended)\n";
         printf("Job completed in %s seconds\n", number_format(microtime(true) - $start_timer, 2));
         $trans->flush();
-        /* start the folder cleaning process */
+        /**
+         * start the folder cleaning process
+         */
         set_time_limit(0); // this might take a while
         $trans->start('Clean uploads folder');
         $dir = new \DirectoryIterator(Setup::$UPLOADS);
@@ -878,7 +880,8 @@ switch ($interval) {
         $trans->start('Clean static folder');
         $deleted = 0;
         $cleanFolder = static function ($folder) use ($db, $trans, $deleted) {
-            if ('0' === basename($folder)) { // instagram images
+            $instance = basename($folder);
+            if ('0' === $instance) { // instagram images
                 $sizes = InstagramImage::SIZES;
                 $table_name = '_instagram_media';
             } else { // regular images
@@ -893,7 +896,6 @@ switch ($interval) {
                 if ($fileinfo->isDot()) continue;
                 if ('webp' !== $fileinfo->getExtension()) continue;
                 $filename = $fileinfo->getFilename();
-                $instance = basename($folder);
                 echo $index, ': ', "$instance/$size/$filename";
                 echo str_repeat(' ', max(1, 120 - mb_strlen($filename)));
                 if ($fileinfo->getCTime() > $a_week_ago) {
