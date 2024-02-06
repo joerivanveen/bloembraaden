@@ -739,7 +739,7 @@ switch ($interval) {
                     continue;
                 }
             } else {
-                echo ' did not exist', PHP_EOL;
+                echo ' (did not exist)';
             }
             if (false === $db->updateColumns('cms_image', array('filename_saved' => null), $row->image_id)) {
                 echo ' ERROR UPDATING DB', PHP_EOL;
