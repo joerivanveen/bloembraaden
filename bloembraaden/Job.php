@@ -698,7 +698,6 @@ switch ($interval) {
             $reverse_dns = gethostbyaddr($session->ip_address);
             $db->updateSession($session->token, array('reverse_dns' => $reverse_dns));
         }
-// case 'process' // comment this line to use automated image processing each 5 minutes
         // process some images that need processing (date_processed = null)
         $upload = Setup::$UPLOADS;
         $logger = new StdOutLogger();
@@ -715,7 +714,6 @@ switch ($interval) {
             }
             $logger->out();
         }
-        echo PHP_EOL;
         // regular images
         $trans->start('Process images that need processing');
         foreach ($db->jobFetchImagesForProcessing() as $index => $row) {
@@ -730,7 +728,6 @@ switch ($interval) {
             }
             $logger->out();
         }
-        echo PHP_EOL;
         // remove some originals that are old (date_processed = long ago)
         $trans->start('Remove old files from upload directory');
         foreach ($db->jobFetchImagesForCleanup() as $index => $row) {
