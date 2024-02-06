@@ -361,10 +361,14 @@ switch ($interval) {
                 $update_data = array();
                 if (false === file_exists("$static_path$instance_id")) mkdir("$static_path$instance_id");
                 if (false === str_ends_with($static_root, '/')) $static_root = "$static_root/";
-                foreach (array('tiny', 'small', 'medium', 'large', 'huge') as $index => $size) {
+                foreach (Image::SIZES as $size => $pixels) {
                     $save_path = "$instance_id/$size/";
                     $src_path = "src_$size";
-                    $image_src = "$static_root{$row->{$src_path}}";
+                    $image_src = trim($row->{$src_path} ?? '');
+                    if ('' === $image_src) {
+                        continue; // we do not have an url to get, so skip it
+                    }
+                    $image_src = "$static_root$image_src";
                     // todo remember the paths so you dont need to check every time
                     if (false === file_exists("$static_path$save_path")) mkdir("$static_path$save_path");
                     $save_path = $save_path . basename($image_src);
