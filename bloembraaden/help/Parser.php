@@ -331,7 +331,7 @@ class Parser extends Base
                                 substr($text, $pointer - 5, 20)
                             ), 'warn');
                         }
-                        $pointer += strlen("[$link_id]") + 1; // go to the end of the whole tag construction
+                        $pointer += strlen("[$link_id]"); // go to the end of the whole tag construction
                         $this->pointer = $pointer;
                         $sig = '';
                     } else {
