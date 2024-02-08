@@ -373,35 +373,48 @@ switch ($interval) {
                     if (false === file_exists("$static_path$save_path")) mkdir("$static_path$save_path");
                     $save_path = $save_path . basename($image_src);
                     echo "Copy $image_src to $save_path";
-                    $headers = get_headers($image_src, true, $stream_context);
-                    if (false === isset($headers[0])) {
-                        continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
-                    }
-                    $headers_0 = $headers[0];
-                    if (str_contains($headers_0, ' 503 ') || str_contains($headers_0, ' 429 ')) {
-                        echo ' HIT RATE LIMIT, paused importing.', PHP_EOL;
-                        break 2;
-                    }
-                    if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                            echo ' ERROR';
+                    if (false === file_exists($save_path)) {
+                        $headers = get_headers($image_src, true, $stream_context);
+                        if (false === isset($headers[0])) {
+                            echo ' SKIPPED (NO HEADER[0])', PHP_EOL;
+                            continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
+                        }
+                        $headers_0 = $headers[0];
+                        if (str_contains($headers_0, ' 503 ') || str_contains($headers_0, ' 429 ')) {
+                            echo ' HIT RATE LIMIT, paused importing.', PHP_EOL;
+                            break 2;
+                        }
+                        if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
+                            if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
+                                echo ' ERROR', PHP_EOL;
+                                continue 2; // try again later
+                            }
+                        } else {
+                            echo ' NOT FOUND', PHP_EOL, var_export($headers, true), PHP_EOL;
+                            continue 2; // try again later
                         }
                     } else {
-                        echo ' NOT FOUND', PHP_EOL, var_export($headers, true);
+                        echo ' ALREADY EXISTS';
                     }
                     $update_data[$src_path] = $save_path;
                     echo PHP_EOL, 'Copy fallback jpg image:';
                     $image_src = substr($image_src, 0, -4) . 'jpg';
                     $save_path = substr($save_path, 0, -4) . 'jpg';
-                    $headers = get_headers($image_src, true, $stream_context);
-                    if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
-                        if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                            echo ' ERROR';
+                    if (false === file_exists($save_path)) {
+                        $headers = get_headers($image_src, true, $stream_context);
+                        if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
+                            if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
+                                echo ' ERROR', PHP_EOL;
+                                continue 2; // try again later
+                            } else {
+                                echo ' SUCCESS';
+                            }
                         } else {
-                            echo ' SUCCESS';
+                            echo ' NOT FOUND', PHP_EOL, var_export($headers, true), PHP_EOL;
+                            continue 2; // try again later
                         }
                     } else {
-                        echo ' NOT FOUND', PHP_EOL, var_export($headers, true);
+                        echo ' ALREADY EXISTS';
                     }
                     echo PHP_EOL;
                 }
@@ -731,10 +744,11 @@ switch ($interval) {
         // remove some originals that are old (date_processed = long ago)
         $trans->start('Remove old files from upload directory');
         foreach ($db->jobFetchImagesForCleanup() as $index => $row) {
+            if('IMPORT' === $row->filename_saved) continue;
             Setup::$instance_id = $row->instance_id;
             echo $row->slug;
-            if (file_exists($upload . $row->filename_saved)) {
-                if (false === unlink($upload . $row->filename_saved)) {
+            if (file_exists("$upload$row->filename_saved")) {
+                if (false === unlink("$upload$row->filename_saved")) {
                     echo ' could not be removed', PHP_EOL;
                     continue;
                 }
@@ -880,7 +894,7 @@ switch ($interval) {
         echo $deleted, ' orphaned files deleted from file system', PHP_EOL;
         $trans->start('Clean static folder');
         $deleted = 0;
-        $cleanFolder = static function ($folder) use ($db, $trans, $deleted) {
+        $cleanFolder = static function ($folder) use ($db, $trans, &$deleted) {
             $instance = basename($folder);
             if ('0' === $instance) { // instagram images
                 $sizes = InstagramImage::SIZES;
@@ -898,7 +912,7 @@ switch ($interval) {
                 if ('webp' !== $fileinfo->getExtension()) continue;
                 $filename = $fileinfo->getFilename();
                 echo $index, ': ', "$instance/$size/$filename";
-                echo str_repeat(' ', max(1, 120 - mb_strlen($filename)));
+                echo str_repeat(' ', max(1, 80 - mb_strlen($filename)));
                 if ($fileinfo->getCTime() > $a_week_ago) {
                     echo 'too recent', PHP_EOL;
                     continue;
@@ -910,9 +924,8 @@ switch ($interval) {
                     echo 'DELETED';
                     foreach ($sizes as $size_name => $pixels) {
                         $path = "$folder/$size_name/$filename";
-                        if (false === file_exists($path)) continue;
-                        unlink($path);
-                        // unlink the fallback jpg as well, when it exists
+                        if (true === file_exists($path)) unlink($path);
+                        // unlink the fallback jpg, when it exists
                         $path = substr($path, 0, -4) . 'jpg';
                         if (true === file_exists($path)) unlink($path);
                         // report

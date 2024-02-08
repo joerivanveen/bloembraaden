@@ -60,6 +60,7 @@ class Image extends BaseElement
             $logger->log('Original no longer available');
             return false;
         }
+        if ('IMPORT' === substr($path, 0, -6)) return false; // cannot be processed
         // check physical (image) file
         if (false === file_exists($path)) {
             $logger->log('Path does not exist');

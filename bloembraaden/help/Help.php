@@ -871,6 +871,7 @@ class Help
                     if ("\n" === mb_substr($string, -1)) {
                         $string = trim($string, "\t\r\n\,");
                         $json = (array)json_decode("{{$string}}");
+                        $id_column_name = null;
                         if (JSON_ERROR_NONE === json_last_error()) {
                             $value = reset($json);
                             $key = key($json);
@@ -947,7 +948,11 @@ class Help
                             if (is_object($value)) { // value is a row ($key = index...)
                                 if ('save' === $row_treat) {
                                     $row = (array)$value;
-                                    $old_id = (int)$row[$id_column_name];
+                                    if (true === isset($id_column_name)) {
+                                        $old_id = (int)$row[$id_column_name];
+                                    } else {
+                                        $old_id = 0; // _history table
+                                    }
                                     // todo translate values in the row between versions?
                                     foreach ($row as $col_name => $col_value) {
                                         // $col_trans will be the name of the original id column we need
@@ -997,7 +1002,7 @@ class Help
                                         }
                                     } else {
                                         if ('cms_image' === $table_name) {
-                                            $row['filename_saved'] = "IMPORT"; // to trigger the import job
+                                            $row['filename_saved'] = 'IMPORT'; // to trigger the import job
                                         }
                                         $new_id = $db->insertRowAndReturnKey($table_name, $row, true);
                                         if (null !== $new_id) {
