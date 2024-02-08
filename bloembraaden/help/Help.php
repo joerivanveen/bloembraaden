@@ -533,11 +533,66 @@ class Help
     /**
      * @param Instance $instance
      * @param \stdClass $post_data
+     * @return bool
+     * @since 0.19.0 Use cloudflare turnstile as recaptcha successor
+     */
+    public static function turnstileVerify(Instance $instance, \stdClass $post_data): bool
+    {
+        if ($instance->getSetting('turnstile_site_key') === '') return true;
+        if (($turnstile_secret_key = $instance->getSetting('turnstile_secret_key')) === '') {
+            Help::addError(new \Exception('Turnstile secret key not filled in'));
+            Help::addMessage(__('Turnstile configuration error', 'peatcms'), 'error');
+
+            return false;
+        }
+        if (isset($post_data->{'cf-turnstile-response'}) && ($cf_turnstile_response = $post_data->{'cf-turnstile-response'})) {
+            $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+            $fields = [
+                'secret' => $turnstile_secret_key,
+                'response' => $cf_turnstile_response,
+            ];
+            $fields_string = http_build_query($fields);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $result = (array)json_decode(curl_exec($ch));
+            curl_close($ch);
+            if (0 === json_last_error()) {
+                if (false === $result['success']) {
+                    $turnstile_errors = $result['error-codes'];
+                    Help::addError(new \Exception('Turnstile error: ' . var_export($turnstile_errors, true)));
+                    Help::addMessage(sprintf(__('Turnstile error (%s)', 'peatcms'), $turnstile_errors[0] ?? 'unknown'), 'error');
+
+                    return false;
+                }
+            } else {
+                Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'turnstile json'), 'warn');
+
+                return false;
+            }
+        } else { // cf-turnstile-response is missing
+            Help::addMessage(__('No turnstile response received', 'peatcms'), 'error');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param Instance $instance
+     * @param \stdClass $post_data
      * @return bool false if the verification failed, true otherwise (also true if recaptcha is not setup!)
      * @since 0.5.15
      */
     public static function recaptchaVerify(Instance $instance, \stdClass $post_data): bool
     {
+        if ('' !== $instance->getSetting('turnstile_site_key')) {
+            return self::turnstileVerify($instance, $post_data);
+        }
         if ($instance->getSetting('recaptcha_site_key') === '') return true;
         if (($recaptcha_secret_key = $instance->getSetting('recaptcha_secret_key')) === '') {
             Help::addError(new \Exception('Recaptcha secret key not filled in'));

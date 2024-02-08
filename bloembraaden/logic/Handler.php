@@ -1632,6 +1632,7 @@ class Handler extends BaseLogic
                 'radix' => Setup::$RADIX,
                 'google_tracking_id' => $instance->getSetting('google_tracking_id'),
                 'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key'),
+                'turnstile_site_key' => $instance->getSetting('turnstile_site_key'),
                 'root' => $out->root,
                 'presentation_instance' => $presentation_instance,
                 'session' => $session->getVars(),
@@ -1648,7 +1649,7 @@ class Handler extends BaseLogic
             }
             // set content security policy header (CSP), which can differ between instances
             $cdn_root = Setup::$CDNROOT;
-            $csp = "Content-Security-Policy: frame-ancestors 'none';default-src 'self' https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $csp = "Content-Security-Policy: frame-ancestors 'none';default-src 'self' https://challenges.cloudflare.com/ https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             // TODO make it flexible using settings for the instance
             header($csp, true);
             unset($out);

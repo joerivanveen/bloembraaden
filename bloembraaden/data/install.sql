@@ -3118,3 +3118,15 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.19.0
+
+BEGIN;
+
+ALTER TABLE _instance
+    ADD COLUMN if not exists turnstile_site_key Character Varying(127) Default '' NOT NULL;
+ALTER TABLE _instance
+    ADD COLUMN if not exists turnstile_secret_key Character Varying(127) Default '' NOT NULL;
+
+COMMIT;
+

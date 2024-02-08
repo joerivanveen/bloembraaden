@@ -1756,7 +1756,7 @@ PEATCMS_template.prototype.convertTagsRemaining = function (string) {
     return this.removeSingleTagsRemaining(html);
 }
 
-PEATCMS_template.prototype.removeComplexTagsRemaining = function(string) {
+PEATCMS_template.prototype.removeComplexTagsRemaining = function (string) {
     const template = this.template;
     let html = string.toString(), // break_reference
         t, index = 0, src;
@@ -2030,7 +2030,7 @@ PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the 
 /**
  * site object is called PEATCMS, instantiated later as global PEAT
  */
-var PEATCMS = function () {
+const PEATCMS = function () {
     let session, el, data_set, attr, style, self = this;
     this.eventListeners = {};
     this.status_codes = {
@@ -2085,8 +2085,14 @@ var PEATCMS = function () {
     }
 
     function setupPageOnce() {
+        if (window.PEATCMS_globals.hasOwnProperty('turnstile_site_key')) {
+            if ((self.turnstile_site_key = PEATCMS.trim(window.PEATCMS_globals.turnstile_site_key)) !== '') {
+                self.setup_turnstile();
+            }
+            delete window.PEATCMS_globals.turnstile_site_key;
+        }
         // load the tracking_id and recaptcha server_values
-        if ((window.PEATCMS_globals.hasOwnProperty('google_tracking_id'))) {
+        if (window.PEATCMS_globals.hasOwnProperty('google_tracking_id')) {
             if ((self.google_tracking_id = PEATCMS.trim(window.PEATCMS_globals.google_tracking_id)) !== '') {
                 if (typeof CMS_admin === 'undefined') {
                     self.setup_google_tracking(self.google_tracking_id);
@@ -2096,7 +2102,7 @@ var PEATCMS = function () {
             }
             delete window.PEATCMS_globals.google_tracking_id;
         }
-        if ((window.PEATCMS_globals.hasOwnProperty('recaptcha_site_key'))) {
+        if (window.PEATCMS_globals.hasOwnProperty('recaptcha_site_key')) {
             if ((self.recaptcha_site_key = PEATCMS.trim(window.PEATCMS_globals.recaptcha_site_key)) !== '') {
                 self.setup_google_recaptcha(self.recaptcha_site_key);
             }
@@ -2227,6 +2233,40 @@ PEATCMS.prototype.triggerEvent = function (e) {
             }
         }
     }
+}
+PEATCMS.prototype.setup_turnstile = function () {
+    const script = document.createElement('script'),
+        self = this;
+    if (VERBOSE) console.log('Setting up turnstile with key: ' + self.turnstile_site_key);
+    document.head.appendChild(script);
+    script.id = 'cloudflare_turnstile';
+    script.setAttribute('nonce', window.PEATCMS_globals.nonce);
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.addEventListener('load', addTurnstile);
+
+    function addTurnstile() {
+        const turnstiles = document.querySelectorAll('.cf-turnstile'),
+            len = turnstiles.length;
+        for (let i = 0; i < len; ++i) {
+            const turnstile = turnstiles[i];
+            if (turnstile.querySelector('iframe')) {
+                continue; // already active :-)
+            }
+            if (VERBOSE) console.warn('Activating turnstile', turnstile, self.turnstile_site_key);
+            if (window.turnstile) {
+                window.turnstile.render(turnstile, {
+                    sitekey: self.turnstile_site_key,
+                    callback: function(token) {
+                        console.log(`Turnstile Success ${token}`);
+                    },
+                });
+            }
+        }
+    }
+
+    document.addEventListener('peatcms.document_ready', addTurnstile);
+    document.addEventListener('peatcms.progressive_ready', addTurnstile);
+    addTurnstile();
 }
 PEATCMS.prototype.setup_google_recaptcha = function (site_key) {
     const div = document.createElement('div'),
@@ -4025,6 +4065,7 @@ PEATCMS.setupCarousels = function () {
                 PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
             });
         }
+
         /**
          * register scrolling on the carousel element
          */
@@ -4046,9 +4087,10 @@ PEATCMS.setupCarousels = function () {
                 if (wrapper.hasAttribute('data-scrolled-end')) wrapper.removeAttribute('data-scrolled-end');
             }
         }
+
         wrapper.setAttribute('data-scrolled', '0');
         wrapper.setAttribute('data-scrolled-start', '1');
-        strip.addEventListener('scroll', function(e) {
+        strip.addEventListener('scroll', function (e) {
             clearTimeout(wrapper.scroll_timeout);
             wrapper.scroll_timeout = setTimeout(scrollReg, 417);
         });

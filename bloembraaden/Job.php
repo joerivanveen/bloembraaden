@@ -554,7 +554,7 @@ switch ($interval) {
                         'media_url' => $media_url,
                         'flag_for_update' => false,
                     );
-                    // @since 0.18.2 we are not reprocessing images anymore, since you cannot change them on instagram,
+                    // @since 0.19.0 we are not reprocessing images anymore, since you cannot change them on instagram,
                     // and the url changes are only due to load balancing and such
 //                    if ($media_url !== $row->media_url) {
 //                        $update_data['src'] = null; // have it processed again

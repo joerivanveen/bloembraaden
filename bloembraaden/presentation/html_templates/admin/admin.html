@@ -229,36 +229,63 @@
         <div class="toggle">
             <header>
                 <button class="toggle_button" alt="Open / close"></button>
-                Google services
+                Services
             </header>
             <section>
-                <p class="info">You must display a cookie banner and the recaptcha disclaimer when you use it.</p>
-                <h3>Analytics:</h3>
-                <div><label>GA-4 or GTM id:</label>
-                    <input type="text" class="PEATCMS_editable"
-                           data-column_name="google_tracking_id"
-                           data-table_name="_instance" value="{{google_tracking_id}}"
-                           data-peatcms_handle="update_column"/>
-                </div>
-                <h3>Recaptcha V3:</h3>
+                <h3>Turnstile (by CloudFlare)</h3>
+                <p class="info">Protects your site against spam and bots. GDPR compliant. No ads.</p>
                 <div><label>Site key:</label>
                     <input type="text" class="PEATCMS_editable"
-                           data-column_name="recaptcha_site_key"
+                           data-column_name="turnstile_site_key"
                            data-table_name="{{table_name}}"
-                           value="{{recaptcha_site_key}}" data-handle="update_column"/>
+                           value="{{turnstile_secret_key}}" data-handle="update_column"/>
                 </div>
                 <div><label>Secret key:</label>
                     <input type="password" class="PEATCMS_editable"
-                           data-column_name="recaptcha_secret_key"
+                           data-column_name="turnstile_secret_key"
                            data-table_name="{{table_name}}"
-                           value="{{recaptcha_secret_key}}" data-handle="update_column"/>
+                           value="{{turnstile_secret_key}}" data-handle="update_column"/>
                 </div>
-                <div><label>Pass score:</label>
-                    <input type="text" class="PEATCMS_editable small"
-                           data-column_name="recaptcha_pass_score"
-                           data-table_name="{{table_name}}"
-                           value="{{recaptcha_pass_score}}" data-handle="update_column"/>
-                    <em>decimal < 1.0</em>
+                <h3>Plausible analytics</h3>
+                <p class="info">GDPR compliant analytics, does not sell data. Not free though.</p>
+                <div><label>Coming soon</label></div>
+                <p>&nbsp;</p>
+                <div class="toggle">
+                    <header>
+                        <button class="toggle_button" alt="Open / close"></button>
+                        Google services (no longer advised)
+                    </header>
+                    <section>
+                        <p class="info">You must display a cookie banner if you use any of the below services. Also, the
+                            recaptcha disclaimer text is mandatory when you use recaptcha on your site.</p>
+                        <h3>Analytics:</h3>
+                        <div><label>GA-4 or GTM id:</label>
+                            <input type="text" class="PEATCMS_editable"
+                                   data-column_name="google_tracking_id"
+                                   data-table_name="_instance" value="{{google_tracking_id}}"
+                                   data-peatcms_handle="update_column"/>
+                        </div>
+                        <h3>Recaptcha V3:</h3>
+                        <div><label>Site key:</label>
+                            <input type="text" class="PEATCMS_editable"
+                                   data-column_name="recaptcha_site_key"
+                                   data-table_name="{{table_name}}"
+                                   value="{{recaptcha_site_key}}" data-handle="update_column"/>
+                        </div>
+                        <div><label>Secret key:</label>
+                            <input type="password" class="PEATCMS_editable"
+                                   data-column_name="recaptcha_secret_key"
+                                   data-table_name="{{table_name}}"
+                                   value="{{recaptcha_secret_key}}" data-handle="update_column"/>
+                        </div>
+                        <div><label>Pass score:</label>
+                            <input type="text" class="PEATCMS_editable small"
+                                   data-column_name="recaptcha_pass_score"
+                                   data-table_name="{{table_name}}"
+                                   value="{{recaptcha_pass_score}}" data-handle="update_column"/>
+                            <em>decimal < 1.0</em>
+                        </div>
+                    </section>
                 </div>
             </section>
         </div>
@@ -337,6 +364,7 @@
     </table>
     {%__action__/admin_database_report%}
 </div>
-<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden {{version}}, made by humans, for humans</p>
+<p class="spacer footer" data-peatcms-keep="peatcms-admin-footer">Bloembraaden {{version}}, made by humans, for
+    humans</p>
 </body>
 </html>
