@@ -2951,9 +2951,13 @@ PEATCMS.prototype.startUp = function () {
                 remove_on = ['peatcms.form_posting', 'peatcms.navigation_start'];
             close_button.classList.add('button');
             close_button.classList.add('close');
+            close_button.setAttribute('tabindex', '0');
             close_button.onclick = function () {
                 this.parentNode.remove();
             };
+            close_button.onkeydown = function(e) {
+                if ('Enter' === e.key) this.parentNode.remove();
+            }
             el.appendChild(close_button);
 
             function remove_when_stale() {
