@@ -181,8 +181,11 @@
 
 #PEATCMS_admin_page .page_content label {
     display: inline-block;
-    max-width: 160px;
-    width: 20vw;
+    width: 160px;
+}
+#PEATCMS_admin_page .page_content input[type="checkbox"] + label {
+    max-width: inherit;
+    width: auto;
 }
 
 #PEATCMS_admin_page :not(.edit-area) > input[type=password],

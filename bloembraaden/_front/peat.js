@@ -2086,24 +2086,32 @@ const PEATCMS = function () {
 
     function setupPageOnce() {
         if (window.PEATCMS_globals.hasOwnProperty('turnstile_site_key')) {
-            if ((self.turnstile_site_key = PEATCMS.trim(window.PEATCMS_globals.turnstile_site_key)) !== '') {
+            if ('' !== (self.turnstile_site_key = PEATCMS.trim(window.PEATCMS_globals.turnstile_site_key))) {
                 self.setup_turnstile();
             }
             delete window.PEATCMS_globals.turnstile_site_key;
         }
+        if (window.PEATCMS_globals.hasOwnProperty('plausible')) {
+            if (null !== (self.plausible = JSON.parse(window.PEATCMS_globals.plausible))
+                && typeof CMS_admin === 'undefined'
+            ) {
+                self.setup_plausible();
+            }
+            delete window.PEATCMS_globals.plausible;
+        }
         // load the tracking_id and recaptcha server_values
         if (window.PEATCMS_globals.hasOwnProperty('google_tracking_id')) {
-            if ((self.google_tracking_id = PEATCMS.trim(window.PEATCMS_globals.google_tracking_id)) !== '') {
+            if ('' !== (self.google_tracking_id = PEATCMS.trim(window.PEATCMS_globals.google_tracking_id))) {
                 if (typeof CMS_admin === 'undefined') {
+                    console.warn('Initialize Google tracking');
                     self.setup_google_tracking(self.google_tracking_id);
-                } else {
-                    console.warn('Google tracking not setup for admin');
                 }
             }
             delete window.PEATCMS_globals.google_tracking_id;
         }
         if (window.PEATCMS_globals.hasOwnProperty('recaptcha_site_key')) {
-            if ((self.recaptcha_site_key = PEATCMS.trim(window.PEATCMS_globals.recaptcha_site_key)) !== '') {
+            if ('' !== (self.recaptcha_site_key = PEATCMS.trim(window.PEATCMS_globals.recaptcha_site_key))) {
+                console.warn('Initialize Google recaptcha');
                 self.setup_google_recaptcha(self.recaptcha_site_key);
             }
             delete window.PEATCMS_globals.recaptcha_site_key;
@@ -2239,7 +2247,7 @@ PEATCMS.prototype.setup_turnstile = function () {
         self = this;
     if (VERBOSE) console.log('Setting up turnstile with key: ' + self.turnstile_site_key);
     document.head.appendChild(script);
-    script.id = 'cloudflare_turnstile';
+    script.id = 'cloudflare-turnstile';
     script.setAttribute('nonce', window.PEATCMS_globals.nonce);
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.addEventListener('load', addTurnstile);
@@ -2252,11 +2260,11 @@ PEATCMS.prototype.setup_turnstile = function () {
             if (turnstile.querySelector('iframe')) {
                 continue; // already active :-)
             }
-            if (VERBOSE) console.warn('Activating turnstile', turnstile, self.turnstile_site_key);
+            if (VERBOSE) console.log('Activating turnstile', turnstile, self.turnstile_site_key);
             if (window.turnstile) {
                 window.turnstile.render(turnstile, {
                     sitekey: self.turnstile_site_key,
-                    callback: function(token) {
+                    callback: function (token) {
                         console.log(`Turnstile Success ${token}`);
                     },
                 });
@@ -2345,6 +2353,16 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
             console.error(google_tracking_id + ' not recognized as a Google tracking id');
         }
     }
+}
+PEATCMS.prototype.setup_plausible = function () {
+    const script = document.createElement('script'),
+        plausible = this.plausible;
+    script.setAttribute('nonce', window.PEATCMS_globals.nonce);
+    script.setAttribute('data-domain', plausible.data_domain);
+    script.id = 'plausible-js';
+    script.src = plausible.src || 'https://plausible.io/js/script.js';
+    document.head.appendChild(script);
+    if (VERBOSE) console.log('Loaded plausible GDPR compliant analytics');
 }
 
 PEATCMS.prototype.render = function (element, callback) {// don't rely on element methods, it could have been serialized

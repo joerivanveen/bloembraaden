@@ -3127,6 +3127,12 @@ ALTER TABLE _instance
     ADD COLUMN if not exists turnstile_site_key Character Varying(127) Default '' NOT NULL;
 ALTER TABLE _instance
     ADD COLUMN if not exists turnstile_secret_key Character Varying(127) Default '' NOT NULL;
+ALTER TABLE _instance
+    ADD COLUMN if not exists plausible_active Boolean Default false NOT NULL;
+ALTER TABLE _instance
+    ADD COLUMN if not exists plausible_events Boolean Default false NOT NULL;
+ALTER TABLE _instance
+    ADD COLUMN if not exists plausible_revenue Boolean Default false NOT NULL;
 
 COMMIT;
 

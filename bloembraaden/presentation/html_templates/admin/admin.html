@@ -238,7 +238,7 @@
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="turnstile_site_key"
                            data-table_name="{{table_name}}"
-                           value="{{turnstile_secret_key}}" data-handle="update_column"/>
+                           value="{{turnstile_site_key}}" data-handle="update_column"/>
                 </div>
                 <div><label>Secret key:</label>
                     <input type="password" class="PEATCMS_editable"
@@ -247,13 +247,28 @@
                            value="{{turnstile_secret_key}}" data-handle="update_column"/>
                 </div>
                 <h3>Plausible analytics</h3>
-                <p class="info">GDPR compliant analytics, does not sell data. Not free though.</p>
-                <div><label>Coming soon</label></div>
-                <p>&nbsp;</p>
+                <p class="info">GDPR compliant analytics, does not sell data. Setup your account at <a
+                        href="https://plausible.io">plausible.io</a>.</a></p>
+                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_active_{{instance_id}}"
+                            data-column_name="plausible_active"
+                            data-table_name="_instance" data-handle="update_column"
+                            {{plausible_active: checked="checked" }}/>
+                    <label for="plausible_active_{{instance_id}}">Use plausible analytics</label></div>
+                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_events_{{instance_id}}"
+                            data-column_name="plausible_events"
+                            data-table_name="_instance" data-handle="update_column"
+                            {{plausible_events: checked="checked" }}/>
+                    <label for="plausible_events_{{instance_id}}">Track events (use css class names in template)</label>
+                </div>
+                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_revenue_{{instance_id}}"
+                            data-column_name="plausible_revenue"
+                            data-table_name="_instance" data-handle="update_column"
+                            {{plausible_revenue: checked="checked" }}/>
+                    <label for="plausible_revenue_{{instance_id}}">Track revenue (track events will be on as well)</label><br/>&nbsp;</div>
                 <div class="toggle">
                     <header>
                         <button class="toggle_button" alt="Open / close"></button>
-                        Google services (no longer advised)
+                        Google services (not advised)
                     </header>
                     <section>
                         <p class="info">You must display a cookie banner if you use any of the below services. Also, the

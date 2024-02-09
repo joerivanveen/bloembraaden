@@ -1590,8 +1590,8 @@ class Handler extends BaseLogic
             header('Content-Length: ' . strlen($response));
             echo $response;
         } else { // use template
-            $presentation_instance = $instance->getPresentationInstance();
             if (true === $instance->isParked() && false === ADMIN && false === $this->resolver->hasInstruction('admin')) {
+                $presentation_instance = $instance->getPresentationInstance();
                 if (file_exists(CORE . "../htdocs/_site/$presentation_instance/park.html")) {
                     header("Location: /_site/$presentation_instance/park.html", TRUE, 307);
                     die();
@@ -1604,8 +1604,20 @@ class Handler extends BaseLogic
             $out->csrf_token = $session->getValue('csrf_token'); // necessary for login page at the moment
             $out->nonce = Help::randomString(32);
             $out->version = Setup::$VERSION;
-            $out->root = $instance->getDomain(true);
-            $out->presentation_instance = $presentation_instance;
+            $domain = $instance->getDomain(true);
+            $out->root = $domain;
+            if (true === $instance->getSetting('plausible_active')) {
+                if (true === $instance->getSetting('plausible_revenue')) {
+                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.revenue.js"}';
+                } elseif (true === $instance->getSetting('plausible_events')) {
+                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.js"}';
+                } else {
+                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.js"}';
+                }
+                $plausible = sprintf($plausible, 'bloembraaden.local');
+            } else {
+                $plausible = 'null';
+            }
             // @since 0.7.9 get the user and setup account related stuff
             $user = $session->getUser();
             if (null === $user) {
@@ -1630,11 +1642,11 @@ class Handler extends BaseLogic
                 'nonce' => $out->nonce,
                 'decimal_separator' => Setup::$DECIMAL_SEPARATOR,
                 'radix' => Setup::$RADIX,
-                'google_tracking_id' => $instance->getSetting('google_tracking_id'),
-                'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key'),
-                'turnstile_site_key' => $instance->getSetting('turnstile_site_key'),
-                'root' => $out->root,
-                'presentation_instance' => $presentation_instance,
+                'google_tracking_id' => $instance->getSetting('google_tracking_id', ''),
+                'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key', ''),
+                'turnstile_site_key' => $instance->getSetting('turnstile_site_key', ''),
+                'root' => $domain,
+                'plausible' => $plausible,
                 'session' => $session->getVars(),
                 'slug' => $out,
                 'slugs' => $GLOBALS['slugs'],
@@ -1649,7 +1661,7 @@ class Handler extends BaseLogic
             }
             // set content security policy header (CSP), which can differ between instances
             $cdn_root = Setup::$CDNROOT;
-            $csp = "Content-Security-Policy: frame-ancestors 'none';default-src 'self' https://challenges.cloudflare.com/ https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $csp = "Content-Security-Policy: frame-ancestors 'none';default-src 'self' https://challenges.cloudflare.com/ https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://plausible.io https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             // TODO make it flexible using settings for the instance
             header($csp, true);
             unset($out);
