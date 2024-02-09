@@ -44,8 +44,8 @@ class Parser extends Base
         '*' => array('new_line' => false, 'allow_space' => false, 'tag' => 'strong'),
         '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-circ bloembraaden-circ'),
         '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-curr bloembraaden-curr'),
-        '[ ]' => array('new_line' => false, 'allow_space' => false, 'tag' => 'check'),
-        '[x]' => array('new_line' => false, 'allow_space' => false, 'tag' => 'check'),
+        '[ ]' => array('new_line' => false, 'allow_space' => true, 'tag' => 'check'),
+        '[x]' => array('new_line' => false, 'allow_space' => true, 'tag' => 'check'),
         '![' => array('new_line' => false, 'allow_space' => true, 'tag' => 'img'),
         '[' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '<' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
@@ -429,14 +429,19 @@ class Parser extends Base
                                 continue;
                             }
                         }
-                        if ((false === $command['new_line']) || "\n" === $text[$pointer - 1]) {
+                        if (false === $command['new_line'] || "\n" === $text[$pointer - 1]) {
                             // also check if the tags are in the right position when required by allow_space
-                            $sig_len = strlen($sig) + 1;
-                            if ((true === $command['allow_space']) ||
-                            ($command['tag'] === $this->getOpenTag()) ?
-                                $text[$pointer - 1] !== ' ' :
-                                ($pointer + $sig_len < $this->len && $text[$pointer + $sig_len] !== ' ')
-                            ) {
+                            if (false === $command['allow_space']) {
+                                if ($command['tag'] === $this->getOpenTag()) {
+                                    $you_may = $text[$pointer - 1] !== ' ';
+                                } else {
+                                    $sig_len = strlen($sig);
+                                    $you_may = ($pointer + $sig_len < $this->len && $text[$pointer + $sig_len] !== ' ');
+                                }
+                            } else {
+                                $you_may = true;
+                            }
+                            if ($you_may) {
                                 $this->log('<strong>found sig</strong>: ' . var_export($sig, true) . " at: $this->pointer");
                                 unset ($text);
 
