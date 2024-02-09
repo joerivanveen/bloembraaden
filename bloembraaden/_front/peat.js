@@ -1293,7 +1293,14 @@ function unpack_rec(obj, nest_level) {
                     arr[i] = unpack_rec(arr[i], nest_level + 1);
                 }
             } else {
-                if (typeof obj[n] === 'object') obj[n] = unpack_rec(obj[n], nest_level + 1);
+                const obj_n = obj[n];
+                if (typeof obj_n === 'object') {
+                    try {
+                        obj[n] = unpack_rec(obj_n, nest_level + 1);
+                    } catch(e) {
+                        console.error(e, obj_n);
+                    }
+                }
             }
         }
     }
