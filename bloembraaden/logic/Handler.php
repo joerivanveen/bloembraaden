@@ -1604,8 +1604,8 @@ class Handler extends BaseLogic
             $out->csrf_token = $session->getValue('csrf_token'); // necessary for login page at the moment
             $out->nonce = Help::randomString(32);
             $out->version = Setup::$VERSION;
-            $domain = $instance->getDomain();
-            $out->root = "https://$domain";
+            $root = $instance->getDomain(true);
+            $out->root = $root;
             if (true === $instance->getSetting('plausible_active')) {
                 if (true === $instance->getSetting('plausible_revenue')) {
                     $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.revenue.js"}';
@@ -1614,6 +1614,7 @@ class Handler extends BaseLogic
                 } else {
                     $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.js"}';
                 }
+                $domain = $instance->getDomain();
                 if (str_starts_with($domain, 'www.')) $domain = substr($domain, 4);
                 $plausible = sprintf($plausible, $domain);
             } else {
@@ -1646,7 +1647,7 @@ class Handler extends BaseLogic
                 'google_tracking_id' => $instance->getSetting('google_tracking_id', ''),
                 'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key', ''),
                 'turnstile_site_key' => $instance->getSetting('turnstile_site_key', ''),
-                'root' => $domain,
+                'root' => $root,
                 'plausible' => $plausible,
                 'session' => $session->getVars(),
                 'slug' => $out,
