@@ -3935,94 +3935,95 @@ document.addEventListener('peatcms.document_complete', function () {
         window.clearTimeout(srcSetsThrottler);
         srcSetsThrottler = window.setTimeout(loadSrcSets, 342);
     });
+    const slideshows = document.getElementsByClassName('peatcms-slideshow');
+    let len, i;
+    for (i = 0, len = slideshows.length; i < len; ++i) {
+        PEATCMS.doSlideshow(slideshows[i]);
+    }
+});
+
+PEATCMS.doSlideshow= function(slideshow)  {
     /**
      * peatcms-slider https://cheewebdevelopment.com/boilerplate-vanilla-javascript-content-slider/
      */
-    const slideshows = document.getElementsByClassName('peatcms-slideshow'),
-        doSlideshow = function (slideshow) {
-            if (!(slideshow instanceof Element)) {
-                console.error('Supply dom element that is wrapper of slideshow', slideshow);
-                return;
-            }
-            clearInterval(slideshow.peatcms_interval);
-
-            const moveToSlide = function (n) { // set up our slide navigation functionality
-                slides[currentSlide].classList.remove('active');
-                currentSlide = (n + slideCount) % slideCount;
-                slides[currentSlide].classList.add('active');
-                slideHeight = slides[currentSlide].clientHeight;
-                //slideshow.style.height = slideHeight + 'px';
-            }
-
-            const nextSlide = function (e) {
-                moveToSlide(currentSlide + 1);
-                if (e && e.keyCode === 39) {
-                    moveToSlide(currentSlide + 1);
-                }
-            }
-
-            const prevSlide = function (e) {
-                moveToSlide(currentSlide + -1);
-                if (e && e.keyCode === 37) {
-                    moveToSlide(currentSlide + -1);
-                }
-            }
-
-            const slideHandlers = {
-                nextSlide: function (element) {
-                    if (!slideshow.querySelector(element)) return;
-                    slideshow.querySelector(element).addEventListener('click', function () {
-                        clearInterval(slideshow.peatcms_interval);
-                        nextSlide();
-                    });
-                    //document.body.addEventListener('keydown', nextSlide, false);
-                },
-                prevSlide: function (element) {
-                    if (!slideshow.querySelector(element)) return;
-                    slideshow.querySelector(element).addEventListener('click', function () {
-                        clearInterval(slideshow.peatcms_interval);
-                        prevSlide();
-                    });
-                    //document.body.addEventListener('keydown', prevSlide, false);
-                }
-            }
-
-            const slides = slideshow.getElementsByClassName('peatcms-slide-entry'),
-                show_time = parseInt(slideshow.getAttribute('data-interval') || 10000);
-            let currentSlide = 0,
-                slideCount = slides.length,
-                slideHeight = null,
-                i;
-
-            if (typeof CMS_admin === 'undefined') {
-                for (i = slides.length - 1; i >= 0; --i) {
-                    if (slides[i].hasAttribute('data-online') && slides[i].getAttribute('data-online') === 'false') {
-                        slides[i].remove();
-                        slideCount--;
-                    }
-                }
-            }
-            if (slideCount <= 0) {
-                slideshow.remove();
-                return;
-            }
-
-
-            slideHandlers.nextSlide('.button.next');
-            slideHandlers.prevSlide('.button.previous');
-
-            slides[0].classList.add('active'); //on load, activate the first slide
-
-            PEAT.swipifyDOMElement(slideshow, nextSlide, prevSlide);
-
-            // autoplay
-            slideshow.peatcms_interval = setInterval(nextSlide, show_time);
-        };
-    let len, i;
-    for (i = 0, len = slideshows.length; i < len; ++i) {
-        doSlideshow(slideshows[i]);
+    if (!(slideshow instanceof Element)) {
+        console.error('Supply dom element that is wrapper of slideshow', slideshow);
+        return;
     }
-});
+    clearInterval(slideshow.peatcms_interval);
+
+    const moveToSlide = function (n) { // set up our slide navigation functionality
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (n + slideCount) % slideCount;
+        slides[currentSlide].classList.add('active');
+        slideHeight = slides[currentSlide].clientHeight;
+        //slideshow.style.height = slideHeight + 'px';
+    }
+
+    const nextSlide = function (e) {
+        moveToSlide(currentSlide + 1);
+        if (e && e.keyCode === 39) {
+            moveToSlide(currentSlide + 1);
+        }
+    }
+
+    const prevSlide = function (e) {
+        moveToSlide(currentSlide + -1);
+        if (e && e.keyCode === 37) {
+            moveToSlide(currentSlide + -1);
+        }
+    }
+
+    const slideHandlers = {
+        nextSlide: function (element) {
+            if (!slideshow.querySelector(element)) return;
+            slideshow.querySelector(element).addEventListener('click', function () {
+                clearInterval(slideshow.peatcms_interval);
+                nextSlide();
+            });
+            //document.body.addEventListener('keydown', nextSlide, false);
+        },
+        prevSlide: function (element) {
+            if (!slideshow.querySelector(element)) return;
+            slideshow.querySelector(element).addEventListener('click', function () {
+                clearInterval(slideshow.peatcms_interval);
+                prevSlide();
+            });
+            //document.body.addEventListener('keydown', prevSlide, false);
+        }
+    }
+
+    const slides = slideshow.getElementsByClassName('peatcms-slide-entry'),
+        show_time = parseInt(slideshow.getAttribute('data-interval') || 10000);
+    let currentSlide = 0,
+        slideCount = slides.length,
+        slideHeight = null,
+        i;
+
+    if (typeof CMS_admin === 'undefined') {
+        for (i = slides.length - 1; i >= 0; --i) {
+            if (slides[i].hasAttribute('data-online') && slides[i].getAttribute('data-online') === 'false') {
+                slides[i].remove();
+                slideCount--;
+            }
+        }
+    }
+    if (slideCount <= 0) {
+        slideshow.remove();
+        return;
+    }
+
+    slideHandlers.nextSlide('.button.next');
+    slideHandlers.prevSlide('.button.previous');
+
+    slides[0].classList.add('active'); //on load, activate the first slide
+
+    PEAT.swipifyDOMElement(slideshow, nextSlide, prevSlide);
+
+    // autoplay
+    slideshow.peatcms_interval = setInterval(nextSlide, show_time);
+}
+
 
 /**
  * The carousels you can swipe
