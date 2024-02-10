@@ -1604,8 +1604,8 @@ class Handler extends BaseLogic
             $out->csrf_token = $session->getValue('csrf_token'); // necessary for login page at the moment
             $out->nonce = Help::randomString(32);
             $out->version = Setup::$VERSION;
-            $domain = $instance->getDomain(true);
-            $out->root = $domain;
+            $domain = $instance->getDomain();
+            $out->root = "https://$domain";
             if (true === $instance->getSetting('plausible_active')) {
                 if (true === $instance->getSetting('plausible_revenue')) {
                     $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.revenue.js"}';
@@ -1614,7 +1614,8 @@ class Handler extends BaseLogic
                 } else {
                     $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.js"}';
                 }
-                $plausible = sprintf($plausible, 'bloembraaden.local');
+                if (str_starts_with($domain, 'www.')) $domain = substr($domain, 4);
+                $plausible = sprintf($plausible, $domain);
             } else {
                 $plausible = 'null';
             }
