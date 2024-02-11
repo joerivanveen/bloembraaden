@@ -1297,7 +1297,7 @@ function unpack_rec(obj, nest_level) {
                 if (typeof obj_n === 'object') {
                     try {
                         obj[n] = unpack_rec(obj_n, nest_level + 1);
-                    } catch(e) {
+                    } catch (e) {
                         console.error(e, obj_n);
                     }
                 }
@@ -2955,7 +2955,7 @@ PEATCMS.prototype.startUp = function () {
             close_button.onclick = function () {
                 this.parentNode.remove();
             };
-            close_button.onkeydown = function(e) {
+            close_button.onkeydown = function (e) {
                 if ('Enter' === e.key) this.parentNode.remove();
             }
             el.appendChild(close_button);
@@ -3016,7 +3016,7 @@ PEATCMS.prototype.startUp = function () {
 
 /* help styles with scrolling and stuff */
 PEATCMS.prototype.setScrolledStatus = function () {
-    let y = window.pageYOffset,
+    const y = window.scrollY,
         has_scrolled = this.html_node.hasAttribute('data-peatcms-scrolled'),
         has_down = this.html_node.hasAttribute('data-peatcms-scrolled-down');
     if (y > 4) { /* consider the page scrolled */
@@ -3942,54 +3942,44 @@ document.addEventListener('peatcms.document_complete', function () {
     }
 });
 
-PEATCMS.doSlideshow= function(slideshow)  {
-    /**
-     * peatcms-slider https://cheewebdevelopment.com/boilerplate-vanilla-javascript-content-slider/
-     */
+PEATCMS.doSlideshow = function (slideshow) {
     if (!(slideshow instanceof Element)) {
         console.error('Supply dom element that is wrapper of slideshow', slideshow);
         return;
     }
     clearInterval(slideshow.peatcms_interval);
 
-    const moveToSlide = function (n) { // set up our slide navigation functionality
-        slides[currentSlide].classList.remove('active');
+    const moveToSlide = function (n, keep_moving) { // set up slide navigation functionality
+        if (!keep_moving) clearInterval(slideshow.peatcms_interval);
+        for (let i = 0; i < slideCount; ++i) {
+            slides[i].classList.remove('active');
+        }
         currentSlide = (n + slideCount) % slideCount;
         slides[currentSlide].classList.add('active');
         slideHeight = slides[currentSlide].clientHeight;
-        //slideshow.style.height = slideHeight + 'px';
     }
 
-    const nextSlide = function (e) {
-        moveToSlide(currentSlide + 1);
-        if (e && e.keyCode === 39) {
-            moveToSlide(currentSlide + 1);
-        }
-    }
-
-    const prevSlide = function (e) {
-        moveToSlide(currentSlide + -1);
-        if (e && e.keyCode === 37) {
-            moveToSlide(currentSlide + -1);
-        }
+    const autoSlide = function () {
+        moveToSlide(currentSlide + 1, true);
     }
 
     const slideHandlers = {
-        nextSlide: function (element) {
-            if (!slideshow.querySelector(element)) return;
-            slideshow.querySelector(element).addEventListener('click', function () {
-                clearInterval(slideshow.peatcms_interval);
-                nextSlide();
-            });
-            //document.body.addEventListener('keydown', nextSlide, false);
+        button: function (selector, direction) {
+            const element = slideshow.querySelector(selector);
+            if (!element) return;
+            // we want this just once, and overwrite any previous eventlisteners
+            element.onclick = function () {
+                moveToSlide(currentSlide + direction);
+            }
         },
-        prevSlide: function (element) {
-            if (!slideshow.querySelector(element)) return;
-            slideshow.querySelector(element).addEventListener('click', function () {
-                clearInterval(slideshow.peatcms_interval);
-                prevSlide();
-            });
-            //document.body.addEventListener('keydown', prevSlide, false);
+        keyboard: function (e) {
+            if (!e) return;
+            if (!PEATCMS.isVisible(slideshow)) return;
+            if (e.keyCode === 39) {
+                moveToSlide(currentSlide + 1);
+            } else if (e.keyCode === 37) {
+                moveToSlide(currentSlide - 1);
+            }
         }
     }
 
@@ -4002,7 +3992,9 @@ PEATCMS.doSlideshow= function(slideshow)  {
 
     if (typeof CMS_admin === 'undefined') {
         for (i = slides.length - 1; i >= 0; --i) {
-            if (slides[i].hasAttribute('data-online') && slides[i].getAttribute('data-online') === 'false') {
+            if (slides[i].hasAttribute('data-online')
+                && slides[i].getAttribute('data-online') === 'false'
+            ) {
                 slides[i].remove();
                 slideCount--;
             }
@@ -4013,15 +4005,19 @@ PEATCMS.doSlideshow= function(slideshow)  {
         return;
     }
 
-    slideHandlers.nextSlide('.button.next');
-    slideHandlers.prevSlide('.button.previous');
+    slideHandlers.button('.button.next', 1);
+    slideHandlers.button('.button.previous', -1);
 
-    slides[0].classList.add('active'); //on load, activate the first slide
+    // PEAT.swipifyDOMElement(slideshow, function () {
+    //     moveToSlide(currentSlide + 1)
+    // }, function () {
+    //     moveToSlide(currentSlide - 1)
+    // });
+    //document.addEventListener('keydown', slideHandlers.keyboard, false);
 
-    PEAT.swipifyDOMElement(slideshow, nextSlide, prevSlide);
-
+    moveToSlide(0);
     // autoplay
-    slideshow.peatcms_interval = setInterval(nextSlide, show_time);
+    if (slideCount > 1) slideshow.peatcms_interval = setInterval(autoSlide, show_time);
 }
 
 
@@ -4184,6 +4180,21 @@ PEATCMS.preloadImage = function (src, onload) {
     let img = new Image();
     img.src = src;
     if (onload) img.onload = onload;
+}
+
+PEATCMS.isVisible = function (element, part) {
+    const h = element.scrollHeight;
+    if (false === !!(h || element.scrollWidth || element.getClientRects().length)) {
+        return false; // not visible anywhere in the dom
+    }
+    if (!part) {
+        part = .5; // half of it must be in the viewport by default
+    } else {
+        part = Math.min(1, (Math.max(0, part)));
+    }
+    const top = PEATCMS.getBoundingClientTop(element);
+    return top + (h * (1 - part)) > 0 && top < window.innerHeight - (h * part);
+    // todo: what if another element is (partly) blocking this element...
 }
 
 
