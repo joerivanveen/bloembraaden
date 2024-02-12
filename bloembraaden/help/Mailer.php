@@ -185,7 +185,7 @@ class Mailer extends Base
         //
         $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE); //get status code
         $return_value = is_string($result) ? json_decode($result) : $result;
-        if (json_last_error() === JSON_ERROR_NONE) {
+        if (json_last_error() === 0) {
             // mailchimp / mandrill sends the object in an array...
             if ($this->active_provider === 'mailchimp') {
                 if (is_array($return_value) && count($return_value) > 0) {

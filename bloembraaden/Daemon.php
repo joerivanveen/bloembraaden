@@ -97,7 +97,7 @@ class Daemon
             echo " done\n";
             echo 'Remove duplicates from cache: ';
             echo $db->removeDuplicatesFromCache();
-            echo PHP_EOL;
+            echo "\n";
             if (0 === $total_count) ob_clean();
             $trans->start('Parent chains');
             // when some serie has its brand_id updated
@@ -161,7 +161,7 @@ class Daemon
                 echo $row->slug;
                 echo ': ';
                 echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
-                echo PHP_EOL;
+                echo "\n";
                 $total_count += 1;
                 if ($this->runningLate()) {
                     break;
@@ -171,7 +171,7 @@ class Daemon
             echo " done\n";
             echo 'Remove duplicates from search index: ';
             echo $db->removeDuplicatesFromCiAi();
-            echo PHP_EOL;
+            echo "\n";
             if (0 === $total_count) ob_clean();
         }
     }

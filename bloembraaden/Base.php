@@ -78,7 +78,7 @@ class Base
         );
         try {
             if (0 !== count(($messages = Help::getErrorMessages()))) {
-                $error_message .= implode(PHP_EOL, $messages) . PHP_EOL;
+                $error_message .= implode("\n", $messages) . "\n";
             }
         } catch (\Throwable) {
         }

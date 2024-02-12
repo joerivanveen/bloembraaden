@@ -46,7 +46,7 @@ class PaymentServiceProvider extends BaseLogic
         $field_values = array();
         if (isset($this->row->field_values)) {
             $field_values = json_decode($this->row->field_values);
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            if (json_last_error() !== 0) {
                 $field_values = array();
                 $this->addError('Payment service provider values not correctly read');
             }

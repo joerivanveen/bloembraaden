@@ -91,14 +91,14 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         } else {
             $return_object = json_decode($result);
             if ($status_code >= 400) {
-                if (json_last_error() === JSON_ERROR_NONE) {
+                if (json_last_error() === 0) {
                     $this->addError($return_object->detail ?? $return_object->title ?? 'ERROR');
                 } else {
                     $this->addError($result);
                 }
                 $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
-                if (json_last_error() === JSON_ERROR_NONE) {
+                if (json_last_error() === 0) {
                     return $return_object->id;
                 } else {
                     $this->addError($result);
@@ -144,14 +144,14 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         } else {
             $return_object = json_decode($result);
             if ($status_code >= 400) {
-                if (json_last_error() === JSON_ERROR_NONE) {
+                if (json_last_error() === 0) {
                     $this->addError($return_object->detail ?? $return_object->title ?? var_export($return_object, true));
                 } else {
                     $this->addError($result);
                 }
                 $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
-                if (json_last_error() === JSON_ERROR_NONE) {
+                if (json_last_error() === 0) {
                     return $return_object;
                 } else {
                     $this->addError($result);

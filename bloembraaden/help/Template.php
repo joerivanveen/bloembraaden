@@ -234,17 +234,17 @@ class Template extends BaseLogic
             echo '<script id="peatcms-editor-config" nonce="';
             echo $output->nonce;
             echo '">';
-            echo PHP_EOL;
+            echo "\n";
             echo 'const peatcms_editor_config=';
             echo file_get_contents($default_location);
             if (file_exists($custom_location)) {
                 echo ';';
-                echo PHP_EOL;
+                echo "\n";
                 echo 'const peatcms_editor_config_custom=';
                 echo file_get_contents($custom_location);
             }
             echo ';';
-            echo PHP_EOL;
+            echo "\n";
             echo '</script>';
             $this->insertIntoHtml(ob_get_clean());
         }

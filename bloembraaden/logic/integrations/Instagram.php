@@ -67,7 +67,7 @@ class Instagram extends BaseLogic
                 $result = curl_exec($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);   //get status code
                 $return_value = json_decode($result);
-                if (json_last_error() !== JSON_ERROR_NONE) {
+                if (json_last_error() !== 0) {
                     $this->handleErrorAndStop(
                         sprintf('Instagram short lived token error, status %1$s, body %2$s', $status_code, var_export($return_value, true)),
                         sprintf(__('%s authorization error', 'peatcms'), 'Instagram')
@@ -101,7 +101,7 @@ class Instagram extends BaseLogic
                 $result = curl_exec($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);   //get status code
                 $return_value = json_decode($result);
-                if (json_last_error() !== JSON_ERROR_NONE or false === isset($return_value->access_token)) {
+                if (json_last_error() !== 0 or false === isset($return_value->access_token)) {
                     $this->handleErrorAndStop(
                         sprintf('Instagram long lived token error, status %1$s, body %2$s', $status_code, var_export($return_value, true)),
                         __('Authorization error', 'peatcms')

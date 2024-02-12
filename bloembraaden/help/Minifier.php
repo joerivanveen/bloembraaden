@@ -170,7 +170,7 @@ class Minifier
         // We add a newline to the end of the script to make it easier to deal
         // with comments at the bottom of the script, this prevents the unclosed
         // comment error that can otherwise occur.
-        $this->input .= PHP_EOL;
+        $this->input .= "\n";
 
         // save input length to skip calculation every time
         $this->len = strlen($this->input);

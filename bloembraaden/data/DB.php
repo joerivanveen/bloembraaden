@@ -200,7 +200,7 @@ class DB extends Base
     public function putInLocker(int $key_type, ?object $information = null, int $expires_after = 3600): ?string
     {
         $info_as_json = json_encode($information);
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        if (json_last_error() !== 0) {
             $this->addError(json_last_error_msg());
             $info_as_json = '{}'; // empty object
         }

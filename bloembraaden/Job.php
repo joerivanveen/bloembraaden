@@ -47,7 +47,7 @@ switch ($interval) {
             // send the internal mail to the internal addresses...
             if (true === $mailer->hasError()) return;
             if (null === $mailer->get('to')) return; // apparently, no mail was sent :-P
-            echo '=== cc confirmation copy to ===', PHP_EOL;
+            echo '=== cc confirmation copy to ===', "\n";
             if ('' !== trim($row->confirmation_copy_to)) {
                 // create internal mail
                 if (null !== ($template_id = $row->template_id_internal_confirmation)) {
@@ -138,7 +138,7 @@ switch ($interval) {
                 }
                 // 1) mail order confirmation
                 if (false === $row->emailed_order_confirmation) {
-                    echo 'Order confirmation', PHP_EOL;
+                    echo 'Order confirmation', "\n";
                     $mailer->clear();
                     // https://www.trompetters.nl/__action__/pay/order_number:202184610579
                     $order_output_object->payment_link = "https://$row->domain/__action__/pay/order_number:$row->order_number";
@@ -191,7 +191,7 @@ switch ($interval) {
                 }
                 // 3) mail payment confirmation
                 if (true === $row->payment_confirmed_bool) {
-                    echo 'Payment confirmation', PHP_EOL;
+                    echo 'Payment confirmation', "\n";
                     // 2) create invoice
                     $filename = Help::getInvoiceFileName($order_number, $instance_id);
                     $invoice_title = sprintf(
@@ -330,7 +330,7 @@ switch ($interval) {
                 $element = (new Type($type_name))->getElement($row);
                 echo $element->getSlug();
                 echo $db->updateSearchIndex($element) ? "\tOK" : "\tFAIL";
-                echo PHP_EOL;
+                echo "\n";
                 $limit--;
                 if (0 === $limit) {
                     echo "MAX reached\n";
@@ -342,7 +342,7 @@ switch ($interval) {
         echo $db->jobDeleteOrphanedCiAi();
         echo "\n";
         $trans->start('Empty expired lockers');
-        echo $db->jobEmptyExpiredLockers(), PHP_EOL;
+        echo $db->jobEmptyExpiredLockers(), "\n";
         // Import images, takes precedence over Instagram data refreshment
         $images = $db->queryImagesForImport();
         if ($images->rowCount() > 0) {
@@ -376,53 +376,53 @@ switch ($interval) {
                     if (false === file_exists($save_path)) {
                         $headers = get_headers($image_src, true, $stream_context);
                         if (false === isset($headers[0])) {
-                            echo ' SKIPPED (NO HEADER[0])', PHP_EOL;
+                            echo ' SKIPPED (NO HEADER[0])', "\n";
                             continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
                         }
                         $headers_0 = $headers[0];
                         if (str_contains($headers_0, ' 503 ') || str_contains($headers_0, ' 429 ')) {
-                            echo ' HIT RATE LIMIT, paused importing.', PHP_EOL;
+                            echo ' HIT RATE LIMIT, paused importing.', "\n";
                             break 2;
                         }
                         if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
                             if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                                echo ' ERROR', PHP_EOL;
+                                echo ' ERROR', "\n";
                                 continue 2; // try again later
                             }
                         } else {
-                            echo ' NOT FOUND', PHP_EOL, var_export($headers, true), PHP_EOL;
+                            echo ' NOT FOUND', "\n", var_export($headers, true), "\n";
                             continue 2; // try again later
                         }
                     } else {
                         echo ' ALREADY EXISTS';
                     }
                     $update_data[$src_path] = $save_path;
-                    echo PHP_EOL, 'Copy fallback jpg image:';
+                    echo "\n", 'Copy fallback jpg image:';
                     $image_src = substr($image_src, 0, -4) . 'jpg';
                     $save_path = substr($save_path, 0, -4) . 'jpg';
                     if (false === file_exists($save_path)) {
                         $headers = get_headers($image_src, true, $stream_context);
                         if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
                             if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                                echo ' ERROR', PHP_EOL;
+                                echo ' ERROR', "\n";
                                 continue 2; // try again later
                             } else {
                                 echo ' SUCCESS';
                             }
                         } else {
-                            echo ' NOT FOUND', PHP_EOL, var_export($headers, true), PHP_EOL;
+                            echo ' NOT FOUND', "\n", var_export($headers, true), "\n";
                             continue 2; // try again later
                         }
                     } else {
                         echo ' ALREADY EXISTS';
                     }
-                    echo PHP_EOL;
+                    echo "\n";
                 }
                 $update_data['filename_saved'] = null;
                 $update_data['static_root'] = null;
                 $update_data['date_processed'] = 'NOW()';
                 if (false === $db->updateColumns('cms_image', $update_data, $row->image_id)) {
-                    echo 'ERROR could not update database', PHP_EOL;
+                    echo 'ERROR could not update database', "\n";
                 }
             }
             if (microtime(true) - $start_timer > 55) break;
@@ -446,7 +446,7 @@ switch ($interval) {
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
         $instagram_user_ids = array();
         if (($rows = $db->getInstagramUserTokenAndNext())) {
-            echo 'register instagram user ids for new media entries', PHP_EOL;
+            echo 'register instagram user ids for new media entries', "\n";
             foreach ($rows as $index => $row) {
                 // remember the tokens to get media info later
                 $instagram_user_ids[(string)$row->user_id] = $row->access_token;
@@ -467,7 +467,7 @@ switch ($interval) {
                     continue;
                 }
                 $media = json_decode($result);
-                if (json_last_error() === JSON_ERROR_NONE) {
+                if (json_last_error() === 0) {
                     if (isset($media->media)) $media = $media->media; // apparently this goes in and out at instagram?!
                     if (isset($media->data) and is_array($media->data)) {
                         $ids = $media->data; // check all the media id’s against the database
@@ -488,7 +488,7 @@ switch ($interval) {
                                 } else {
                                     echo ': still good';
                                 }
-                                echo PHP_EOL;
+                                echo "\n";
                             }
                         }
                     }
@@ -516,10 +516,10 @@ switch ($interval) {
         }
         // now get all media entries that have no content (ie where username = null), to update
         $rows = $db->jobGetInstagramMediaIdsForRefresh(count($instagram_user_ids) * 4); // max 4 every minute per user registered
-        echo 'refresh instagram media entries', PHP_EOL;
+        echo 'refresh instagram media entries', "\n";
         if (0 === count($rows)) { // when there are no new rows, select some old ones just to check if they’re still valid
             $rows = $db->jobGetInstagramMediaIdsForRefreshByDate(count($instagram_user_ids) * 4);
-            echo '(no new ones found, so checking up on some old ones)', PHP_EOL;
+            echo '(no new ones found, so checking up on some old ones)', "\n";
         }
         $updated_user_ids = array();
         // https://graph.instagram.com/17896358038720106?fields=caption,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token={}
@@ -530,7 +530,7 @@ switch ($interval) {
                 if ($db->updateColumns('_instagram_media', array('deleted' => true), $row->media_id)) {
                     echo ', removed media entry: ', $row->media_id;
                 }
-                echo PHP_EOL;
+                echo "\n";
                 continue;
             }
             echo $row->media_id, ': ';
@@ -543,7 +543,7 @@ switch ($interval) {
             $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
             if (false !== $result && 200 === $status_code) {
                 $media = json_decode($result);
-                if (json_last_error() === JSON_ERROR_NONE && isset($media->media_url)) {
+                if (json_last_error() === 0 && isset($media->media_url)) {
                     $media_url = ($media->thumbnail_url ?? $media->media_url);
                     $update_data = array(
                         'caption' => $media->caption ?? '', // (old) instagram posts may have no caption
@@ -597,17 +597,17 @@ switch ($interval) {
                 Help::addError(new \Exception("Instagram media update failed with status $status_code and result " . var_export($result, true)));
                 echo 'Nothing done, got status ', $status_code;
             }
-            echo PHP_EOL;
+            echo "\n";
         }
         // @since 0.7.4 get all images (media...) that are not yet cached and put them on your own server
         $trans->start('Caching instagram media');
-        echo 'Caching media_urls for instagram... ', PHP_EOL;
+        echo 'Caching media_urls for instagram... ', "\n";
         $rows = $db->jobGetInstagramMediaUrls(true, 15);
         $logger = new StdOutLogger();
         foreach ($rows as $index => $row) {
             $media_url = $row->media_url;
             $save_path = Setup::$UPLOADS;
-            echo $media_url . PHP_EOL;
+            echo $media_url . "\n";
             curl_setopt($curl, CURLOPT_URL, $media_url);
             $result = curl_exec($curl);
             $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
@@ -623,7 +623,7 @@ switch ($interval) {
                         }
                         // remember you updated this user_id, so their feeds can be refreshed
                         $updated_user_ids[(string)$row->user_id] = true;
-                        echo PHP_EOL;
+                        echo "\n";
                         $logger->out();
                     }
                 }
@@ -632,19 +632,19 @@ switch ($interval) {
                 $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
             }
             $result = null;
-            echo PHP_EOL;
+            echo "\n";
         }
         curl_close($curl);
         // after updating the media entries, you can update the feeds for users you updated (some) media for
         $trans->start('Update instagram feeds');
         // fill them with an appropriate number of entries
-        echo 'Updating feeds triggered by media updates...', PHP_EOL;
+        echo 'Updating feeds triggered by media updates...', "\n";
         $updated_feeds = array(); // each feed has to be updated only once here
         $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
             foreach ($feeds as $index => $specs) {
                 echo($feed_name = $specs->feed_name);
                 if (isset($updated_feeds[$feed_name])) {
-                    echo ' already done' . PHP_EOL;
+                    echo ' already done' . "\n";
                     continue;
                 }
                 $feed = $db->fetchInstagramMediaForFeed($specs->instance_id, $specs->instagram_username, $specs->instagram_hashtag, $specs->quantity, Setup::$CDNROOT);
@@ -653,22 +653,22 @@ switch ($interval) {
                     'feed_updated' => 'NOW()'
                 ), $specs->instagram_feed_id)) ? ': OK' : ': failed';
                 $updated_feeds[$feed_name] = true;
-                echo PHP_EOL;
+                echo "\n";
             }
         };
         foreach ($updated_user_ids as $user_id => $ok) {
-            echo 'user ', $user_id, PHP_EOL;
+            echo 'user ', $user_id, "\n";
             $feeds = $db->getInstagramFeedSpecsByUserId($user_id);
             $update_feeds($feeds);
         }
         // there may be (changed) feeds that do not yet have an actual feed or need updating anyway
-        echo 'Updating feeds that are outdated...', PHP_EOL;
+        echo 'Updating feeds that are outdated...', "\n";
         $feeds = $db->getInstagramFeedSpecsOutdated();
         $update_feeds($feeds);
         break;
     case '5': // interval should be 5
         $trans->start('Purge deleted');
-        echo $db->jobPurgeDeleted((int)$interval ?: 5), PHP_EOL;
+        echo $db->jobPurgeDeleted((int)$interval ?: 5), "\n";
         // delete cross table entries with orphaned id’s
         $trans->start('Clear cross (_x_) tables');
         $tables = array_map(static function ($row) {
@@ -720,10 +720,10 @@ switch ($interval) {
             $img = new InstagramImage($row);
             echo $img->getSlug();
             if (true === $img->process($logger)) {
-                echo ' SUCCES', PHP_EOL;
+                echo ' SUCCES', "\n";
             } else {
                 // the src will be set to null by ->process, and so it will be picked up by ->jobGetInstagramMediaUrls
-                echo ' FAILED', PHP_EOL;
+                echo ' FAILED', "\n";
             }
             $logger->out();
         }
@@ -735,9 +735,9 @@ switch ($interval) {
             Setup::$instance_id = $row->instance_id;
             echo $img->getSlug();
             if (true === $img->process($logger)) {
-                echo ' SUCCESS', PHP_EOL;
+                echo ' SUCCESS', "\n";
             } else {
-                echo ' FAILED', PHP_EOL;
+                echo ' FAILED', "\n";
             }
             $logger->out();
         }
@@ -749,17 +749,17 @@ switch ($interval) {
             echo $row->slug;
             if (file_exists("$upload$row->filename_saved")) {
                 if (false === unlink("$upload$row->filename_saved")) {
-                    echo ' could not be removed', PHP_EOL;
+                    echo ' could not be removed', "\n";
                     continue;
                 }
             } else {
                 echo ' (did not exist)';
             }
             if (false === $db->updateColumns('cms_image', array('filename_saved' => null), $row->image_id)) {
-                echo ' ERROR UPDATING DB', PHP_EOL;
+                echo ' ERROR UPDATING DB', "\n";
                 continue;
             }
-            echo ' ok', PHP_EOL;
+            echo ' ok', "\n";
         }
         // refresh the json files for the filters as well
         $trans->start('Handle properties filters cache');
@@ -813,14 +813,14 @@ switch ($interval) {
                     $version = $pieces[1];
                     if (version_compare(Setup::$VERSION, $version) !== 0) {
                         unlink($fileinfo->getPathname());
-                        echo 'Deleted ', $fileinfo->getFilename(), PHP_EOL;
+                        echo 'Deleted ', $fileinfo->getFilename(), "\n";
                         continue;
                     }
                     $timestamp = explode('.', end($pieces))[0];
                     if (($row = $db->fetchInstanceById((int)$instance_id))) {
                         if (isset($row->date_published) && strtotime($row->date_published) > $timestamp) {
                             unlink($fileinfo->getPathname());
-                            echo 'Deleted ', $fileinfo->getFilename(), PHP_EOL;
+                            echo 'Deleted ', $fileinfo->getFilename(), "\n";
                         }
                     }
                 }
@@ -829,18 +829,18 @@ switch ($interval) {
         break;
     case 'daily':
         $trans->start('Clean template folder');
-        echo $db->jobCleanTemplateFolder(), PHP_EOL;
+        echo $db->jobCleanTemplateFolder(), "\n";
         // @since 0.7.9 & 0.8.9
         $trans->start('Remove old sessions');
-        echo $db->jobDeleteOldSessions(), PHP_EOL;
+        echo $db->jobDeleteOldSessions(), "\n";
         $trans->start('Remove orphaned session variables');
-        echo $db->jobDeleteOrphanedSessionVars(), PHP_EOL;
+        echo $db->jobDeleteOrphanedSessionVars(), "\n";
         $trans->start('Remove old shoppinglists');
-        echo $db->jobDeleteOrphanedLists(), PHP_EOL;
+        echo $db->jobDeleteOrphanedLists(), "\n";
         $trans->start('Remove orphaned shoppinglist rows (variants)');
-        echo $db->jobDeleteOrphanedShoppinglistVariants(), PHP_EOL;
+        echo $db->jobDeleteOrphanedShoppinglistVariants(), "\n";
         $trans->start('Remove old _history rows');
-        echo $db->jobDeleteOldHistory(300), PHP_EOL;
+        echo $db->jobDeleteOldHistory(300), "\n";
         // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
         $trans->start('Refresh instagram access token');
         // @since 0.7.2
@@ -860,11 +860,11 @@ switch ($interval) {
                 $result = curl_exec($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
                 $return_value = json_decode($result);
-                if (json_last_error() !== JSON_ERROR_NONE || false === isset($return_value->access_token)) {
+                if (json_last_error() !== 0 || false === isset($return_value->access_token)) {
                     echo sprintf(
                         'Instagram refresh token error, status %1$s, body %2$s',
                         $status_code, var_export($return_value, true)
-                    ), PHP_EOL;
+                    ), "\n";
                 } else {
                     // and update it in the db
                     $expires = isset($return_value->expires_in) ?
@@ -874,15 +874,15 @@ switch ($interval) {
                         'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),
                         'access_granted' => true,
                     ), $row->instagram_auth_id)) {
-                        echo 'OK', PHP_EOL;
+                        echo 'OK', "\n";
                     } else {
-                        echo 'Unable to update settings for Instagram authorization', PHP_EOL;
+                        echo 'Unable to update settings for Instagram authorization', "\n";
                     }
                 }
             }
             $curl = null;
         } else {
-            echo 'no tokens to refresh', PHP_EOL;
+            echo 'no tokens to refresh', "\n";
         }
         $rows = null;
         // duplicate code, to finish the current job
@@ -925,10 +925,10 @@ switch ($interval) {
                 $trans->flush();
                 $trans->start('Clean uploads folder (continued)');
             }
-            echo PHP_EOL;
+            echo "\n";
             usleep(300000); // wait 300 ms
         }
-        echo $deleted, ' orphaned files deleted from file system', PHP_EOL;
+        echo $deleted, ' orphaned files deleted from file system', "\n";
         $trans->start('Clean static folder');
         $deleted = 0;
         $cleanFolder = static function ($folder) use ($db, $trans, &$deleted) {
@@ -951,7 +951,7 @@ switch ($interval) {
                 echo $index, ': ', "$instance/$size/$filename";
                 echo str_repeat(' ', max(1, 80 - mb_strlen($filename)));
                 if ($fileinfo->getCTime() > $a_week_ago) {
-                    echo 'too recent', PHP_EOL;
+                    echo 'too recent', "\n";
                     continue;
                 }
                 if (false === $db->rowExists($table_name, array(
@@ -970,7 +970,7 @@ switch ($interval) {
                     }
                     ++$deleted;
                 }
-                echo PHP_EOL;
+                echo "\n";
                 if (0 === $index % 1000) {
                     $trans->flush();
                     $trans->start('Clean static folder (continued)');
@@ -983,10 +983,10 @@ switch ($interval) {
             if ($fileinfo->isDot()) continue;
             $cleanFolder($fileinfo->getRealPath());
         }
-        echo $deleted, ' orphaned images deleted', PHP_EOL;
+        echo $deleted, ' orphaned images deleted', "\n";
         break;
     case 'temp':
-        echo 'Notice: this is a temp job, only for testing', PHP_EOL;
+        echo 'Notice: this is a temp job, only for testing', "\n";
         // @since 0.8.12 get the images you have, to check if they are still valid according to Instagram
         stream_context_set_default(
             array(
@@ -1001,7 +1001,7 @@ switch ($interval) {
             if (is_array($headers) and isset($headers[0])) {
                 if (false === str_contains($headers[0], ' 200 OK')) {
                     $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
-                    echo 'flagged for update: ', $row->media_id, PHP_EOL;
+                    echo 'flagged for update: ', $row->media_id, "\n";
                 }
             }
             //var_dump($headers);

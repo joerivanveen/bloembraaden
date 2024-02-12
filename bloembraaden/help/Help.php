@@ -928,7 +928,7 @@ class Help
                         $string = trim($string, "\t\r\n\,");
                         $json = (array)json_decode("{{$string}}");
                         $id_column_name = null;
-                        if (JSON_ERROR_NONE === json_last_error()) {
+                        if (0 === json_last_error()) {
                             $value = reset($json);
                             $key = key($json);
                             if ('table' === $key) {
@@ -1199,7 +1199,7 @@ class Help
 
             return;
         }
-        echo 'Upgrading from ', $version, PHP_EOL;
+        echo 'Upgrading from ', $version, "\n";
         // read the sql file up until the old version and process everything after that. Remember the new version to check
         if (!file_exists(CORE . 'data/install.sql')) {
             echo 'install.sql not found, nothing to do';
@@ -1242,7 +1242,7 @@ class Help
         } catch (\PDOException $e) {
             $db->resetConnection();
             echo date(DATE_ATOM);
-            echo PHP_EOL;
+            echo "\n";
             echo $e;
             Help::addError(new \Exception('Install flag switched on, but failing'));
 
@@ -1250,7 +1250,7 @@ class Help
         }
         sleep(3); // give the db time to report back the new states
         // sync history
-        echo 'Sync history database' . PHP_EOL;
+        echo 'Sync history database' . "\n";
         Help::syncHistoryDatabase($db);
         // now set the version
         $db->run(sprintf('update _system set version = \'%s\';', $version));
@@ -1276,10 +1276,10 @@ class Help
             $db->run($sql);
             $sql = 'CREATE DATABASE peatcms_history;';
             $db->run($sql);
-            echo 'This update wiped the history database' . PHP_EOL;
+            echo 'This update wiped the history database' . "\n";
         } catch (\Exception $e) {
             echo $e->getMessage();
-            echo PHP_EOL;
+            echo "\n";
         }
     }
 
@@ -1296,7 +1296,7 @@ class Help
             if ($history_columns === null) { // create based on table info
                 // create table (defaults and unique constraints do not apply in the history table)
                 $sql = 'CREATE TABLE "' . $db_schema . '"."' . $table_name . '"
-                    (' . PHP_EOL;
+                    (' . "\n";
                 //"history_id" Serial PRIMARY KEY, <- we're not using this anymore @since 0.5.4
                 foreach ($info->getColumnNames() as $column_index => $column_name) {
                     $sql .= '"' . $column_name . '" ';
@@ -1315,7 +1315,7 @@ class Help
                 }
                 $sql = substr($sql, 0, -1) . ');'; // remove last comma and close the statement
                 //$sql .= 'CONSTRAINT "unique_' . $table_name . '_history_id" UNIQUE ("history_id") );';
-                echo $sql, PHP_EOL;
+                echo $sql, "\n";
                 $db->historyRun($sql);
             } else { // compare the columns and add new ones (currently changing of info for columns is not supported...)
                 foreach ($info->getColumnNames() as $column_index => $column_name) {
@@ -1341,24 +1341,24 @@ class Help
                     }
                     if ($col->isNullable() === false) $sql .= 'NOT NULL ';
                     $sql .= ';';
-                    echo $sql, PHP_EOL;
+                    echo $sql, "\n";
                     $db->historyRun($sql);
                 }
                 // drop any remaining columns from history
                 foreach ($history_columns as $column_name => $idem) {
                     $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" DROP COLUMN if exists "' . $column_name . '";';
-                    echo $sql . PHP_EOL;
+                    echo $sql . "\n";
                     $db->historyRun($sql);
                     // maybe a constraint was associated with this column, drop it as well
                     $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" DROP CONSTRAINT if exists "unique_' . $table_name . '_' . $column_name . '";';
-                    echo $sql . PHP_EOL;
+                    echo $sql . "\n";
                     $db->historyRun($sql);
                 }
             }
             // @since 0.7.5 this also creates / reindexes the indexes on slug columns
             if (substr($table_name, 0, 4) === 'cms_' and $info->getColumnByName('slug')) {
                 $index_name = 'index_slug_' . $table_name;
-                echo 'Handling index ' . $index_name . PHP_EOL;
+                echo 'Handling index ' . $index_name . "\n";
                 $db->historyRun('CREATE INDEX if not exists "' . $index_name . '" ON "' . $db_schema . '"."' . $table_name . '" USING btree ("slug" Asc NULLS Last)');
                 $db->historyRun('REINDEX INDEX ' . $index_name);
             }
@@ -1428,7 +1428,7 @@ class Help
             // setup output stream for feedback and write it to the log
             ob_start();
             Help::upgrade($db);
-            echo PHP_EOL, PHP_EOL;
+            echo "\n", "\n";
             error_log(ob_get_clean(), 3, Setup::$LOGFILE);
         } else {
             $installable = true;
@@ -1444,27 +1444,27 @@ class Help
             }
             if (is_null(Help::passwordHash('test'))) {
                 $installable = false;
-                echo 'PASSWORD_ARGON2ID seems missing', PHP_EOL;
+                echo 'PASSWORD_ARGON2ID seems missing', "\n";
             }
             if (false === extension_loaded('exif')) {
                 $installable = false;
-                echo 'please install and enable exif extension for php', PHP_EOL;
+                echo 'please install and enable exif extension for php', "\n";
             }
             if (false === extension_loaded('gd')) {
                 $installable = false;
-                echo 'please install gd extension for php', PHP_EOL;
+                echo 'please install gd extension for php', "\n";
             }
             if (false === extension_loaded('mbstring')) {
                 $installable = false;
-                echo 'please install mbstring extension for php', PHP_EOL;
+                echo 'please install mbstring extension for php', "\n";
             }
             if (!function_exists('imagewebp')) {
                 $installable = false;
-                echo 'please enable imagewebp', PHP_EOL;
+                echo 'please enable imagewebp', "\n";
             }
             if (!function_exists('imagejpeg')) {
                 $installable = false;
-                echo 'please enable imagejpeg', PHP_EOL;
+                echo 'please enable imagejpeg', "\n";
             }
             // check if a first instance domain is provided
             if (isset($_SERVER['HTTP_HOST'])) {
@@ -1473,7 +1473,7 @@ class Help
                 $instance_url = $_ENV['MAIN_URL'];
             } else {
                 $installable = false;
-                echo 'Cannot install without HTTP_HOST header', PHP_EOL;
+                echo 'Cannot install without HTTP_HOST header', "\n";
             }
             if (false === $installable) {
                 die('Install failed');
@@ -1538,7 +1538,7 @@ class Help
                 die('<h1>Install error</h1>');
             }
             // sync history
-            echo 'Sync history database<br/>' . PHP_EOL;
+            echo 'Sync history database<br/>' . "\n";
             Help::syncHistoryDatabase($db);
             /**
              * register current version
@@ -1549,7 +1549,7 @@ class Help
             $db->run(sprintf('insert into _system (version) values(\'%s\');', $version));
             // done, feedback to user
             echo sprintf('Successfully installed Bloembraaden version %s', $version);
-            echo '<br/>', PHP_EOL;
+            echo '<br/>', "\n";
             echo sprintf('Now set version to %s exactly in your config.json and switch off the install flag', $version);
             die();
         }
