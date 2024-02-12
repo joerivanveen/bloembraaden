@@ -4027,7 +4027,7 @@ PEATCMS.doSlideshow = function (slideshow) {
 PEATCMS.setupCarousels = function () {
     const setupCarousel = function (wrapper) {
         let el, slides, slide, i, len, strip;
-        const identifier = PEATCMS.numericHashFromString(wrapper.innerText).toString(),
+        const identifier = 'carousel_' + PEATCMS.numericHashFromString(wrapper.innerText).toString(),
             x = localStorage.getItem(identifier) || 0;
         if (wrapper.hasAttribute('data-carousel-setup')) return;
         wrapper.setAttribute('data-carousel-setup', '0');
@@ -4064,16 +4064,6 @@ PEATCMS.setupCarousels = function () {
                     strip.removeAttribute('data-mouse-is-down');
                 }
             });
-            slide.querySelectorAll('.slide a > *').forEach(function (el) {
-                el.addEventListener('click', function (e) {
-                    // @since 0.12.0 prevent links and such from triggering clicks when used for moving
-                    if (Math.abs(strip.total_delta) > 5) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                    strip.total_delta = 0;
-                })
-            });
         }
         /* nav buttons */
         if ((el = wrapper.querySelector('.carousel-close'))) {
@@ -4091,6 +4081,13 @@ PEATCMS.setupCarousels = function () {
                 PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
             });
         }
+        strip.addEventListener('click', function(e) {
+            if (Math.abs(strip.total_delta) > 5) {
+                e.preventDefault();
+                e.stopPropagation();
+                strip.total_delta = 0;
+            }
+        }, true); // use the capturing phase to disable the children
 
         /**
          * register scrolling on the carousel element
