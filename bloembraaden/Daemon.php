@@ -15,7 +15,6 @@ class Daemon
     private float $start_timer;
     // TODO make configurable using config file
     public const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
-    public const MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD = 5;
     public const MAX_LOOP_SECONDS = 10;
 
     public function __construct()
@@ -100,44 +99,6 @@ class Daemon
             echo $db->removeDuplicatesFromCache();
             echo PHP_EOL;
             if (0 === $total_count) ob_clean();
-            // refresh the json files for the filters as well TODO maybe move to a more appropriate place (job)
-            $trans->start('Handle properties filters cache');
-            $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
-            // get the cache pointer to resume where we left off, if present
-            $cache_pointer_filter_filename = $db->getSystemValue('cache_pointer_filter_filename');
-            $filename_for_cache = null;
-            foreach ($dir as $index => $file_info) {
-                if ($file_info->isDir()) {
-                    if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
-                    echo "Filters for instance $instance_id\n";
-                    $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
-                    foreach ($filter_dir as $index2 => $filter_file_info) {
-                        if ('serialized' === $filter_file_info->getExtension()) {
-                            $age = strtotime(date('Y-m-d H:i:s')) - $filter_file_info->getMTime();
-                            if ($age < 60 * self::MINUTES_FILTER_CACHE_IS_CONSIDERED_OLD) continue;
-                            $filename = $filter_file_info->getFilename();
-                            $filename_for_cache = "$instance_id/$filename";
-                            if ($this->runningLate()) {
-                                echo "Stopped for time, filter age being $age seconds\n";
-                                // remember we left off here, to resume next run
-                                $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
-                                break 2;
-                            }
-                            if ($filename_for_cache === $cache_pointer_filter_filename) $cache_pointer_filter_filename = null;
-                            if (null !== $cache_pointer_filter_filename) continue;
-                            // -11 to remove .serialized extension
-                            $path = urldecode(substr($filename, 0, -11));
-                            $src = new Search();
-                            $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
-                            //echo "Refreshed $path\n";
-                        }
-                    }
-                    $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
-                }
-            }
-            echo "done... \n";
-            if (null === $filename_for_cache) ob_clean();
-            if ($this->runningLate()) continue;
             $trans->start('Parent chains');
             // when some serie has its brand_id updated
             $rows = $db->jobIncorrectChainForProduct();
