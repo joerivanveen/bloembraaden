@@ -541,7 +541,7 @@ switch ($interval) {
             );
             $result = curl_exec($curl);
             $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-            if (200 === $status_code) {
+            if (false !== $result && 200 === $status_code) {
                 $media = json_decode($result);
                 if (json_last_error() === JSON_ERROR_NONE && isset($media->media_url)) {
                     $media_url = ($media->thumbnail_url ?? $media->media_url);
@@ -594,7 +594,7 @@ switch ($interval) {
                     echo 'DB update failed';
                 }
             } else {
-                Help::addError(new \Exception("Instagram media update failed with status $status_code"));
+                Help::addError(new \Exception("Instagram media update failed with status $status_code and result " . var_export($result, true)));
                 echo 'Nothing done, got status ', $status_code;
             }
             echo PHP_EOL;
