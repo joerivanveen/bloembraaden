@@ -4025,103 +4025,108 @@ PEATCMS.doSlideshow = function (slideshow) {
  * The carousels you can swipe
  */
 PEATCMS.setupCarousels = function () {
-    const setupCarousel = function (wrapper) {
+    function setupCarousel(wrapper) {
         let el, slides, slide, i, len, strip;
         const identifier = 'carousel_' + PEATCMS.numericHashFromString(wrapper.innerText).toString(),
             x = localStorage.getItem(identifier) || 0;
-        if (wrapper.hasAttribute('data-carousel-setup')) return;
-        wrapper.setAttribute('data-carousel-setup', '0');
         if (!(strip = wrapper.querySelector('.strip'))) strip = wrapper; // no wrapper = backwards compatible
-        strip.identifier = identifier;
-        strip.bb_scrollX = 0;
-        strip.bb_mouseX = 0;
-        strip.total_delta = 0;
-        slides = strip.getElementsByClassName('slide');
-        for (i = 0, len = slides.length; i < len; ++i) {
-            slide = slides[i];
-            slide.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                strip.bb_mouseX = e.clientX;
-                PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
-            });
-            slide.addEventListener('touchstart', function () {
-                PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
-            }, {passive: true});
-            slide.addEventListener('mouseup', function (e) {
-                e.preventDefault();
-                strip.removeAttribute('data-mouse-is-down');
-            });
-            slide.addEventListener('mousemove', function (e) {
-                let delta, xPos;
-                e.preventDefault();
-                if (e.buttons > 0) {
-                    strip.setAttribute('data-mouse-is-down', '1');
-                    delta = strip.bb_mouseX - (xPos = e.clientX);
-                    strip.total_delta += delta;
-                    strip.bb_mouseX = xPos;
-                    strip.scrollBy(delta, 0);
-                } else {
+        if (!wrapper.hasAttribute('data-carousel-setup')) {
+            wrapper.setAttribute('data-carousel-setup', '0');
+            strip.identifier = identifier;
+            strip.bb_scrollX = 0;
+            strip.bb_mouseX = 0;
+            strip.total_delta = 0;
+            slides = strip.getElementsByClassName('slide');
+            for (i = 0, len = slides.length; i < len; ++i) {
+                slide = slides[i];
+                slide.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    strip.bb_mouseX = e.clientX;
+                    PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
+                });
+                slide.addEventListener('touchstart', function () {
+                    PEATCMS.opacityNode(strip.querySelector('.carousel-right'), 0);
+                }, {passive: true});
+                slide.addEventListener('mouseup', function (e) {
+                    e.preventDefault();
                     strip.removeAttribute('data-mouse-is-down');
+                    scrollReg();
+                });
+                slide.addEventListener('touchend', scrollReg);
+                slide.addEventListener('mousemove', function (e) {
+                    let delta, xPos;
+                    e.preventDefault();
+                    if (e.buttons > 0) {
+                        strip.setAttribute('data-mouse-is-down', '1');
+                        delta = strip.bb_mouseX - (xPos = e.clientX);
+                        strip.total_delta += delta;
+                        strip.bb_mouseX = xPos;
+                        strip.scrollBy(delta, 0);
+                    } else {
+                        strip.removeAttribute('data-mouse-is-down');
+                    }
+                });
+            }
+            /* nav buttons */
+            if ((el = wrapper.querySelector('.carousel-close'))) {
+                el.addEventListener('click', function () {
+                    NAV.go('/');
+                });
+            }
+            if ((el = wrapper.querySelector('.carousel-right'))) {
+                el.addEventListener('click', function () {
+                    PEAT.scrollTo(strip.scrollLeft + strip.clientWidth, 0, strip);
+                });
+            }
+            if ((el = wrapper.querySelector('.carousel-left'))) {
+                el.addEventListener('click', function () {
+                    PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
+                });
+            }
+            strip.addEventListener('click', function (e) {
+                if (Math.abs(strip.total_delta) > 5) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    strip.total_delta = 0;
                 }
-            });
-        }
-        /* nav buttons */
-        if ((el = wrapper.querySelector('.carousel-close'))) {
-            el.addEventListener('click', function () {
-                NAV.go('/');
-            });
-        }
-        if ((el = wrapper.querySelector('.carousel-right'))) {
-            el.addEventListener('click', function () {
-                PEAT.scrollTo(strip.scrollLeft + strip.clientWidth, 0, strip);
-            });
-        }
-        if ((el = wrapper.querySelector('.carousel-left'))) {
-            el.addEventListener('click', function () {
-                PEAT.scrollTo(-1 * strip.clientWidth + strip.scrollLeft, 0, strip);
-            });
-        }
-        strip.addEventListener('click', function(e) {
-            if (Math.abs(strip.total_delta) > 5) {
-                e.preventDefault();
-                e.stopPropagation();
-                strip.total_delta = 0;
-            }
-        }, true); // use the capturing phase to disable the children
+            }, true); // use the capturing phase to disable the children
 
-        /**
-         * register scrolling on the carousel element
-         */
-        function scrollReg() {
-            const scrollLeft = strip.scrollLeft;
-            // remember scroll position
-            localStorage.setItem(strip.identifier, scrollLeft);
-            // set attributes for css
-            if (scrollLeft < 1) {
-                wrapper.setAttribute('data-scrolled', '0');
-                wrapper.setAttribute('data-scrolled-start', '1');
-            } else {
-                wrapper.setAttribute('data-scrolled', scrollLeft.toString());
-                if (wrapper.hasAttribute('data-scrolled-start')) wrapper.removeAttribute('data-scrolled-start');
+            /**
+             * register scrolling on the carousel element
+             */
+            function scrollReg() {
+                const scrollLeft = strip.scrollLeft;
+                // remember scroll position
+                localStorage.setItem(strip.identifier, scrollLeft);
+                // set attributes for css
+                if (scrollLeft < 1) {
+                    wrapper.setAttribute('data-scrolled', '0');
+                    wrapper.setAttribute('data-scrolled-start', '1');
+                } else {
+                    wrapper.setAttribute('data-scrolled', scrollLeft.toString());
+                    if (wrapper.hasAttribute('data-scrolled-start')) wrapper.removeAttribute('data-scrolled-start');
+                }
+                if (scrollLeft + strip.offsetWidth + 1 >= strip.scrollWidth) {
+                    wrapper.setAttribute('data-scrolled-end', '1');
+                } else {
+                    if (wrapper.hasAttribute('data-scrolled-end')) wrapper.removeAttribute('data-scrolled-end');
+                }
             }
-            if (scrollLeft + strip.offsetWidth + 1 >= strip.scrollWidth) {
-                wrapper.setAttribute('data-scrolled-end', '1');
-            } else {
-                if (wrapper.hasAttribute('data-scrolled-end')) wrapper.removeAttribute('data-scrolled-end');
-            }
-        }
 
-        wrapper.setAttribute('data-scrolled', '0');
-        wrapper.setAttribute('data-scrolled-start', '1');
-        strip.addEventListener('scroll', function (e) {
-            clearTimeout(wrapper.scroll_timeout);
-            wrapper.scroll_timeout = setTimeout(scrollReg, 417);
-        });
-        if (x > 0) strip.scrollTo(x, 0);
-        scrollReg(); // set it up once after loading the page
-        window.addEventListener('resize', scrollReg);
-        // signal done, maybe you want to target this in css
-        wrapper.setAttribute('data-carousel-setup', '1');
+            wrapper.setAttribute('data-scrolled', '0');
+            wrapper.setAttribute('data-scrolled-start', '1');
+            strip.addEventListener('scroll', function () {
+                clearTimeout(wrapper.scroll_timeout);
+                wrapper.scroll_timeout = setTimeout(scrollReg, 147);
+            });
+            //scrollReg(); // set it up once after loading the page
+            //window.addEventListener('resize', scrollReg);
+            // signal done, maybe you want to target this in css
+            wrapper.setAttribute('data-carousel-setup', '1');
+        }
+        if (x > 0) {
+            strip.scrollTo(x, 0);
+        }
     }
     let elements, i, len;
     /* carousel slides when present */
