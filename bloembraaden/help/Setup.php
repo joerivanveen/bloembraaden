@@ -115,12 +115,13 @@ class Setup
 
     private static function abandonDatabaseConnection(?PDO $connection): void
     {
-        if (true === isset($connection)) {
+        if (null !== $connection) {
             if (true === $connection->inTransaction()) {
                 try {
                     $connection->rollBack();
                 } catch (\Exception $e) {
                     Help::addError($e);
+                    $connection = null;
                 }
             }
             //$connection = null; // trying out persistent now <- transaction time reduced by 30%

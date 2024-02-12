@@ -54,10 +54,19 @@ class DB extends Base
         $this->cache_folder = Setup::$DBCACHE;
     }
 
-    public function resetConnection()
+    /**
+     * Will roll back a pending transaction or fail
+     *
+     * @return void
+     */
+    public function resetConnection(): void
     {
-        if ($this->conn->inTransaction()) {
-            $this->conn->rollBack();
+        if (true === $this->conn->inTransaction()) {
+            try {
+                $this->conn->rollBack();
+            } catch (\Exception $e) {
+                $this->handleErrorAndStop($e, __('Database error', 'peatcms'));
+            }
         }
     }
 
@@ -1732,7 +1741,7 @@ class DB extends Base
                         'vat_percentage' => $vat_percentage,
                     );
                     if (null === $this->insertRowAndReturnLastId('_order_variant', $specs)) {
-                        $this->conn->rollBack();
+                        $this->resetConnection();
                         $this->addMessage(__('Order row insert failed', 'peatcms'), 'error');
                         $this->addError('Order row insert failed');
 
@@ -3708,7 +3717,6 @@ class DB extends Base
         return $this->insertRowAndReturnLastId($table_name, $data, $is_bulk);
     }
 
-    // TODO the return value kan be integer (mostly) or varchar (e.g. session), how to account for this?
     private function insertRowAndReturnLastId(string $table_name, array $col_val = null, bool $is_bulk = false): int|string|null
     {
         $table = new Table($this->getTableInfo($table_name));
@@ -3750,6 +3758,9 @@ class DB extends Base
                 return null;
             }
         } catch (\Exception $e) {
+            if ($e instanceof \PDOException && '23505' === $e->getCode()) {
+                $this->healTable($table_name);
+            }
             $this->addError($e->getMessage());
 
             return null;
@@ -4565,6 +4576,54 @@ class DB extends Base
         } else {
             return false;
         }
+    }
+
+    public function healTable(string $table_name): bool
+    {
+        $this->resetConnection();
+        $this->addError("Healing table $table_name");
+        $info = $this->getTableInfo($table_name);
+        if ($info->hasIdColumn()) {
+            $id_column = $info->getIdColumn()->getName();
+            $statement = $this->conn->prepare("SELECT pg_get_serial_sequence(:table_name, :id_column);");
+            $statement->bindValue(':table_name', $table_name);
+            $statement->bindValue(':id_column', $id_column);
+            $statement->execute();
+            $sequencer = $statement->fetchColumn(0);
+            // get max id
+            $statement = $this->conn->prepare("SELECT MAX($id_column) FROM $table_name;");
+            $statement->execute();
+            $current_id = $statement->fetchColumn(0);
+            // get next in sequence (without actually updating it)
+            $statement = $this->conn->prepare("
+                SELECT last_value + i.inc FROM $sequencer,
+                    (SELECT seqincrement AS inc FROM pg_sequence
+                        WHERE seqrelid = '$sequencer'::regclass::oid) AS i;
+            ");
+            $statement->execute();
+            $next_value = $statement->fetchColumn(0);
+
+            // if the next in sequence is not higher than the current max id, we should update it
+            if (false === ($next_value > $current_id)) {
+                $this->addError("Sequence out of sync for $table_name.");
+                $statement = $this->conn->prepare("
+                BEGIN;
+                LOCK TABLE $table_name IN SHARE MODE;
+                SELECT setval('$sequencer', COALESCE((SELECT MAX($id_column)+1 FROM $table_name), 1), false);
+                COMMIT;
+            ");
+                if (false === $statement->execute()) {
+                    $this->addError('Could not fix sequence');
+                }
+            }
+        }
+
+        $statement = $this->conn->prepare("REINDEX TABLE $table_name;");
+        $statement->execute();
+
+        $statement = null;
+
+        return true;
     }
 
     /**

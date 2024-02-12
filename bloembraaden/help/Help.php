@@ -374,15 +374,16 @@ class Help
         if (count($arr = Help::getErrorMessages()) > 0) {
             ob_start();
             if (isset($_SERVER['REMOTE_ADDR'])) {
-                echo "\r\n", $_SERVER['REMOTE_ADDR'], ':', $_SERVER['REMOTE_PORT'];
+                echo $_SERVER['REMOTE_ADDR'], ':', $_SERVER['REMOTE_PORT'];
             } else {
-                echo "\r\nNO CLIENT";
+                echo 'NO CLIENT';
             }
             echo "\t", date('Y-m-d H:i:s'), "\t";
             if (isset($_SERVER['REQUEST_METHOD'])) echo $_SERVER['REQUEST_METHOD'], "\t";
             if (isset($_SERVER['REQUEST_URI'])) echo $_SERVER['REQUEST_URI'], "\t";
-            echo "LOG\r\n";
-            echo implode("\r\n", $arr);
+            echo "LOG\n";
+            echo implode("\n", $arr);
+            echo "\n";
 
             $message = ob_get_clean();
 
@@ -1103,6 +1104,12 @@ class Help
         ) {
             $logger->log('Updated order numbers table');
         }
+//        // reindex tables (and repair if necessary)
+//        $logger->log('Healing tables ...');
+//        foreach ($tables as $i => $table_name) {
+//            $db->healTable($table_name);
+//        }
+//        $logger->log('... done');
         // prepare images for import
         if (null === $static_root) {
             $logger->log('ERROR: static root missing in import file, cannot import images');

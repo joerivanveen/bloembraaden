@@ -343,6 +343,10 @@ class TableInfo
         return $this->getColumnByName($this->id_column);
     }
 
+    public function hasIdColumn(): bool {
+        return isset($this->id_column);
+    }
+
     public function getColumnNames(): array
     {
         return $this->names;

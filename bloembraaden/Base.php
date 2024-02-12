@@ -70,14 +70,16 @@ class Base
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
         $error_message = sprintf(
-            "\n%s\t%s\t%s\t%s\nFATAL: $e\n",
+            "%s\t%s\t%s\t%s\nFATAL: $e\n",
             ($_SERVER['REMOTE_ADDR'] ?? 'INTERNAL'),
             date('Y-m-d H:i:s'),
             ($_SERVER['REQUEST_METHOD'] ?? 'NON-WEB'),
             ($_SERVER['REQUEST_URI'] ?? '')
         );
-        try { // TODO these error messages are a bit much, but leaving them out is a bit scarce, what to do?
-            $error_message .= var_export(Help::getErrorMessages(), true) . PHP_EOL;
+        try {
+            if (0 !== count(($messages = Help::getErrorMessages()))) {
+                $error_message .= implode(PHP_EOL, $messages) . PHP_EOL;
+            }
         } catch (\Throwable) {
         }
         // log the error
