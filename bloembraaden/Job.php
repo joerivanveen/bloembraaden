@@ -898,6 +898,7 @@ switch ($interval) {
         $trans->start('Clean uploads folder');
         $dir = new \DirectoryIterator(Setup::$UPLOADS);
         $deleted = 0;
+        // todo optimize db access with prepared statements outside the loop, if relevant for postgresql
         foreach ($dir as $index => $fileinfo) {
             if ($fileinfo->isDot()) continue;
             $filename = $fileinfo->getFilename();
@@ -913,6 +914,9 @@ switch ($interval) {
                 }
             } elseif ('' === $fileinfo->getExtension() && 20 === strlen($filename)) {
                 if (false === $db->rowExists('cms_image', array(
+                        'filename_saved' => $filename,
+                    ))
+                    && false === $db->rowExists('cms_file', array(
                         'filename_saved' => $filename,
                     ))
                 ) {
