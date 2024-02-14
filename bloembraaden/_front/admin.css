@@ -940,6 +940,8 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     position: absolute;
     top: 0;
     z-index: 101;
+    width: auto;
+    height: auto;
 }
 #edit_area_header {
     padding: .1rem .21rem;
