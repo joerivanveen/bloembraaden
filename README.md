@@ -29,8 +29,8 @@ Bloembraaden is an elegant cms that serves ‘single page apps’ using templati
 It does not force anything on you, there are no ‘themes’, you will start from scratch.
 
 It provides the backend / cms for your client.
-Bloembraaden integrates with [Instagram](https://www.instagram.com/), [Mollie](https://www.mollie.com/) (other payment providers on request), [Plausible](https://plausible.io) (analytics), Cloudflare’s [turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms).
-Google analytics and recaptcha also work but are not encouraged.
+Bloembraaden integrates with [Instagram](https://www.instagram.com/), [Mollie](https://www.mollie.com/) (other payment providers on request), [Plausible](https://plausible.io) (analytics), Cloudflare’s [Turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms).
+Google Analytics and recaptcha also work but are not encouraged.
 
 One Bloembraaden installation can serve many websites, each one as unique as the other is baffling.
 
