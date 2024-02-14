@@ -232,8 +232,8 @@
                 Services
             </header>
             <section>
-                <h3>Turnstile (by CloudFlare)</h3>
-                <p class="info">Protects your site against spam and bots. GDPR compliant. No ads.</p>
+                <h3>Cloudflare Turnstile</h3>
+                <p class="info">Protects your site against spam and bots. GDPR-compliant.</p>
                 <div><label>Site key:</label>
                     <input type="text" class="PEATCMS_editable"
                            data-column_name="turnstile_site_key"
@@ -246,14 +246,14 @@
                            data-table_name="{{table_name}}"
                            value="{{turnstile_secret_key}}" data-handle="update_column"/>
                 </div>
-                <h3>Plausible analytics</h3>
-                <p class="info">GDPR compliant analytics, does not sell data. Setup your account at <a
+                <h3>Plausible Analytics</h3>
+                <p class="info">GDPR-compliant analytics. Set up your account at <a
                         href="https://plausible.io">plausible.io</a>.</a></p>
                 <div><input type="checkbox" class="PEATCMS_editable" id="plausible_active_{{instance_id}}"
                             data-column_name="plausible_active"
                             data-table_name="_instance" data-handle="update_column"
                             {{plausible_active: checked="checked" }}/>
-                    <label for="plausible_active_{{instance_id}}">Use plausible analytics</label></div>
+                    <label for="plausible_active_{{instance_id}}">Use Plausible Analytics</label></div>
                 <div><input type="checkbox" class="PEATCMS_editable" id="plausible_events_{{instance_id}}"
                             data-column_name="plausible_events"
                             data-table_name="_instance" data-handle="update_column"
