@@ -247,9 +247,9 @@ class Handler extends BaseLogic
             if (false === isset($properties['shoppinglist'])) {
                 $this->addError('Shoppinglist is not set for order action');
                 $out = true;
-            } else if (isset($properties['order_number'])) {
+            } elseif (isset($properties['order_number'])) {
                 $shoppinglist_name = $properties['shoppinglist'][0];
-                $shoppinglist = new Shoppinglist($shoppinglist_name, Help::$session);
+                $shoppinglist = new Shoppinglist($shoppinglist_name);
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
                 if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
                     $order = new Order($order_row);
@@ -268,9 +268,11 @@ class Handler extends BaseLogic
                     } else {
                         $this->addMessage(sprintf(__('%1$s order rows added to %2$s', 'peatcms'), $count, $shoppinglist_name));
                     }
-                    $out = array('redirect_uri' => isset($properties['redirect_uri'])
-                        ? htmlentities($properties['redirect_uri'][0])
-                        : '/__shoppinglist__/' . $shoppinglist_name);
+                    if (true === isset($properties['redirect_uri'])) {
+                        $out = array('redirect_uri' => $properties['redirect_uri'][0]);
+                    } else {
+                        $out = array('redirect_uri' => "/__shoppinglist__/$shoppinglist_name");
+                    }
                 } else {
                     $this->addMessage(__('Order not found', 'peatcms'), 'warn');
                 }

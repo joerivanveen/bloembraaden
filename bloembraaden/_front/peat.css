@@ -438,7 +438,12 @@ body select::-ms-expand {
     cursor: grabbing;
 }
 
-/** just common sense **/
+/* just common sense */
 [hidden] {
     display: none;
+}
+
+/* prevent CLS */
+.cf-turnstile {
+    height: 72.5px;
 }

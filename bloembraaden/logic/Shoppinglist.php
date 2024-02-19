@@ -203,8 +203,8 @@ class Shoppinglist extends BaseLogic
             }
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
-        // set template_id to default template, if it exists TODO template id is never necessary?
-        //$output_object->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
+        // set template_id to default template, if it exists // TODO make shoppinglist editable like a page
+        $output_object->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
         $this->row = $output_object;
     }
 
