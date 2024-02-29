@@ -771,6 +771,7 @@ switch ($interval) {
             if ($file_info->isDir()) {
                 if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
                 echo "Filters for instance $instance_id\n";
+                Setup::loadInstanceSettingsFor($instance_id);
                 $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
                 foreach ($filter_dir as $index2 => $filter_file_info) {
                     if ('serialized' === $filter_file_info->getExtension()) {
