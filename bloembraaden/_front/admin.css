@@ -652,6 +652,15 @@ body .PEATCMS_admin p {
     color: var(--admin-color-key);
 }
 
+body .PEATCMS_admin a:hover,
+body .PEATCMS_admin a:focus,
+body .PEATCMS_admin .peatcms-link:hover,
+body .PEATCMS_admin .peatcms-link:focus {
+    color: inherit;
+    background-color: inherit;
+    text-decoration: underline;
+}
+
 /* admin items that are only visible when hovering */
 .PEATCMS_admin .onhover {
     display: none;
@@ -966,6 +975,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     border-bottom: solid 1px var(--admin-color-accent);
     color: var(--admin-color-key);
     box-shadow: 0 2px 4px 0 inset var(--admin-color-accent-neutral);
+    background-color: transparent;
     padding: .25em;
     margin-bottom: .25em;
     width: calc(100% - .5em);

@@ -1116,7 +1116,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
 
 PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
     let state = xhr.readyState, i, len, calls, i_progress = 0, progress_width;
-    const loading_bar = document.getElementById('peatcms_loading_bar');
+    const loading_bar = document.getElementById('bloembraaden-loading-bar') ||  document.getElementById('peatcms_loading_bar');
     if (!(loading_bar)) return;
     if (!progress) progress = (state === 4) ? 1 : 0;
     // first 3 states account for 60% of the bar now, .2 of 1 each :-) last 40% is for the loading progress
@@ -2031,7 +2031,7 @@ PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the 
         s = n < 0 ? "-" : "",
         i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "",
         j = (i.length) > 3 ? i.length % 3 : 0;
-    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+    return s + (j ? i.slice(0, j) + t : "") + i.slice(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 }
 
 /**
@@ -2828,7 +2828,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
             return;
         }
     } else {
-        el = document.body; // defaut to all over body program
+        el = document.body; // default to all over body program
     }
     // update links
     as = el.getElementsByTagName('a');
@@ -2867,7 +2867,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         a.innerHTML = PEATCMS.replace('-dot-', '.', PEATCMS.replace('-at-', '@', a.innerHTML));
         a.classList.add('peatcms-link');
         a.classList.add('link');
-        a.setAttribute('tabindex', '0');
+        a.setAttribute('tabindex', '1');
         a.setAttribute('role', 'link');
     }
     if (typeof CMS_admin !== 'undefined') {
@@ -2988,8 +2988,8 @@ PEATCMS.prototype.startUp = function () {
     });
     // default of the progressbar
     document.addEventListener('peatcms.navigation_start', function () {
-        let loading_bar;
-        if ((loading_bar = document.getElementById('peatcms_loading_bar'))) {
+        const loading_bar = document.getElementById('bloembraaden-loading-bar') || document.getElementById('peatcms_loading_bar');
+        if (loading_bar) {
             loading_bar.style.width = '0';
             loading_bar.setAttribute('aria-valuemin', '0');
             loading_bar.setAttribute('aria-valuemax', '100');
@@ -3148,15 +3148,7 @@ PEATCMS.prototype.scrollIntoView = function (DOMElement, withMargin) {
     } else if (bottom > (h = window.innerHeight)) {
         scroll_by = bottom - h + withMargin;
     }
-    if ('scrollBehavior' in document.documentElement.style) {
-        window.scrollBy({
-            top: scroll_by,
-            left: 0,
-            behavior: 'smooth'
-        })
-    } else {
-        window.scrollBy(0, scroll_by);
-    }
+    this.scrollTo(0, scroll_by, window);
 }
 PEATCMS.prototype.scrollToTop = function () {
     this.scrollTo(0, 0);

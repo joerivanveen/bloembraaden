@@ -356,7 +356,7 @@ class Search extends BaseElement
         if (count($terms) > 0) {
             // fill the row object with nice stuff, that will be returned by getOutput()
             $this->findWeighted($terms, -$limit);
-            $rows = $this->row->__variants__ ?? [];
+            $rows = $this->row->__variants__ ?? array();
             //$rows = Help::getDB()->findElements('variant', $terms);
         } else {
             $rows = Help::getDB()->listVariants($limit);

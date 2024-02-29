@@ -11,7 +11,7 @@ class Handler extends BaseLogic
     public function __construct()
     {
         parent::__construct();
-        // the resolver will setup itself based on the supplied url, and then setup the necessary global constants
+        // the resolver will set up itself based on the supplied url, and then set up the necessary global constants
         $this->resolver = new Resolver($_SERVER['REQUEST_URI'], Setup::$instance_id);
         $this->action = $this->resolver->getAction();
         if (extension_loaded('newrelic')) {
@@ -31,7 +31,7 @@ class Handler extends BaseLogic
         // NOTE you always get the current version even if you ask for a previous one, this is no big deal I think
         $version = Setup::$VERSION . '-' . strtotime($instance->getSetting('date_updated'));
         // start with some actions that are valid without csrf
-        if ($action === 'javascript') {
+        if ('javascript' === $action) {
             // @since 0.7.6 get cached version when available for non-admins
             $file_location = Setup::$DBCACHE . 'js/' . Setup::$instance_id . '-' . $version . '.js.gz';
             if (false === ADMIN and true === file_exists($file_location)) {
@@ -68,7 +68,7 @@ class Handler extends BaseLogic
             header('Content-Length: ' . strlen($response));
             echo $response;
             die();
-        } elseif ($action === 'stylesheet') {
+        } elseif ('stylesheet' === $action) {
             // TODO the stylesheet is cached in htdocs/_site now, so this is only for admins
             // @since 0.7.6 get cached version when available for non-admins
             $file_location = Setup::$DBCACHE . 'css/' . Setup::$instance_id . '-' . $version . '.css.gz';
@@ -99,18 +99,18 @@ class Handler extends BaseLogic
             // this is a get request, without csrf or admin, so don’t give any specific information
             $out = array('new' => false, 'is_admin' => ADMIN);
             // todo maybe you still want to die here, for less resources
-        } elseif ($action === 'download') {
+        } elseif ('download' === $action) {
             if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[1] ?? '')) {
                 if ('file' === $el->type_name) {
                     $f = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
                     $f->serve();
                 }
             }
-        } elseif ($action === 'account_delete_session') {
+        } elseif ('account_delete_session' === $action) {
             if (!isset(($terms = $this->resolver->getTerms())[1])) {
                 Help::$session->delete();
                 $this->addMessage(__('Session has been deleted', 'peatcms'), 'log');
-                $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass);
+                $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
             } else {
                 $session_id = (int)$terms[1];
                 $my_session = Help::$session;
@@ -129,7 +129,7 @@ class Handler extends BaseLogic
                     $this->addMessage(__('Failed destroying the session', 'peatcms'), 'error');
                 }
             }
-        } elseif ($action === 'payment_status_update') {
+        } elseif ('payment_status_update' === $action) {
             //header('Access-Control-Allow-Origin: https://apirequest.io'); //TODO this is temp for testing, not necessary for curl
             Help::$OUTPUT_JSON = true;
             if (($psp = $instance->getPaymentServiceProvider())) {
@@ -144,7 +144,7 @@ class Handler extends BaseLogic
                     __('No PaymentServiceProvider found', 'peatcms')
                 );
             }
-        } elseif ($action === 'payment_return') {
+        } elseif ('payment_return' === $action) {
             // the url the client is sent to after completing payment, but also after it failed
             if (($psp = $instance->getPaymentServiceProvider())) {
                 if (isset($_GET['id'])) {
@@ -475,12 +475,12 @@ class Handler extends BaseLogic
                     $out['slug'] = 'suggest';
                 }
                 //$out = array('__variants__' => $variants, 'slug' => 'suggest');
-            } elseif ($action === 'set_session_var') {
+            } elseif ('set_session_var' === $action) {
                 $name = $post_data->name;
                 // times keeps track of how many times this var is (being) updated
                 Help::$session->setVar($name, $post_data->value, $post_data->times);
                 $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
-            } elseif ($action === 'post_comment' and (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('post_comment' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $valid = true;
                 // validation process
@@ -506,10 +506,7 @@ class Handler extends BaseLogic
                 }
                 if (true === $valid) {
                     // check the other mandatory fields
-                    foreach ([
-                                 'nickname',
-                                 'content',
-                             ] as $index => $field_name) {
+                    foreach (array('nickname', 'content',) as $index => $field_name) {
                         if (false === isset($post_data->{$field_name}) || '' === trim((string)$post_data->{$field_name})) {
                             $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                             $valid = false;
@@ -566,13 +563,13 @@ class Handler extends BaseLogic
                         $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
                     }
                 }
-            } elseif ($action === 'sendmail' && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('sendmail' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $out = $this->sendMail($instance, $post_data);
-            } elseif ($action === 'countries') {
+            } elseif ('countries' === $action) {
                 $out = array('__rows__' => Help::getDB()->getCountries());
                 $out['slug'] = 'countries';
-            } elseif ($action === 'postcode') { // TODO refactor completely but now I’m in a hurry
+            } elseif ('postcode' === $action) { // TODO refactor completely but now I’m in a hurry
                 // check here: https://api.postcode.nl/documentation/nl/v1/Address/viewByPostcode
                 if (isset($post_data->postal_code) && isset($post_data->number)) {
                     $addition = $post_data->number_addition ?? null;
@@ -657,7 +654,7 @@ class Handler extends BaseLogic
                 } else {
                     $out = true;
                 }
-            } elseif ($action === 'account_login') {
+            } elseif ('account_login' === $action) {
                 // TODO for admin this works without recaptcha, but I want to put a rate limiter etc. on it
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     $as_admin = $this->resolver->hasInstruction('admin');
@@ -678,7 +675,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_create' && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_create' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $out = array('success' => false);
                 if (isset($post_data->email)
                     && isset($post_data->pass)
@@ -706,7 +703,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_password_forgotten' && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_password_forgotten' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
                     $post_data->check_string = Help::getDB()->putInLocker(0,
                         (object)array('email_address' => $email_address));
@@ -745,7 +742,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('E-mail is required', 'peatcms'), 'warn');
                 }
-            } elseif ($action === 'account_password_update' && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_password_update' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $out = array('success' => false);
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     if (isset($post_data->locker)
@@ -812,19 +809,19 @@ class Handler extends BaseLogic
                     $out['__user__'] = Help::$session->getUser()->getOutput();
                 }
             } elseif (('update_address' === $action || 'delete_address' === $action)
-                and (true === Help::recaptchaVerify($instance, $post_data))
+                && (true === Help::recaptchaVerify($instance, $post_data))
             ) {
                 //$post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
-                    if ($action === 'delete_address') $post_data->deleted = true;
+                    if ('delete_address' === $action) $post_data->deleted = true;
                     if (1 === Help::getDB()->updateColumnsWhere(
                             '_address',
                             (array)$post_data,
                             array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
                         )) {
                         $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
-                        if ($action === 'delete_address') {
+                        if ('delete_address' === $action) {
                             $out = array('success' => true);
                         } elseif (null === $out) {
                             $this->addMessage(__('Error retrieving updated address', 'peatcms'), 'error');
@@ -842,7 +839,7 @@ class Handler extends BaseLogic
                     }
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ($action === 'create_address' && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('create_address' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser()))) {
                     if (null !== ($address_id = Help::getDB()->insertElement(
@@ -855,7 +852,7 @@ class Handler extends BaseLogic
                     $this->addMessage(__('You need to be logged in to manage addresses', 'peatcms'), 'warn');
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ($action === 'detail' && $this->resolver->hasInstruction('order')) {
+            } elseif ('detail' === $action && $this->resolver->hasInstruction('order')) {
                 // session values can be manipulated, so you need to check if this order belongs to the session
                 $order_number = Help::$session->getValue('order_number');
                 if (null === $order_number) {
@@ -991,18 +988,18 @@ class Handler extends BaseLogic
                         }
                         $out = array('slug' => $path);
                     }
-                } elseif ($action === 'admin_clear_cache_for_instance') {
+                } elseif ('admin_clear_cache_for_instance' === $action) {
                     if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
                         $this->addMessage(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
                     }
-                } elseif ($action === 'admin_export_templates_by_name') {
+                } elseif ('admin_export_templates_by_name' === $action) {
                     if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $content = Help::getDB()->getTemplates($instance_id);
                         $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
                         $out = array('download' => array('content' => $content, 'file_name' => $file_name));
                     }
-                } elseif ($action === 'admin_import_templates_by_name') {
+                } elseif ('admin_import_templates_by_name' === $action) {
                     if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         if (isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
                             $count_done = 0;
@@ -1142,7 +1139,7 @@ class Handler extends BaseLogic
                         $this->addMessage(sprintf(__('No ‘%1$s’ found with id %2$s', 'peatcms'), $post_data->element, $post_data->id), 'error');
                     }
                     unset($element);
-                } elseif ($action === 'admin_put_menu_item') {
+                } elseif ('admin_put_menu_item' === $action) {
                     if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
                         $type = new Type('menu');
                         $menu = $type->getElement();
@@ -1167,7 +1164,7 @@ class Handler extends BaseLogic
                     } else {
                         $this->handleErrorAndStop('admin_put_menu_item did not receive a valid menu slug', 'Invalid slug');
                     }
-                } elseif ($action === 'admin_get_templates') { // called when an element is edited to fill the select list
+                } elseif ('admin_get_templates' === $action) { // called when an element is edited to fill the select list
                     $instance_id = (isset($post_data->type) && 'instance' === $post_data->type) ? $post_data->id : Setup::$instance_id;
                     $for = $post_data->for ?? $this->resolver->getTerms()[1] ?? null;
                     if (isset($for)) {
@@ -1183,7 +1180,7 @@ class Handler extends BaseLogic
                         $this->addError('Var ‘for’ is missing, don’t know what templates you need');
                         $out = true;
                     }
-                } elseif ($action === 'admin_get_vat_categories') {
+                } elseif ('admin_get_vat_categories' === $action) {
                     $instance_id = $post_data->instance_id ?? Setup::$instance_id;
                     if ($admin->isRelatedInstanceId($instance_id)) {
                         $out = Help::getDB()->getVatCategories($instance_id);
@@ -1191,11 +1188,11 @@ class Handler extends BaseLogic
                             $this->addMessage(__('No vat categories found', 'peatcms'), 'warn');
                         }
                     }
-                } elseif ($action === 'search_log') {
+                } elseif ('search_log' === $action) {
                     // only shows log of the current instance
                     $rows = Help::getDB()->fetchSearchLog();
                     $out = array('__rows__' => $rows, 'item_count' => count($rows));
-                } elseif ($action === 'admin_instagram') {
+                } elseif ('admin_instagram' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
@@ -1212,7 +1209,7 @@ class Handler extends BaseLogic
                             }
                         }
                     }
-                } elseif ($action === 'admin_redirect') {
+                } elseif ('admin_redirect' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
@@ -1221,7 +1218,7 @@ class Handler extends BaseLogic
                             );
                         }
                     }
-                } elseif ($action === 'templates') {
+                } elseif ('templates' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array(
@@ -1231,7 +1228,7 @@ class Handler extends BaseLogic
                             );
                         }
                     }
-                } elseif ($action === 'admin_publish_templates') {
+                } elseif ('admin_publish_templates' === $action) {
                     if (false === isset($post_data->instance_id)) {
                         $this->addMessage('Please supply an instance_id', 'warn');
                         $out = true;
@@ -1241,21 +1238,21 @@ class Handler extends BaseLogic
                         $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
                         $out = true;
                     }
-                } elseif ($action === 'admin_countries') {
+                } elseif ('admin_countries' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array('__rows__' => Help::getDB()->getCountries($instance_id));
                             $out['slug'] = 'admin_countries';
                         }
                     }
-                } elseif ($action === 'admin_payment_service_providers') {
+                } elseif ('admin_payment_service_providers' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = array('__rows__' => Help::getDB()->getPaymentServiceProviders($instance_id));
                             $out['slug'] = 'admin_payment_service_providers';
                         }
                     }
-                } elseif ($action === 'admin_payment_capture') {
+                } elseif ('admin_payment_capture' === $action) {
                     if (isset($post_data->order_id)) {
                         if (($psp = $instance->getPaymentServiceProvider())) {
                             if (false === $psp->capturePayment((int)$post_data->order_id)) {
@@ -1269,7 +1266,7 @@ class Handler extends BaseLogic
                             return;
                         }
                     }
-                } elseif ($action === 'admin_get_payment_status_updates') {
+                } elseif ('admin_get_payment_status_updates' === $action) {
                     // you only get them for the current instance
                     $out = array();
                     $out['slug'] = 'admin_get_payment_status_updates';
@@ -1372,9 +1369,9 @@ class Handler extends BaseLogic
                             }
                         }
                     }
-                } elseif ($action === 'insert_row') {
+                } elseif ('insert_row' === $action) {
                     $out = $this->insertRow($admin, $post_data);
-                } elseif ($action === 'admin_popvote') {
+                } elseif ('admin_popvote' === $action) {
                     $pop_vote = -1;
                     $element_name = $post_data->element_name;
                     $id = $post_data->id;
@@ -1388,7 +1385,7 @@ class Handler extends BaseLogic
                         }
                     }
                     $out = array('pop_vote' => $pop_vote);
-                } elseif ($action === 'admin_set_homepage') {
+                } elseif ('admin_set_homepage' === $action) {
                     if (isset($post_data->slug)) {
                         if (!$out = Help::getDB()->setHomepage(Setup::$instance_id, $post_data->slug)) {
                             $this->addError(sprintf(
@@ -1448,7 +1445,7 @@ class Handler extends BaseLogic
                     $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
                     $out['slug'] = 'admin_database_report';
                 }
-            } elseif ($action === 'reflect') {
+            } elseif ('reflect' === $action) {
                 $out = $post_data;
             }
         } elseif (isset($post_data->csrf_token)) { // only add the error if you're not just asking for json
@@ -1758,7 +1755,7 @@ class Handler extends BaseLogic
         // validate
         if (false === isset($data->shoppinglist)) {
             // todo I don't think this belongs here
-            if (($res = $this->resolver)->hasInstruction('shoppinglist') and isset($res->getTerms()[0])) {
+            if (($res = $this->resolver)->hasInstruction('shoppinglist') && isset($res->getTerms()[0])) {
                 $data->shoppinglist = $res->getTerms()[0];
             } else {
                 $this->addMessage(sprintf(__('Form input ‘%s’ is missing', 'peatcms'), 'shoppinglist'), 'warn');
