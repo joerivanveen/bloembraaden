@@ -257,7 +257,6 @@ input[type="text"],
 input[type="number"],
 input[type="email"],
 input[type="date"],
-input[type="checkbox"],
 input[type="password"] {
     -moz-appearance: none;
     -webkit-appearance: none;
@@ -270,17 +269,6 @@ input[type="password"] {
     margin-bottom: .25em;
     outline: none;
     outline-offset: -1px;
-}
-
-input[type="checkbox"] {
-    padding: 0;
-    width: .5rem;
-    height: .5rem;
-    background-color: rgba(0, 0, 0, .1);
-}
-
-input[type="checkbox"]:checked {
-    background-color: rgb(48, 63, 123);
 }
 
 textarea,

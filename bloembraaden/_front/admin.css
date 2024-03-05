@@ -183,7 +183,7 @@
     display: inline-block;
     width: 160px;
 }
-#PEATCMS_admin_page .page_content input[type="checkbox"] + label {
+#PEATCMS_admin_page .page_content .PEATCMS_admin input[type="checkbox"] + label {
     max-width: inherit;
     width: auto;
 }
@@ -443,15 +443,26 @@ body .PEATCMS_admin textarea.unsaved {
 /**
  * Pretty checkboxes
  */
-input[type="checkbox"] {
+.PEATCMS_admin input[type="checkbox"] {
+    padding: 0;
+    width: .5rem;
+    height: .5rem;
+    background-color: rgba(0, 0, 0, .1);
+}
+
+.PEATCMS_admin input[type="checkbox"]:checked {
+    background-color: rgb(48, 63, 123);
+}
+
+.PEATCMS_admin input[type="checkbox"] {
     display: none;
 }
 
-input[type="checkbox"] + label {
+.PEATCMS_admin input[type="checkbox"] + label {
     line-height: .8em;
 }
 
-input[type="checkbox"] + label:before {
+.PEATCMS_admin input[type="checkbox"] + label:before {
     cursor: pointer;
     position: relative;
     display: inline-block;
@@ -471,20 +482,20 @@ input[type="checkbox"] + label:before {
     box-shadow: 0 .1em 1em var(--admin-color-accent-neutral) inset;
 }
 
-input[type="checkbox"]:checked + label:before {
+.PEATCMS_admin input[type="checkbox"]:checked + label:before {
     background-color: var(--admin-color-accent);
     text-align: right;
 }
 
-input[type="checkbox"].peatcms_loading + label:before {
+.PEATCMS_admin input[type="checkbox"].peatcms_loading + label:before {
     animation: peatcms_pulsating 613ms infinite ease-in-out;
 }
 
-input[type="checkbox"].peatcms_danger:checked + label:before {
+.PEATCMS_admin input[type="checkbox"].peatcms_danger:checked + label:before {
     background-color: var(--admin-color-no);
 }
 
-body .PEATCMS_admin .unsaved > input[type="checkbox"] + label:before {
+body .PEATCMS_admin .unsaved > .PEATCMS_admin input[type="checkbox"] + label:before {
     color: var(--admin-color-accent);
 }
 
@@ -716,7 +727,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin input[type=button]:hover,
 .PEATCMS_admin .button:hover,
 .PEATCMS_admin ::file-selector-button:hover,
-input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
+.PEATCMS_admin input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin button:hover {
     /*outline: solid 2px var(--admin-color-accent-fierce);
     outline-offset: -2px;*/
@@ -914,7 +925,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 /* open / close box for .x_value in properties */
-.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible {
+.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible {
     float: right;
     display: block;
     width: 0;
@@ -930,11 +941,11 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
     display: none;
 }
 
-.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked + input[type="text"].flexible {
+.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible:checked + input[type="text"].flexible {
     display: block;
 }
 
-.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked {
+.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible:checked {
     transform: rotate(180deg);
 }
 
@@ -1000,7 +1011,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 .PEATCMS_admin textarea:focus-visible,
 .PEATCMS_admin select:focus-visible,
 .PEATCMS_admin .button:focus-visible,
-.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible,
+.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible:focus-visible,
 .PEATCMS_admin button:focus-visible,
 .PEATCMS_admin label:focus-visible,
 .PEATCMS_admin a:focus-visible {
@@ -1023,7 +1034,7 @@ input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
 }
 
 /* open / close box for .x_value in properties */
-.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible {
+.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible:focus-visible {
     outline-offset: 1px;
 }
 
