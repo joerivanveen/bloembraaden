@@ -37,7 +37,7 @@ document.addEventListener('peatcms.form_posted', function (e) {
                 if (VERBOSE) console.log('Account status changed');
                 window.PEATCMS_globals.is_account = is_account;
                 // by default we also change the status for data-is_account elements, for more you should handle the event
-                arr = document.querySelectorAll('[data-is_account]');
+                arr = document.body.querySelectorAll('[data-is_account]');
                 for (i = 0, len = arr.length; i < len; ++i) {
                     arr[i].setAttribute('data-is_account', (is_account) ? 'true' : 'false');
                 }
@@ -2127,7 +2127,7 @@ const PEATCMS = function () {
 
     function setupAddress() {
         // enhance the inputs of an address thingie, throttle updating and check on the server to save and for postcode_nl: only fill in missing values when empty (=once)
-        const elements = document.querySelectorAll('[data-peatcms_enhance_address]');
+        const elements = document.body.querySelectorAll('[data-peatcms_enhance_address]');
         let el, i, len;
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i]; // this is a container holding address elements you want to enhance
@@ -2260,7 +2260,7 @@ PEATCMS.prototype.setup_turnstile = function () {
     script.addEventListener('load', addTurnstile);
 
     function addTurnstile() {
-        const turnstiles = document.querySelectorAll('.cf-turnstile'),
+        const turnstiles = document.body.querySelectorAll('.cf-turnstile'),
             len = turnstiles.length;
         for (let i = 0; i < len; ++i) {
             const turnstile = turnstiles[i];
@@ -2611,7 +2611,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         this.ajaxifyDOMElements();
         if (typeof CMS_admin !== 'undefined') {
             // hide the edit buttons when current element is not editable
-            document.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(function (el) {
+            document.body.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(function (el) {
                 el.setAttribute('data-disabled', (element.isEditable()) ? '0' : '1');
             });
         }
@@ -3881,7 +3881,7 @@ document.addEventListener('peatcms.document_complete', function () {
      */
     const loadSrcSets = function () {
         let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
-        const elements = document.querySelectorAll('[data-srcset]');
+        const elements = document.body.querySelectorAll('[data-srcset]');
         const setImage = function (el, source) {
             el.current_source = source;
             PEATCMS.preloadImage(source.src, function () {
@@ -4133,7 +4133,7 @@ PEATCMS.setupCarousels = function () {
  * Damn fine lazy loader (stolen from Nonstockphoto)
  */
 PEATCMS.lazyLoader = function () {
-    const elements = document.querySelectorAll('[data-src]');
+    const elements = document.body.querySelectorAll('[data-src]');
     const lazyLoad = function (lazyEl) {
         if (!lazyEl.dataset.src) return;
         if ('img' === lazyEl.tagName.toLowerCase()) {
