@@ -1281,7 +1281,7 @@ function PEATCMS_panels() {
         const css_cursor = 'cursor:' + window.getComputedStyle(positioner).cursor;
 
         function remover() {
-            PEAT.stylesheet.upsertRule('*', 'cursor: auto');
+            PEAT.stylesheet.upsertRule('*', null);
             document.removeEventListener('mousemove', mover);
             document.removeEventListener('mouseup', remover);
         }
@@ -1451,8 +1451,6 @@ function PEATCMS_admin() {
     function activate_cell() {
         const el = this.querySelectorAll('.results')[0];
         if (this.classList.contains('active')) return;
-        // while we're at it, set the height for the results div now so it can scroll properly
-        el.style.height = (window.innerHeight - el.getBoundingClientRect().top) + 'px';
         // remove the .active from all harmonicas
         document.querySelectorAll('#admin_console .cell.harmonica').forEach(
             function (el) {

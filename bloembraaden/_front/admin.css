@@ -822,6 +822,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 }
 
 .PEATCMS_admin .console_screen .cell .results {
+    height: calc(var(--admin-console-height) - 70px);
     overflow-x: hidden;
     overflow-y: auto;
 }

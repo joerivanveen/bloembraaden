@@ -3547,15 +3547,18 @@ PEAT_style.prototype.upsertRule = function (selector, rule) {
         current_style = this.rules[i];
         if (current_style.selectorText === selector) {
             //Append the new rules to the current content of the cssRule;
-            rule = current_style.style.cssText + rule;
+            if (null !== rule) rule = current_style.style.cssText + rule;
             this.CSSStyleSheet.deleteRule(i);
             index = i;
             break;
         }
     }
-    this.CSSStyleSheet.insertRule(selector + "{" + rule + "}", index);
+    if (rule) {
+        this.CSSStyleSheet.insertRule(selector + "{" + rule + "}", index);
 
-    return this.CSSStyleSheet.cssRules[index].cssText;
+        return this.CSSStyleSheet.cssRules[index].cssText;
+    }
+    return '';
 }
 
 PEAT_style.prototype.upsertRules = function (rules, html_id) {
