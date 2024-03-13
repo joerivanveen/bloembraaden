@@ -3136,3 +3136,8 @@ ALTER TABLE _instance
 
 COMMIT;
 
+-- version 0.19.1
+
+BEGIN;
+
+COMMIT;
