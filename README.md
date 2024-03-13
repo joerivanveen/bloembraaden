@@ -1,10 +1,11 @@
 
 # Bloembraaden
-_Let’s make you a stunning website._
+
+_Let’s make stunning websites._
 
 When you know html, css and vanilla javascript,
 and you know how to realise your vision with them,
-you can take advantage of Bloembraaden to build your new websites.
+you can take advantage of Bloembraaden to build your websites.
 
 You can build a website **exactly** the way you want,
 simply substituting content for standard template tags.
@@ -14,14 +15,9 @@ which opens up fresh approaches for dynamic websites.
 Your client can edit the content of their website through an easy interface,
 laid over their website, that you can configure as well as change the appearance of.
 
-## Who’s it for
-Bloembraaden is aimed at webdevelopers and digital agencies that want to be
-free to realise websites exactly the way they want.
+## How-to
 
-We like **unicorns** more than uniforms...
-
-While the code is free to set up and use, Bloembraaden also exists as a hosted solution,
-if you’d rather be creative than maintaining your server.
+Check out our [how-to](https://howto.bloembraaden.io/) website.
 
 ## What does it do
 
