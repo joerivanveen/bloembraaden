@@ -421,18 +421,13 @@ class Help
         string $key_space = '0123456789abcdefghijklmnopqrstuvwxyz'
     ): string
     {
-        try {
-            $pieces = [];
-            //$max = mb_strlen($key_space, '8bit') - 1;
-            $max = strlen($key_space) - 1;
-            for ($i = 0; $i < $length; ++$i) {
-                $pieces [] = $key_space[\random_int(0, $max)];
-            }
-
-            return implode('', $pieces);
-        } catch (\Throwable) {
-            die('no appropriate source for randomization found');
+        $pieces = [];
+        $max = strlen($key_space) - 1;
+        for ($i = 0; $i < $length; ++$i) {
+            $pieces [] = $key_space[\random_int(0, $max)];
         }
+
+        return implode('', $pieces);
     }
 
     public static function swapVariables(&$a, &$b)
@@ -778,7 +773,9 @@ class Help
             self::setValue($identifier, true);
             // if not persisting, release the lock always when the request is done
             register_shutdown_function(static function () use ($file_name) {
-                if (Help::$LOGGER) {(Help::$LOGGER)->log("Releasing lock $file_name");}
+                if (Help::$LOGGER) {
+                    (Help::$LOGGER)->log("Releasing lock $file_name");
+                }
                 @unlink($file_name);
             });
         }
