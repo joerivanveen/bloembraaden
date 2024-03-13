@@ -198,6 +198,6 @@ You should now switch off the ‘install’ flag (set it to `false`).
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
 
-I will post some ‘getting started’ info on https://bloembraaden.io in the future.
+I will post some ‘getting started’ info on https://howto.bloembraaden.io in the future.
 
 [bloembraaden-docker]: https://github.com/joerivanveen/bloembraaden-docker
