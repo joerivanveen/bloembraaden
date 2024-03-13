@@ -1149,8 +1149,9 @@ body .PEATCMS_admin span.template_status {
     height: 4.5em;
 }
 
+#PEATCMS_admin_page .footer a,
 #PEATCMS_admin_page .footer {
-    font-size: .8em;
+    font-size: .8rem;
     text-align: center;
     color: var(--admin-color-accent);
 }
