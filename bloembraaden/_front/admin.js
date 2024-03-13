@@ -1204,16 +1204,16 @@ const PEATCMS_panel = function (name, resetStyles) {
     let DOMPanel, DOMEditElement;
     this.name = name; // currently names can be console and sidebar
     // check DOMElement and checkbox TODO you can probably create these yourself as well, when not present
-    if ((this.DOMCheckbox = document.getElementById('admin_' + name + '_checkbox')) === null) {
-        console.error('Missing checkbox for panel ' + name);
+    if (null === (this.DOMCheckbox = document.getElementById(`admin_${name}_checkbox`))) {
+        console.error(`Missing checkbox for panel ${name}`);
     } else {
         this.DOMCheckbox.checked = false; // firefox
         this.DOMCheckbox.addEventListener('change', resetStyles);
     }
-    if ((DOMPanel = document.getElementById('admin_' + name)) === null) {
-        console.error('Missing area for panel ' + name);
+    if (null === (DOMPanel = document.getElementById(`admin_${name}`))) {
+        console.error(`Missing area for panel ${name}`);
     }
-    if (DOMPanel.querySelectorAll('.edit-area').length > 0) {
+    if (DOMPanel.querySelector('.edit-area')) {
         DOMPanel.querySelectorAll('.edit-area').forEach(function (el) {
             el.remove();
         });
@@ -1263,7 +1263,7 @@ PEATCMS_panel.prototype.getSlug = function () {
     return null;
 }
 
-const PEATCMS_panels = function () {
+function PEATCMS_panels() {
     let i, panel_name;
     // in the arguments are the panels provided, these rely on a certain standard id + checkbox convention
     // initialize each one as well as some standard properties
@@ -1275,6 +1275,32 @@ const PEATCMS_panels = function () {
             this.panels[panel_name] = new PEATCMS_panel(panel_name, this.resetTools);
         }
     }
+    function addResizer(panel, mover) {
+        // resize is separate for now
+        const positioner = document.getElementById(`admin_${panel}_positioner`);
+        const css_cursor = 'cursor:' + window.getComputedStyle(positioner).cursor;
+
+        function remover() {
+            PEAT.stylesheet.upsertRule('*', 'cursor: auto');
+            document.removeEventListener('mousemove', mover);
+            document.removeEventListener('mouseup', remover);
+        }
+
+        positioner.addEventListener('mousedown', function () {
+            PEAT.stylesheet.upsertRule('*', css_cursor);
+            document.addEventListener('mousemove', mover);
+            document.addEventListener('mouseup', remover);
+        });
+    }
+    addResizer('sidebar', function(e) {
+        e.preventDefault();
+        document.documentElement.style.setProperty('--admin-sidebar-width', e.clientX + 'px');
+    });
+    addResizer('console', function(e) {
+        e.preventDefault();
+        const h = window.innerHeight;
+        document.documentElement.style.setProperty('--admin-console-height', (h + 4 - e.clientY) + 'px');
+    });
 }
 
 PEATCMS_panels.prototype.open = function (name) {

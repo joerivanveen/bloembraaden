@@ -11,6 +11,8 @@
     --admin-color-no-bg: rgba(200, 0, 0, .25);
     --admin-color-ok: rgb(0, 180, 60);
     --admin-color-ok-bg: rgba(0, 180, 60, .25);
+    --admin-sidebar-width: 333px;
+    --admin-console-height: 222px;
 }
 
 .dark-mode {
@@ -858,9 +860,16 @@ body .PEATCMS_admin .peatcms-link:focus {
     height: 0;
     bottom: -3px; /* size of the border-top */
     width: 100%;
-    border-top: solid 3px var(--admin-color-accent);
     z-index: 100;
     overflow: hidden;
+}
+
+#admin_console_positioner {
+    height: 4px;
+    overflow: hidden;
+    width: 100%;
+    background-color: var(--admin-color-accent);
+    cursor: row-resize;
 }
 
 #admin_sidebar {
@@ -877,16 +886,17 @@ body .PEATCMS_admin .peatcms-link:focus {
 
 #admin_sidebar_positioner {
     float: right;
-    width: 3px;
+    width: 4px;
     height: 100vh;
     background-color: var(--admin-color-accent);
+    cursor: col-resize;
 }
 
 #admin_sidebar .edit-area {
     position: absolute;
     top: 0;
     height: calc(100vh - 4em);
-    margin-right: 3px; /* the width of the positioner */
+    margin-right: 4px; /* the width of the positioner */
     padding: 2em 8px;
     overflow-y: auto;
     max-width: calc(100% - 16px);
@@ -1054,6 +1064,11 @@ body .PEATCMS_admin .peatcms-link:focus {
     border-radius: 0;
 }
 
+.PEATCMS_admin #admin_content,
+.PEATCMS_admin #admin_description {
+    aspect-ratio: 3 / 2;
+}
+
 .PEATCMS_admin textarea.as-input {
     display: inline;
     vertical-align: bottom;
@@ -1115,12 +1130,12 @@ body .PEATCMS_admin span.template_status {
  * Default settings that are overridden by admin.js (panels)
  */
 #admin_console_checkbox:checked ~ #admin_console {
-    height: 25vh;
+    height: var(--admin-console-height);
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_sidebar {
     left: 0;
-    width: 333px;
+    width: var(--admin-sidebar-width);
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_console_button,
