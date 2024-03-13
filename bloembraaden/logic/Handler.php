@@ -34,9 +34,9 @@ class Handler extends BaseLogic
         if ('javascript' === $action) {
             // @since 0.7.6 get cached version when available for non-admins
             $file_location = Setup::$DBCACHE . 'js/' . Setup::$instance_id . '-' . $version . '.js.gz';
-            if (false === ADMIN and true === file_exists($file_location)) {
+            if (false === ADMIN && true === file_exists($file_location)) {
                 $response = file_get_contents($file_location);
-                header('Cache-Control: max-age=2592000'); //30days (60sec * 60min * 24hours * 30days)
+                header('Cache-Control: max-age=31536000'); //1 year (60sec * 60min * 24hours * 365days)
                 header('Content-Type: text/javascript');
                 header('Content-Encoding: gzip');
                 header('Content-Length: ' . strlen($response));
@@ -62,7 +62,7 @@ class Handler extends BaseLogic
             $doc = null;
             // @since 0.7.6 cache this file on disk (if it isn’t cached already by another concurrent request)
             if (false === file_exists($file_location)) file_put_contents($file_location, $response, LOCK_EX);
-            header('Cache-Control: max-age=2592000'); //30days (60sec * 60min * 24hours * 30days)
+            header('Cache-Control: max-age=31536000'); //1 year (60sec * 60min * 24hours * 365days)
             header('Content-Type: text/javascript');
             header('Content-Encoding: gzip');
             header('Content-Length: ' . strlen($response));
@@ -74,7 +74,7 @@ class Handler extends BaseLogic
             $file_location = Setup::$DBCACHE . 'css/' . Setup::$instance_id . '-' . $version . '.css.gz';
             if (false === ADMIN and true === file_exists($file_location)) {
                 $response = file_get_contents($file_location);
-                header('Cache-Control: max-age=2592000'); //30days (60sec * 60min * 24hours * 30days)
+                header('Cache-Control: max-age=31536000'); //1 year (60sec * 60min * 24hours * 365days)
                 header('Content-Type: text/css');
                 header('Content-Encoding: gzip');
                 header('Content-Length: ' . strlen($response));
@@ -85,7 +85,7 @@ class Handler extends BaseLogic
             $doc .= file_get_contents(CORE . '../htdocs/_site/' . $instance->getPresentationInstance() . '/style.css');
             $response = gzencode($doc, 9);
             $doc = null;
-            header('Cache-Control: max-age=2592000'); //30days (60sec * 60min * 24hours * 30days)
+            header('Cache-Control: max-age=31536000'); //1 year (60sec * 60min * 24hours * 365days)
             header('Content-Type: text/css');
             header('Content-Encoding: gzip');
             header('Content-Length: ' . strlen($response));
