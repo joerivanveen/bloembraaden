@@ -2057,6 +2057,7 @@ PEATCMS_admin.prototype.enhanceToggle = function (elements) {
     elements.forEach(function (el) {
         const toggler = el.parentNode.parentNode,
             toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML); // based on the header being different
+        toggler.scrollTo(0, 0); // helpful browser sometimes remember some weird scroll position that obscures the content
         if (toggler.hasAttribute('data-instance_id') &&
             parseInt(toggler.getAttribute('data-instance_id')) !== self.instance.instance_id) {
             toggler.innerHTML = (toggler.hasAttribute('data-instance_id_message')) ?
