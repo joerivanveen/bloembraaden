@@ -129,6 +129,11 @@
     opacity: .8;
 }
 
+/* hide lingering elements */
+#PEATCMS_admin_page > *:not(.PEATCMS_admin) {
+    display: none;
+}
+
 /**
  * reset some stuff that might be changed by a client css
  */
