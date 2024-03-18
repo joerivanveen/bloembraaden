@@ -521,6 +521,7 @@ class Handler extends BaseLogic
                     $referer = $post_data->referer;
                     $slug = Help::slugify("$referer $title");
                     $reply_to_id = $post_data->reply_to_id ?? null;
+                    $reply_after = $post_data->reply_after ?? $reply_to_id;
                     if (null !== ($comment_id = Help::getDB()->insertElement($peat_type, array(
                             'referer' => $referer,
                             'slug' => $slug,
@@ -542,8 +543,8 @@ class Handler extends BaseLogic
                         $element_id = $element_row->id;
                         $element = ($element_type)->getElement()->fetchById($element_id);
                         if (true === $element->link('comment', $comment_id)) {
-                            if (null !== $reply_to_id) {
-                                if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_to_id)) {
+                            if (null !== $reply_after) {
+                                if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_after)) {
                                     $this->addMessage(__('Comment added to end', 'peatcms'), 'warn');
                                 }
                             }
