@@ -3148,7 +3148,7 @@ PEATCMS.prototype.scrollIntoView = function (DOMElement, withMargin) {
     } else if (bottom > (h = window.innerHeight)) {
         scroll_by = bottom - h + withMargin;
     }
-    this.scrollTo(0, scroll_by, window);
+    this.scrollTo(0, window.scrollY + scroll_by, window);
 }
 PEATCMS.prototype.scrollToTop = function () {
     this.scrollTo(0, 0);
