@@ -3468,6 +3468,12 @@ PEATCMS_navigator.prototype.submitForm = function (form) {
     }
 }
 PEATCMS_navigator.prototype.submitFormData = function (form, data) {
+    // allow cf-turnstile outside of form, with id cf-turnstile
+    const turnstile = document.getElementById('cf-turnstile');
+    if (turnstile && ! form.querySelector('.cf-turnstile')) {
+        const input = turnstile.querySelector('input[name="cf-turnstile-response"]');
+        data[input.name] = input.value;
+    }
     this.ajax(form.getAttribute('action'), data, function (json) {
         const slug = data.hasOwnProperty('slug') ? data.slug : PEATCMS.trim(form.getAttribute('action'), '/'),
             event_data = { // nice data for the event after the form is posted
