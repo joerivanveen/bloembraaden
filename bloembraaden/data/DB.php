@@ -4586,17 +4586,22 @@ class DB extends Base
         if ($info->hasIdColumn()) {
             $id_column = $info->getIdColumn()->getName();
             $statement = $this->conn->prepare("SELECT pg_get_serial_sequence(:table_name, :id_column);");
-            $statement->bindValue(':table_name', $table_name);
+            $statement->bindValue(':table_name', "public.$table_name");
             $statement->bindValue(':id_column', $id_column);
             $statement->execute();
             $sequencer = $statement->fetchColumn(0);
+            if ('' === $sequencer) {
+                $this->addError("No sequencer found for $table_name");
+                $statement = null;
+                return false;
+            }
             // get max id
             $statement = $this->conn->prepare("SELECT MAX($id_column) FROM $table_name;");
             $statement->execute();
             $current_id = $statement->fetchColumn(0);
             // get next in sequence (without actually updating it)
             $statement = $this->conn->prepare("
-                SELECT last_value + i.inc FROM $sequencer,
+                SELECT last_value + i.inc AS next_value FROM $sequencer,
                     (SELECT seqincrement AS inc FROM pg_sequence
                         WHERE seqrelid = '$sequencer'::regclass::oid) AS i;
             ");
