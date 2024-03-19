@@ -936,7 +936,10 @@ body .PEATCMS_admin .peatcms-link:focus {
 }
 
 /* open / close box for .x_value in properties */
-.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible {
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
     float: right;
     display: block;
     width: 0;
@@ -952,11 +955,11 @@ body .PEATCMS_admin .peatcms-link:focus {
     display: none;
 }
 
-.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible:checked + input[type="text"].flexible {
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked + input[type="text"].flexible {
     display: block;
 }
 
-.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible:checked {
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible:checked {
     transform: rotate(180deg);
 }
 
@@ -1022,7 +1025,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin textarea:focus-visible,
 .PEATCMS_admin select:focus-visible,
 .PEATCMS_admin .button:focus-visible,
-.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible:focus-visible,
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible,
 .PEATCMS_admin button:focus-visible,
 .PEATCMS_admin label:focus-visible,
 .PEATCMS_admin a:focus-visible {
@@ -1045,7 +1048,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 }
 
 /* open / close box for .x_value in properties */
-.PEATCMS_admin .edit-area .PEATCMS_admin input[type="checkbox"].flexible.visible:focus-visible {
+.PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible {
     outline-offset: 1px;
 }
 
