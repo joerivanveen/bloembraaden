@@ -818,6 +818,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 
 .PEATCMS_admin .console_screen .cell .results {
     height: calc(var(--admin-console-height) - 70px);
+    max-height: calc(var(--admin-console-height) - 75px);
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -1130,11 +1131,13 @@ body .PEATCMS_admin span.template_status {
  */
 #admin_console_checkbox:checked ~ #admin_console {
     height: var(--admin-console-height);
+    max-height: calc(100vh - 5px);
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_sidebar {
     left: 0;
     width: var(--admin-sidebar-width);
+    max-width: calc(100vw - 5px);
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_console_button,
