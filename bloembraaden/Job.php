@@ -860,6 +860,10 @@ switch ($interval) {
                 );
                 $result = curl_exec($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
+                if (false === $result) {
+                    echo "Instagram refresh response FAIL for id $rows->instagram_auth_id\n";
+                    continue;
+                }
                 $return_value = json_decode($result);
                 if (json_last_error() !== 0 || false === isset($return_value->access_token)) {
                     echo sprintf(
