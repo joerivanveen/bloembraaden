@@ -1162,6 +1162,7 @@ class Help
         $doc = preg_replace("/, (?!')/", ',', $doc);
         $doc = preg_replace("/: (?!')/", ':', $doc);
         $doc = preg_replace("/; (?!')/", ';', $doc);
+        // todo, remove unused rules...
         // the curly brace is probably always ok to attach to its surroundings snugly
         $doc = str_replace(' { ', '{', $doc);
         // write plain css to disk, will be included in template and gzipped along with it
