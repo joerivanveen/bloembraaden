@@ -17,7 +17,7 @@ laid over their website, that you can configure as well as change the appearance
 
 ## How-to
 
-Check out our [how-to](https://howto.bloembraaden.io/) website.
+Check out our [how-to](https://how-to.bloembraaden.io/) website.
 
 ## What does it do
 
@@ -198,6 +198,6 @@ You should now switch off the ‘install’ flag (set it to `false`).
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
 
-I will post some ‘getting started’ info on https://howto.bloembraaden.io in the future.
+I will post some ‘getting started’ info on https://how-to.bloembraaden.io in the future.
 
 [bloembraaden-docker]: https://github.com/joerivanveen/bloembraaden-docker
