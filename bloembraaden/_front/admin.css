@@ -185,7 +185,7 @@
     display: inline-block;
     width: 160px;
 }
-#PEATCMS_admin_page .page_content .PEATCMS_admin input[type="checkbox"] + label {
+#PEATCMS_admin_page .PEATCMS_admin input[type="checkbox"] + label {
     max-width: inherit;
     width: auto;
 }
