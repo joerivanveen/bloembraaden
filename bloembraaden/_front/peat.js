@@ -1116,7 +1116,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
 
 PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
     let state = xhr.readyState, i, len, calls, i_progress = 0, progress_width;
-    const loading_bar = document.getElementById('bloembraaden-loading-bar') ||  document.getElementById('peatcms_loading_bar');
+    const loading_bar = document.getElementById('bloembraaden-loading-bar') || document.getElementById('peatcms_loading_bar');
     if (!(loading_bar)) return;
     if (!progress) progress = (state === 4) ? 1 : 0;
     // first 3 states account for 60% of the bar now, .2 of 1 each :-) last 40% is for the loading progress
@@ -3470,7 +3470,7 @@ PEATCMS_navigator.prototype.submitForm = function (form) {
 PEATCMS_navigator.prototype.submitFormData = function (form, data) {
     // allow cf-turnstile outside of form, with id cf-turnstile
     const turnstile = document.getElementById('cf-turnstile');
-    if (turnstile && ! form.querySelector('.cf-turnstile')) {
+    if (turnstile && !form.querySelector('.cf-turnstile')) {
         const input = turnstile.querySelector('input[name="cf-turnstile-response"]');
         data[input.name] = input.value;
     }
@@ -3884,63 +3884,24 @@ PEATCMS.getBoundingClientTop = function (el) {
 /**
  * Setup some handy standard cms functionality
  */
-document.addEventListener('peatcms.document_complete', function () {
-    /**
-     * Custom Bloembraaden src sets
-     */
-    const loadSrcSets = function () {
-        let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
-        const elements = document.body.querySelectorAll('[data-srcset]');
-        const setImage = function (el, source) {
-            el.current_source = source;
-            PEATCMS.preloadImage(source.src, function () {
-                if ('img' === el.tagName.toLowerCase()) {
-                    el.src = source.src;
-                } else {
-                    el.style.backgroundImage = 'url(' + source.src + ')';
-                }
-                el.style.opacity = '1';
-            });
-        }
-        for (i = 0, len = elements.length; i < len; ++i) {
-            el = elements[i];
-            rect = el.getBoundingClientRect();
-            width = rect.width;
-            height = rect.height;
-            source = null;
-            try {
-                srcset = JSON.parse(el.dataset.srcset);
-                for (i2 = 0, len2 = srcset.length; i2 < len2; ++i2) {
-                    if ('' === srcset[i2].height) continue;
-                    source = srcset[i2];
-                    if (parseInt(source.height) >= height && parseInt(source.width) >= width) {
-                        if ((current_source = el.current_source)) {
-                            if (current_source.height >= source.height) break; // if a larger or same image is already present, keep using that
-                        }
-                        setImage(el, source);
-                        break;
-                    }
-                }
-                // default to the last (should be largest) image
-                if ('undefined' === typeof el.current_source && null !== source) {
-                    setImage(el, source);
-                }
-            } catch (e) {
-                console.warn('srcset not understood', el);
-            }
-        }
-    }
-    let srcSetsThrottler;
-    loadSrcSets();
+document.addEventListener('peatcms.document_ready', function () {
+    let srcSetsThrottler, len, i;
+    PEATCMS.loadSrcSets();
+    PEATCMS.setupCarousels();
+    PEATCMS.lazyLoader();
     window.addEventListener('resize', function () {
         window.clearTimeout(srcSetsThrottler);
-        srcSetsThrottler = window.setTimeout(loadSrcSets, 342);
+        srcSetsThrottler = window.setTimeout(PEATCMS.loadSrcSets, 342);
     });
     const slideshows = document.getElementsByClassName('peatcms-slideshow');
-    let len, i;
     for (i = 0, len = slideshows.length; i < len; ++i) {
         PEATCMS.doSlideshow(slideshows[i]);
     }
+});
+document.addEventListener('peatcms.progressive_ready', function () {
+    PEATCMS.loadSrcSets();
+    PEATCMS.setupCarousels();
+    PEATCMS.lazyLoader();
 });
 
 PEATCMS.doSlideshow = function (slideshow) {
@@ -4021,6 +3982,53 @@ PEATCMS.doSlideshow = function (slideshow) {
     if (slideCount > 1) slideshow.peatcms_interval = setInterval(autoSlide, show_time);
 }
 
+/**
+ * Custom Bloembraaden src sets
+ */
+PEATCMS.loadSrcSets = function () {
+    let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
+    const elements = document.body.querySelectorAll('[data-srcset]');
+
+    function setImage(el, source) {
+        el.current_source = source;
+        PEATCMS.preloadImage(source.src, function () {
+            if ('img' === el.tagName.toLowerCase()) {
+                el.src = source.src;
+            } else {
+                el.style.backgroundImage = 'url(' + source.src + ')';
+            }
+            el.style.opacity = '1';
+        });
+    }
+
+    for (i = 0, len = elements.length; i < len; ++i) {
+        el = elements[i];
+        rect = el.getBoundingClientRect();
+        width = rect.width;
+        height = rect.height;
+        source = null;
+        try {
+            srcset = JSON.parse(el.dataset.srcset);
+            for (i2 = 0, len2 = srcset.length; i2 < len2; ++i2) {
+                if ('' === srcset[i2].height) continue;
+                source = srcset[i2];
+                if (parseInt(source.height) >= height && parseInt(source.width) >= width) {
+                    if ((current_source = el.current_source)) {
+                        if (current_source.height >= source.height) break; // if a larger or same image is already present, keep using that
+                    }
+                    setImage(el, source);
+                    break;
+                }
+            }
+            // default to the last (should be largest) image
+            if ('undefined' === typeof el.current_source && null !== source) {
+                setImage(el, source);
+            }
+        } catch (e) {
+            console.warn('srcset not understood', el);
+        }
+    }
+}
 
 /**
  * The carousels you can swipe
@@ -4129,6 +4137,7 @@ PEATCMS.setupCarousels = function () {
             strip.scrollTo(x, 0);
         }
     }
+
     let elements, i, len;
     /* carousel slides when present */
     if ((elements = document.getElementsByClassName('carousel'))) {
@@ -4142,8 +4151,10 @@ PEATCMS.setupCarousels = function () {
  * Damn fine lazy loader (stolen from Nonstockphoto)
  */
 PEATCMS.lazyLoader = function () {
-    const elements = document.body.querySelectorAll('[data-src]');
-    const lazyLoad = function (lazyEl) {
+    if (!document.body.querySelector('[data-src]:not([data-observing])')) return;
+    const elements = document.body.querySelectorAll('[data-src]:not([data-observing])');
+
+    function lazyLoad(lazyEl) {
         if (!lazyEl.dataset.src) return;
         if ('img' === lazyEl.tagName.toLowerCase()) {
             lazyEl.src = lazyEl.dataset.src;
@@ -4152,28 +4163,28 @@ PEATCMS.lazyLoader = function () {
             lazyEl.style.backgroundImage = 'url("' + lazyEl.dataset.src + '")';
         }
         lazyEl.removeAttribute('data-src');
-    };
+    }
+
     let i, len, el;
-    if (elements) {
-        if ('IntersectionObserver' in window) {
-            const lazyImageObserver = new IntersectionObserver(function (entries, observer) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        let lazyImage = entry.target;
-                        lazyLoad(lazyImage);
-                        lazyImageObserver.unobserve(lazyImage);
-                    }
-                });
-            });
-            elements.forEach(function (lazyImage) {
-                lazyImageObserver.observe(lazyImage);
-            });
-        } else {
-            // load them immediately
-            for (i = 0, len = elements.length; i < len; ++i) {
-                if ((el = elements[i])) {
-                    lazyLoad(el);
+    if ('IntersectionObserver' in window) {
+        const lazyImageObserver = new IntersectionObserver(function (entries, observer) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    let lazyImage = entry.target;
+                    lazyLoad(lazyImage);
+                    lazyImageObserver.unobserve(lazyImage);
                 }
+            });
+        });
+        elements.forEach(function (lazyImage) {
+            lazyImageObserver.observe(lazyImage);
+            lazyImage.setAttribute('data-observing', '1');
+        });
+    } else {
+        // load them immediately
+        for (i = 0, len = elements.length; i < len; ++i) {
+            if ((el = elements[i])) {
+                lazyLoad(el);
             }
         }
     }
