@@ -160,6 +160,14 @@
     max-width: 100%;
     margin: auto;
     background-color: var(--admin-color-paper);
+    overflow-x: auto;
+}
+
+/**
+ * hide lingering (non-admin) elements
+ */
+#PEATCMS_admin_page > *:not(#message_wrapper):not(.PEATCMS_admin) {
+    display: none;
 }
 
 /**
