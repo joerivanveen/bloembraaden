@@ -2051,7 +2051,7 @@ class DB extends Base
     public function jobGetInstagramMediaIdsForRefresh(int $limit = 25): array
     {
         // the older entries are the newer instagram media entries since they are loaded / paged in reverse order in the api
-        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url FROM _instagram_media 
+        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url, src FROM _instagram_media 
             WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE 
             ORDER BY date_created LIMIT $limit;");
         $statement->execute();
@@ -2069,7 +2069,7 @@ class DB extends Base
      */
     public function jobGetInstagramMediaIdsForRefreshByDate(int $limit = 25): array
     {
-        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url FROM _instagram_media 
+        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url, src FROM _instagram_media 
             WHERE deleted = FALSE ORDER BY date_updated LIMIT $limit;");
         $statement->execute();
         $rows = $statement->fetchAll(5);

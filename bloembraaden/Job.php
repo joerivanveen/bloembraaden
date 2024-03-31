@@ -469,7 +469,7 @@ switch ($interval) {
                 $media = json_decode($result);
                 if (json_last_error() === 0) {
                     if (isset($media->media)) $media = $media->media; // apparently this goes in and out at instagram?!
-                    if (isset($media->data) and is_array($media->data)) {
+                    if (isset($media->data) && is_array($media->data)) {
                         $ids = $media->data; // check all the media id’s against the database
                         foreach ($ids as $index2 => $obj) {
                             if (isset($obj->id) and $media_id = $obj->id) {
@@ -559,6 +559,16 @@ switch ($interval) {
 //                    if ($media_url !== $row->media_url) {
 //                        $update_data['src'] = null; // have it processed again
 //                    }
+                    // check all the sizes, this can be wrong after importing a site
+                    $folder = Setup::$CDNPATH . '0';
+                    foreach (InstagramImage::SIZES as $size => $pixels) {
+                        if (false === file_exists("$folder/$size/$row->src.webp")
+                            || false === file_exists("$folder/$size/$row->src.jpg")
+                        ) {
+                            $update_data['src'] = null; // have it processed again
+                            break;
+                        }
+                    }
                     // update the entry
                     if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
                         // remember you updated this user_id, so their feeds can be refreshed
@@ -744,7 +754,7 @@ switch ($interval) {
         // remove some originals that are old (date_processed = long ago)
         $trans->start('Remove old files from upload directory');
         foreach ($db->jobFetchImagesForCleanup() as $index => $row) {
-            if('IMPORT' === $row->filename_saved) continue;
+            if ('IMPORT' === $row->filename_saved) continue;
             Setup::$instance_id = $row->instance_id;
             echo $row->slug;
             if (file_exists("$upload$row->filename_saved")) {
