@@ -663,19 +663,19 @@ class Parser extends Base
             }
             // check if the line is blank, if not check if it is currently in an open tag
             if ('' !== str_replace(array("\n", "\t", ' '), '', $str)) {
-                if (null === $open_tag and false === $this->is_sub_parser) {
+                if (null === $open_tag && false === $this->is_sub_parser) {
                     $str = $this->openTag('p') . $str; // default to regular paragraph
                 } elseif (in_array($open_tag, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
-                    // remove trailing # characters (and spaces)
+                    // remove trailing # characters
                     for ($i = strlen($str) - 1; $i > 0; --$i) {
-                        if ('#' !== ($char = $str[$i]) and ' ' !== $char) {
+                        if ('#' !== $str[$i]) {
                             $str = substr($str, 0, $i + 1);
                             break;
                         }
                     }
                 }
             }
-            $this->log("<em>flushing:</em> $str");
+            $this->log("<em>flushing:</em> '$str'");
 
             return $str;
         }
