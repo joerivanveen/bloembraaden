@@ -601,14 +601,18 @@ class DB extends Base
      */
     public function fetchElementRowSuggestions(Type $peat_type, string $src): \stdClass
     {
-        $r = new \stdClass();
-        $r->rows = $this->fetchRows($peat_type->tableName(),
+        $out = new \stdClass();
+        $out->rows = $this->fetchRows(
+            $peat_type->tableName(),
             array($peat_type->idColumn(), 'title', 'slug'),
-            array('title' => "%$src%"));
-        $r->element = $peat_type->typeName();
-        $r->src = $src;
+            array('title' => "%$src%"),
+            false,
+            40
+        );
+        $out->element = $peat_type->typeName();
+        $out->src = $src;
 
-        return $r;
+        return $out;
     }
 
     /**
@@ -629,7 +633,8 @@ class DB extends Base
             INNER JOIN _ci_ai scp ON scp.type_name = 'property' AND scp.id = p.property_id
             INNER JOIN _ci_ai scpv ON scpv.type_name = 'property_value' AND scpv.id = pv.property_value_id
             WHERE pv.deleted = FALSE AND p.deleted = FALSE AND v.deleted = FALSE AND p.instance_id = $instance_id 
-                AND (LEFT(scp.ci_ai, 20) LIKE :src OR scpv.ci_ai LIKE :src) ORDER BY v.date_updated DESC;
+                AND (LEFT(scp.ci_ai, 20) LIKE :src OR scpv.ci_ai LIKE :src) ORDER BY v.date_updated DESC
+            LIMIT 40;
         ");
         $statement->bindValue(':src', "%$src%");
         $statement->execute();
@@ -3569,7 +3574,7 @@ class DB extends Base
      * @return array|\stdClass null when failed, row object when single = true, array with row objects otherwise
      * @since 0.0.0
      */
-    private function fetchRows(string $table_name, array $columns, array $where = array(), bool $single = false): array|\stdClass|null
+    private function fetchRows(string $table_name, array $columns, array $where = array(), bool $single = false, int $limit = 1000): array|\stdClass|null
     {
         // TODO when admin chosen online must be taken into account
         // TODO use data_popvote to order desc when available
@@ -3616,7 +3621,7 @@ class DB extends Base
         } elseif (in_array('date_created', $columns['names'])) {
             echo ' ORDER BY date_created DESC';
         }
-        echo ' LIMIT 1000;';
+        echo ' LIMIT ', $limit, ';';
         // prepare the statement to let it execute as fast as possible
         $statement = $this->conn->prepare(ob_get_clean());
         $statement->execute($where['values']);
