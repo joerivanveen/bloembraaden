@@ -403,8 +403,11 @@
 .peatcms-link,
 .PEATCMS_admin a,
 .PEATCMS_admin a:active,
+.PEATCMS_admin a:not(.button):hover,
 .PEATCMS_admin a:visited,
 .PEATCMS_admin .link {
+    padding: 0;
+    margin: 0;
     color: var(--admin-color-accent);
     text-decoration: underline;
     cursor: pointer;
