@@ -1444,6 +1444,8 @@ class Handler extends BaseLogic
                     }
                 } elseif ('admin_database_report' === $action) {
                     $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
+                    $apcuAvailable = function_exists('apcu_enabled') && apcu_enabled(); // todo remove
+                    $out['__rows__'][] = array('key' => 'apcu available', 'value' => $apcuAvailable); // todo remove
                     $out['slug'] = 'admin_database_report';
                 }
             } elseif ('reflect' === $action) {
@@ -1491,8 +1493,6 @@ class Handler extends BaseLogic
 
     public function View()
     {
-//        $apcuAvailable = function_exists('apcu_enabled') && apcu_enabled();
-//        die($apcuAvailable);
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();
         if (isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {

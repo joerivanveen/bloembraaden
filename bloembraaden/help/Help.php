@@ -1427,7 +1427,7 @@ class Help
             // setup output stream for feedback and write it to the log
             ob_start();
             Help::upgrade($db);
-            echo "\n", "\n";
+            echo "\n\n";
             error_log(ob_get_clean(), 3, Setup::$LOGFILE);
         } else {
             $installable = true;
@@ -1464,6 +1464,10 @@ class Help
             if (!function_exists('imagejpeg')) {
                 $installable = false;
                 echo 'please enable imagejpeg', "\n";
+            }
+            if (!(function_exists('apcu_enabled') && apcu_enabled())) {
+                $installable = false;
+                echo 'please install and enable apcu', "\n";
             }
             // check if a first instance domain is provided
             if (isset($_SERVER['HTTP_HOST'])) {
