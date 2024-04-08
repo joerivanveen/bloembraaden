@@ -309,7 +309,7 @@ class Search extends BaseElement
         $variant_ids_collect = array();
         $variant_ids_in_list = array();
         $variant_ids_show = array();
-        while ($index and count($variant_ids_show) < $quantity) {
+        while ($index && count($variant_ids_show) < $quantity) {
             --$index;
             $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
             $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
@@ -382,7 +382,10 @@ class Search extends BaseElement
         // now you have the single ones, make objects from them
         foreach ($rows as $index => $row) {
             if (isset($row->__ref)) continue; // already an object
-            $rows[$index] = $peat_type->getElement($row)->getOutput();
+            if (null === ($out = Help::getDB()->cached($row->slug))) {
+                $out = $peat_type->getElement($row)->cacheOutputObject(true);
+            }
+            $rows[$index] = $out;
         }
 
         return $rows;

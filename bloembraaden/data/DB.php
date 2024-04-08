@@ -1021,7 +1021,7 @@ class DB extends Base
     /**
      * @param Type $peat_type
      * @param string $column_name
-     * @param array $in indexed array holding id’s, when empty this method ALWAYS returns an empty array
+     * @param array $in indexed array holding id’s, when empty this method always returns an empty array
      * @param bool $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
      * @param int $limit default 1000 limits the number of rows
      * @return array indexed array holding plain row objects that are online (non-admin only) and not deleted
@@ -1063,7 +1063,7 @@ class DB extends Base
             $statement = null;
 
             return $rows;
-        } else { // column doesn't exist
+        } else {
             $this->addError(sprintf('Column %s does not exist', $column_name));
 
             return array();

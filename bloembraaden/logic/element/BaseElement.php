@@ -488,7 +488,7 @@ class BaseElement extends BaseLogic implements Element
     protected function addParentTags(\stdClass $row, string $name_space): void
     { // TODO this is funky, please make it right
         foreach ($row as $column_name => $column_value) {
-            if (false !== strpos($column_name, ':')) continue;
+            if (true === str_contains($column_name, ':')) continue;
             if (is_numeric($column_value) || (is_string($column_value) && strlen($column_value) < 256)) { // @since 0.8.0
                 $name = "$name_space:$column_name";
                 $this->row->{$name} = $column_value;
