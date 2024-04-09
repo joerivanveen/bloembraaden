@@ -2477,9 +2477,13 @@ class DB extends Base
                 }
 
                 return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->{$id_column});
-            } else { // insert
+            } elseif (false === $delete) { // insert
                 $update_array = $where;
-                $update_array[$order_column] = $this->getHighestO($link_table, $order_column); // @since 0.11.0 always add at the end
+                if ($order > 0) {
+                    $update_array[$order_column] = $order;
+                } else { // @since 0.19.3 if no order is specified, add at the end
+                    $update_array[$order_column] = $this->getHighestO($link_table, $order_column);
+                }
 
                 return 0 !== $this->insertRowAndReturnLastId($link_table, $update_array);
             }

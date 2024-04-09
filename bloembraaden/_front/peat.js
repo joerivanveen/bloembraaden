@@ -840,7 +840,7 @@ PEATCMS_element.prototype.populateLinkableArea = function (type, suggestions, sr
     }
     NAV.invalidateCache();
     // TODO simplify this, I am sure this is too elaborate
-    var linkable_area = this.linkable_areas[type],
+    let linkable_area = this.linkable_areas[type],
         linked_elements = this.getLinked(type),
         linked_element, i, len, n, remove, slug,
         children_by_slug = [], h, btn;

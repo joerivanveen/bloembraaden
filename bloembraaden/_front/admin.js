@@ -601,7 +601,7 @@ PEATCMS_actor.prototype.reflectChanged = function () {
     }
 }
 
-const PEATCMS_x_value = function (row, parent_element) { // contains property / property_value x_value triple cross table
+function PEATCMS_x_value(row, parent_element) { // contains property / property_value x_value triple cross table
     const el = document.createElement('div'),
         self = this;
     let btn, input;
@@ -670,12 +670,14 @@ const PEATCMS_x_value = function (row, parent_element) { // contains property / 
     });
     el.addEventListener('dragover', function (event) {
         event.preventDefault();
+        if (!event.dataTransfer.types.includes('x_value_id')) return;
         this.classList.add('order', 'dragover');
     });
     el.addEventListener('dragleave', function () {
         this.classList.remove('dragover');
     });
     el.addEventListener('drop', function (event) {
+        if (!event.dataTransfer.types.includes('x_value_id')) return;
         const dropped_x_value_id = parseInt(event.dataTransfer.getData('x_value_id'));
         this.classList.remove('dragover');
         NAV.ajax('/__action__/admin_x_value_order/', {
@@ -705,7 +707,7 @@ const PEATCMS_linkable = function (name, row, parent_element) {
     this.row = row;
     this.parent_element = parent_element;
     el.className = (row.online) ? 'online' : 'offline';
-    el.innerHTML = '<span class="drag_handle">::</span> <a href="/' + row.slug + '">' + row.title + '</a> ';
+    el.innerHTML = `<span class="drag_handle">::</span> <a href="/${row.slug}">${row.title}</a> `;
     el.appendChild(this.getLinkButton());
     el.PEATCMS_linkable = this;
     el.setAttribute('data-peatcms_slug', row.slug);
@@ -713,15 +715,18 @@ const PEATCMS_linkable = function (name, row, parent_element) {
     el.setAttribute('draggable', 'true');
     el.addEventListener('dragstart', function (event) {
         event.dataTransfer.setData('slug', row.slug);
+        event.dataTransfer.setData(self.getTypeName(), ''); // add element type to the types of dataTransfer
     });
     el.addEventListener('dragover', function (event) {
         event.preventDefault();
+        if (!event.dataTransfer.types.includes(el.PEATCMS_linkable.getTypeName())) return;
         this.classList.add('order', 'dragover');
     });
     el.addEventListener('dragleave', function () {
         this.classList.remove('dragover');
     });
     el.addEventListener('drop', function (event) {
+        if (!event.dataTransfer.types.includes(el.PEATCMS_linkable.getTypeName())) return;
         const dropped_slug = event.dataTransfer.getData('slug');
         this.classList.remove('dragover');
         this.parentNode.classList.add('peatcms_loading');
@@ -744,6 +749,10 @@ const PEATCMS_linkable = function (name, row, parent_element) {
     });
     // set
     this.DOMElement = el;
+}
+
+PEATCMS_linkable.prototype.getTypeName = function () {
+    return this.row.type_name || this.row.table_name.slice(4);
 }
 
 PEATCMS_linkable.prototype.getLinkButton = function () {
@@ -781,7 +790,7 @@ PEATCMS_linkable.prototype.isLinked = function () {
     return this.parent_element.hasLinked(this.name, this.getId());
 }
 
-const PEATCMS_searchable = function (name, parent_element) {
+function PEATCMS_searchable(name, parent_element) {
     const el = document.createElement('input');
     this.name = name;
     this.parent_element = parent_element;
@@ -1275,6 +1284,7 @@ function PEATCMS_panels() {
             this.panels[panel_name] = new PEATCMS_panel(panel_name, this.resetTools);
         }
     }
+
     function addResizer(panel, mover) {
         // resize is separate for now
         const positioner = document.getElementById(`admin_${panel}_positioner`);
@@ -1292,11 +1302,12 @@ function PEATCMS_panels() {
             document.addEventListener('mouseup', remover);
         });
     }
-    addResizer('sidebar', function(e) {
+
+    addResizer('sidebar', function (e) {
         e.preventDefault();
         document.documentElement.style.setProperty('--admin-sidebar-width', e.clientX + 'px');
     });
-    addResizer('console', function(e) {
+    addResizer('console', function (e) {
         e.preventDefault();
         const h = window.innerHeight;
         document.documentElement.style.setProperty('--admin-console-height', (h + 4 - e.clientY) + 'px');
@@ -1449,7 +1460,6 @@ function PEATCMS_admin() {
     hidden_cells = (this.getEditorConfig('console')).hidden_fields || {};
 
     function activate_cell() {
-        const el = this.querySelectorAll('.results')[0];
         if (this.classList.contains('active')) return;
         // remove the .active from all harmonicas
         document.querySelectorAll('#admin_console .cell.harmonica').forEach(
@@ -1641,7 +1651,7 @@ function PEATCMS_admin() {
                         PEAT.message('File uploaded successfully');
                         file_input.type = 'button';
                         file_input.value = '...';
-                        file_input.onclick = function(e) {
+                        file_input.onclick = function (e) {
                             this.type = 'file';
                         };
                         form.dispatchEvent(new Event('submit'));
@@ -1764,6 +1774,7 @@ function PEATCMS_admin() {
         if (el) self.startMenuEditor(el);
     });
 }
+
 PEATCMS_admin.prototype.pollServer = function () {
     const self = this;
     if (false === document.hasFocus()) return;
@@ -2112,10 +2123,10 @@ function peatcms_admin_setup() {
 /* function(s) */
 function PEATCMS_logevent(evt) {
     if (evt.detail) {
-        console.log('PEATCMS emitted event: ' + evt.type + ' with event.detail:');
+        console.log(`PEATCMS emitted event: ${evt.type} with event.detail:`);
         console.log(evt.detail);
     } else {
-        console.log('PEATCMS emitted event: ' + evt.type);
+        console.log(`PEATCMS emitted event: ${evt.type}`);
     }
 }
 

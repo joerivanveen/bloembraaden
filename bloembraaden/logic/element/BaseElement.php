@@ -199,7 +199,7 @@ class BaseElement extends BaseLogic implements Element
         foreach ($linked_types as $linked_type_name => $relation) {
             if ('x_value' === $linked_type_name) { // linked property values are a special breed...
                 if ('properties' === $relation) {
-                    if ( false === isset($this->row->__x_values__)) {
+                    if (false === isset($this->row->__x_values__)) {
                         // to improve performance we only get property slug and title, and property_value slug and title
                         $this->row->__x_values__ = Help::getDB()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
                         $this->row->__x_values__['item_count'] = count($this->row->__x_values__);
@@ -291,10 +291,15 @@ class BaseElement extends BaseLogic implements Element
 
     public function orderLinked(string $linkable_type_name, string $slug, string $before_slug, bool $full_feedback = true): array
     {
+        if ($slug === $before_slug) {
+            return $this->refreshLinked($linkable_type_name, $full_feedback);
+        }
+
         $linkable_type = new Type($linkable_type_name);
         $elements = $this->getLinked()[$linkable_type_name];
         $order_column = ($this->getLinkedTypes()->{$linkable_type_name} === 'cross_parent') ? 'o' : 'sub_o';
         $keep_order = 1;
+        $is_ordered = false;
         foreach ($elements as $key => $element_row) {
             if (false === is_int($key)) continue;
             if (false === isset($element_row->slug)) $element_row = $GLOBALS['slugs']->{$element_row->__ref};
@@ -305,12 +310,18 @@ class BaseElement extends BaseLogic implements Element
                 Help::getDB()->upsertLinked($this->getType(), $this->getId(),
                     new Type($dropped_element->type_name), $dropped_element->id, false, $keep_order);
                 $keep_order++;
+                $is_ordered = true;
             }
             if ($link_element->getRow()->{$order_column} !== $keep_order) {
                 Help::getDB()->upsertLinked($this->getType(), $this->getId(),
                     $link_element->getType(), $link_element->getId(), false, $keep_order);
             }
             $keep_order++;
+        }
+        // when the dropped item could not be ordered, it is dropped outside the list, must be unlinked
+        if (false === $is_ordered) {
+            $dropped_element = Help::getDB()->fetchElementIdAndTypeBySlug($slug);
+            $this->link($dropped_element->type_name, $dropped_element->id, true);
         }
         if (true === $full_feedback) {
             if (!$this->reCache()) {
