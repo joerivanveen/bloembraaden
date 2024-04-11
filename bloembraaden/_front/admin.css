@@ -907,7 +907,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     margin-right: 4px; /* the width of the positioner */
     padding: 2em 8px;
     overflow-y: auto;
-    max-width: calc(100% - 16px);
+    max-width: calc(100% - 20px);
 }
 
 .edit-area .button.delete,
@@ -1143,12 +1143,14 @@ body .PEATCMS_admin span.template_status {
 #admin_console_checkbox:checked ~ #admin_console {
     height: var(--admin-console-height);
     max-height: calc(100vh - 5px);
+    min-height: 50px;
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_sidebar {
     left: 0;
     width: var(--admin-sidebar-width);
     max-width: calc(100vw - 5px);
+    min-width: 105px;
 }
 
 #admin_sidebar_checkbox:checked ~ #admin_console_button,
