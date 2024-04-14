@@ -1522,6 +1522,9 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
 }
 
 PEATCMS_template.prototype.render = function (out) {
+    if (! out.hasOwnProperty('dark_mode')) {
+        out.dark_mode = PEAT.getSessionVar('dark_mode');
+    }
     // master template contains page html broken down in parts
     //console.log(this.template);
     // benchmarking (was: ~380 ms 2020-02-10 with petitclos template)
