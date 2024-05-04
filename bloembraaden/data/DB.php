@@ -1927,6 +1927,22 @@ class DB extends Base
         return $rows;
     }
 
+    public function jobGetOrdersForMyParcel(): array
+    {
+        $statement = $this->conn->prepare(
+            'SELECT i.instance_id, i.myparcel_api_key, o.*
+            FROM _instance i
+            INNER JOIN _order o ON o.instance_id = i.instance_id
+            WHERE o.myparcel_exported = FALSE AND o.payment_confirmed_bool = TRUE
+            ORDER BY i.instance_id, o.payment_confirmed_date DESC;'
+        );
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        return $rows;
+    }
+
     public function deleteSearchIndex(BaseElement $element): bool
     {
         $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE type_name = :type AND id = :id;');

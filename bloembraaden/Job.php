@@ -25,7 +25,7 @@ define('ADMIN', true); // todo remove this once we have it properly setup, neces
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 switch ($interval) {
-    case '1': // interval should be '1'
+    case '100': // interval should be '1'
         $trans->start('Mail order confirmations');
         // @since 0.5.16: mail order confirmation to client
         // @since 0.9.0: added creation of invoice and sending payment confirmation to client
@@ -322,6 +322,41 @@ switch ($interval) {
             } // todo: log mail into _history?
         }
         unset($mailer);
+        $rows = $db->jobGetOrdersForMyParcel();
+        if (count($rows) > 0) {
+            $trans->start('Orders for MyParcel');
+            foreach ($rows as $index => $row) {
+                if ('' === $row->myparcel_api_key) {
+                    $db->updateColumns('_order', array(
+                        'myparcel_exported' => true,
+                        'myparcel_exported_date' => 'NOW()',
+                        'myparcel_exported_response' => 'No api key present.'
+                    ), $row->order_id);
+                    continue;
+                }
+                // somewhat duplicate code
+                $order_number = $row->order_number;
+                if (false === Help::obtainLock("myparcel.order.$order_number")) continue;
+                $instance_id = $row->instance_id;
+                if (Setup::$instance_id !== $instance_id) {
+                    Setup::loadInstanceSettings(new Instance($db->fetchInstanceById($instance_id)));
+                }
+                echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
+                // make order with the row
+                $order = new Order($row);
+                // convert order to myparcel json
+                var_dump($order->getOutput());
+                die();
+                // post the order to myparcel using curl
+
+                // record the response and set true + date for the export when successful
+
+                // set myparcel_exported to true as well... if anything fails, try again next run?
+
+                // TODO make button to set myparcel_exported to false, so it will be tried again next run
+            }
+            return; // JOERI TEMP
+        }
         $trans->start('Create missing search index records');
         $limit = 250;
         foreach ($db::TYPES_WITH_CI_AI as $index => $type_name) {

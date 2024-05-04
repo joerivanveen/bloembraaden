@@ -1473,6 +1473,7 @@ class Handler extends BaseLogic
                 $out->__session__ = Help::$session->getUpdatedVars();
                 if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
+                // todo, log json error when present?
                 unset($out);
                 header('Content-Type: application/json');
                 header('Content-Encoding: gzip');

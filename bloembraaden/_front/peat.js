@@ -1529,6 +1529,7 @@ PEATCMS_template.prototype.render = function (out) {
     //console.log(this.template);
     // benchmarking (was: ~380 ms 2020-02-10 with petitclos template)
     // benchmarking (was: ~18000 ms 2022-07-14 with petitclos template)
+    // benchmarking (was: ~17 s 2024-04-14 with petitclos template)
     /*console.warn('currently benchmarking with 1000 renders...');
     var hallo = new Date(),
         i;

@@ -156,6 +156,15 @@
                        {{send_invoice_as_pdf: checked="checked" }}/>
                 <label for="send_invoice_as_pdf_{{instance_id}}">attach invoice to payment confirmation</label>
             </span>
+            <h4>MyParcel</h4>
+            <div><label>Api key:</label>
+                <input type="text" class="PEATCMS_editable"
+                       data-column_name="myparcel_api_key"
+                       data-table_name="_instance"
+                       placeholder="MyParcel api key"
+                       value="{{myparcel_api_key}}"
+                       data-handle="update_column"/>
+            </div>
             <h4>Payment Service Provider
                 <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
                        data-table_parent_id="{{instance_id}}"

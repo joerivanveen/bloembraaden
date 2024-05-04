@@ -3153,3 +3153,20 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.20.0
+
+BEGIN;
+
+ALTER TABLE _instance
+    ADD COLUMN if not exists myparcel_api_key Character Varying(127) Default '' NOT NULL;
+
+ALTER TABLE _order
+    ADD COLUMN if not exists myparcel_exported Boolean DEFAULT false NOT NULL,
+    ADD COLUMN if not exists myparcel_exported_success Boolean DEFAULT false NOT NULL,
+    ADD COLUMN if not exists myparcel_exported_response Text,
+    ADD COLUMN if not exists myparcel_exported_date Timestamp With Time Zone;
+
+UPDATE _order SET myparcel_exported = TRUE, myparcel_exported_response = 'Not yet implemented.', myparcel_exported_date = NOW() WHERE 1 = 1;
+
+COMMIT;
