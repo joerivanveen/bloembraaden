@@ -326,7 +326,7 @@ switch ($interval) {
         if (count($rows) > 0) {
             $trans->start('Orders for MyParcel');
             foreach ($rows as $index => $row) {
-                if ('' === $row->myparcel_api_key) {
+                if ('' === ($myparcel_api_key = $row->myparcel_api_key)) {
                     $db->updateColumns('_order', array(
                         'myparcel_exported' => true,
                         'myparcel_exported_date' => 'NOW()',
@@ -345,14 +345,120 @@ switch ($interval) {
                 // make order with the row
                 $order = new Order($row);
                 // convert order to myparcel json
-                var_dump($order->getOutput());
-                die();
+        $order_myparcel_format = '
+      {
+          "fulfilment_partner_identifier": null,
+        "external_identifier": "blab44la",
+        "order_date": "2021-05-18 10:00:00",
+        "invoice_address": null,
+        "language": "NL",
+        "account_id": 1,
+        "shop_id": 1,
+        "type": "consumer",
+        "price": 24,
+        "vat": 33,
+        "price_after_vat": 2345,
+        "shipment": {
+          "recipient": {
+              "cc": "NL",
+            "street": "Antareslaan",
+            "person": "F Bakker",
+            "city": "Hoofddorp",
+            "postal_code": "2132 JE",
+            "number": "31"
+          },
+          "pickup": null,
+          "options": {
+              "large_format": 1,
+            "package_type": 1
+          },
+          "physical_properties": {
+              "weight": 1000,
+            "height": 50,
+            "width": 60,
+            "length": 70
+          },
+          "customs_declaration": null,
+          "carrier": 1
+        },
+        "order_lines": [
+          {
+              "quantity": 10,
+            "price": 22,
+            "vat": 11,
+            "price_after_vat": 33,
+            "product": {
+              "sku": "1",
+              "name": "xx"
+            },
+            "instructions": null,
+            "shippable": true
+          },
+          {
+              "quantity": 10,
+            "price": 22,
+            "vat": 11,
+            "price_after_vat": 33,
+            "product": {
+              "sku": "2245",
+              "name": "te22st"
+            },
+            "instructions": null,
+            "shippable": true
+          }
+        ]
+      }';
+
                 // post the order to myparcel using curl
+                $curl = curl_init();
+                curl_setopt_array($curl, array(
+                    CURLOPT_URL => 'https://api.myparcel.nl/fulfilment/orders',
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_ENCODING => '',
+                    CURLOPT_MAXREDIRS => 10,
+                    CURLOPT_TIMEOUT => 30,
+                    CURLOPT_CONNECTTIMEOUT => 3,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => "{data:{orders:[$order_myparcel_format]}}",
+//                    CURLOPT_POSTFIELDS => \http_build_query((object)array(
+//                        'data' => (object)array(
+//                            'orders' => array($order_myparcel_format),
+//                        ),
+//                    )),
+                    CURLOPT_HTTPHEADER => array(
+                        'Accept: application/json',
+                        'Authorization: Bearer ' . base64_encode($myparcel_api_key),
+                        'Content-type: application/json;charset=utf-8',
+                    ),
+                ));
+                $result = curl_exec($curl);
+                // receives an array with the order object with uuid set.
+                $err = curl_error($curl);
+                $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
+                curl_close($curl);
+                if ($err) {
+                    Help::addError(new \Exception("MyParcel curl error: $err"));
+                } else {
+                    $return_object = json_decode($result);
+                    var_dump($return_object);
+                    die();
+                    if ($status_code >= 400) {
+                        if (json_last_error() === 0) {
+                            Help::addError(new \Exception('MyParcel error ' . ($return_object->message ?? var_export($return_object, true))));
+                        } else {
+                            Help::addError(new \Exception("MyParcel status $status_code error (1): $result"));
+                        }
+                     } elseif (json_last_error() !== 0) {
+                        Help::addError(new \Exception("MyParcel status $status_code error (2): $result"));
+                    } else { // success
+                        // record the response and set true + date for the export when successful
 
-                // record the response and set true + date for the export when successful
+                        // set myparcel_exported to true as well... if anything fails, try again next run?
 
-                // set myparcel_exported to true as well... if anything fails, try again next run?
 
+                    }
+                }
                 // TODO make button to set myparcel_exported to false, so it will be tried again next run
             }
             return; // JOERI TEMP
