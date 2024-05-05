@@ -24,14 +24,18 @@
             <span>E-mail</span>
             <span>Factuuradres</span>
             <span class="amount">Totaalbedrag</span>
+            <span><svg viewBox="0 0 203.6 203.6"><!-- Icon --><path d="M16.6,148c-5.7,0-11.2-2.9-14.2-8.2c-4.6-7.9-1.9-17.9,6-22.5L111,57.7c7.9-4.6,17.9-1.9,22.5,6 s1.9,17.9-6,22.5L24.9,145.8C22.3,147.3,19.5,148,16.6,148z M68.1,177.6c-5.7,0-11.2-2.9-14.2-8.2c-4.6-7.9-1.9-17.9,6-22.5 l51.3-29.8c7.9-4.6,17.9-1.9,22.5,6s1.9,17.9-6,22.5l-51.3,29.8C73.8,176.8,70.9,177.6,68.1,177.6z M16.5,88.7 c-5.7,0-11.2-2.9-14.2-8.2c-4.6-7.9-1.9-17.9,6-22.5l51.2-29.8c7.9-4.6,17.9-1.9,22.5,6s1.9,17.9-6,22.5L24.7,86.5 C22.1,88,19.3,88.7,16.5,88.7z"></path></svg></span>
         </div>
         {%__orders__%}
         <div id="order-{{order_id}}" class="row" {{payment_confirmed_bool: data-paid="1" }}{{emailed_payment_confirmation_success:
-             data-emailed="1" }} {{payment_live_flag data-payment_live_flag="1" }}>
+             data-emailed="1" }}{{myparcel_exported:
+             data-myparcel_exported="1" }} {{myparcel_exported_success:
+             data-myparcel_exported_success="1" }} {{payment_live_flag data-payment_live_flag="1" }}>
             <a href="/__order__/{{order_number}}">{{order_number|format_order_number}}</a>
             <span>{{user_email}} {{emailed_payment_confirmation_success:&#x2713;:not:×}}</span>
             <span>{{billing_address_city}}</span>
             <span class="amount">€ {{amount_grand_total|format_money}}</span>
+            <span class="status"></span>
         </div>
         {%__orders__%}
     </section>

@@ -25,7 +25,7 @@ define('ADMIN', true); // todo remove this once we have it properly setup, neces
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 switch ($interval) {
-    case '100': // interval should be '1'
+    case '1': // interval should be '1'
         $trans->start('Mail order confirmations');
         // @since 0.5.16: mail order confirmation to client
         // @since 0.9.0: added creation of invoice and sending payment confirmation to client
@@ -345,70 +345,106 @@ switch ($interval) {
                 // make order with the row
                 $order = new Order($row);
                 // convert order to myparcel json
-        $order_myparcel_format = '
-      {
-          "fulfilment_partner_identifier": null,
-        "external_identifier": "blab44la",
-        "order_date": "2021-05-18 10:00:00",
-        "invoice_address": null,
-        "language": "NL",
-        "account_id": 1,
-        "shop_id": 1,
-        "type": "consumer",
-        "price": 24,
-        "vat": 33,
-        "price_after_vat": 2345,
-        "shipment": {
-          "recipient": {
-              "cc": "NL",
-            "street": "Antareslaan",
-            "person": "F Bakker",
-            "city": "Hoofddorp",
-            "postal_code": "2132 JE",
-            "number": "31"
-          },
-          "pickup": null,
-          "options": {
-              "large_format": 1,
-            "package_type": 1
-          },
-          "physical_properties": {
-              "weight": 1000,
-            "height": 50,
-            "width": 60,
-            "length": 70
-          },
-          "customs_declaration": null,
-          "carrier": 1
-        },
-        "order_lines": [
-          {
-              "quantity": 10,
-            "price": 22,
-            "vat": 11,
-            "price_after_vat": 33,
-            "product": {
-              "sku": "1",
-              "name": "xx"
-            },
-            "instructions": null,
-            "shippable": true
-          },
-          {
-              "quantity": 10,
-            "price": 22,
-            "vat": 11,
-            "price_after_vat": 33,
-            "product": {
-              "sku": "2245",
-              "name": "te22st"
-            },
-            "instructions": null,
-            "shippable": true
-          }
-        ]
-      }';
-
+                $o = $order->getOutput();
+                $shipping_cc = $o->shipping_address_country_iso2;
+                $is_pickup = $shipping_cc === 'XX';
+                $package_type = 1;
+                if ($is_pickup) {
+                    $shipping_cc = 'NL';
+                    $package_type = 3;
+                }
+                $order_lines = array();
+                $highest_vat = 0;
+                foreach ($o->__items__ as $index => $line) {
+                    $vat_percentage = Help::getAsFloat($line->vat_percentage);
+                    $highest_vat = max($highest_vat, $vat_percentage);
+                    $quantity = (int)$line->quantity;
+                    $myp_price = (int)(100 * Help::getAsFloat($line->price));
+                    $myp_vat = (int)($vat_percentage * $myp_price / (100.0 + $vat_percentage));
+                    $order_lines[] = (object)array(
+                        'quantity' => $quantity,
+                        'price' => $myp_price - $myp_vat,
+                        'vat' => $myp_vat,
+                        'price_after_vat' => $myp_price,
+                        'product' => (object)array(
+                            'sku' => $line->sku,
+                            'name' => $line->title
+                        ),
+                        'instructions' => null,
+                        'shippable' => true
+                    );
+                }
+                $shipping_costs = (int)(100 * Help::getAsFloat($o->shipping_costs));
+                $shipping_costs_vat = (int)($highest_vat * $shipping_costs / (100.0 + $highest_vat));
+                $order_lines[] = (object)array(
+                    'quantity' => 1,
+                    'price' => $shipping_costs - $shipping_costs_vat,
+                    'vat' => $shipping_costs_vat,
+                    'price_after_vat' => $shipping_costs,
+                    'product' => (object)array(
+                        'sku' => '',
+                        'name' => __('Shipping', 'peatcms')
+                    ),
+                    'instructions' => null,
+                    'shippable' => false
+                );
+                /**
+                 * afhalen = package_type 3 (letter)
+                 * MyParcel expects prices in euro cents
+                 */
+                $order_myparcel_json = json_encode((object)array(
+                    'external_identifier' => $o->order_number_human,
+                    'order_date' => $o->date_created,
+                    'invoice_address' => (object)array(
+                        'cc' => $shipping_cc,
+                        'street' => implode(' ', array(
+                            $o->billing_address_street,
+                            $o->billing_address_number,
+                            $o->billing_address_number_addition,
+                        )),
+                        'person' => substr($o->billing_address_name, -40),
+                        'company' => $o->billing_address_company,
+                        'email' => $o->user_email,
+                        'phone' => $o->user_phone,
+                        'city' => $o->billing_address_city,
+                        'postal_code' => $o->billing_address_postal_code,
+                        //'number'=> '31',
+                        //'number_suffix'=> 'bis',
+                    ),
+                    'language' => 'NL',
+                    'type' => 'consumer',
+                    'price' => (int)(100 * Help::getAsFloat($o->amount_grand_total_ex_vat)),
+                    //'vat'=>
+                    'price_after_vat' => (int)(100 * Help::getAsFloat($o->amount_grand_total)),
+                    'shipment' => (object)array(
+                        'recipient' => (object)array(
+                            'cc' => $shipping_cc,
+                            'street' => implode(' ', array(
+                                $o->shipping_address_street,
+                                $o->shipping_address_number,
+                                $o->shipping_address_number_addition,
+                            )),
+                            'person' => substr($o->shipping_address_name, -40),
+                            'company' => $o->shipping_address_company,
+                            'email' => $o->user_email,
+                            'phone' => $o->user_phone,
+                            'city' => $o->shipping_address_city,
+                            'postal_code' => $o->shipping_address_postal_code,
+                            //'number'=> '31',
+                            //'number_suffix'=> 'bis',
+                        ),
+                        'pickup' => null,
+                        'options' => (object)array(
+                            'package_type' => $package_type,
+                        ),
+                        'physical_properties' => (object)array(
+                            'weight' => 1000,
+                        ),
+                        'customs_declaration' => null,
+                        'carrier' => 1
+                    ),
+                    'order_lines' => $order_lines,
+                ));
                 // post the order to myparcel using curl
                 $curl = curl_init();
                 curl_setopt_array($curl, array(
@@ -420,12 +456,7 @@ switch ($interval) {
                     CURLOPT_CONNECTTIMEOUT => 3,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                     CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => "{data:{orders:[$order_myparcel_format]}}",
-//                    CURLOPT_POSTFIELDS => \http_build_query((object)array(
-//                        'data' => (object)array(
-//                            'orders' => array($order_myparcel_format),
-//                        ),
-//                    )),
+                    CURLOPT_POSTFIELDS => "{\"data\":{\"orders\":[$order_myparcel_json]}}",
                     CURLOPT_HTTPHEADER => array(
                         'Accept: application/json',
                         'Authorization: Bearer ' . base64_encode($myparcel_api_key),
@@ -441,27 +472,44 @@ switch ($interval) {
                     Help::addError(new \Exception("MyParcel curl error: $err"));
                 } else {
                     $return_object = json_decode($result);
-                    var_dump($return_object);
-                    die();
                     if ($status_code >= 400) {
                         if (json_last_error() === 0) {
                             Help::addError(new \Exception('MyParcel error ' . ($return_object->message ?? var_export($return_object, true))));
                         } else {
                             Help::addError(new \Exception("MyParcel status $status_code error (1): $result"));
                         }
-                     } elseif (json_last_error() !== 0) {
+                    } elseif (json_last_error() !== 0) {
                         Help::addError(new \Exception("MyParcel status $status_code error (2): $result"));
                     } else { // success
                         // record the response and set true + date for the export when successful
-
-                        // set myparcel_exported to true as well... if anything fails, try again next run?
-
-
+                        try {
+                            $order_confirmed = (object)$return_object->data->orders[0];
+                        } catch (\Throwable) {
+                            Help::addError(new \Exception("MyParcel no order in response for $o->order_number_human: " . var_export($return_object, true)));
+                        }
+                        if (property_exists($order_confirmed, 'external_identifier')
+                            && property_exists($order_confirmed, 'uuid')
+                        ) {
+                            if ($o->order_number_human === $order_confirmed->external_identifier) {
+                                if (true === $db->updateColumns('_order', array(
+                                        'myparcel_exported' => true,
+                                        'myparcel_exported_success' => true,
+                                        'myparcel_exported_date' => 'NOW()',
+                                        'myparcel_exported_uuid' => Help::slugify($order_confirmed->uuid),
+                                    ), $row->order_id)) {
+                                    echo " ^ OK\n";
+                                }
+                            } else {
+                                Help::addError(new \Exception("MyParcel wrong identifier for $o->order_number_human: " . var_export($order_confirmed, true)));
+                            }
+                        } else {
+                            Help::addError(new \Exception("MyParcel no reference or uuid for $o->order_number_human: " . var_export($order_confirmed, true)));
+                        }
                     }
                 }
                 // TODO make button to set myparcel_exported to false, so it will be tried again next run
             }
-            return; // JOERI TEMP
+            //return; // JOERI TEMP
         }
         $trans->start('Create missing search index records');
         $limit = 250;

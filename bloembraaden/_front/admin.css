@@ -1226,6 +1226,21 @@ body .PEATCMS_admin span.template_status {
     background-color: var(--admin-color-ok-bg);
 }
 
+.order-table .row[data-myparcel_exported] .status {
+    background-color: #ffC400;
+}
+
+.order-table .row[data-myparcel_exported_success] .status {
+    background-color: #0f5c47;
+}
+
+.order-table .header svg {
+    fill: #0f5c47;
+    width: 22px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
 .payment-table .row:not([data-processed]) {
     background-color: var(--admin-color-no-bg);
 }
