@@ -1258,19 +1258,66 @@ header.payment {
     font-weight: normal;
 }
 
+/**
+ * paging with a bit of animation now
+ */
 .PEATCMS_admin .paging {
     padding: .5rem 0;
+    margin-bottom: 2rem;
 }
 
 .PEATCMS_admin .paging a {
-    padding: .2rem .4rem;
+    display: inline-block;
+    float: left;
+    width: .4rem;
+    height: .4rem;
+    margin-top: .4rem;
+    line-height: 1.4em;
+    font-size: 30%;
+    padding: 0;
+    text-align: center;
+    overflow: hidden;
+    transition: all ease-in .4s;
+    outline: solid 1px var(--admin-color-accent);
+    outline-offset: -.5px;
 }
 
 .PEATCMS_admin .paging a.peatcms-current-slug {
     text-decoration: none;
-    outline: solid 1px var(--admin-color-key);
+    background-color: var(--admin-color-accent);
+    color: var(--admin-color-paper);
 }
 
+.PEATCMS_admin .paging a[data-page-distance="2"] {
+    width: 1.6rem;
+    height: 1.2rem;
+    margin-top: .1rem;
+    font-size: 90%;
+}
+
+.PEATCMS_admin .paging a[data-page-distance="3"] {
+    width: 1.1rem;
+    height: .9rem;
+    margin-top: .2rem;
+    font-size: 70%;
+}
+
+.PEATCMS_admin .paging a[data-page-distance="4"] {
+    width: .6rem;
+    height: .6rem;
+    margin-top: .3rem;
+    font-size: 50%;
+}
+
+.PEATCMS_admin .paging a:hover,
+.PEATCMS_admin .paging a[data-page-distance="1"],
+.PEATCMS_admin .paging a:focus-visible,
+.PEATCMS_admin .paging a.peatcms-current-slug {
+    width: 2rem;
+    height: 1.4rem;
+    margin-top: 0;
+    font-size: 100%;
+}
 
 .payment-table .row.raw {
     display: none;

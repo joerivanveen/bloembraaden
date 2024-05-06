@@ -1001,7 +1001,7 @@ class DB extends Base
      * @param int $page_size default 400 use the same as fetchElementRowsPage obviously to get the right amount returned
      * @return array
      */
-    public function fetchElementRowsPageNumbers(Type $peat_type, int $page_size = 400): array
+    public function fetchElementRowsPageNumbers(Type $peat_type, int $current_page, int $page_size = 400): array
     {
         $table_name = $peat_type->tableName();
         $table_info = $this->getTableInfo($table_name);
@@ -1017,7 +1017,10 @@ class DB extends Base
         $statement = null;
         $return = array();
         for ($i = 1; $i <= $number_of_pages; ++$i) {
-            $return[] = (object)array('page_number' => $i);
+            $return[] = (object)array(
+                'page_number' => $i,
+                'page_distance' => abs($i - $current_page),
+            );
         }
 
         return $return;

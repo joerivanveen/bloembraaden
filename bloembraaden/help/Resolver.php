@@ -229,7 +229,7 @@ class Resolver extends BaseLogic
                             $peat_type = new Type('order');
                             $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
                             $slug = "__order__/page:$page";
-                            $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page_size);
+                            $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page, $page_size);
                         }
                         if (1 === count($orders)) {
                             $order = new Order($orders[0]);

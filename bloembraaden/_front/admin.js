@@ -1429,11 +1429,8 @@ function PEATCMS_admin() {
                 document.addEventListener('peatcms.document_ready', enhanceToggles);
                 document.addEventListener('peatcms.progressive_ready', function (e) {
                     const detail = e.detail;
-                    let el;
-                    if (detail.hasOwnProperty('slug')) {
-                        if (detail.hasOwnProperty('parent_element') && (el = detail.parent_element)) {
-                            CMS_admin.enhanceToggle(el.querySelectorAll('.toggle_button'));
-                        }
+                    if (detail.hasOwnProperty('slug') && detail.hasOwnProperty('parent_element')) {
+                        CMS_admin.enhanceToggle(detail.parent_element.querySelectorAll('.toggle_button'));
                     }
                 });
             } else {
@@ -1441,7 +1438,7 @@ function PEATCMS_admin() {
             }
         });
     /**
-     * setup the buttons / admin interface
+     * set up the buttons / admin interface
      */
     // for each button, create a 'new' request to the server, and redirect to the new element
     nodes = document.querySelectorAll('button[data-action="new"]');
@@ -1662,6 +1659,42 @@ function PEATCMS_admin() {
                 }, file_input.files[0], null, file_input);
                 // only then submit the form proper, with the filename in the form
             });
+        });
+        // for paging, set proximity
+        document.querySelectorAll('.PEATCMS_admin .paging').forEach(function (div) {
+            const nodes = div.querySelectorAll('a'),
+                len = nodes.length;
+            function act(self, hover) {
+                const nodes = self.parentNode.querySelectorAll('a'),
+                    len = nodes.length;
+                let current = 0, hovered = null, i;
+                for (i = 0; i < len; ++i) {
+                    const node = nodes[i];
+                    if (hover && self === node) {
+                        hovered = i;
+                    }
+                    if (node.classList.contains('peatcms-current-slug')) {
+                        current = i;
+                        if (null === hovered) hovered = i;
+                    }
+                }
+                if (null === hovered) hovered = current;
+                for (i = 0; i < len; ++i) {
+                    const dist = Math.min(Math.abs(i - current), Math.abs(i - hovered));
+                    nodes[i].setAttribute('data-page-distance', dist.toString());
+                    nodes[i].setAttribute('data-i-h-c', i + ' ' + hovered + ' ' + current);
+                }
+            }
+            function hover(which) { act(which, true); }
+            function unhover(which) {act(which); }
+            for (let i = 0; i < len; ++i) {
+                nodes[i].addEventListener('mouseover', function() {
+                    hover(this);
+                });
+                nodes[i].addEventListener('mouseout', function() {
+                    unhover(this);
+                });
+            }
         });
     }
 
