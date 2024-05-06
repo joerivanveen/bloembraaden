@@ -345,8 +345,8 @@ switch ($interval) {
                 // make order with the row
                 $order = new Order($row);
                 // convert order to myparcel json
-                $o = $order->getOutput();
-                $shipping_cc = $o->shipping_address_country_iso2;
+                $order_out = $order->getOutput();
+                $shipping_cc = $order_out->shipping_address_country_iso2;
                 $is_pickup = $shipping_cc === 'XX';
                 $package_type = 1;
                 if ($is_pickup) {
@@ -355,7 +355,7 @@ switch ($interval) {
                 }
                 $order_lines = array();
                 $highest_vat = 0;
-                foreach ($o->__items__ as $index => $line) {
+                foreach ($order_out->__items__ as $index => $line) {
                     $vat_percentage = Help::getAsFloat($line->vat_percentage);
                     $highest_vat = max($highest_vat, $vat_percentage);
                     $quantity = (int)$line->quantity;
@@ -374,7 +374,7 @@ switch ($interval) {
                         'shippable' => true
                     );
                 }
-                $shipping_costs = (int)(100 * Help::getAsFloat($o->shipping_costs));
+                $shipping_costs = (int)(100 * Help::getAsFloat($order_out->shipping_costs));
                 $shipping_costs_vat = (int)($highest_vat * $shipping_costs / (100.0 + $highest_vat));
                 $order_lines[] = (object)array(
                     'quantity' => 1,
@@ -392,44 +392,47 @@ switch ($interval) {
                  * afhalen = package_type 3 (letter)
                  * MyParcel expects prices in euro cents
                  */
+                $company_name = html_entity_decode($order_out->billing_address_company);
+                // person name in address may only be 40 character long for MyParcel
+                $person_name = substr(html_entity_decode($order_out->billing_address_name), -40);
                 $order_myparcel_json = json_encode((object)array(
-                    'external_identifier' => $o->order_number_human,
-                    'order_date' => $o->date_created,
+                    'external_identifier' => $order_out->order_number_human,
+                    'order_date' => $order_out->date_created,
                     'invoice_address' => (object)array(
-                        'cc' => $shipping_cc,
+                        'cc' => $order_out->billing_address_country_iso2,
                         'street' => implode(' ', array(
-                            $o->billing_address_street,
-                            $o->billing_address_number,
-                            $o->billing_address_number_addition,
+                            html_entity_decode($order_out->billing_address_street),
+                            $order_out->billing_address_number,
+                            $order_out->billing_address_number_addition,
                         )),
-                        'person' => substr($o->billing_address_name, -40),
-                        'company' => $o->billing_address_company,
-                        'email' => $o->user_email,
-                        'phone' => $o->user_phone,
-                        'city' => $o->billing_address_city,
-                        'postal_code' => $o->billing_address_postal_code,
+                        'person' => $person_name,
+                        'company' => $company_name,
+                        'email' => $order_out->user_email,
+                        'phone' => $order_out->user_phone,
+                        'city' => html_entity_decode($order_out->billing_address_city),
+                        'postal_code' => $order_out->billing_address_postal_code,
                         //'number'=> '31',
                         //'number_suffix'=> 'bis',
                     ),
                     'language' => 'NL',
                     'type' => 'consumer',
-                    'price' => (int)(100 * Help::getAsFloat($o->amount_grand_total_ex_vat)),
+                    'price' => (int)(100 * Help::getAsFloat($order_out->amount_grand_total_ex_vat)),
                     //'vat'=>
-                    'price_after_vat' => (int)(100 * Help::getAsFloat($o->amount_grand_total)),
+                    'price_after_vat' => (int)(100 * Help::getAsFloat($order_out->amount_grand_total)),
                     'shipment' => (object)array(
                         'recipient' => (object)array(
                             'cc' => $shipping_cc,
                             'street' => implode(' ', array(
-                                $o->shipping_address_street,
-                                $o->shipping_address_number,
-                                $o->shipping_address_number_addition,
+                                html_entity_decode($order_out->shipping_address_street),
+                                $order_out->shipping_address_number,
+                                $order_out->shipping_address_number_addition,
                             )),
-                            'person' => substr($o->shipping_address_name, -40),
-                            'company' => $o->shipping_address_company,
-                            'email' => $o->user_email,
-                            'phone' => $o->user_phone,
-                            'city' => $o->shipping_address_city,
-                            'postal_code' => $o->shipping_address_postal_code,
+                            'person' => $person_name,
+                            'company' => $company_name,
+                            'email' => $order_out->user_email,
+                            'phone' => $order_out->user_phone,
+                            'city' => html_entity_decode($order_out->shipping_address_city),
+                            'postal_code' => $order_out->shipping_address_postal_code,
                             //'number'=> '31',
                             //'number_suffix'=> 'bis',
                         ),
@@ -458,9 +461,10 @@ switch ($interval) {
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => "{\"data\":{\"orders\":[$order_myparcel_json]}}",
                     CURLOPT_HTTPHEADER => array(
-                        'Accept: application/json',
+                        'Accept: application/json;charset=utf-8',
                         'Authorization: Bearer ' . base64_encode($myparcel_api_key),
                         'Content-type: application/json;charset=utf-8',
+                        'User-Agent: Bloembraaden/' . Setup::$VERSION
                     ),
                 ));
                 $result = curl_exec($curl);
@@ -485,12 +489,12 @@ switch ($interval) {
                         try {
                             $order_confirmed = (object)$return_object->data->orders[0];
                         } catch (\Throwable) {
-                            Help::addError(new \Exception("MyParcel no order in response for $o->order_number_human: " . var_export($return_object, true)));
+                            Help::addError(new \Exception("MyParcel no order in response for $order_out->order_number_human: " . var_export($return_object, true)));
                         }
                         if (property_exists($order_confirmed, 'external_identifier')
                             && property_exists($order_confirmed, 'uuid')
                         ) {
-                            if ($o->order_number_human === $order_confirmed->external_identifier) {
+                            if ($order_out->order_number_human === $order_confirmed->external_identifier) {
                                 if (true === $db->updateColumns('_order', array(
                                         'myparcel_exported' => true,
                                         'myparcel_exported_success' => true,
@@ -500,10 +504,10 @@ switch ($interval) {
                                     echo " ^ OK\n";
                                 }
                             } else {
-                                Help::addError(new \Exception("MyParcel wrong identifier for $o->order_number_human: " . var_export($order_confirmed, true)));
+                                Help::addError(new \Exception("MyParcel wrong identifier for $order_out->order_number_human: " . var_export($order_confirmed, true)));
                             }
                         } else {
-                            Help::addError(new \Exception("MyParcel no reference or uuid for $o->order_number_human: " . var_export($order_confirmed, true)));
+                            Help::addError(new \Exception("MyParcel no reference or uuid for $order_out->order_number_human: " . var_export($order_confirmed, true)));
                         }
                     }
                 }
