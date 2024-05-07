@@ -1208,6 +1208,8 @@ body .PEATCMS_admin span.template_status {
     font-weight: bold;
 }
 
+.payment-table .row > a:not(.button),
+.order-table .row > a:not(.button),
 .payment-table .row > *,
 .order-table .row > * {
     display: table-cell;
