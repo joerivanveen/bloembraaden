@@ -4663,7 +4663,7 @@ class DB extends Base
     {
         $sql_date = date('Y-m-d H:i:s', $timestamp);
         $query = 'SELECT DISTINCT table_name, key FROM _history WHERE date_created >= :date AND instance_id = :instance_id';
-        if (false === $is_admin) {
+        if (true === $is_admin) {
             $statement = $this->conn->prepare("$query;");
         } else {
             $statement = $this->conn->prepare("$query AND user_id = :user_id;");
