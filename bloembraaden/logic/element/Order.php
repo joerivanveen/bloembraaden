@@ -10,7 +10,8 @@ class Order extends BaseElement
 
     public function __construct(\stdClass $row = null)
     {
-        if ($row === null) $this->handleErrorAndStop('Attempting to instantiate Order with $row null');
+        // todo, why could we not instantiate an order with $row null?
+        //if ($row === null) $this->handleErrorAndStop('Attempting to instantiate Order with $row null');
         parent::__construct($row);
         $this->type_name = 'order';
     }

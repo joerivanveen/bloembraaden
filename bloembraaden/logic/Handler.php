@@ -96,9 +96,14 @@ class Handler extends BaseLogic
         } elseif ('poll' === $action) {
             Help::$OUTPUT_JSON = true;
             // get any update since last time, so the admin can fetch it when appropriate
+            $props = $this->resolver->getProperties();
+            if (isset($props['from'][0]) && 0 < ($timestamp = (int) $props['from'][0])) {
+                $rows = Help::getDB()->fetchHistoryFrom($timestamp, Help::$session->getUser()->getId(), ADMIN);
+            } else {
+                $rows = array();
+            }
             // this is a get request, without csrf or admin, so don’t give any specific information
-            $out = array('new' => false, 'is_admin' => ADMIN);
-            // todo maybe you still want to die here, for less resources
+            $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
         } elseif ('download' === $action) {
             if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[1] ?? '')) {
                 if ('file' === $el->type_name) {
@@ -972,7 +977,7 @@ class Handler extends BaseLogic
                     $element = $peat_type->getElement();
                     if ($element->fetchById((int)$post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            $out = $element->row;
+                            $out = $element->getOutput(); // elements must be enhanced
                         } else {
                             $this->addMessage(sprintf(__('No ‘%1$s’ found with id %2$s', 'peatcms'), $post_data->element, $post_data->id), 'error');
                             $out = true;

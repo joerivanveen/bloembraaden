@@ -467,32 +467,36 @@ function PEATCMS_element(slug, callback) {
     this.linkable_areas = []; // array of DOM elements holding linkable element types, per type
     this.config = {};
 
-    return this.load(slug, callback);
+    if (typeof slug === 'string') {
+        const self = this;
+        if (slug.charAt(0) !== '/') slug = `/${slug}`;
+        NAV.ajax(slug, false, function (json) {
+            if (VERBOSE) console.log(`Element ${slug} is loading`, json);
+            self.init(json, callback);
+        });
+    } else { // assume json / object
+        this.init(slug, callback);
+    }
 }
 
-PEATCMS_element.prototype.load = function (slug, callback) {
-    const self = this;
-    if (slug.charAt(0) !== '/') slug = `/${slug}`;
-    NAV.ajax(slug, false, function (json) {
-        if (VERBOSE) console.log(`Element ${slug} is loading`, json);
-        if (json.hasOwnProperty('slug')) {
-            // fill the object with this element
-            self.state = json;
-            json = null;
-            self.ready = true;
-            // cache me
-            if (VERBOSE) console.log('Setting / refreshing cache for', self.state.slug);
-            NAV.cache(self);
-            // callback
-            if (typeof callback === 'function') {
-                callback(self);
-            }
-            return; // prevent failed callback from executing
-        }
+PEATCMS_element.prototype.init = function (json, callback) {
+    if (json.hasOwnProperty('slug')) {
+        // fill the object with this element
+        this.state = json;
+        json = null;
+        this.ready = true;
+        // cache me
+        if (VERBOSE) console.log('Setting / refreshing cache for', this.state.slug);
+        NAV.cache(this);
+        // callback
         if (typeof callback === 'function') {
-            callback(false);
+            callback(this);
         }
-    });
+        return; // done, prevent failed callback from executing
+    }
+    if (typeof callback === 'function') {
+        callback(false);
+    }
 }
 
 PEATCMS_element.prototype.isEditable = function () {
@@ -1236,7 +1240,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                 if (json.hasOwnProperty('x_cache_timestamp_ok') && json.hasOwnProperty('__ref')) {
                     if ((slug = '/' + decodeURIComponent(json.__ref))) {
                         if (true === self.slugs.hasOwnProperty(slug)) {
-                            if (VERBOSE) console.log('Got ‘' + slug + '’ from cache');
+                            if (VERBOSE) console.log(`Got ${slug} from cache`);
                             //console.warn(self.slugs);
                             json = self.slugs[slug].el.state;
                         }
@@ -1368,7 +1372,7 @@ PEATCMS_ajax.prototype.invalidateCache = function (slug) {
     }
 }
 
-var PEATCMS_template = function (obj) {
+function PEATCMS_template(obj) {
     this.template = obj;
     this.progressive_tags = {};
     this.doublechecking = []; // this variable is used to prevent infinite loops when the template encounters incorrect complex tags
@@ -1408,7 +1412,7 @@ PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
             // load the templates each time, but if they're already rendered, don't bother getting the objects again
             // TODO make react-like thingie that checks if all the nodes are properly rendered,
             // TODO if not get the object from cache, no need to trip to the server all the time
-            if (VERBOSE) console.log('Progressive loading of ' + t);
+            if (VERBOSE) console.log(`Progressive loading of ${t}`);
             // NOTE be careful, currently the loading of templates depends on this
             self.renderProgressiveLoad(t, t);
         }
@@ -2027,7 +2031,7 @@ PEATCMS_template.prototype.peat_as_float = function (str) {
     return '';
 }
 PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the instances radix and decimal settings
-    if (false === PEATCMS.isInt(str)) return '0';
+    if (false === PEATCMS.isInt(str)) return str;
     var n = parseInt(str) / 100,
         c = 2,
         d = ',',
@@ -2415,7 +2419,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
             admin: admin
         }, function (data) {
             if (!data['__html__']) {
-                console.error(`Loading template ‘${template_name}’ failed`);
+                console.error(`Loading template ${template_name} failed`);
                 self.ajaxifyDOMElements(document); // ajaxify the static thing, and send document_ready none the less...
                 document.dispatchEvent(new CustomEvent('peatcms.document_ready', {
                     bubbles: true,
@@ -2433,7 +2437,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         return false;
     } else {
         template = this.templates[template_cache_name];
-        if (VERBOSE) console.log(`Templator ‘${template_cache_name}’ from cache:`, template);
+        if (VERBOSE) console.log(`Templator ${template_cache_name} from cache:`, template);
         // cache which template is currently active
         this.template_cache_name = template_cache_name;
     }
@@ -2616,7 +2620,11 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         if (typeof CMS_admin !== 'undefined') {
             // hide the edit buttons when current element is not editable
             document.body.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(function (el) {
-                el.setAttribute('data-disabled', (element.isEditable()) ? '0' : '1');
+                if ('function' === typeof element.isEditable && element.isEditable()) {
+                    el.setAttribute('data-disabled', '0');
+                } else {
+                    el.setAttribute('data-disabled', '1');
+                }
             });
         }
 
@@ -3336,14 +3344,16 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             }
             if (VERBOSE) console.log(`Put ${path} into the cache from globals`);
             // cache is built into PEATCMS_ajax
-            this.cache({state: unpack_temp(globals.slug)});
+            slug = unpack_temp(slug);
+            this.cache({state: slug});
             delete globals.slug;
             PEAT.addEventListener('peatcms.document_ready', function () {
                 delete window.PEATCMS_globals.slugs
             }, true);
             //delete globals.slugs;
         }
-        new PEATCMS_element(path, function (el) {
+        // if you have the slug object, construct directly from it
+        new PEATCMS_element(slug || path, function (el) {
             if (el === false) {
                 console.error('Could not refresh');
             } else {
@@ -3352,7 +3362,6 @@ PEATCMS_navigator.prototype.refresh = function (path) {
                     self.setState();
                     self.is_navigating = false;
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end')); // send without detail, does not bubble
-                    //NAV.maybeEdit(); //JOERI
                 });
             }
         });

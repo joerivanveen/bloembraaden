@@ -26,14 +26,14 @@ class BaseLogic extends Base
         } else {
             $this->row = $row;
             if (isset($row->type_name)) $this->type_name = (string)$row->type_name;
-            if (isset($row->template_pointer)) {
-                $this->template_pointer = $row->template_pointer;
-            } elseif (isset($row->template_name)) {
-                $this->template_pointer = (object)(array(
-                    'name' => $row->template_name,
-                    'admin' => false, // admin defaults to false always
-                ));
-            }
+//            if (isset($row->template_pointer)) {
+//                $this->template_pointer = $row->template_pointer;
+//            } elseif (isset($row->template_name)) {
+//                $this->template_pointer = (object)(array(
+//                    'name' => $row->template_name,
+//                    'admin' => false, // admin defaults to false always
+//                ));
+//            }
         }
     }
 
@@ -56,7 +56,7 @@ class BaseLogic extends Base
 
     public function getRow(): \stdClass
     {
-        if (is_null($this->row)) {
+        if (null === $this->row) {
             $type_name = $this->getType()->typeName();
             $this->addError("{$type_name}->getRow() called while row is NULL");
             $this->row = (object)array('type_name'=>$type_name);

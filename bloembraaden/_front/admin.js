@@ -1664,6 +1664,7 @@ function PEATCMS_admin() {
         document.querySelectorAll('.PEATCMS_admin .paging').forEach(function (div) {
             const nodes = div.querySelectorAll('a'),
                 len = nodes.length;
+
             function act(self, hover) {
                 const nodes = self.parentNode.querySelectorAll('a'),
                     len = nodes.length;
@@ -1685,13 +1686,20 @@ function PEATCMS_admin() {
                     nodes[i].setAttribute('data-i-h-c', i + ' ' + hovered + ' ' + current);
                 }
             }
-            function hover(which) { act(which, true); }
-            function unhover(which) {act(which); }
+
+            function hover(which) {
+                act(which, true);
+            }
+
+            function unhover(which) {
+                act(which);
+            }
+
             for (let i = 0; i < len; ++i) {
-                nodes[i].addEventListener('mouseover', function() {
+                nodes[i].addEventListener('mouseover', function () {
                     hover(this);
                 });
-                nodes[i].addEventListener('mouseout', function() {
+                nodes[i].addEventListener('mouseout', function () {
                     unhover(this);
                 });
             }
@@ -1809,13 +1817,60 @@ function PEATCMS_admin() {
 }
 
 PEATCMS_admin.prototype.pollServer = function () {
-    const self = this;
     if (false === document.hasFocus()) return;
-    NAV.ajax('/__action__/poll', {peatcms_ajax_config: {track_progress: false}}, function (json) {
+    const self = this, timestamp = this.polled_until || NAV.nav_timestamp;
+    NAV.ajax(`/__action__/poll/from:${timestamp}`, {peatcms_ajax_config: {track_progress: false}}, function (json) {
         let el;
         if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
             el.remove();
             PEAT.message('Admin was logged out', 'warn');
+            return;
+        }
+        self.polled_until = json.until;
+        // get info
+        const changes = json.changes || [], len = changes.length;
+        for (let i = 0; i < len; ++i) {
+            const change = changes[i];
+            if ('_order' === change.table_name) {
+                const order_id = change.key;
+                NAV.ajax('__action__/admin_get_element', {
+                    element: 'order',
+                    id: order_id
+                }, function (json) {
+                    const current_state = NAV.getCurrentElement().state;
+                    if (current_state.hasOwnProperty('__orders__')) {
+                        const el = document.getElementById(`order-${order_id}`),
+                            template = PEAT.templates['order_overview_true'] || undefined,
+                            row_template = template.template.__orders__[0] || undefined;
+                        if (!template || !row_template) {
+                            console.warn('Template order_overview_true or row not present, cannot render');
+                            return;
+                        }
+                        const row_html = template.renderOutput(json, row_template);
+                        //console.warn('koekkoek', template, row_html, json);
+                        if (el) { // if the order is on the page, update it
+                            el.insertAdjacentHTML('afterend', row_html);
+                            el.remove();
+                        } else { // if not, just add it at the top of the list below the header, as a service
+                            try {
+                                document.querySelector('.order-table').querySelector('.header').insertAdjacentHTML('afterend', row_html);
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }
+                    } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
+                        // update the detail view
+                        NAV.refresh();
+                    } else {
+                        // TODO
+                        console.log(`Order status update for ${json.order_number_human}`);
+                    }
+                });
+            } else {
+                // TODO
+                console.log(`Update for ${change.table_name} (${change.key})`);
+            }
+            //if (NAV.getCurrentElement())
         }
         // repeat...
         clearTimeout(self.poll_timeout);
