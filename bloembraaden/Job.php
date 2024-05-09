@@ -326,7 +326,7 @@ switch ($interval) {
         if (count($rows) > 0) {
             $trans->start('Orders for MyParcel');
             foreach ($rows as $index => $row) {
-                if ('' === ($myparcel_api_key = $row->myparcel_api_key)) {
+                if ('' === ($myparcel_api_key = trim($row->myparcel_api_key))) {
                     $db->updateColumns('_order', array(
                         'myparcel_exported' => true,
                         'myparcel_exported_date' => 'NOW()',
