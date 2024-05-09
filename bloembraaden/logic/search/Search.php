@@ -382,10 +382,12 @@ class Search extends BaseElement
         // now you have the single ones, make objects from them
         foreach ($rows as $index => $row) {
             if (isset($row->__ref)) continue; // already an object
-            if (null === ($out = Help::getDB()->cached($row->slug))) {
-                $out = $peat_type->getElement($row)->cacheOutputObject(true);
-            }
-            $rows[$index] = $out;
+            $rows[$index] = $peat_type->getElement($row)->getOutput();
+            // TODO have the cache work with __variants__ (for instance) and the slugs on the root output object
+//            if (null === ($out = Help::getDB()->cached($row->slug))) {
+//                $out = $peat_type->getElement($row)->cacheOutputObject(true);
+//            }
+//            $rows[$index] = $out;
         }
 
         return $rows;
