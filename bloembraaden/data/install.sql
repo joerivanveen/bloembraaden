@@ -3167,6 +3167,6 @@ ALTER TABLE _order
     ADD COLUMN if not exists myparcel_exported_uuid Text,
     ADD COLUMN if not exists myparcel_exported_date Timestamp With Time Zone;
 
-UPDATE _order SET myparcel_exported = TRUE, myparcel_exported_response = 'Not yet implemented.', myparcel_exported_date = NOW() WHERE 1 = 1;
+UPDATE _order SET myparcel_exported = TRUE, myparcel_exported_uuid = 'Not yet implemented.', myparcel_exported_date = NOW() WHERE 1 = 1;
 
 COMMIT;

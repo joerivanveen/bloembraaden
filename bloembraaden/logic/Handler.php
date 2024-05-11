@@ -98,7 +98,8 @@ class Handler extends BaseLogic
             // get any update since last time, so the admin can fetch it when appropriate
             $props = $this->resolver->getProperties();
             if (isset($props['from'][0]) && 0 < ($timestamp = (int) $props['from'][0])) {
-                $rows = Help::getDB()->fetchHistoryFrom($timestamp, Help::$session->getUser()->getId(), ADMIN);
+                // todo add actual user_id when present
+                $rows = Help::getDB()->fetchHistoryFrom($timestamp, 0, ADMIN);
             } else {
                 $rows = array();
             }
@@ -1787,7 +1788,7 @@ class Handler extends BaseLogic
         // update list
         $variant = $this->getElementById('variant', $variant_id);
         if ($variant instanceof Variant) {
-            $list = new Shoppinglist($list_name, Help::$session);
+            $list = new Shoppinglist($list_name);
             if ($action === 'add_to_list') {
                 if (false === $list->addVariant($variant, $quantity)) {
                     $this->addMessage(sprintf(__('Adding to list ‘%s’ failed', 'peatcms'), $list_name), 'warn');

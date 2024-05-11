@@ -25,8 +25,7 @@ Bloembraaden is an elegant cms that serves ‘single page apps’ using templati
 It does not force anything on you, there are no ‘themes’, you will start from scratch.
 
 It provides the backend / cms for your client.
-Bloembraaden integrates with [Instagram](https://www.instagram.com/), [Mollie](https://www.mollie.com/) (other payment providers on request), [Plausible Analytics](https://plausible.io), Cloudflare’s [Turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms).
-Google Analytics and recaptcha also work but are not encouraged.
+Bloembraaden integrates with [Instagram](https://www.instagram.com/), [Mollie](https://www.mollie.com/) (other payment providers on request), [Plausible Analytics](https://plausible.io), Cloudflare’s [Turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms) and [MyParcel](https://www.myparcel.nl).
 
 One Bloembraaden installation can serve many websites, each one as unique as the other is baffling.
 
@@ -82,7 +81,7 @@ Point to those folders in the config.
 
 ## Web server
 Set up a webserver. We recommend NGINX.
-We use php-fpm with php 8.1 (8.0 is the minimum version for Bloembraaden).
+We use php-fpm with php 8.2 (8.0 is the minimum version for Bloembraaden).
 You can have it process index.php at all times, Bloembraaden will determine what content to show.
 
 Set up two virtual hosts, one for Bloembraaden and one for static files.
