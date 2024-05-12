@@ -377,17 +377,16 @@ class Search extends BaseElement
 
     private function outputRows(array $rows, string $type_name): array
     {
-        if (count($rows) === 0) return array();
+        if (0 === count($rows)) return array();
         $peat_type = new Type($type_name);
         // now you have the single ones, make objects from them
         foreach ($rows as $index => $row) {
             if (isset($row->__ref)) continue; // already an object
-            $rows[$index] = $peat_type->getElement($row)->getOutput();
-            // TODO have the cache work with __variants__ (for instance) and the slugs on the root output object
-//            if (null === ($out = Help::getDB()->cached($row->slug))) {
-//                $out = $peat_type->getElement($row)->cacheOutputObject(true);
-//            }
-//            $rows[$index] = $out;
+            //$rows[$index] = $peat_type->getElement($row)->getOutput();
+            if (null === ($out = Help::getDB()->cached($row->slug))) {
+                $out = $peat_type->getElement($row)->cacheOutputObject(true);
+            }
+            $rows[$index] = $out;
         }
 
         return $rows;

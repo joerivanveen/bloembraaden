@@ -1279,6 +1279,7 @@ function unpack_temp(obj) {
         if (unp.hasOwnProperty(i)) obj[i] = unp[i];
     }
     unp = null;
+    delete window.PEATCMS_globals.slugs;
     return obj;
 }
 
