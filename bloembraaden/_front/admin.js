@@ -1958,7 +1958,7 @@ PEATCMS_admin.prototype.setHomepage = function () {
 PEATCMS_admin.prototype.setHomepageButtonStatus = function () {
     const el = NAV.getCurrentElement(), instance = this.instance, self = this;
     if (!instance || null === el || false === el.hasOwnProperty('state')) {
-        PEAT.addEventListener('peatcms.navigation_end', function () {
+        PEAT.addEventListener('peatcms.document_complete', function () {
             self.setHomepageButtonStatus();
         }, true);
         return;
