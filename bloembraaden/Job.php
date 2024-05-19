@@ -392,9 +392,10 @@ switch ($interval) {
                  * afhalen = package_type 3 (letter)
                  * MyParcel expects prices in euro cents
                  */
-                $company_name = html_entity_decode($order_out->billing_address_company);
-                // person name in address may only be 40 character long for MyParcel
-                $person_name = substr(html_entity_decode($order_out->billing_address_name), -40);
+                $myparcel_shipping_name = trim(substr(html_entity_decode($order_out->shipping_address_name), -40));
+                if ('' === $myparcel_shipping_name) $myparcel_shipping_name = $order_number;
+                $myparcel_billing_name = trim(substr(html_entity_decode($order_out->billing_address_name), -40));
+                if ('' === $myparcel_billing_name) $myparcel_billing_name = $order_number;
                 $order_myparcel_json = json_encode((object)array(
                     'external_identifier' => $order_out->order_number_human,
                     'order_date' => $order_out->date_created,
@@ -405,8 +406,8 @@ switch ($interval) {
                             $order_out->billing_address_number,
                             $order_out->billing_address_number_addition,
                         )),
-                        'person' => $person_name,
-                        'company' => $company_name,
+                        'person' => $myparcel_billing_name,
+                        'company' => html_entity_decode($order_out->billing_address_company),
                         'email' => $order_out->user_email,
                         'phone' => $order_out->user_phone,
                         'city' => html_entity_decode($order_out->billing_address_city),
@@ -427,8 +428,8 @@ switch ($interval) {
                                 $order_out->shipping_address_number,
                                 $order_out->shipping_address_number_addition,
                             )),
-                            'person' => $person_name,
-                            'company' => $company_name,
+                            'person' => $myparcel_shipping_name,
+                            'company' => html_entity_decode($order_out->shipping_address_company),
                             'email' => $order_out->user_email,
                             'phone' => $order_out->user_phone,
                             'city' => html_entity_decode($order_out->shipping_address_city),
