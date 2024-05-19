@@ -29,6 +29,15 @@
     --admin-color-ok-bg: rgba(0, 145, 45, .25);
 }
 
+/* neutralize header and footer */
+.PEATCMS_admin header, .PEATCMS_admin footer {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    background-color: transparent;
+}
+
 .bloembraaden-icon {
     max-height: 1.4em;
     max-width: 1.4em;
@@ -142,6 +151,7 @@
     line-height: 1.5em;
     letter-spacing: 0;
 }
+
 .PEATCMS_admin, .PEATCMS_admin * {
     opacity: 1;
 }
@@ -193,6 +203,7 @@
     display: inline-block;
     width: 160px;
 }
+
 #PEATCMS_admin_page .PEATCMS_admin input[type="checkbox"] + label {
     max-width: inherit;
     width: auto;
@@ -989,6 +1000,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     width: auto;
     height: auto;
 }
+
 #edit_area_header {
     padding: .1rem .21rem;
     left: 15px; /* room for close button */
