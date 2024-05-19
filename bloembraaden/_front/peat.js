@@ -2764,7 +2764,18 @@ PEATCMS.prototype.ajaxNavigate = function (e) {
     }
     e.preventDefault();
     e.stopPropagation();
-    return NAV.go(this.getAttribute('data-peatcms_href'));
+
+    const href = this.getAttribute('data-peatcms_href');
+    if (-1 !== href.indexOf('#')) {
+        const parts = href.split('#'),
+            el = document.getElementById(parts[1]);
+        if (el) {
+            PEAT.scrollIntoView(el, 200); // todo
+            setTimeout(function() { PEAT.grabAttention(el); },300);
+            return;
+        }
+    }
+    return NAV.go(href);
 }
 
 PEATCMS.prototype.ajaxMailto = function () {
@@ -3157,10 +3168,10 @@ PEATCMS.prototype.scrollIntoView = function (DOMElement, withMargin) {
     bottom = top + rect.height;
     if (top < withMargin) {
         scroll_by = top - withMargin;
-    } else if (bottom > (h = window.innerHeight)) {
+    } else if (bottom > (h = window.innerHeight) - withMargin) {
         scroll_by = bottom - h + withMargin;
     }
-    this.scrollTo(0, window.scrollY + scroll_by, window);
+    this.scrollTo(0, window.scrollY + scroll_by);
 }
 PEATCMS.prototype.scrollToTop = function () {
     this.scrollTo(0, 0);
