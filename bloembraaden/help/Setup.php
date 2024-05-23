@@ -16,7 +16,7 @@ class Setup
     public static int $instance_id, $DECIMAL_DIGITS;
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH;
-    public static string $PRESENTATION_INSTANCE, $PRESENTATION_ADMIN, $INSTANCE_DOMAIN, $MAX_MEMORY_LIMIT;
+    public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $MAX_MEMORY_LIMIT;
     public static array $translations;
     public static stdClass $MAIL, $INSTAGRAM, $POSTCODE, $PDFMAKER;
     private static int $seconds_delta;
@@ -170,7 +170,6 @@ class Setup
         self::$DECIMAL_DIGITS = (int)$I->getSetting('decimal_digits');
         self::$NOT_IN_STOCK_CAN_BE_ORDERED = (bool)$I->getSetting('not_in_stock_can_be_ordered');
         self::$PRESENTATION_INSTANCE = $I->getPresentationInstance();
-        self::$PRESENTATION_ADMIN = $I->getPresentationAdmin();
         self::$INSTANCE_DOMAIN = $I->getDomain();
         // set timezone for the session
         // PAY ATTENTION the strings must be a valid timezone in PHP as well as in Postgresql

@@ -27,8 +27,9 @@
         </form>
         {%__action__/templates%}
         {%__row__%}
-        <div class="template{{published: published}}"><span>{{element}}:</span>
-            <a href="/__admin__/template/{{template_id}}">{{name}}</a>
+        <div class="template{{published: published}}">
+            <span>{{element}}:</span>
+            <span><a href="/__admin__/template/{{template_id}}">{{name}}</a></span>
             <span>nest: {{nested_max}} {{nested_show_first_only:(1st only):not:(show all)}}</span>
             <span>{{variant_page_size}}</span>
             <a href="/__admin__/template/{{template_id}}" class="button">EDIT</a>

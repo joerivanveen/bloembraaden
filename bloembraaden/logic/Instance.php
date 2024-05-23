@@ -105,11 +105,6 @@ class Instance extends BaseLogic
         return (string)$this->row->presentation_instance;
     }
 
-    public function getPresentationAdmin(): string
-    {
-        return (string)$this->row->presentation_admin;
-    }
-
     /**
      * @param string $which the name of the setting you wish to get
      * @param null $default will be returned when the setting is not present

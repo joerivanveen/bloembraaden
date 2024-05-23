@@ -3170,3 +3170,14 @@ ALTER TABLE _order
 UPDATE _order SET myparcel_exported = TRUE, myparcel_exported_uuid = 'Not yet implemented.', myparcel_exported_date = NOW() WHERE 1 = 1;
 
 COMMIT;
+
+-- version 0.20.1
+
+BEGIN;
+
+ALTER TABLE "public"."_instance"
+    DROP COLUMN if exists "presentation_admin";
+ALTER TABLE "public"."_instance"
+    DROP COLUMN if exists "presentation_theme";
+
+COMMIT;
