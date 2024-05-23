@@ -356,9 +356,10 @@ switch ($interval) {
                 $order_lines = array();
                 $highest_vat = 0;
                 foreach ($order_out->__items__ as $index => $line) {
+                    $quantity = (int)$line->quantity;
+                    if (0 === $quantity) continue;
                     $vat_percentage = Help::getAsFloat($line->vat_percentage);
                     $highest_vat = max($highest_vat, $vat_percentage);
-                    $quantity = (int)$line->quantity;
                     $myp_price = (int)(100 * Help::getAsFloat($line->price));
                     $myp_vat = (int)($vat_percentage * $myp_price / (100.0 + $vat_percentage));
                     $order_lines[] = (object)array(
