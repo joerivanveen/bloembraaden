@@ -429,41 +429,6 @@ label.close:hover {
     color: var(--admin-color-accent);
 }
 
-/*.PEATCMS_editable.unsaved,
-.PEATCMS_admin */
-body .PEATCMS_admin .peatcms_loading,
-body .PEATCMS_admin select.unsaved, /* more explicit to overwrite arrow background image */
-body .PEATCMS_admin .unsaved {
-    background-image: url('/_front/logo.png');
-    background-repeat: no-repeat;
-    background-position: right .7em top 50%, 0 0;
-}
-
-body .PEATCMS_admin .peatcms_loading {
-    background-image: url('/_front/logo-anim.gif');
-}
-
-body .PEATCMS_admin div.peatcms_loading {
-    background-position: right .7em top .7em, 0 0;
-}
-
-/* for admin placeholder must signal layout may shift soon */
-body .PEATCMS_admin [data-peatcms-placeholder] {
-    background-position: left 0 top 0, 0 0;
-    height: 30px;
-    width: 30px;
-    background-repeat: no-repeat;
-    background-image: url('/_front/logo-anim.gif');
-}
-
-body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {
-    display: block !important;
-}
-
-body .PEATCMS_admin textarea.unsaved {
-    background-position: right 1.7em top .7em, 0 0;
-}
-
 /**
  * Pretty checkboxes
  */
@@ -511,16 +476,36 @@ body .PEATCMS_admin textarea.unsaved {
     text-align: right;
 }
 
-.PEATCMS_admin input[type="checkbox"].peatcms_loading + label:before {
-    animation: peatcms_pulsating 613ms infinite ease-in-out;
-}
-
 .PEATCMS_admin input[type="checkbox"].peatcms_danger:checked + label:before {
     background-color: var(--admin-color-no);
 }
 
 body .PEATCMS_admin .unsaved > .PEATCMS_admin input[type="checkbox"] + label:before {
     color: var(--admin-color-accent);
+}
+
+/* loading and unsaved states */
+body .PEATCMS_admin .unsaved.checkbox label,
+body .PEATCMS_admin .unsaved:not(.checkbox) {
+    outline: dashed 2px var(--admin-color-accent-fierce) !important;
+}
+
+.PEATCMS_admin input[type="checkbox"].peatcms_loading + label:before,
+body .PEATCMS_admin .peatcms_loading {
+    animation: peatcms_pulsating 613ms infinite ease-in-out;
+}
+
+/* for admin placeholder must signal layout may shift soon */
+body .PEATCMS_admin [data-peatcms-placeholder] {
+    background-position: left 0 top 0, 0 0;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    background-color: var(--admin-color-accent-fierce); /* todo: loading animation */
+}
+
+body .PEATCMS_admin [data-peatcms-placeholder].peatcms_loading {
+    display: block !important;
 }
 
 /**/

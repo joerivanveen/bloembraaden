@@ -23,7 +23,7 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
         this.DOMElement.id = 'admin_' + column_name;
         return; // prevent error message from appearing
     }
-    if (VERBOSE) console.error('There is no ‘' + this.column.type + '’ for ' + column_name);
+    if (VERBOSE) console.error(`There is no ${this.column.type} for ${column_name}`);
     PEATCMS_element = null;
 }
 
@@ -83,6 +83,7 @@ PEATCMS_actor.prototype.create_as_checkbox = function (column) {
             this.click();
         }
     });
+    span.classList.add('checkbox');
     span.insertAdjacentElement('afterbegin', lbl);
     span.insertAdjacentElement('afterbegin', el);
     return span;
@@ -118,7 +119,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
             up = document.createElement('button'),
             down = document.createElement('button');
         up.innerText = '↸';
-        up.addEventListener('mouseup', function () {
+        up.addEventListener('click', function () {
             NAV.ajax('/__action__/admin_popvote/', {
                 direction: 'up',
                 id: self.parent_PEATCMS_element.getElementId(),
@@ -128,7 +129,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
             });
         });
         down.innerText = '↘';
-        down.addEventListener('mouseup', function () {
+        down.addEventListener('click', function () {
             NAV.ajax('/__action__/admin_popvote/', {
                 direction: 'down',
                 id: self.parent_PEATCMS_element.getElementId(),
@@ -2143,7 +2144,6 @@ PEATCMS_admin.prototype.putMenuItem = function (menu_item_data) {
 }
 
 /**
- *
  * @param elements
  * @since 0.6.8
  */
@@ -2157,22 +2157,35 @@ PEATCMS_admin.prototype.enhanceToggle = function (elements) {
         const toggler = el.parentNode.parentNode,
             toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML); // based on the header being different
         toggler.scrollTo(0, 0); // helpful browser sometimes remember some weird scroll position that obscures the content
+        function open(toggler) {
+            const toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML);
+            toggler.classList.add('open');
+            localStorage.setItem(toggler_hash, 'open');
+        }
+        function close(toggler) {
+            const toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML);
+            toggler.classList.remove('open');
+            localStorage.removeItem(toggler_hash)
+        }
+        function toggle(toggler) {
+            if (toggler.classList.contains('open')) {
+                close(toggler);
+            } else {
+                open(toggler);
+            }
+        }
         if (toggler.hasAttribute('data-instance_id') &&
-            parseInt(toggler.getAttribute('data-instance_id')) !== self.instance.instance_id) {
-            toggler.innerHTML = (toggler.hasAttribute('data-instance_id_message')) ?
-                toggler.getAttribute('data-instance_id_message') : 'Switch to native instance to manage this';
+            parseInt(toggler.getAttribute('data-instance_id')) !== self.instance.instance_id
+        ) {
+            if (toggler.hasAttribute('data-instance_id_message')) {
+                toggler.innerHTML = toggler.getAttribute('data-instance_id_message');
+            } else {
+                toggler.innerHTML = 'Switch to native instance to manage this';
+            }
         } else {
-            if (localStorage.getItem(toggler_hash) === 'open') toggler.classList.add('open');
+            if (localStorage.getItem(toggler_hash) === 'open') open(toggler);
             el.onclick = function () { // remove any other onclick handlers that might linger on the button
-                const toggler = this.parentNode.parentNode,
-                    toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML);
-                if (toggler.classList.contains('open')) {
-                    toggler.classList.remove('open');
-                    localStorage.removeItem(toggler_hash)
-                } else {
-                    toggler.classList.add('open');
-                    localStorage.setItem(toggler_hash, 'open');
-                }
+                toggle(this.parentNode.parentNode);
             }
         }
     });
