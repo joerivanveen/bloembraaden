@@ -4152,6 +4152,7 @@ PEATCMS.setupCarousels = function () {
                 clearTimeout(wrapper.scroll_timeout);
                 wrapper.scroll_timeout = setTimeout(scrollReg, 147);
             });
+            if (strip.offsetWidth === strip.scrollWidth) wrapper.setAttribute('data-scrolled-end', '1');
             //scrollReg(); // set it up once after loading the page
             //window.addEventListener('resize', scrollReg);
             // signal done, maybe you want to target this in css
