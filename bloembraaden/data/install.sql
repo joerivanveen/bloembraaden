@@ -3180,4 +3180,8 @@ ALTER TABLE "public"."_instance"
 ALTER TABLE "public"."_instance"
     DROP COLUMN if exists "presentation_theme";
 
+ALTER TABLE _order
+    ADD COLUMN if not exists myparcel_exported_error Boolean DEFAULT false NOT NULL,
+    ADD COLUMN if not exists myparcel_exported_response Text;
+
 COMMIT;

@@ -35,7 +35,7 @@
             <span>{{user_email}} {{emailed_payment_confirmation_success:&#x2713;:not:×}}</span>
             <span>{{billing_address_city}}</span>
             <span class="amount">€ {{amount_grand_total|format_money}}</span>
-            <span class="status"></span>
+            <span class="status">{{myparcel_exported_error:×}}</span>
         </div>
         {%__orders__%}
     </section>

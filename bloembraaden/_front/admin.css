@@ -1229,6 +1229,10 @@ body .PEATCMS_admin span.template_status {
 
 }
 
+.order-table .row .status {
+    color: var(--admin-color-no);
+}
+
 .order-table .row[data-myparcel_exported_success] .status {
     background-repeat: no-repeat;
     background-size: contain;

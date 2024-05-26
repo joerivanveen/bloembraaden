@@ -473,6 +473,7 @@ switch ($interval) {
                 // receives an array with the order object with uuid set.
                 $err = curl_error($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
+                $success = false;
                 curl_close($curl);
                 if ($err) {
                     Help::addError(new \Exception("MyParcel curl error: $err"));
@@ -504,12 +505,23 @@ switch ($interval) {
                                         'myparcel_exported_uuid' => Help::slugify($order_confirmed->uuid),
                                     ), $row->order_id)) {
                                     echo " ^ OK\n";
+                                    $success = true;
                                 }
                             } else {
                                 Help::addError(new \Exception("MyParcel wrong identifier for $order_out->order_number_human: " . var_export($order_confirmed, true)));
                             }
                         } else {
                             Help::addError(new \Exception("MyParcel no reference or uuid for $order_out->order_number_human: " . var_export($order_confirmed, true)));
+                        }
+                    }
+                    if (false === $success) {
+                        if (true === $db->updateColumns('_order', array(
+                                'myparcel_exported' => true,
+                                'myparcel_exported_error' => true,
+                                'myparcel_exported_date' => 'NOW()',
+                                'myparcel_exported_response' => json_encode(Help::getErrorMessages()),
+                            ), $row->order_id)) {
+                            echo " ^ FAIL\n";
                         }
                     }
                 }
