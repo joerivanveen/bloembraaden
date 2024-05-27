@@ -24,7 +24,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         if ($out->shipping_address_country_iso2 === 'XX') $out->shipping_address_country_iso2 = 'NL';
         if ($out->billing_address_country_iso2 === 'XX') $out->billing_address_country_iso2 = 'NL';
         // set a valid billing country
-        if (false === isset($out->billing_address_country_iso2) or trim($out->billing_address_country_iso2) === '') {
+        if (false === isset($out->billing_address_country_iso2) || '' === trim($out->billing_address_country_iso2)) {
             // default set to same as shipping
             $out->billing_address_country_iso2 = $out->shipping_address_country_iso2;
         }
