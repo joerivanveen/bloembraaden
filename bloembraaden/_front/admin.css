@@ -1230,6 +1230,7 @@ body .PEATCMS_admin span.template_status {
 }
 
 .order-table .row .status {
+    width: 8px;
     color: var(--admin-color-no);
 }
 
