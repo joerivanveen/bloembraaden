@@ -193,13 +193,15 @@ class Shoppinglist extends BaseLogic
         $output_object->row_count = $row_count;
         // @since 0.5.12 get the shippingcosts if a shipping country is known
         $amount_grand_total = $amount_row_total;
-        if (($country_id = (int)Help::$session->getValue('shipping_country_id'))) {
-            if (($country = Help::getDB()->getCountryById($country_id))) {
-                if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
-                    $shipping_costs = Help::getAsFloat($country->shipping_costs);
-                    $output_object->shipping_costs = Help::asMoney($shipping_costs);
-                    $amount_grand_total += $shipping_costs;
-                }
+        if (
+            true !== Help::$session->getValue('shipping_address_collect')
+            && ($country_id = (int)Help::$session->getValue('shipping_country_id'))
+            && ($country = Help::getDB()->getCountryById($country_id))
+        ) {
+            if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
+                $shipping_costs = Help::getAsFloat($country->shipping_costs);
+                $output_object->shipping_costs = Help::asMoney($shipping_costs);
+                $amount_grand_total += $shipping_costs;
             }
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
