@@ -1292,13 +1292,13 @@ function unpack_temp(obj) {
 }
 
 function unpack_rec(obj, nest_level) {
-    let n, i, len, arr;
+    let n, i, len, arr, cache;
     if (nest_level > 2) return obj; // recursion stops here
     for (n in obj) {
         if (obj.hasOwnProperty(n)) {
-            if ('__ref' === n && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
+            if ('__ref' === n && (cache = window.PEATCMS_globals.slugs[obj[n]])) {
                 // __ref is considered to be this level
-                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj[n]], nest_level));
+                return Object.assign(obj, unpack_rec(cache, nest_level));
             }
             if (Array.isArray(obj[n])) {
                 for (i = 0, arr = obj[n], len = arr.length; i < len; ++i) {
