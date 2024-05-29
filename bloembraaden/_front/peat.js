@@ -1270,6 +1270,14 @@ function unpack_temp(obj) {
     if (!window.PEATCMS_globals.slugs) window.PEATCMS_globals.slugs = {};
     for (i in slugs) {
         if (slugs.hasOwnProperty(i)) {
+            // remember the one with lowest nested level ie most information
+            if (window.PEATCMS_globals.slugs[i]) {
+                const l1 = window.PEATCMS_globals.slugs[i].nest_level;
+                const l2 = slugs[i].nest_level;
+                //console.warn(l1, l2, i);
+                if (l2 < l1) window.PEATCMS_globals.slugs[i] = slugs[i];
+                continue;
+            }
             window.PEATCMS_globals.slugs[i] = slugs[i];
         }
     }
@@ -1279,7 +1287,7 @@ function unpack_temp(obj) {
         if (unp.hasOwnProperty(i)) obj[i] = unp[i];
     }
     unp = null;
-    delete window.PEATCMS_globals.slugs;
+
     return obj;
 }
 
@@ -1562,7 +1570,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         content, parts, equals, is_false, str_to_replace;
     // process out object
     if (out.hasOwnProperty('__ref')) {
-        out = unpack_temp(out, 1);
+        out = unpack_temp(out);
     }
     for (tag_name in out) {
         if (false === out.hasOwnProperty(tag_name)) continue;
@@ -3358,9 +3366,10 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             slug = unpack_temp(slug);
             this.cache({state: slug});
             delete globals.slug;
-            PEAT.addEventListener('peatcms.document_ready', function () {
-                delete window.PEATCMS_globals.slugs
-            }, true);
+            // TODO JOERI
+            // PEAT.addEventListener('peatcms.document_ready', function () {
+            //     delete window.PEATCMS_globals.slugs
+            // }, true);
             //delete globals.slugs;
         }
         // if you have the slug object, construct directly from it
