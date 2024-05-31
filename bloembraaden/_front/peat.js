@@ -266,7 +266,7 @@ Address.prototype.getFields = function () {
     ) {
         if (option.hasAttribute('data-iso2')) fields['address_country_iso2'] = option.getAttribute('data-iso2');
         if (option.hasAttribute('data-iso3')) fields['address_country_iso3'] = option.getAttribute('data-iso3');
-        fields['address_country_name'] = option.value;
+        fields['address_country_name'] = option.text;
     }
     // get gender field
     if ((select_list = this.wrapper.querySelector('select[data-field="gender"]'))
