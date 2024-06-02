@@ -1270,14 +1270,6 @@ function unpack_temp(obj) {
     if (!window.PEATCMS_globals.slugs) window.PEATCMS_globals.slugs = {};
     for (i in slugs) {
         if (slugs.hasOwnProperty(i)) {
-            // remember the one with lowest nested level ie most information
-            if (window.PEATCMS_globals.slugs[i]) {
-                const l1 = window.PEATCMS_globals.slugs[i].nest_level;
-                const l2 = slugs[i].nest_level;
-                //console.warn(l1, l2, i);
-                if (l2 < l1) window.PEATCMS_globals.slugs[i] = slugs[i];
-                continue;
-            }
             window.PEATCMS_globals.slugs[i] = slugs[i];
         }
     }
@@ -3366,10 +3358,10 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             slug = unpack_temp(slug);
             this.cache({state: slug});
             delete globals.slug;
-            // TODO JOERI
-            // PEAT.addEventListener('peatcms.document_ready', function () {
-            //     delete window.PEATCMS_globals.slugs
-            // }, true);
+            //TODO JOERI delete?
+            PEAT.addEventListener('peatcms.document_ready', function () {
+                delete window.PEATCMS_globals.slugs
+            }, true);
             //delete globals.slugs;
         }
         // if you have the slug object, construct directly from it
