@@ -146,16 +146,16 @@ class Search extends BaseElement
         }
 
         return Help::getDB()->findCiAi($clean_terms, $clean_types, static function (string $haystack, array $needles): float {
-                // the getWeight function
-                $weight = 0.0;
-                foreach ($needles as $index => $needle) {
-                    $one = count(explode($needle, $haystack));
-                    $two = strpos($haystack, $needle) + 1;
-                    $weight += $one / $two;
-                }
+            // the getWeight function
+            $weight = 0.0;
+            foreach ($needles as $index => $needle) {
+                $one = count(explode($needle, $haystack));
+                $two = strpos($haystack, $needle) + 1;
+                $weight += $one / $two;
+            }
 
-                return $weight;
-            }) ?? array();
+            return $weight;
+        }) ?? array();
     }
 
     public function pageVariants(int $variant_page): int
@@ -182,7 +182,7 @@ class Search extends BaseElement
                 return ($a < $b) ? -1 : 1;
         });
 
-        return array_values(array_map(static function($term) {
+        return array_values(array_map(static function ($term) {
             return Help::removeAccents($term);
         }, array_filter($terms, static function ($term) {
             return strlen($term) >= self::MIN_TERM_LENGTH;
