@@ -304,17 +304,23 @@ class Search extends BaseElement
     public function getRelatedForShoppinglist(int $shoppinglist_id, int $quantity = 8): array
     {
         $list = Help::getDB()->fetchShoppingListRows($shoppinglist_id); // ordered from old to new by default
-        // walk in reverse so the newest item gets the most attention
-        $index = count($list);
-        $variant_ids_collect = array();
-        $variant_ids_in_list = array();
-        $variant_ids_show = array();
-        while ($index && count($variant_ids_show) < $quantity) {
-            --$index;
-            $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
-            $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
-            // exclude the variants that are already in the shoppinglist and reindex the array
-            $variant_ids_show = array_values(array_diff($variant_ids_collect, $variant_ids_in_list));
+
+        if (count(($props = $this->getProperties())) > 0) {
+            $variant_ids_show = $this->getAllVariantIds(array_keys($props));
+            $variant_ids_in_list = array_column($list, 'variant_id');
+        } else {
+            // walk in reverse so the newest item gets the most attention
+            $index = count($list);
+            $variant_ids_collect = array();
+            $variant_ids_in_list = array();
+            $variant_ids_show = array();
+            while ($index && count($variant_ids_show) < $quantity) {
+                --$index;
+                $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
+                $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
+                // exclude the variants that are already in the shoppinglist and reindex the array
+                $variant_ids_show = array_values(array_diff($variant_ids_collect, $variant_ids_in_list));
+            }
         }
 
         return $this->getVariantsByIds($variant_ids_show, $variant_ids_in_list, $quantity);
@@ -329,6 +335,7 @@ class Search extends BaseElement
      */
     private function getVariantsByIds(array $in, array $not_in, int $fixed_quantity): array
     {
+        $in = array_diff($in, $not_in); // allow $in array containing id’s from $not_in, filter that here
         $type = new Type('variant');
         $rows = Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $in);
         if (count($rows) < $fixed_quantity) {
