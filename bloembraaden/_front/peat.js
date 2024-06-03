@@ -1468,7 +1468,7 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                 el.classList.remove('peatcms_loading');
                 if (VERBOSE) console.log(`Rendering ${slug} in ${render_in_tag}`, json);
                 html = this.removeSingleTagsRemaining(this.renderOutput(json, this.template[render_in_tag][tag.index]));
-                cache_name = `${slug}_${tag.index}`;
+                cache_name = `${render_in_tag}_${tag.index}`;
                 try {
                     nodes = new DOMParser().parseFromString(html, 'text/html').body.childNodes;
                     cached_nodes = [];
