@@ -183,7 +183,7 @@ class BaseElement extends BaseLogic implements Element
     {
         // fetch linked elements for this and add them to $this->row
         if ('search' === $this->type_name) { // search doesn’t have linked elements nor an id, so just leave it at that
-            $this->linked_types = new \stdClass;
+            $this->linked_types = new \stdClass();
 
             return true;
         }
@@ -191,7 +191,7 @@ class BaseElement extends BaseLogic implements Element
         $peat_type = $this->getType();
         if (!$id) {
             $this->addError(__CLASS__ . '->fetchLinked() called while id is ' . $id);
-            $this->linked_types = new \stdClass;
+            $this->linked_types = new \stdClass();
 
             return false;
         }
@@ -352,7 +352,7 @@ class BaseElement extends BaseLogic implements Element
             $linked_type = new Type($linkable_type_name);
             $relation = $this->getLinkedTypes()->{$linkable_type_name};
             //$relation = 'cross_child';
-            $GLOBALS['slugs'] = new \stdClass;
+            $GLOBALS['slugs'] = new \stdClass();
 
             return Help::getDB()->fetchElementRowsLinked(
                 $peat_type,

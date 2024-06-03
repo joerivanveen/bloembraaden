@@ -137,9 +137,9 @@ class Mailer extends Base
                 $from_name = trim(substr($from_name, 0, $pos));
                 $from_email = trim(substr($from_email, $pos + 1, strlen($from_email) - $pos - 2));
             }
-            $post_data = new \stdClass;
+            $post_data = new \stdClass();
             $post_data->key = $this->api_key;
-            $post_data->message = new \stdClass;
+            $post_data->message = new \stdClass();
             $post_data->message->html = $this->fields['html'];
             $post_data->message->text = $this->fields['text'];
             $post_data->message->subject = $this->fields['subject'];
@@ -170,7 +170,7 @@ class Mailer extends Base
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $fields_string);
         } elseif ($this->active_provider === 'sendgrid') {
             // build the sendgrid-specific object to send as json
-            $post_data = new \stdClass;
+            $post_data = new \stdClass();
             $post_data->personalizations = array((object)array('to' => array((object)array('email' => $this->fields['to']))));
             $post_data->from = (object)array('email' => $this->fields['from']);
             $post_data->subject = $this->fields['subject'];

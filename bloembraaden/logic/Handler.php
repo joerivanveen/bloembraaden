@@ -97,7 +97,7 @@ class Handler extends BaseLogic
             Help::$OUTPUT_JSON = true;
             // get any update since last time, so the admin can fetch it when appropriate
             $props = $this->resolver->getProperties();
-            if (isset($props['from'][0]) && 0 < ($timestamp = (int) $props['from'][0])) {
+            if (isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
                 // todo add actual user_id when present
                 $rows = Help::getDB()->fetchHistoryFrom($timestamp, 0, ADMIN);
             } else {

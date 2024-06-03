@@ -12,7 +12,7 @@ class Search extends BaseElement
     {
         parent::__construct($row);
         $this->type_name = 'search';
-        if (null === $this->row) $this->row = new \stdClass;
+        if (null === $this->row) $this->row = new \stdClass();
     }
 
     public function getResultCount(): int

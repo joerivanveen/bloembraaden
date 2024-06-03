@@ -195,7 +195,7 @@ class Resolver extends BaseLogic
                     break;
                 case 'shoppinglist':
                     if (count($terms = $this->getTerms()) > 0) {
-                        return new Shoppinglist($terms[0], $session);
+                        return new Shoppinglist($terms[0]);
                     }
                     break;
                 case 'user':
