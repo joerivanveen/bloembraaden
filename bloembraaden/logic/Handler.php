@@ -445,6 +445,7 @@ class Handler extends BaseLogic
                 $limit = isset($props['limit']) ? (int)$props['limit'][0] : 8;
                 $terms = $props['terms'] ?? array();
                 $type_name = $props['type'][0] ?? $post_data->type ?? 'variant';
+                //$src->setProperties($props);
                 // TODO base it on taxonomy, properties, crosslinked items and stuff
                 if ('shoppinglist' === $type_name) { // based on current item(s) in list
                     // for now just get some id's that are linked to shoppinglist via other shoppinglists and / or orders

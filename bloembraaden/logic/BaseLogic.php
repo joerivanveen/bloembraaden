@@ -154,7 +154,7 @@ class BaseLogic extends Base
                 $pages = array();
                 $pages[] = (object)array('page_number' => 1, 'slug' => $slug); // same as /variant_page1
                 for ($index = 2; $index <= $count; ++$index) {
-                    $pages[] = (object)array('page_number' => $index, 'slug' => $slug . '/variant_page' . $index);
+                    $pages[] = (object)array('page_number' => $index, 'slug' => "$slug/variant_page$index");
                 }
                 $json = json_encode($pages);
                 $pages = null;
