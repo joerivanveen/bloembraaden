@@ -335,7 +335,7 @@ class Search extends BaseElement
      */
     private function getVariantsByIds(array $in, array $not_in, int $fixed_quantity): array
     {
-        $in = array_diff($in, $not_in); // allow $in array containing id’s from $not_in, filter that here
+        $in = array_values(array_diff($in, $not_in)); // allow $in array containing id’s from $not_in, filter that here
         $type = new Type('variant');
         $rows = Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $in);
         if (count($rows) < $fixed_quantity) {
