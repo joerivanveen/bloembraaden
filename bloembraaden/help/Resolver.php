@@ -38,7 +38,8 @@ class Resolver extends BaseLogic
                 if ('' === $value) {
                     return false;
                 } elseif (str_starts_with($value, '__')) {
-                    $this->instructions[str_replace('__', '', $value)] = true;
+                    $instruction = explode(':', $value);
+                    $this->instructions[str_replace('__', '', $instruction[0])] = $instruction[1] ?? true;
 
                     return false;
                 } elseif (str_starts_with($value, 'variant_page')) {
@@ -93,7 +94,7 @@ class Resolver extends BaseLogic
         }
         // remove properties (filters) from path and add them to query
         foreach ($uri as $index => $value) {
-            if (false === strpos($value, ':')) continue;
+            if (false === str_contains($value, ':')) continue;
             $values = explode(':', $value);
             $this->addProperty($values[0], explode(',', $values[1]));
             unset($uri[$index]);
@@ -126,6 +127,15 @@ class Resolver extends BaseLogic
     public function hasInstructions(): bool
     {
         return (isset($this->instructions) && count($this->instructions) > 0);
+    }
+
+    /**
+     * @param string $instruction
+     * @return mixed|null
+     */
+    public function getInstruction(string $instruction)
+    {
+        return $this->instructions[$instruction] ?? null;
     }
 
     public function hasInstruction(string $instruction): bool

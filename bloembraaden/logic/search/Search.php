@@ -301,14 +301,14 @@ class Search extends BaseElement
      * @return array indexed array holding variants
      * @since 0.5.15
      */
-    public function getRelatedForShoppinglist(int $shoppinglist_id, int $quantity = 8): array
+    public function getRelatedForShoppinglist(string $shoppinglist_name, int $quantity = 8): array
     {
-        $list = Help::getDB()->fetchShoppingListRows($shoppinglist_id); // ordered from old to new by default
-
-        if (count(($props = $this->getProperties())) > 0) {
+        if ('' === $shoppinglist_name && count(($props = $this->getProperties())) > 0) {
             $variant_ids_show = $this->getAllVariantIds(array_keys($props));
-            $variant_ids_in_list = array_column($list, 'variant_id');
+            $variant_ids_in_list = (array) Help::$session->getValue('peatcms_variant_ids_in_list');
         } else {
+            // this case is for the original shopping cart page
+            $list = (new Shoppinglist($shoppinglist_name))->getRows(); // ordered from old to new by default
             // walk in reverse so the newest item gets the most attention
             $index = count($list);
             $variant_ids_collect = array();

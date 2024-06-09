@@ -440,16 +440,17 @@ class Handler extends BaseLogic
             } elseif ('suggest' === $action) {
                 // suggest should post type and id so we can infer some interesting stuff
                 $src = new Search();
-                // terms can be passed as query string ?terms=term1,term2 etc in the complex tag, as can limit
+                // terms can be passed as query string ?__terms__=term1,term2 etc in the complex tag, as can limit
                 $props = $this->resolver->getProperties();
-                $limit = isset($props['limit']) ? (int)$props['limit'][0] : 8;
-                $terms = $props['terms'] ?? array();
-                $type_name = $props['type'][0] ?? $post_data->type ?? 'variant';
+                $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
+                $terms = $props['terms'] ?? $props['__terms__'] ?? array(); // TODO remove $props['terms']
                 $src->setProperties($props);
-                // TODO base it on taxonomy, properties, crosslinked items and stuff
-                if ('shoppinglist' === $type_name) { // based on current item(s) in list
-                    // for now just get some id's that are linked to shoppinglist via other shoppinglists and / or orders
-                    $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->id, $limit));
+                $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0]
+                if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
+                    if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
+                    $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));
+                } elseif ('shoppinglist' === $type_name) { // from the shoppinglist page
+                    $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->name, $limit));
                 } elseif ('variant' === $type_name) {
                     if (count($terms) < 1 && isset($post_data->id)) {
                         $out = array('__variants__' => $src->getRelatedForVariant($post_data->id, $limit));
@@ -1763,9 +1764,8 @@ class Handler extends BaseLogic
     {
         // validate
         if (false === isset($data->shoppinglist)) {
-            // todo I don't think this belongs here
-            if (($res = $this->resolver)->hasInstruction('shoppinglist') && isset($res->getTerms()[0])) {
-                $data->shoppinglist = $res->getTerms()[0];
+            if (($resolver = $this->resolver)->hasInstruction('shoppinglist') && null !== ($term = $resolver->getTerms()[0])) {
+                $data->shoppinglist = $term;
             } else {
                 $this->addMessage(sprintf(__('Form input ‘%s’ is missing', 'peatcms'), 'shoppinglist'), 'warn');
 

@@ -152,8 +152,8 @@ class Session extends BaseLogic
 
     /**
      * @param string $name the name of the variable you want to get
-     * @param bool $with_remove default false, use true if you want to remove the variable from session immediately
-     * @return \stdClass|null the value you put into it in the first place
+     * @param bool $with_remove default false, when true removes the variable from session immediately
+     * @return \stdClass|null the original session variable including the times
      * @since 0.1.0, @since 0.5.12 it returns the whole var including the times
      */
     public function getVar(string $name, bool $with_remove = false): ?\stdClass
@@ -169,8 +169,8 @@ class Session extends BaseLogic
     }
 
     /**
-     * @param string $name the name of the variable you want to get
-     * @param bool $with_remove default false, use true if you want to remove the variable from session immediately
+     * @param string $name the name of the variable you want to get the value for
+     * @param bool $with_remove default false, when true removes the variable from session immediately
      * @return mixed|null the value you put into it in the first place
      * @since 0.5.12
      */

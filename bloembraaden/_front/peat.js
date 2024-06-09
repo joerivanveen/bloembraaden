@@ -1432,8 +1432,10 @@ PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
         };
     if (el) {
         // Send info to the server to let it know where the request comes from
-        data.type = el.state.type_name;
-        data.id = el.state[`${el.state.type_name}_id`];
+        const state = el.state;
+        data.type = state.type_name;
+        data.name = state.name || '';
+        data.id = state.id;
     } else {
         console.warn('Couldn’t get element to send as originator during template.renderProgressive');
     }
