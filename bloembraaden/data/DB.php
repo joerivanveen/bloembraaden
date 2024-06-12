@@ -2489,13 +2489,13 @@ class DB extends Base
                 "{$type_name}_id" => $id,
                 "sub_{$sub_type_name}_id" => $sub_id,
             );
-            if (($row = $this->fetchRow($link_table, array($id_column), $where))) { // update
+            $rows = $this->fetchRows($link_table, array($id_column), $where);
+            if (1 === count($rows)) { // update
                 $update_array = array('deleted' => $delete);
                 if (false === $delete) {
                     $update_array[$order_column] = $order;
                 }
-
-                return $this->updateRowAndReturnSuccess($link_table, $update_array, $row->{$id_column});
+                return $this->updateRowAndReturnSuccess($link_table, $update_array, $rows[0]->{$id_column});
             } elseif (false === $delete) { // insert
                 $update_array = $where;
                 if ($order > 0) {
@@ -2503,8 +2503,13 @@ class DB extends Base
                 } else { // @since 0.19.3 if no order is specified, add at the end
                     $update_array[$order_column] = $this->getHighestO($link_table, $order_column);
                 }
-
                 return 0 !== $this->insertRowAndReturnLastId($link_table, $update_array);
+            } elseif (count($rows) > 0) {
+                // @since 0.21.0 because only 1 linked item is possible, remove the multiple now to reset this
+                $affected = $this->updateColumnsWhere($link_table, array('deleted' => true), $where);
+                $this->addError("Too many found! Removed $affected items.");
+                $this->addMessage(sprintf(__('An error occurred in %s', 'peatcms'), 'upsertLinked'), 'error');
+                return true;
             }
         }
         $this->addError("->upsertLinked failed, no link table found for $type_name and $sub_type_name");
