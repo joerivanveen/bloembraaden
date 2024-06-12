@@ -31,7 +31,7 @@ class Resolver extends BaseLogic
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
-        if ($uri === '/') { // homepage is requested, get the slug so it can be retrieved from cache further down
+        if ($uri === '/') { // homepage is requested, get the slug, so it can be retrieved from cache further down
             $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
         } else {
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
@@ -39,7 +39,11 @@ class Resolver extends BaseLogic
                     return false;
                 } elseif (str_starts_with($value, '__')) {
                     $instruction = explode(':', $value);
-                    $this->instructions[str_replace('__', '', $instruction[0])] = $instruction[1] ?? true;
+                    $key = $instruction[0];
+                    //@since 0.21.0 __terms__ should remain in properties
+                    if ('__terms__' === $key) return true;
+
+                    $this->instructions[str_replace('__', '', $key)] = $instruction[1] ?? true;
 
                     return false;
                 } elseif (str_starts_with($value, 'variant_page')) {
