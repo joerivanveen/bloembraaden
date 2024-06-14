@@ -976,7 +976,9 @@ class Handler extends BaseLogic
                     $element = $peat_type->getElement();
                     if ($element->fetchById((int)$post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            $out = $element->getOutput(); // elements must be enhanced
+                            // elements must be enhanced, but prevent getting all the linked items (for eg serie or brand) by supplying 2
+                            // todo make it configurable in the request
+                            $out = $element->getOutput(2);
                         } else {
                             $this->addMessage(sprintf(__('No ‘%1$s’ found with id %2$s', 'peatcms'), $post_data->element, $post_data->id), 'error');
                             $out = true;
