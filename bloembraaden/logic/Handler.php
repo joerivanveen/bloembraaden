@@ -443,20 +443,16 @@ class Handler extends BaseLogic
                 // terms can be passed as query string ?__terms__=term1,term2 etc in the complex tag, as can limit
                 $props = $this->resolver->getProperties();
                 $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
-                $terms = $props['terms'] ?? $props['__terms__'] ?? array(); // TODO remove $props['terms']
+                $terms = $props['terms'] ?? $this->resolver->getTerms(); // TODO remove $props['terms'] after pc is updated
                 $src->setProperties($props);
-                $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0]
+                $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0] after pc is updated
                 if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
                     if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
                     $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));
                 } elseif ('shoppinglist' === $type_name) { // from the shoppinglist page
                     $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->name, $limit));
                 } elseif ('variant' === $type_name) {
-                    if (count($terms) < 1 && isset($post_data->id)) {
-                        $out = array('__variants__' => $src->getRelatedForVariant($post_data->id, $limit));
-                    } else {
-                        $out = array('__variants__' => $src->suggestVariants($terms, $limit));
-                    }
+                    $out = array('__variants__' => $src->getRelatedForVariant($terms, $post_data->id ?? 0, $limit));
                 } elseif ('page' === $type_name) {
                     if (count($terms) < 1 && isset($post_data->id)) {
                         $out = array('__pages__' => $src->getRelatedForPage($post_data->id, $limit));

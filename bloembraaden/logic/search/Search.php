@@ -258,20 +258,27 @@ class Search extends BaseElement
     }
 
     /**
+     * @param array $terms
      * @param int $variant_id
      * @param int $quantity
      * @return array
      */
-    public function getRelatedForVariant(int $variant_id, int $quantity = 8): array
+    public function getRelatedForVariant(array $terms, int $variant_id, int $quantity = 8): array
     {
-        $variant_ids_collect = Help::getDB()->fetchRelatedVariantIds($variant_id);
-        // exclude the variant itself
-        $variant_ids_show = array_values(array_diff($variant_ids_collect, array($variant_id)));
-        if (count($variant_ids_show) === 0) {
-            return $this->outputRows(Help::getDB()->listVariants($quantity, array($variant_id)), 'variant');
+        $variant_ids_show = Help::getDB()->fetchRelatedVariantIds($variant_id);
+        if ($terms) {
+            $variant_ids_term = $this->getAllVariantIds($terms);
+            $variant_ids_show = array_intersect($variant_ids_show, $variant_ids_term);
+            if (count($variant_ids_show) < $quantity) { // add some variants from the terms to the suggested ones
+                $variant_ids_show = array_merge($variant_ids_show, $variant_ids_term);
+            }
+        } elseif (count($variant_ids_show) < $quantity) {
+            $by_serie = Help::getDB()->fetchAllVariantIdsFor('serie', $variant_id, $this->getProperties());
+            $to_add = array_diff($by_serie, $variant_ids_show);
+            $variant_ids_show = array_merge($variant_ids_show, $to_add);
         }
 
-        return $this->getVariantsByIds($variant_ids_show, $variant_ids_collect, $quantity);
+        return $this->getVariantsByIds($variant_ids_show, array(), $quantity);
     }
 
     /**
@@ -305,7 +312,7 @@ class Search extends BaseElement
     {
         if ('' === $shoppinglist_name && count(($props = $this->getProperties())) > 0) {
             $variant_ids_show = $this->getAllVariantIds(array_keys($props));
-            $variant_ids_in_list = (array) Help::$session->getValue('peatcms_variant_ids_in_list');
+            $variant_ids_in_list = (array)Help::$session->getValue('peatcms_variant_ids_in_list');
         } else {
             // this case is for the original shopping cart page
             $list = (new Shoppinglist($shoppinglist_name))->getRows(); // ordered from old to new by default
@@ -330,7 +337,7 @@ class Search extends BaseElement
      * @param array $in
      * @param array $not_in
      * @param int $fixed_quantity
-     * @return array Indexed array holding a fixed amount of ‘out’ variant object, or less if there aren't enough
+     * @return array Indexed array holding a fixed amount of ‘out’ variant objects, or less if there aren't enough
      * @since 0.5.15
      */
     private function getVariantsByIds(array $in, array $not_in, int $fixed_quantity): array
@@ -338,39 +345,20 @@ class Search extends BaseElement
         $in = array_values(array_diff($in, $not_in)); // allow $in array containing id’s from $not_in, filter that here
         $type = new Type('variant');
         $rows = Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $in);
-        if (count($rows) < $fixed_quantity) {
-            // add some more rows from somewhere else
-            // TODO adding id 0 as a temp bugfix for WhereIn returns an empty array when $not_in is empty...
-            $not_in = array_merge($in, $not_in, array(0)); // don’t repeat the ones you already have
-            $rows = array_merge(
-                $rows,
-                Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $not_in, true)
-            );
+        // @since 0.21.0 order by the original array
+        $sorted = array(); // todo expensive filtering :-(
+        foreach ($in as $index => $id) {
+            if ($index === $fixed_quantity) break;
+            foreach ($rows as $row_index => $row) {
+                if ($id === $row->variant_id) {
+                    $sorted[] = $row;
+                    break;
+                }
+            }
         }
-        if ($fixed_quantity > 0) array_splice($rows, $fixed_quantity); // $quantity > 0 means you want to cut off the results there
+        $rows = null;
 
-        return $this->outputRows($rows, 'variant');
-    }
-
-    /**
-     * @param array $terms Terms to look for while suggesting, like search
-     * @param int $limit Max number of suggestions to return
-     * @return array indexed array holding ‘out’ variant objects
-     * @since 0.5.15
-     */
-    public function suggestVariants(array $terms = array(), int $limit = 8): array
-    {
-        if (count($terms) > 0) {
-            // fill the row object with nice stuff, that will be returned by getOutput()
-            $this->findWeighted($terms, -$limit);
-            $rows = $this->row->__variants__ ?? array();
-            //$rows = Help::getDB()->findElements('variant', $terms);
-        } else {
-            $rows = Help::getDB()->listVariants($limit);
-        }
-        if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cut off the results there
-
-        return $this->outputRows($rows, 'variant');
+        return $this->outputRows($sorted, 'variant');
     }
 
     public function suggestPages(array $terms = array(), int $limit = 8): array

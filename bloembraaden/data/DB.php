@@ -360,7 +360,7 @@ class DB extends Base
             if (null === $intersected) {
                 $intersected = $term;
             } else {
-                $intersected = array_intersect_key($term, $intersected);
+                $intersected = array_intersect_key($term, $intersected); // AND
             }
         }
         if (0 === count($intersected)) return array();
@@ -377,6 +377,7 @@ class DB extends Base
             SELECT {$type_name}_id AS id FROM cms_$type_name 
             WHERE {$type_name}_id IN ($ids_as_string) $imploded_sub_queries;
         ");
+        //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $statement->execute();
         $rows = $statement->fetchAll(3);
         $statement = null;
@@ -809,7 +810,7 @@ class DB extends Base
     {
         // fetch some variant_id’s based on other orders that include the supplied variant_id
         // you don’t need to check instance id because in each order variants are necessarily of the same instance
-        $statement = $this->conn->prepare('SELECT variant_id FROM _order_variant WHERE order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id);');
+        $statement = $this->conn->prepare('SELECT DISTINCT variant_id FROM _order_variant WHERE order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id) AND variant_id <> :variant_id;');
         $statement->bindValue(':variant_id', $variant_id);
         $statement->execute();
         $rows = $statement->fetchAll(3);
@@ -824,15 +825,16 @@ class DB extends Base
     /**
      * Return the variant_ids that have all the provided property values attached to them as
      * well as the property->id or property_value->id that is the first two arguments
-     * @param string $type_name literal ‘property’ or ‘property_value’
-     * @param int $id the id of the property or property_value that is mandatory for the variant_ids
+     * @param string $type_name literal ‘property’, ‘property_value’, ‘serie’ or ‘brand’
+     * @param int $id the id of the property or property_value that is mandatory for the variant_ids,
+     * or the variant_id whose serie or brand you need
      * @param array $properties
      * @return array indexed array with all the variant_ids
      * @since 0.8.12
      */
     public function fetchAllVariantIdsFor(string $type_name, int $id, array $properties): array
     {
-        if ('property_value' !== $type_name && 'property' !== $type_name) return array();
+        if (false === in_array($type_name, array('property', 'property_value', 'serie', 'brand'))) return array();
         // TODO also get the attached (x-table) variants for eg page?
         $sub_queries = $this->queriesProperties($properties, 'variant', 'x');
         if (0 !== count($sub_queries)) { // todo duplicate code
@@ -840,11 +842,17 @@ class DB extends Base
         } else {
             $imploded_sub_queries = '';
         }
+        if ('serie' === $type_name || 'brand' === $type_name) {
+            $where_table = "v.{$type_name}_id = (SELECT {$type_name}_id FROM cms_variant WHERE variant_id = :id)";
+        } else {
+            $where_table = "x.{$type_name}_id = :id";
+        }
         $statement = $this->conn->prepare("
             SELECT DISTINCT x.variant_id FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
-            WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
+            WHERE $where_table AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
         ");
+
         $statement->bindValue(':id', $id);
         //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $statement->execute();

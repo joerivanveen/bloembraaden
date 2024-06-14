@@ -8,6 +8,8 @@ namespace Bloembraaden;
 // - __shoppinglist__
 // - __order__
 // - __user__
+// - __limit__
+// - __terms__
 class Resolver extends BaseLogic
 {
     private ?\stdClass $post_data;
@@ -31,8 +33,8 @@ class Resolver extends BaseLogic
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
-        if ($uri === '/') { // homepage is requested, get the slug, so it can be retrieved from cache further down
-            $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
+        if ($uri === '/') { // homepage is requested
+            $uri = array();
         } else {
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
                 if ('' === $value) {
@@ -40,10 +42,14 @@ class Resolver extends BaseLogic
                 } elseif (str_starts_with($value, '__')) {
                     $instruction = explode(':', $value);
                     $key = $instruction[0];
-                    //@since 0.21.0 __terms__ should remain in properties
-                    if ('__terms__' === $key) return true;
-
-                    $this->instructions[str_replace('__', '', $key)] = $instruction[1] ?? true;
+                    //@since 0.21.0 __terms__ are added as terms
+                    if ('__terms__' === $key) {
+                        if (isset($instruction[1])) {
+                            $this->addTerms(explode(',', $instruction[1]));
+                        }
+                    } else {
+                        $this->instructions[str_replace('__', '', $key)] = $instruction[1] ?? true;
+                    }
 
                     return false;
                 } elseif (str_starts_with($value, 'variant_page')) {
@@ -79,10 +85,10 @@ class Resolver extends BaseLogic
         if (true === $output_json) Help::$OUTPUT_JSON = true;
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (true === isset($this->instructions['action'])) {
+            // todo backwards compatible with __action__/suggest syntax, remove when sites use __action__:suggest
             if (count($uri) > 0) {
                 $this->instructions['action'] = htmlentities($uri[0]);
-            } else {
-                $this->instructions['action'] = 'ok';
+                unset($uri[0]);
             }
         } elseif (true === isset($post_data->action)) {
             $this->instructions['action'] = $post_data->action;
@@ -103,7 +109,27 @@ class Resolver extends BaseLogic
             $this->addProperty($values[0], explode(',', $values[1]));
             unset($uri[$index]);
         }
-        $this->terms = array_values($uri); // $terms are the uri parts separated by / (forward slash)
+        $this->addTerms(array_values($uri)); // $terms are the uri parts separated by / (forward slash)
+
+        if (0 === count($this->terms)) { // if you do not have a term, try to get one from the properties
+            foreach ($this->getProperties() as $property => $value) {
+                if (str_contains($property, '_')) continue;
+                if (1 === count($value)) {
+                    $term = $value[0];
+                    break;
+                } else {
+                    $term = $property;
+                }
+            }
+            if (isset($term)) $this->terms = array($term);
+        }
+    }
+
+    private function addTerms(array $terms): void {
+        if (isset($this->terms)) {
+            $terms = array_merge($this->terms, $terms);
+        }
+        $this->terms = $terms;
     }
 
     public function getPostData()
