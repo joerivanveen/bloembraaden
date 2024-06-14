@@ -264,11 +264,11 @@ class Resolver extends BaseLogic
                             $slug = "__order__/$term";
                         } else {
                             // all the orders (with paging)
-                            $page = (int)($this->getProperties()['page'][0] ?? 1);
+                            $page = (int)($this->getInstruction('page') ?? 1);
                             $page_size = 250;
                             $peat_type = new Type('order');
                             $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
-                            $slug = "__order__/page:$page";
+                            $slug = "__order__/__page__:$page";
                             $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page, $page_size);
                         }
                         if (1 === count($orders)) {
