@@ -1208,9 +1208,12 @@ class DB extends Base
             );
             // direct relations: eg type = product, linked_type = variant, relation = direct_parent
         } elseif ('direct_parent' === $relation) { // get the e-commerce element this table is a direct parent of
-            // honor popvote sorting...
-            if ('variant' === $linked_type_name) {
+            // honor sorting...
+            $table_info = $this->getTableInfo($linked_type->tableName());
+            if ($table_info->getColumnByName('date_popvote')) {
                 $sorting = 'ORDER BY date_popvote DESC';
+            } elseif ($table_info->getColumnByName('date_published')) {
+                $sorting = 'ORDER BY date_published DESC';
             } else {
                 $sorting = '';
             }
@@ -3646,9 +3649,8 @@ class DB extends Base
         }
         if (in_array('o', $columns['names'])) {
             echo ' ORDER BY o';
-        } elseif ('_template' !== $table_name && in_array('date_published', $columns['names'])) {
+        } elseif ('_template' !== $table_name && $table_info->getColumnByName('date_published')) {
             if (defined('ADMIN') && false === ADMIN) {
-                // todo have the date_published subquery depend on the presence of that column
                 echo ' AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
             }
             echo ' ORDER BY date_published DESC';

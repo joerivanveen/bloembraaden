@@ -190,7 +190,7 @@ class BaseElement extends BaseLogic implements Element
         $id = $this->getId();
         $peat_type = $this->getType();
         if (!$id) {
-            $this->addError(__CLASS__ . '->fetchLinked() called while id is ' . $id);
+            $this->addError(__CLASS__ . "->fetchLinked() called while id is $id");
             $this->linked_types = new \stdClass();
 
             return false;

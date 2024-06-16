@@ -44,18 +44,14 @@ class Type extends Base
         if (isset($this->peatcms_types[$type_name])) {
             $this->type_name = $type_name;
             $this->table_name = $this->peatcms_types[$type_name];
+        } elseif (($new_type_name = array_search($type_name, $this->peatcms_types))) {
+            $this->type_name = $new_type_name;
+            $this->table_name = $type_name; // the supplied string for $type_name turns out to be the table_name
         } else {
-            // check if the table_name is supplied and give it a second chance
-            // array_search returns false or the first key that is found that has this value (needle)
-            if (($new_type_name = array_search($type_name, $this->peatcms_types))) {
-                $this->type_name = $new_type_name;
-                $this->table_name = $type_name; // the supplied string for $type_name turns out to be the table_name
-            } else {
-                $this->handleErrorAndStop(
-                    "$type_name is not a recognized type",
-                    sprintf(__('%s is not a recognized type', 'peatcms'), $type_name)
-                );
-            }
+            $this->handleErrorAndStop(
+                "$type_name is not a recognized type",
+                sprintf(__('%s is not a recognized type', 'peatcms'), $type_name)
+            );
         }
     }
 
@@ -76,7 +72,7 @@ class Type extends Base
 
     public function idColumn(): string
     {
-        if (0 === strpos(($table_name = $this->tableName()), 'cms_')) {
+        if (true === str_starts_with(($table_name = $this->tableName()), 'cms_')) {
             return substr("{$table_name}_id", 4); // convention: table name except the cms_
         } else {
             return substr("{$table_name}_id", 1); // convention: table name except the first _
@@ -343,7 +339,8 @@ class TableInfo
         return $this->getColumnByName($this->id_column);
     }
 
-    public function hasIdColumn(): bool {
+    public function hasIdColumn(): bool
+    {
         return isset($this->id_column);
     }
 

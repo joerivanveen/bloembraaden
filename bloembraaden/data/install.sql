@@ -3191,3 +3191,15 @@ ALTER TABLE "public"."_instance"
     DROP COLUMN if exists "presentation_theme";
 
 COMMIT;
+
+-- version 0.21.0
+
+BEGIN;
+
+ALTER TABLE "public"."cms_serie"
+    ADD COLUMN if not exists "date_published" Timestamp With Time Zone;
+
+ALTER TABLE "public"."cms_product"
+    ADD COLUMN if not exists "date_published" Timestamp With Time Zone;
+
+COMMIT;
