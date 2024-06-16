@@ -214,11 +214,15 @@ class Resolver extends BaseLogic
     public function getElement(?bool &$from_history, ?bool $no_cache = false): BaseLogic
     {
         $from_history = false;
+        $limit = null;
         // run over the instructions (skipped for regular urls)
         foreach ($this->instructions as $instruction => $value) {
             if (null === ($session = Help::$session)) $this->handleErrorAndStop('Resolver->getElement() cannot get instructions-element with session = null');
             // btw, instructions may not be cached
             switch ($instruction) {
+                case 'limit':
+                    $limit = -$value;
+                    break;
                 case 'admin':
                     if ($session->isAdmin()) {
                         if ($element = $this->getAdminElement($session, $this->getTerms())) {
@@ -327,7 +331,7 @@ class Resolver extends BaseLogic
         $element->setProperties($this->getProperties());
         // if it’s a search go do that
         if ($element instanceof Search) {
-            $element->findWeighted($this->getTerms());
+            $element->findWeighted($this->getTerms(), $limit);
         }
 
         return $element;

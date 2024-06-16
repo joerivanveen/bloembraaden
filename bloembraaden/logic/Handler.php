@@ -465,7 +465,7 @@ class Handler extends BaseLogic
                     } elseif (isset($props['hydrate_until'][0])) {
                         $hydrate_until = (int)($props['hydrate_until'][0]);
                     } else {
-                        $hydrate_until = null;
+                        $hydrate_until = -$limit;
                     }
                     if (isset($post_data->only_of_type)) {
                         $src->findWeighted($terms, $hydrate_until, array($post_data->only_of_type), false);
