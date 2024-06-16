@@ -221,13 +221,21 @@ class Image extends BaseElement
                 $logger->log("Brightness: $brightness");
                 if (isset($this->row->css_class)) {
                     $css_class = $this->row->css_class;
-                    // remove dark and brightness indicators from css_class
+                    // remove dark and brightness indicators from css_class, as well as orientation
                     $css_class = preg_replace('/(bloembraaden-brightness)-\d+/', '', $css_class);
-                    $css_class = str_replace('bloembraaden-dark', '', $css_class);
+                    $css_class = str_replace(array('bloembraaden-dark', 'bloembraaden-square', 'bloembraaden-landscape', 'bloembraaden-portrait'), '', $css_class);
                 } else {
                     $css_class = '';
                 }
-                // process new class
+                // process orientaiont class
+                if ($newWidth > $newHeight) {
+                    $css_class .= ' bloembraaden-landscape';
+                } elseif ($newHeight > $newWidth) {
+                    $css_class .= ' bloembraaden-portrait';
+                } else {
+                    $css_class .= ' bloembraaden-square';
+                }
+                // process new brightness class
                 if ($brightness < 45) {
                     $css_class .= ' bloembraaden-dark';
                 }

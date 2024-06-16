@@ -984,6 +984,8 @@ class Handler extends BaseLogic
                             $out = true;
                         }
                         unset($element);
+                    } else {
+                        $out = true;
                     }
                 } elseif ('admin_uncache' === $action) {
                     if (isset($post_data->path)) {
