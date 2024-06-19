@@ -1738,6 +1738,11 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             }
         }
     }
+    // @since 0.21.0 process not parts for absent tags
+    while (-1 !== (start = html.indexOf(':not:'))) {
+        const false_part = html.slice(start + 5).split('}}')[0];
+        html = PEATCMS.replace(`:not:${false_part}}}`, `}}${false_part}`, html);
+    }
     // return this.convertTagsRemaining(html);
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...

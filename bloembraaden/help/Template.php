@@ -512,7 +512,7 @@ class Template extends BaseLogic
                 }
                 $content = substr($html, $str_pos, $end_pos - $str_pos);
                 // @since 0.16.3 allow nested ifs
-                if (false !== strpos($content, '{{')) {
+                if (true === str_contains($content, '{{')) {
                     while (substr_count($content, '{{') > substr_count($content, '}}')) {
                         //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
                         $end_pos = strpos($html, '}}', $end_pos + 2);
@@ -544,7 +544,7 @@ class Template extends BaseLogic
                     }
                 } else { // display the 'true' part
                     $true_part = $parts[0];
-                    if (false !== strpos($true_part, '::value::')) {
+                    if (true === str_contains($true_part, '::value::')) {
                         // subsitute the ::value:: with the actual value for this level only, not the nested levels
                         $parts = explode('::value::', $true_part);
                         $bracket_count = 0;
@@ -579,7 +579,12 @@ class Template extends BaseLogic
         $check_if = null;
         $output = null;
         $output_object = null;
-//        die('ruf');
+
+        // @since 0.21.0 process not parts for absent tags:
+        while (false !== ($pos = strpos($html, ':not:'))) {
+            $false_part = explode('}}', substr($html, $pos + 5))[0];
+            $html = str_replace(":not:$false_part}}", "}}$false_part", $html);
+        }
 
         return $html;
     }
