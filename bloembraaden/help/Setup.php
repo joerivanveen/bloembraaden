@@ -150,7 +150,7 @@ class Setup
         self::$PDFMAKER = $config->integrations->pdfmaker;
         self::$NEWRELIC_RECORDS_BACKEND = $config->newrelic_records_backend ?? false;
         self::$MAX_MEMORY_LIMIT = Help::getMemorySize($config->max_memory_limit ?? '1g');
-        self::$FRAME_ANCESTORS = $config->frame_ancestors ?? 'none';
+        self::$FRAME_ANCESTORS = $config->frame_ancestors ?? '\'none\'';
         $config = null;
     }
 
