@@ -16,7 +16,7 @@ class Setup
     public static int $instance_id, $DECIMAL_DIGITS;
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH;
-    public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $MAX_MEMORY_LIMIT;
+    public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
     public static array $translations;
     public static stdClass $MAIL, $INSTAGRAM, $POSTCODE, $PDFMAKER;
     private static int $seconds_delta;
@@ -150,6 +150,7 @@ class Setup
         self::$PDFMAKER = $config->integrations->pdfmaker;
         self::$NEWRELIC_RECORDS_BACKEND = $config->newrelic_records_backend ?? false;
         self::$MAX_MEMORY_LIMIT = Help::getMemorySize($config->max_memory_limit ?? '1g');
+        self::$FRAME_ANCESTORS = $config->frame_ancestors ?? 'none';
         $config = null;
     }
 

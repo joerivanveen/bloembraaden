@@ -3610,7 +3610,8 @@ class DB extends Base
      * @param array $columns
      * @param array $where
      * @param bool $single true when 1 return row is expected, false to return an array with every returned row (0 or more)
-     * @return array|\stdClass null when failed, row object when single = true, array with row objects otherwise
+     * @param int $limit
+     * @return array|\stdClass|null null when failed, row object when single = true, array with row objects otherwise
      * @since 0.0.0
      */
     private function fetchRows(string $table_name, array $columns, array $where = array(), bool $single = false, int $limit = 1000): array|\stdClass|null
@@ -4036,16 +4037,21 @@ class DB extends Base
         return $rows;
     }
 
-    public function queryAllRows(string $table_name, array $columns = array('*')): \PDOStatement
+    public function queryAllRows(string $table_name, array $columns = array('*'), ?int $instance_id = null): \PDOStatement
     {
         if (0 === count($columns)) $this->handleErrorAndStop('No columns to query');
+        if (null === $instance_id) {
+            $where = '';
+        } else {
+            $where = " WHERE instance_id = $instance_id";
+        }
         $table_info = $this->getTableInfo($table_name);
         if ('*' === $columns[0]) {
             $columns_str = '*';
         } else {
             $columns_str = implode(',', $columns);
         }
-        $statement = $this->conn->prepare("SELECT {$table_info->getIdColumn()->getName()} as id, $columns_str FROM $table_name;");
+        $statement = $this->conn->prepare("SELECT {$table_info->getIdColumn()->getName()} as id, $columns_str FROM $table_name$where;");
         $statement->execute();
 
         return $statement;

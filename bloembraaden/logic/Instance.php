@@ -54,6 +54,36 @@ class Instance extends BaseLogic
         return $this->row->domain;
     }
 
+    public function getDefaultSrc(): string
+    {
+        // TODO cache the default src so you only have to compute when something changes...
+        return implode(' ', $this->computeDefaultSrc());
+    }
+
+    private function computeDefaultSrc(): array {
+        $sources = array();
+        if ($this->getSetting('turnstile_site_key')) {
+            $sources[] = 'https://challenges.cloudflare.com';
+        }
+        if ($this->getSetting('google_tracking_id') || $this->getSetting('recaptcha_site_key')) {
+            $sources[] = 'https://www.google.com';
+        }
+        // get everything from the embeds...
+        $statement = Help::getDB()->queryAllRows('cms_embed', array('embed_code'), $this->getId());
+        while (($row = $statement->fetch(5))) {
+            if (null === $row->embed_code) continue;
+            $parts = explode('https://', $row->embed_code);
+            if (isset($parts[1])) {
+                $src = explode('/', $parts[1])[0];
+                if ('' !== $src && false === in_array($src, $sources)) {
+                    $sources[] = "https://$src";
+                }
+            }
+        }
+
+        return $sources;
+    }
+
     public function completeRowForOutput(): void
     {
         // TODO domains and admins should get the same lazy loading construction as menus

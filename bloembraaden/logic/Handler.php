@@ -1672,7 +1672,8 @@ class Handler extends BaseLogic
             }
             // set content security policy header (CSP), which can differ between instances
             $cdn_root = Setup::$CDNROOT;
-            $csp = "Content-Security-Policy: frame-ancestors 'none';default-src 'self' https://challenges.cloudflare.com/ https://player.vimeo.com https://www.youtube-nocookie.com https://www.youtube.com https://www.google.com; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://plausible.io https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $frame_ancestors = Setup::$FRAME_ANCESTORS;
+            $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://plausible.io https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             // TODO make it flexible using settings for the instance
             header($csp, true);
             unset($out);
