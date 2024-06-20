@@ -3316,11 +3316,11 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                 }
             });
         } else {
-            window.location.href = path;
+            top.window.location.href = path;
         }
         return false;
     }
-    window.location.href = path;
+    top.window.location.href = path;
 }
 PEATCMS_navigator.prototype.maybeEdit = function (slug) {
     // if edit screen is open, fill it with the element
