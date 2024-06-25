@@ -582,7 +582,7 @@ class Template extends BaseLogic
         if (false === $end_pos) { // error: if tag has no end
             return '';
         }
-        $test = $content = substr($html, $str_pos, $end_pos - $str_pos);
+        $content = substr($html, $str_pos, $end_pos - $str_pos);
         // @since 0.16.3 allow nested ifs
         if (true === str_contains($content, '{{')) {
             while (substr_count($content, '{{') > substr_count($content, '}}')) {
