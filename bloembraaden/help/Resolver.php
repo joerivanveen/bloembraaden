@@ -352,7 +352,7 @@ class Resolver extends BaseLogic
                     }
                     break;
                 case 'template':
-                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
                         if (($row = Help::getDB()->getTemplateRow($id, null))) {
                             $element = new Template($row);
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
@@ -360,7 +360,7 @@ class Resolver extends BaseLogic
                     }
                     break;
                 case 'search_settings':
-                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
                         if (($element = (new Search())->fetchById($id))) {
                             $element->setForAdmin();
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
@@ -369,7 +369,7 @@ class Resolver extends BaseLogic
                     break;
                 case 'menu_item':
                     // get the menu_item_id and fetch it
-                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
                         // menu items are only returned for the current instance
                         $type = new Type('menu_item');
                         $element = $type->getElement(Help::getDB()->fetchElementRow($type, $id));
@@ -377,7 +377,7 @@ class Resolver extends BaseLogic
                     break;
                 case 'payment_service_provider':
                     // get payment service provider for instance (this is a factory...)
-                    if (isset($terms[1]) && $id = (int)$terms[1]) {
+                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
                         if (($row = Help::getDB()->getPaymentServiceProviderRow($id, null))) {
                             if (isset($row->provider_name) && class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                                 $element = new $class_name($row);

@@ -106,19 +106,19 @@ class Handler extends BaseLogic
             // this is a get request, without csrf or admin, so don’t give any specific information
             $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
         } elseif ('download' === $action) {
-            if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[1] ?? '')) {
+            if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[0] ?? '')) {
                 if ('file' === $el->type_name) {
                     $f = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
                     $f->serve();
                 }
             }
         } elseif ('account_delete_session' === $action) {
-            if (!isset(($terms = $this->resolver->getTerms())[1])) {
+            if (!isset(($terms = $this->resolver->getTerms())[0])) {
                 Help::$session->delete();
                 $this->addMessage(__('Session has been deleted', 'peatcms'), 'log');
                 $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
             } else {
-                $session_id = (int)$terms[1];
+                $session_id = (int)$terms[0];
                 $my_session = Help::$session;
                 if ($session_id === $my_session->getId()) {
                     $this->addMessage(__('You can not destroy your own session this way', 'peatcms'), 'warn');
@@ -183,11 +183,11 @@ class Handler extends BaseLogic
                 $out = $src->getRelevantPropertyValuesAndPrices($post_data->path);
             }
         } elseif ('instagram' === $action) { // @since 0.7.2
-            if (isset((($terms = $this->resolver->getTerms()))[1])) {
+            if (isset((($terms = $this->resolver->getTerms()))[0])) {
                 $insta = new Instagram();
-                if ('feed' === ($command = $terms[1])) {
+                if ('feed' === ($command = $terms[0])) {
                     if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
-                        $feed_name = $terms[2] ?? '';
+                        $feed_name = $terms[1] ?? '';
                         $out = $insta->feed($feed_name);
                     } else {
                         $this->addMessage(sprintf(__('%s check failed, please refresh browser', 'peatcms'), 'CSRF'), 'warn');
@@ -210,10 +210,10 @@ class Handler extends BaseLogic
                         'confirmation_code' => $confirmation_code
                     );
                 } elseif ('confirm' === $command) {
-                    if (isset($term[2])) {
+                    if (isset($term[1])) {
                         $this->addMessage(sprintf(
                             __('Bloembraaden has been de-authorized, your data will be removed within 10 minutes. Confirmation code: %s', 'peatcms'),
-                            $terms[2]), 'note');
+                            $terms[1]), 'note');
                     }
                     $out = array('redirect_uri' => '/');
                 }
@@ -1175,14 +1175,14 @@ class Handler extends BaseLogic
                     }
                 } elseif ('admin_get_templates' === $action) { // called when an element is edited to fill the select list
                     $instance_id = (isset($post_data->type) && 'instance' === $post_data->type) ? $post_data->id : Setup::$instance_id;
-                    $for = $post_data->for ?? $this->resolver->getTerms()[1] ?? null;
+                    $for = $post_data->for ?? $this->resolver->getTerms()[0] ?? null;
                     if (isset($for)) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
                             $out = Help::getDB()->getTemplates($instance_id, $for);
                             if (count($out) === 0) {
                                 $this->addMessage(sprintf(__('No templates found for ‘%s’', 'peatcms'), $for), 'warn');
                             }
-                            if (isset($this->resolver->getTerms()[1])) $out['__row__'] = $out; // TODO bugfix until template engine is fixed
+                            if (isset($this->resolver->getTerms()[0])) $out['__row__'] = $out; // TODO bugfix until template engine is fixed
                             $out['slug'] = 'admin_get_templates';
                         }
                     } else {
