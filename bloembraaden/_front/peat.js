@@ -1688,20 +1688,10 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 start += 3 + tag_name.length;
                 is_false = !output_object;
             }
-            end = html.indexOf('}}', start);
-            if (-1 === end) {
-                html = PEATCMS.replace(`{{${tag_name}:`, '<span class="warn">If-error near ' + tag_name + '</span>', html);
-                continue;
-            }
-            content = html.substring(start, end);
-            // @since 0.16.3 allow nested ifs
-            if (-1 !== content.indexOf('{{')) {
-                while (content.split('{{').length > content.split('}}').length) {
-                    end = html.indexOf('}}', end + 2);
-                    content = html.substring(start, end);
-                }
+            content = this.getIfsContent(html, start);
+            if ('' === content) {
                 if (-1 === end) {
-                    html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">Nested if-error near ${tag_name}</span>`, html);
+                    html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">If-error near ${tag_name}</span>`, html);
                     continue;
                 }
             }
@@ -1739,13 +1729,37 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         }
     }
     // @since 0.21.0 process not parts for absent tags
-    while (-1 !== (start = html.indexOf(':not:'))) {
-        const false_part = html.slice(start + 5).split('}}')[0];
-        html = PEATCMS.replace(`:not:${false_part}}}`, `}}${false_part}`, html);
-    }
+    // while (-1 !== (start = html.indexOf(':not:'))) {
+    //     const content = this.getIfsContent(html, start + 5);
+    //     if ('' === content) {
+    //         // todo only target the offending :not:
+    //         html = PEATCMS.replace(':not:', 'NOT ERROR');
+    //     }
+    //     html = PEATCMS.replace(`:not:${content}}}`, `}}${content}`, html);
+    // }
     // return this.convertTagsRemaining(html);
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
+}
+PEATCMS_template.prototype.getIfsContent = function(html, start)
+{
+    let end = html.indexOf('}}', start);
+    if (-1 === end) {
+        return '';
+    }
+    let content = html.substring(start, end);
+    // @since 0.16.3 allow nested ifs
+    if (-1 !== content.indexOf('{{')) {
+        while (content.split('{{').length > content.split('}}').length) {
+            end = html.indexOf('}}', end + 2);
+            content = html.substring(start, end);
+        }
+        if (-1 === end) {
+            return '';
+        }
+    }
+
+    return content;
 }
 
 /**

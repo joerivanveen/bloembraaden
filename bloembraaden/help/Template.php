@@ -501,34 +501,17 @@ class Template extends BaseLogic
                     $is_false = (!$output_object || 'false' === $output_object);
                     $equals = null;
                 }
-                $end_pos = strpos($html, '}}', $str_pos);
-                if (false === $end_pos) { // error: if tag has no end
+                $content = $this->getIfsContent($html, $str_pos);
+                if ('' === $content) {
                     $html = str_replace(
                         "{{{$tag_name}:",
-                        "If-error near $tag_name",
+                        "If-error for $tag_name",
                         $html
                     );
-                    continue;
-                }
-                $content = substr($html, $str_pos, $end_pos - $str_pos);
-                // @since 0.16.3 allow nested ifs
-                if (true === str_contains($content, '{{')) {
-                    while (substr_count($content, '{{') > substr_count($content, '}}')) {
-                        //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
-                        $end_pos = strpos($html, '}}', $end_pos + 2);
-                        $content = substr($html, $str_pos, $end_pos - $str_pos);
-                    }
-                    if (false === $end_pos) { // error: if tag has no end
-                        $html = str_replace(
-                            "{{{$tag_name}:",
-                            "Nested if-error near $tag_name",
-                            $html
-                        );
 //                        echo '<textarea style="width:75vw;height:145px">';
 //                        var_dump($tag_name, $output_object, $content);
 //                        echo '</textarea>';
-                        continue;
-                    }
+                    continue;
                 }
                 $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
                 if (true === isset($equals)) {
@@ -581,12 +564,38 @@ class Template extends BaseLogic
         $output_object = null;
 
         // @since 0.21.0 process not parts for absent tags:
-        while (false !== ($pos = strpos($html, ':not:'))) {
-            $false_part = explode('}}', substr($html, $pos + 5))[0];
-            $html = str_replace(":not:$false_part}}", "}}$false_part", $html);
-        }
+//        while (false !== ($start = strpos($html, ':not:'))) {
+//            $content = $this->getIfsContent($html, $start + 5);
+//            if ('' === $content) {
+//                // todo only target the offending :not:
+//                $html = str_replace(':not:', 'NOT ERROR', $html);
+//            }
+//            $html = str_replace(":not:$content}}", "}}$content", $html);
+//        }
 
         return $html;
+    }
+
+    private function getIfsContent(string $html, int $str_pos): string
+    {
+        $end_pos = strpos($html, '}}', $str_pos);
+        if (false === $end_pos) { // error: if tag has no end
+            return '';
+        }
+        $test = $content = substr($html, $str_pos, $end_pos - $str_pos);
+        // @since 0.16.3 allow nested ifs
+        if (true === str_contains($content, '{{')) {
+            while (substr_count($content, '{{') > substr_count($content, '}}')) {
+                //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
+                $end_pos = strpos($html, '}}', $end_pos + 2);
+                $content = substr($html, $str_pos, $end_pos - $str_pos);
+            }
+            if (false === $end_pos) { // error: if tag has no end
+                return '';
+            }
+        }
+
+        return $content;
     }
 
     /**
@@ -983,11 +992,11 @@ $html";
 
     /**
      * @param string $str the (html) string that may contain template tags
-     * @return string all the opening curly brackets are replaced with &#123;
+     * @return string all the curly brackets and :not: statements are html encoded so no processing will take place
      */
     private function peat_no_render(string $str): string
     {
-        return str_replace('{', '&#123;', $str);
+        return str_replace(array('{', '}', ':not:'), array('&#123;', '&#125;', '&#58;not&#58;'), $str);
     }
 
     private function peat_as_float(string $str): float
