@@ -1712,54 +1712,6 @@ function PEATCMS_admin() {
         activate();
     }
 
-    document.addEventListener('peatcms.progressive_ready', function (e) {
-        if (e.detail.slug === 'admin_search') {
-            // load the template_id options and on return update all the select lists for template_id
-            if (document.querySelector('select[data-column_name="template_id"]')) {
-                NAV.ajax('/__action__/admin_get_templates', {
-                    for: 'search',
-                    instance_id: NAV.instance_id
-                }, function (json) {
-                    document.querySelectorAll('select[data-column_name="template_id"]').forEach(function (el) {
-                        let i, option, temp, current_template_id = parseInt(el.getAttribute('data-value') || 0);
-                        for (i in json) {
-                            if (json.hasOwnProperty(i) && (temp = json[i]) && temp.hasOwnProperty('template_id')) {
-                                option = document.createElement('option');
-                                option.text = temp.name;
-                                option.value = temp.template_id;
-                                el.options[el.length] = option;
-                                if (temp.template_id === current_template_id) el.selectedIndex = el.length - 1;
-                            }
-                        }
-                        el.classList.remove('peatcms_loading');
-                    });
-                });
-            }
-        } else if ('admin_get_templates' === e.detail.slug) {
-            [
-                'select[data-column_name="template_id_order_confirmation"]',
-                'select[data-column_name="template_id_payment_confirmation"]',
-                'select[data-column_name="template_id_internal_confirmation"]'
-            ].forEach(function (str) {
-                if (document.querySelector(str)) {
-                    document.querySelectorAll(str).forEach(function (el) {
-                        //console.log(el); // TODO this is looped through too often, you need to call the event on the element
-                        let i, option, current_template_id = el.getAttribute('data-value') || '0';
-                        if (!el.getAttribute('data-peatcms_ajaxified')) return;
-                        for (i in el.options) {
-                            if (!el.options.hasOwnProperty(i)) continue;
-                            option = el.options[i];
-                            //console.log(current_template_id + ' === ' + option.value + ' (' +  i + ')');
-                            if (current_template_id === option.value) {
-                                el.selectedIndex = i;
-                                break;
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    });
     window.addEventListener('keyup', function (event) {
         let els;
         if (event.key === 'Control') {
@@ -2241,3 +2193,55 @@ if (document.readyState !== 'loading') {
         peatcms_admin_start();
     });
 }
+
+/**
+ * Set some things on the admin page, not dependent on actual admin
+ */
+document.addEventListener('peatcms.progressive_ready', function (e) {
+    if (e.detail.slug === 'admin_search') {
+        // load the template_id options and on return update all the select lists for template_id
+        if (document.querySelector('select[data-column_name="template_id"]')) {
+            NAV.ajax('/__action__/admin_get_templates', {
+                for: 'search',
+                instance_id: NAV.instance_id
+            }, function (json) {
+                document.querySelectorAll('select[data-column_name="template_id"]').forEach(function (el) {
+                    let i, option, temp, current_template_id = parseInt(el.getAttribute('data-value') || 0);
+                    for (i in json) {
+                        if (json.hasOwnProperty(i) && (temp = json[i]) && temp.hasOwnProperty('template_id')) {
+                            option = document.createElement('option');
+                            option.text = temp.name;
+                            option.value = temp.template_id;
+                            el.options[el.length] = option;
+                            if (temp.template_id === current_template_id) el.selectedIndex = el.length - 1;
+                        }
+                    }
+                    el.classList.remove('peatcms_loading');
+                });
+            });
+        }
+    } else if ('admin_get_templates' === e.detail.slug) {
+        [
+            'select[data-column_name="template_id_order_confirmation"]',
+            'select[data-column_name="template_id_payment_confirmation"]',
+            'select[data-column_name="template_id_internal_confirmation"]'
+        ].forEach(function (str) {
+            if (document.querySelector(str)) {
+                document.querySelectorAll(str).forEach(function (el) {
+                    //console.log(el); // TODO this is looped through too often, you need to call the event on the element
+                    let i, option, current_template_id = el.getAttribute('data-value') || '0';
+                    if (!el.getAttribute('data-peatcms_ajaxified')) return;
+                    for (i in el.options) {
+                        if (!el.options.hasOwnProperty(i)) continue;
+                        option = el.options[i];
+                        //console.log(current_template_id + ' === ' + option.value + ' (' +  i + ')');
+                        if (current_template_id === option.value) {
+                            el.selectedIndex = i;
+                            break;
+                        }
+                    }
+                });
+            }
+        });
+    }
+});
