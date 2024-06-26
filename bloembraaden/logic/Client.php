@@ -36,7 +36,7 @@ class Client extends BaseLogic
     public function getInstances(): array
     {
         if (false === isset($this->instances)) {
-            $arr = Help::getDB()->fetchInstancesForClient($this->id);
+            $arr = Help::getDB()->fetchInstances($this->id);
             foreach ($arr as $index => $obj) {
                 $arr[$index] = new Instance($obj);
             }

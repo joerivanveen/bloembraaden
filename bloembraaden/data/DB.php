@@ -2719,11 +2719,13 @@ class DB extends Base
         ));
     }
 
-    public function fetchInstancesForClient(int $client_id): array
+    public function fetchInstances(?int $client_id = null): array
     {
-        return $this->fetchRows('_instance', array('*'), array(
+        $where = array();
+        if (null !== $client_id) $where = array(
             'client_id' => $client_id,
-        ));
+        );
+        return $this->fetchRows('_instance', array('*'), $where);
     }
 
     public function fetchInstanceCanonicalDomain(string $domain): ?string
