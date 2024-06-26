@@ -326,6 +326,7 @@ class DB extends Base
         if (false === in_array($type_name, self::TYPES_WITH_CI_AI)) {
             $this->handleErrorAndStop("$type_name is not a type with ci_ai, cannot find element ids");
         }
+        $special_variant_term = '';
         // get the id's from the _ci_ai table
         $statement = $this->conn->prepare('
             SELECT title, slug, type_name, id FROM _ci_ai 
@@ -339,24 +340,19 @@ class DB extends Base
             if ('variant' === $type_name) {
                 if (in_array($term, array('price_from', 'not_online'))) {
                     $rows = Help::getDB()->findSpecialVariantResults($term);
+                } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))) {
+                    $rows = Help::getDB()->findSpecialVariantResults($row->type_name, $row->id);
+                }
+                if (0 !== count($rows)) {
                     $ids = array();
                     foreach ($rows as $key => $row) {
                         $ids[$row->id] = $row;
                     }
                     $arr[$term] = $ids;
 
-                    continue;
-                } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))){
-                    $rows = Help::getDB()->findSpecialVariantResults($row->type_name, $row->id);
-                    if (0 !== count($rows)) {
-                        $ids = array();
-                        foreach ($rows as $key => $row) {
-                            $ids[$row->id] = $row;
-                        }
-                        $arr[$term] = $ids;
+                    if ('' === $special_variant_term) $special_variant_term = $term;
 
-                        continue;
-                    }
+                    continue;
                 }
             }
             $statement->bindValue(':term', "%$term%");
@@ -368,15 +364,15 @@ class DB extends Base
             }
             $arr[$term] = $ids;
         }
-        $intersected = null;
         $statement = null;
-        // TODO: price_from and not_online should dictate the order, so should be the first intersected!
-        foreach ($arr as $index => $term) {
-            if (null === $intersected) {
-                $intersected = $term;
-            } else {
-                $intersected = array_intersect_key($term, $intersected); // AND
-            }
+        // special term should dictate the order, so should be the first intersected!
+        if (0 < count(($intersected = $arr[$special_variant_term]))) {
+            unset($arr[$special_variant_term]);
+        } else { // or else quasi random
+            $intersected = array_shift($arr);
+        }
+        foreach ($arr as $term => $ids) {
+            $intersected = array_intersect_key($ids, $intersected); // AND
         }
         if (0 === count($intersected)) return array();
         if (0 === count($properties)) return $intersected;
@@ -485,7 +481,7 @@ class DB extends Base
                         WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $online
                         ORDER BY date_popvote DESC;
                     ");
-            } elseif (null !== $id && true === in_array($case, array('brand','serie','product'))) {
+            } elseif (null !== $id && true === in_array($case, array('brand', 'serie', 'product'))) {
                 $statement = $this->conn->prepare("
                         SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
                         WHERE instance_id = :instance_id AND deleted = FALSE AND {$case}_id = :id $online
