@@ -763,40 +763,19 @@ class DB extends Base
     /**
      * Standard way to list variants ordered by popvote desc, the expected order
      *
-     * @param int $limit the max number of variants returned, 0 for all
-     * @param array $exclude_ids array with variant_ids that will not be selected
+     * @param int $limit
      * @return array
      * @since 0.5.15
      */
-    public function listVariants(int $limit = 8, array $exclude_ids = array()): array
+    public function listVariantIds(int $limit = 8): array
     {
-        // todo refactor all these with the arrays to in/exclude stuff and that use the ONLINE
-        // todo column depending on admin into a generic fetchRows‘Where’ variant or something
-        if (0 === $limit) {
-            $limit_clause = '';
-        } else {
-            $limit_clause = " LIMIT $limit";
-        }
-        if (0 === ($count_exclude_ids = count($exclude_ids))) {
-            $not_in_clause = '';
-        } elseif (1 === $count_exclude_ids) {
-            $not_in_clause = ' AND variant_id NOT IN (?)';
-        } else {
-            $placeholders = str_repeat('?,', $count_exclude_ids - 1); // NOTE you need one more ?
-            $not_in_clause = " AND variant_id NOT IN ($placeholders?)";
-        }
-        // TODO when admin chosen ONLINE value should be taken into account
-        $and_where_online = (false === ADMIN) ? ' AND el.online = TRUE' : '';
-        // build statement
-        $instance_id = Setup::$instance_id;
-        $statement = $this->conn->prepare("
-            SELECT el.*, variant_id AS id, 'cms_variant' AS table_name FROM cms_variant el WHERE el.deleted = FALSE
-            $and_where_online AND el.instance_id = $instance_id
-            $not_in_clause ORDER BY date_popvote DESC $limit_clause;
-        ");
-        $statement->execute($exclude_ids);
-        $rows = $statement->fetchAll(5);
+        $statement = $this->conn->prepare("SELECT variant_id FROM cms_variant ORDER BY date_popvote DESC LIMIT $limit;");
+        $statement->execute();
+        $rows = $statement->fetchAll(3);
         $statement = null;
+        foreach ($rows as $index => $row) {
+            $rows[$index] = $row[0];
+        }
 
         return $rows;
     }

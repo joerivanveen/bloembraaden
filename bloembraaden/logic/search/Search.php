@@ -303,7 +303,7 @@ class Search extends BaseElement
     }
 
     /**
-     * @param int $shoppinglist_id
+     * @param string $shoppinglist_name
      * @param int $quantity
      * @return array indexed array holding variants
      * @since 0.5.15
@@ -321,12 +321,16 @@ class Search extends BaseElement
             $variant_ids_collect = array();
             $variant_ids_in_list = array();
             $variant_ids_show = array();
-            while ($index && count($variant_ids_show) < $quantity) {
-                --$index;
-                $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
-                $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
-                // exclude the variants that are already in the shoppinglist and reindex the array
-                $variant_ids_show = array_values(array_diff($variant_ids_collect, $variant_ids_in_list));
+            if (0 === $index) {
+                $variant_ids_show = Help::getDB()->listVariantIds($quantity);
+            } else {
+                while ($index && count($variant_ids_show) < $quantity) {
+                    --$index;
+                    $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
+                    $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
+                    // exclude the variants that are already in the shoppinglist and reindex the array
+                    $variant_ids_show = array_values(array_diff($variant_ids_collect, $variant_ids_in_list));
+                }
             }
         }
 
