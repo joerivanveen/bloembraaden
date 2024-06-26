@@ -320,7 +320,7 @@ class DB extends Base
      * @return array
      * @since 0.12.0
      */
-    public function findElementIds(string $type_name, array $clean_terms, array $properties = array()): array
+    public function findElementResults(string $type_name, array $clean_terms, array $properties = array()): array
     {
         if (0 === count($clean_terms)) return array();
         if (false === in_array($type_name, self::TYPES_WITH_CI_AI)) {
@@ -328,34 +328,49 @@ class DB extends Base
         }
         // get the id's from the _ci_ai table
         $statement = $this->conn->prepare('
-            SELECT id FROM _ci_ai 
+            SELECT title, slug, type_name, id FROM _ci_ai 
             WHERE instance_id = :instance_id AND type_name = :type_name AND ci_ai LIKE lower(:term);
         ');
         $arr = array();
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':type_name', $type_name);
         foreach ($clean_terms as $index => $term) {
-            // unfortunately special case
-            if ('price_from' === $term && 'variant' === $type_name) {
-                $rows = Help::getDB()->findSpecialVariants('price_from');
-                $ids = array();
-                foreach ($rows as $key => $row) {
-                    $ids[] = $row->id;
+            // unfortunately special cases for variant...
+            if ('variant' === $type_name) {
+                if (in_array($term, array('price_from', 'not_online'))) {
+                    $rows = Help::getDB()->findSpecialVariantResults($term);
+                    $ids = array();
+                    foreach ($rows as $key => $row) {
+                        $ids[$row->id] = $row;
+                    }
+                    $arr[$term] = $ids;
+
+                    continue;
+                } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))){
+                    $rows = Help::getDB()->findSpecialVariantResults($row->type_name, $row->id);
+                    if (0 !== count($rows)) {
+                        $ids = array();
+                        foreach ($rows as $key => $row) {
+                            $ids[$row->id] = $row;
+                        }
+                        $arr[$term] = $ids;
+
+                        continue;
+                    }
                 }
-                $arr['price_from'] = $ids;
-                continue;
             }
             $statement->bindValue(':term', "%$term%");
             $statement->execute();
-            $rows = $statement->fetchAll(3);
+            $rows = $statement->fetchAll(5);
             $ids = array();
             foreach ($rows as $key => $row) {
-                $ids[$row[0]] = $row[0]; // since we're doing array_intersect_key later, the id must be the key also
+                $ids[$row->id] = $row; // since we're doing array_intersect_key later, the id must be the key
             }
             $arr[$term] = $ids;
         }
         $intersected = null;
         $statement = null;
+        // TODO: price_from and not_online should dictate the order, so should be the first intersected!
         foreach ($arr as $index => $term) {
             if (null === $intersected) {
                 $intersected = $term;
@@ -372,21 +387,17 @@ class DB extends Base
         } else {
             $imploded_sub_queries = '';
         }
-        $ids_as_string = implode(',', $intersected);
+        $ids_as_string = implode(',', array_keys($intersected));
         $statement = $this->conn->prepare("
-            SELECT {$type_name}_id AS id FROM cms_$type_name 
+            SELECT title, slug, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
             WHERE {$type_name}_id IN ($ids_as_string) $imploded_sub_queries;
         ");
         //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
         $statement->execute();
-        $rows = $statement->fetchAll(3);
+        $rows = $statement->fetchAll(5);
         $statement = null;
-        $ids = array();
-        foreach ($rows as $key => $row) {
-            $ids[] = $row[0];
-        }
 
-        return $ids;
+        return $rows;
     }
 
     /**
@@ -458,37 +469,41 @@ class DB extends Base
      * @return array
      * @since 0.12.0
      */
-    public function findSpecialVariants(string $case): array
+    public function findSpecialVariantResults(string $case, ?int $id = null): array
     {
-        if ('price_from' === $case) { // select only variants that have a from price
-            $online = (true === defined('ADMIN') && true === ADMIN) ? '' : 'AND online = TRUE';
-            $statement = $this->conn->prepare("
-                        SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
-                        WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $online
-                        ORDER BY date_popvote DESC;
-                    ");
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->execute();
-            $rows = $statement->fetchAll(5);
-            $statement = null;
-
-            return $rows;
-        }
         if ('not_online' === $case) { // select only variants that are not online (for admins...)
             $statement = $this->conn->prepare("
                         SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
                         WHERE instance_id = :instance_id AND deleted = FALSE AND online = FALSE
                         ORDER BY date_updated DESC;
                     ");
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->execute();
-            $rows = $statement->fetchAll(5);
-            $statement = null;
-
-            return $rows;
+        } else {
+            $online = (true === defined('ADMIN') && true === ADMIN) ? '' : 'AND online = TRUE';
+            if ('price_from' === $case) { // select only variants that have a from price
+                $statement = $this->conn->prepare("
+                        SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND price_from <> '' $online
+                        ORDER BY date_popvote DESC;
+                    ");
+            } elseif (null !== $id && true === in_array($case, array('brand','serie','product'))) {
+                $statement = $this->conn->prepare("
+                        SELECT title, slug, 'variant' AS type_name, variant_id AS id FROM cms_variant 
+                        WHERE instance_id = :instance_id AND deleted = FALSE AND {$case}_id = :id $online
+                        ORDER BY date_popvote DESC;
+                    ");
+                $statement->bindValue(':id', $id);
+            } else {
+                return array();
+            }
         }
 
-        return array();
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        return $rows;
+
     }
 
     /**
