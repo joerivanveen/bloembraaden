@@ -2035,7 +2035,11 @@ PEATCMS_template.prototype.peat_enquote = function (str) {
 }
 
 PEATCMS_template.prototype.peat_no_render = function (str) {
-    return PEATCMS.replace('{', '&#123;', str);
+    return PEATCMS.replace(':not:', '&#58;not&#58;',
+        PEATCMS.replace('}', '&#125;',
+            PEATCMS.replace('{', '&#123;', str)
+        )
+    );
 }
 
 PEATCMS_template.prototype.peat_encode_for_template = function (str) {
@@ -3712,15 +3716,17 @@ String.prototype.replaceAll = function (search, replace) {
     return PEATCMS.replace(search, replace, this);
 };
 PEATCMS.replace = function (search, replace, str) {
-    let index = str.indexOf(search);
-    const replace_length = replace.length,
-        search_length = search.length;
-    while (index !== -1) {
-        str = str.substring(0, index) + replace + str.substring(index + search_length, str.length);
-        index += replace_length;
-        index = str.indexOf(search, index);
-    }
-    return str;
+    const parts = str.split(search);
+    return parts.join(replace);
+    // let index = str.indexOf(search);
+    // const replace_length = replace.length,
+    //     search_length = search.length;
+    // while (index !== -1) {
+    //     str = str.substring(0, index) + replace + str.substring(index + search_length, str.length);
+    //     index += replace_length;
+    //     index = str.indexOf(search, index);
+    // }
+    // return str;
 }
 
 String.prototype.hashCode = function () {
