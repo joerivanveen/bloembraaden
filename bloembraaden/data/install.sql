@@ -3202,4 +3202,7 @@ ALTER TABLE "public"."cms_serie"
 ALTER TABLE "public"."cms_product"
     ADD COLUMN if not exists "date_published" Timestamp With Time Zone;
 
+ALTER TABLE "public"."_instance"
+    ADD COLUMN if not exists "csp_default_src" Text;
+
 COMMIT;

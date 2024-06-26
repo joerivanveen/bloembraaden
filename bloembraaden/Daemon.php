@@ -152,6 +152,20 @@ class Daemon
                 }
             }
             if (0 === $total_count) ob_clean();
+            /* update csp, if necessary */
+            $total_count = 0;
+            $trans->start('Do instance CSP default-src');
+            $rows = $db->fetchInstances();
+            foreach ($rows as $index => $row) {
+                $instance = new Instance($row);
+                //Setup::loadInstanceSettings($instance);
+                if ($row->csp_default_src !== ($src = $instance->fetchDefaultSrc())) {
+                    $db->updateInstance($row->instance_id, array('csp_default_src' => $src));
+                    echo "Update $row->instance_id to $src\n";
+                    $total_count++;
+                }
+            }
+            if (0 === $total_count) ob_clean();
             /* old cache (least important, most time-consuming) */
             $trans->start('Warmup old (elements) cache');
             $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);

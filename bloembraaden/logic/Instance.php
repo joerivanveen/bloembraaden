@@ -56,7 +56,11 @@ class Instance extends BaseLogic
 
     public function getDefaultSrc(): string
     {
-        // TODO cache the default src so you only have to compute when something changes...
+        return $this->row->csp_default_src;
+    }
+
+    public function fetchDefaultSrc(): string
+    {
         return implode(' ', $this->computeDefaultSrc());
     }
 
@@ -75,7 +79,7 @@ class Instance extends BaseLogic
             $parts = explode('https://', $row->embed_code);
             if (isset($parts[1])) {
                 $src = explode('/', $parts[1])[0];
-                if ('' !== $src && false === in_array($src, $sources)) {
+                if ('' !== $src && false === in_array("https://$src", $sources)) {
                     $sources[] = "https://$src";
                 }
             }
