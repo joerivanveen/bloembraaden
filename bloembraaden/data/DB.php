@@ -827,9 +827,10 @@ class DB extends Base
             $where_table = "x.{$type_name}_id = :id";
         }
         $statement = $this->conn->prepare("
-            SELECT DISTINCT x.variant_id FROM cms_variant_x_properties x
+            SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
             WHERE $where_table AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
+            ORDER BY date_popvote DESC;
         ");
 
         $statement->bindValue(':id', $id);
