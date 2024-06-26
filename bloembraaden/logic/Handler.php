@@ -368,8 +368,8 @@ class Handler extends BaseLogic
                 // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
                 if (isset($post_data->template_name)) {
                     // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
-                    if (isset($post_data->template_id) and is_numeric(($template_id = $post_data->template_id))) {
-                        if (ADMIN && $row = Help::getDB()->getTemplateRow($template_id)) {
+                    if (isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
+                        if (ADMIN && ($row = Help::getDB()->getTemplateRow($template_id))) {
                             $temp = new Template($row);
                             if (false === $temp->checkIfPublished()) {
                                 $out = json_decode($temp->getFreshJson());

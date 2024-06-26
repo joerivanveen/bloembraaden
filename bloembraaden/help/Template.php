@@ -815,7 +815,7 @@ $html";
     {
         if (null === $html) return '';
         $html = str_replace(array("\r", "\n", "\t"), '', $html);
-        while (false !== strpos($html, '  ')) {
+        while (true === str_contains($html, '  ')) {
             $html = str_replace('  ', ' ', $html);
         }
         //$html = str_replace('> <', '><', $html);

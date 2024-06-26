@@ -1383,6 +1383,7 @@ function PEATCMS_template(obj) {
     this.doublechecking = []; // this variable is used to prevent infinite loops when the template encounters incorrect complex tags
     if (!window.cached_nodes) window.cached_nodes = {}; // TODO is that really the sane choice, window.cached_nodes?
 }
+
 PEATCMS_template.prototype.renderProgressive = function (tag, slug) {
     // get the remaining tags to render them progressively
     const tags = this.progressive_tags,
@@ -1533,7 +1534,7 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
 }
 
 PEATCMS_template.prototype.render = function (out) {
-    if (! out.hasOwnProperty('dark_mode')) {
+    if (!out.hasOwnProperty('dark_mode')) {
         out.dark_mode = PEAT.getSessionVar('dark_mode');
     }
     // master template contains page html broken down in parts
@@ -1690,10 +1691,8 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             }
             content = this.getIfsContent(html, start);
             if ('' === content) {
-                if (-1 === end) {
-                    html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">If-error near ${tag_name}</span>`, html);
-                    continue;
-                }
+                html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">If-error near ${tag_name}</span>`, html);
+                continue;
             }
             parts = content.split(':not:'); // the content can be divided in true and false part using :not:
             if (null === equals) {
@@ -1741,8 +1740,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
 }
-PEATCMS_template.prototype.getIfsContent = function(html, start)
-{
+PEATCMS_template.prototype.getIfsContent = function (html, start) {
     let end = html.indexOf('}}', start);
     if (-1 === end) {
         return '';
@@ -2801,7 +2799,9 @@ PEATCMS.prototype.ajaxNavigate = function (e) {
             el = document.getElementById(parts[1]);
         if (el) {
             PEAT.scrollIntoView(el, 200); // todo
-            setTimeout(function() { PEAT.grabAttention(el); },300);
+            setTimeout(function () {
+                PEAT.grabAttention(el);
+            }, 300);
             return;
         }
     }
