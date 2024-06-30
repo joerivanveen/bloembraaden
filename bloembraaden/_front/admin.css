@@ -150,6 +150,7 @@
     font-size: 15px;
     line-height: 1.5em;
     letter-spacing: 0;
+    font-style: normal;
 }
 
 .PEATCMS_admin, .PEATCMS_admin * {
@@ -670,6 +671,17 @@ body .PEATCMS_admin div,
 body .PEATCMS_admin span,
 body .PEATCMS_admin p {
     color: var(--admin-color-key);
+    font-style: normal;
+}
+
+body .PEATCMS_admin h1,
+body .PEATCMS_admin h2,
+body .PEATCMS_admin h3,
+body .PEATCMS_admin h4,
+body .PEATCMS_admin h5,
+body .PEATCMS_admin h6,
+body .PEATCMS_admin strong {
+    font-weight: bold;
 }
 
 body .PEATCMS_admin a:hover,
