@@ -502,7 +502,7 @@ class Template extends BaseLogic
                     $equals = null;
                 }
                 $content = $this->getIfsContent($html, $str_pos);
-                if ('' === $content) {
+                if (false === $content) {
                     $html = str_replace(
                         "{{{$tag_name}:",
                         "If-error for $tag_name",
@@ -564,34 +564,39 @@ class Template extends BaseLogic
         $output_object = null;
 
         // @since 0.21.0 process not parts for absent tags:
-//        while (false !== ($start = strpos($html, ':not:'))) {
-//            $content = $this->getIfsContent($html, $start + 5);
-//            if ('' === $content) {
-//                // todo only target the offending :not:
-//                $html = str_replace(':not:', 'NOT ERROR', $html);
-//            }
-//            $html = str_replace(":not:$content}}", "}}$content", $html);
-//        }
+        while (false !== ($start = strpos($html, ':not:'))) {
+            $content = $this->getIfsContent($html, $start + 5);
+            if (false === $content) {
+                $html = substr_replace($html, ' <span class="error">NOT ERROR</span> ', $start, 5);
+            } else {
+                $html = str_replace(":not:$content}}", "}}$content", $html);
+            }
+        }
 
         return $html;
     }
 
-    private function getIfsContent(string $html, int $str_pos): string
+    /**
+     * @param string $html
+     * @param int $str_pos
+     * @return false|string returns false if there is a (nested) if error, string content otherwise
+     */
+    private function getIfsContent(string $html, int $str_pos): false|string
     {
         $end_pos = strpos($html, '}}', $str_pos);
         if (false === $end_pos) { // error: if tag has no end
-            return '';
+            return false;
         }
         $content = substr($html, $str_pos, $end_pos - $str_pos);
         // @since 0.16.3 allow nested ifs
         if (true === str_contains($content, '{{')) {
-            while (substr_count($content, '{{') > substr_count($content, '}}')) {
+            while (substr_count($content, '{{') >= substr_count($content, '}}')) {
                 //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
                 $end_pos = strpos($html, '}}', $end_pos + 2);
+                if (false === $end_pos) { // error: if tag has no end
+                    return false;
+                }
                 $content = substr($html, $str_pos, $end_pos - $str_pos);
-            }
-            if (false === $end_pos) { // error: if tag has no end
-                return '';
             }
         }
 
@@ -888,7 +893,7 @@ $html";
     {
         for ($index = 0; $index < 100; ++$index) {
             $search = "[$index]}}";
-            if (false === strpos($html, $search)) break; // don't loop any further if the indexes became too high
+            if (false === str_contains($html, $search)) break; // don't loop any further if the indexes became too high
             // grab all the tags to replace
             $arr = explode($search, $html);
             foreach ($arr as $key => $html_part) {

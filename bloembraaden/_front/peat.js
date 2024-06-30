@@ -1690,7 +1690,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 is_false = !output_object;
             }
             content = this.getIfsContent(html, start);
-            if ('' === content) {
+            if (false === content) {
                 html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">If-error near ${tag_name}</span>`, html);
                 continue;
             }
@@ -1728,14 +1728,14 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
         }
     }
     // @since 0.21.0 process not parts for absent tags
-    // while (-1 !== (start = html.indexOf(':not:'))) {
-    //     const content = this.getIfsContent(html, start + 5);
-    //     if ('' === content) {
-    //         // todo only target the offending :not:
-    //         html = PEATCMS.replace(':not:', 'NOT ERROR');
-    //     }
-    //     html = PEATCMS.replace(`:not:${content}}}`, `}}${content}`, html);
-    // }
+    while (-1 !== (start = html.indexOf(':not:'))) {
+        const content = this.getIfsContent(html, start + 5);
+        if (false === content) {
+            html = html.slice(0, start) + ' <span class="error">NOT ERROR</span> ' + html.slice(start + 5);
+        } else {
+            html = PEATCMS.replace(`:not:${content}}}`, `}}${content}`, html);
+        }
+    }
     // return this.convertTagsRemaining(html);
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
@@ -1743,17 +1743,17 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
 PEATCMS_template.prototype.getIfsContent = function (html, start) {
     let end = html.indexOf('}}', start);
     if (-1 === end) {
-        return '';
+        return false;
     }
     let content = html.substring(start, end);
     // @since 0.16.3 allow nested ifs
     if (-1 !== content.indexOf('{{')) {
         while (content.split('{{').length > content.split('}}').length) {
             end = html.indexOf('}}', end + 2);
+            if (-1 === end) {
+                return false;
+            }
             content = html.substring(start, end);
-        }
-        if (-1 === end) {
-            return '';
         }
     }
 
@@ -1834,10 +1834,11 @@ PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
             end = html.indexOf('}}', end + 2);
         }
         if (-1 === end) {
-            console.error('tag_error: ' + html.slice(start, 20) + '...');
-            html = html.replace('{{', ' <span class="error">tag_error</span> ');
+            console.error('tag error near: ' + html.slice(start -30, 70) + '...');
+            html = html.replace('{{', ' <span class="error">TAG ERROR</span> ');
+        } else {
+            html = PEATCMS.replace(html.substring(start, end + 2), '', html);
         }
-        html = PEATCMS.replace(html.substring(start, end + 2), '', html);
     }
     return html;
 }
@@ -2563,12 +2564,16 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         new_nodes = template.getChildNodes('body', html);
         // @since 0.9.4: only body is relevant for rendering, forget anything that might be in the head
         html = template.getInnerHtml('body', html);
+        if (null === html) {
+            console.error('No body found in html');
+            return;
+        }
         node_walker = new_nodes.length - 1;
         for (i = len - 1; i >= 0; i--) {
             child_node = child_nodes[i];
             if (child_node.getAttribute && child_node.getAttribute('data-peatcms-keep') !== null) {
                 const attr_name = child_node.getAttribute('data-peatcms-keep');
-                if (html.indexOf('data-peatcms-keep="' + attr_name + '"') !== -1) {
+                if (html.indexOf(`data-peatcms-keep="${attr_name}"`) !== -1) {
                     //console.log('load all new nodes from the last until ' + attr_name);
                     while ((new_node = new_nodes[node_walker])) {
                         if (!new_node.getAttribute) {
