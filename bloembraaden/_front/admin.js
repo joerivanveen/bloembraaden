@@ -1211,7 +1211,6 @@ PEATCMS_column_updater.prototype.set = function (value) {
 }
 
 const PEATCMS_panel = function (name, resetStyles) {
-    let DOMPanel, DOMEditElement;
     this.name = name; // currently names can be console and sidebar
     // check DOMElement and checkbox TODO you can probably create these yourself as well, when not present
     if (null === (this.DOMCheckbox = document.getElementById(`admin_${name}_checkbox`))) {
@@ -1220,15 +1219,17 @@ const PEATCMS_panel = function (name, resetStyles) {
         this.DOMCheckbox.checked = false; // firefox
         this.DOMCheckbox.addEventListener('change', resetStyles);
     }
-    if (null === (DOMPanel = document.getElementById(`admin_${name}`))) {
+    const DOMPanel = document.getElementById(`admin_${name}`);
+    if (null === DOMPanel) {
         console.error(`Missing area for panel ${name}`);
+        return;
     }
     if (DOMPanel.querySelector('.edit-area')) {
         DOMPanel.querySelectorAll('.edit-area').forEach(function (el) {
             el.remove();
         });
     }
-    DOMEditElement = document.createElement('div');
+    const DOMEditElement = document.createElement('div');
     DOMEditElement.className = 'edit-area';
     DOMPanel.insertAdjacentElement('beforeend', DOMEditElement);
     this.DOMEditElement = DOMEditElement;
@@ -1289,6 +1290,7 @@ function PEATCMS_panels() {
     function addResizer(panel, mover) {
         // resize is separate for now
         const positioner = document.getElementById(`admin_${panel}_positioner`);
+        if (null === positioner) return;
         const css_cursor = 'cursor:' + window.getComputedStyle(positioner).cursor;
 
         function remover() {
