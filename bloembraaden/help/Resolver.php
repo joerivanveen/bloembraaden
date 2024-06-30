@@ -34,7 +34,7 @@ class Resolver extends BaseLogic
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
         if ($uri === '/') { // homepage is requested
-            $uri = array();
+            $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
         } else {
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
                 if ('' === $value) {
