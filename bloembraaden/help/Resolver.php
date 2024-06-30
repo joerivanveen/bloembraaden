@@ -33,7 +33,8 @@ class Resolver extends BaseLogic
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
-        if ($uri === '/') { // homepage is requested
+        if ($uri === '/') { // homepage is requested, get slug to retrieve from cache later
+            // TODO optimize getting the slug from the id, maybe by caching in instance?
             $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
         } else {
             $uri = array_values(array_filter(explode('/', $uri), function ($value) {
