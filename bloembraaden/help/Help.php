@@ -125,13 +125,13 @@ class Help
         // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues
         if (($index = strpos($sunk, '00000'))) {
             $sunk = substr($sunk, 0, $index);
-            if (substr($sunk, -1) === '.') {
+            if (true === str_ends_with($sunk, '.')) {
                 $sunk = substr($sunk, 0, -1);
             }
         }
         if (($index = strpos($sunk, '99999'))) {
             $sunk = substr($sunk, 0, $index);
-            if (substr($sunk, -1) === '.') {
+            if (true === str_ends_with($sunk, '.')) {
                 $sunk = (string)((int)$sunk + 1);
             } else {
                 $n = (int)(substr($sunk, -1)); // this can never be nine, so you can add 1 safely
