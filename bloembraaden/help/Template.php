@@ -401,7 +401,7 @@ class Template extends BaseLogic
                 }
                 $check_if[$tag_name] = $output_object;
                 // regular tag replacement
-                if (false !== strpos($html, "{{{$tag_name}}}")) {
+                if (true === str_contains($html, "{{{$tag_name}}}")) {
                     $html = str_replace("{{{$tag_name}}}", $output_object, $html);
                 }
                 // @since 0.4.6: simple tags can be processed using a function, {{tag|function_name}}
@@ -590,7 +590,7 @@ class Template extends BaseLogic
         $content = substr($html, $str_pos, $end_pos - $str_pos);
         // @since 0.16.3 allow nested ifs
         if (true === str_contains($content, '{{')) {
-            while (substr_count($content, '{{') >= substr_count($content, '}}')) {
+            while (substr_count($content, '{{') > substr_count($content, '}}')) {
                 //while (count(explode('{{', $content)) > count(explode('}}', $content))) {
                 $end_pos = strpos($html, '}}', $end_pos + 2);
                 if (false === $end_pos) { // error: if tag has no end
