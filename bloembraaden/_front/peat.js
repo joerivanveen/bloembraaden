@@ -2916,15 +2916,16 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         }
     }
     // fix e-mail links:
-    as = el.getElementsByClassName('peatcms-email-link')
+    as = el.getElementsByClassName('peatcms-email-link');
     for (i = 0, len = as.length; i < len; ++i) {
         a = as[i];
         a.removeEventListener('click', self.ajaxMailto);
         a.addEventListener('click', self.ajaxMailto);
-        if (a.classList.contains('peatcms-link')) continue;
+        if (a.hasAttribute('data-peatcms_ajaxified')) continue;
+        a.setAttribute('data-peatcms_ajaxified', '1');
         a.innerHTML = PEATCMS.replace('-dot-', '.', PEATCMS.replace('-at-', '@', a.innerHTML));
-        a.classList.add('peatcms-link');
-        a.classList.add('link');
+        a.classList.add('peatcms-link'); // todo remove when impact is none
+        a.classList.add('link'); // todo remove when impact is none
         a.setAttribute('tabindex', '1');
         a.setAttribute('role', 'link');
     }
