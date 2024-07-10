@@ -3205,7 +3205,7 @@ ALTER TABLE "public"."cms_product"
 ALTER TABLE "public"."_instance"
     ADD COLUMN if not exists "csp_default_src" Text;
 
--- remove size limit on x_value, previously this was varchar(40)
+-- (bugfix 0.21.0) remove size limit on x_value, previously this was varchar(40)
 ALTER TABLE "public"."cms_page_x_properties"
     ALTER COLUMN x_value TYPE text;
 
