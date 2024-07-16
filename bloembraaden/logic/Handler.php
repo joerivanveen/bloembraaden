@@ -242,7 +242,7 @@ class Handler extends BaseLogic
                         } else {
                             $redirect_uri = 'payment_link';
                         }
-                        $out = (object)array('redirect_uri' => '/' . $redirect_uri);
+                        $out = (object)array('redirect_uri' => "/$redirect_uri");
                     }
                 } else {
                     $this->addMessage(sprintf(__('Order ‘%s’ not found', 'peatcms'), $order_number), 'warn');

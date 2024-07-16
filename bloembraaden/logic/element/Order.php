@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -10,8 +10,6 @@ class Order extends BaseElement
 
     public function __construct(\stdClass $row = null)
     {
-        // todo, why could we not instantiate an order with $row null?
-        //if ($row === null) $this->handleErrorAndStop('Attempting to instantiate Order with $row null');
         parent::__construct($row);
         $this->type_name = 'order';
     }
@@ -51,8 +49,11 @@ class Order extends BaseElement
      */
     public function getPaymentTrackingId(): ?string
     {
-        if (isset($this->row->payment_tracking_id) && trim($tracking_id = $this->row->payment_tracking_id) !== '')
+        if (isset($this->row->payment_tracking_id)
+            && '' !== ($tracking_id = trim($this->row->payment_tracking_id))
+        ) {
             return $tracking_id;
+        }
 
         return null;
     }
@@ -117,7 +118,7 @@ class Order extends BaseElement
                 $percentage = Help::getAsFloat($percentage_index);
                 if ($percentage > $highest_vat) $highest_vat = $percentage;
             }
-            $vat[(string) $highest_vat] += $shipping_costs;
+            $vat[(string)$highest_vat] += $shipping_costs;
         }
         $amount_grand_total = $amount_row_total + $shipping_costs;
         $row->amount_grand_total = Help::asMoney($amount_grand_total);
