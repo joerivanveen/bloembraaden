@@ -987,7 +987,7 @@ $html";
                 // this can only happen when templates are deleted willy nilly...
                 if (($this->row = Help::getDB()->getTemplateRow($template_id))) {
                     $obj = json_decode($this->getFreshJson());
-                    Help::getDB()->updateElement(new Type($type_name), array('template_id'=>$template_id), $out->id);
+                    Help::getDB()->updateElement(new Type($type_name), array('template_id' => $template_id), $out->id);
                     $this->addError("Template id updated to $template_id for $out->title_parsed ($type_name)");
                 }
             }
