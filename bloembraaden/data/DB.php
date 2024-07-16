@@ -4438,7 +4438,7 @@ class DB extends Base
 
     public function markStaleFrom(string $slug, string $date_from): bool
     {
-        if (null === (Help::getDate($date_from))) return false;
+        if (null === (Date::getDate($date_from))) return false;
         // delete from stale table
         $statement = $this->conn->prepare('DELETE FROM _stale WHERE instance_id = ? AND slug = ?;');
         $statement->execute(array(Setup::$instance_id, $slug));

@@ -50,6 +50,7 @@ require CORE . 'help/logger/SseLogger.php';
 require CORE . 'help/logger/StdOutLogger.php';
 require CORE . 'help/Translator.php';
 require CORE . 'help/JobTransaction.php';
+require CORE . 'help/Date.php'; // static class with date functions
 require CORE . 'help/Help.php'; // static class with helper functions
 require CORE . 'help/Setup.php'; // static class with settings and variables
 require CORE . 'help/Mailer.php';

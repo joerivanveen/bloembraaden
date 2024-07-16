@@ -247,33 +247,6 @@ class Help
     }
 
     /**
-     * @param string $value
-     * @return \DateTime|null
-     * @since 0.8.19
-     */
-    public static function getDate(string $value): ?\DateTime
-    {
-        // parse the date, it should be YYYY-MM-DD HH:MM:SS.milliseconds+timezone diff compared to UTC
-        if (($dt = \DateTime::createFromFormat('Y-m-d G:i:s O', $value))) {
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d\TG:i:s O', $value))) { // official, used by eg Instagram
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s.u O', $value))) {
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s.u', $value))) {
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i:s', $value))) {
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d G:i', $value))) {
-            return $dt;
-        } elseif (($dt = \DateTime::createFromFormat('Y-m-d', $value))) {
-            return $dt;
-        }
-        //if ($dt === false or array_sum($dt::getLastErrors())) {}
-        return null;
-    }
-
-    /**
      * @param string $message
      * @param string $level
      * @since 0.4.0, 0.5.9: added $level 'note'

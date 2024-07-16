@@ -872,34 +872,35 @@ class Handler extends BaseLogic
                     $out = array('slug' => "__order__/$order_number");
                 }
             } elseif ('payment_start' === $action) {
-                // TODO LET OP het is niet gecheckt dat deze order bij deze user hoort, dus geen gegevens prijsgeven
+                // TODO NOTE the order may not belong to the current user, so do not expose any sensitive data
                 if (isset($post_data->order_number)) {
                     if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
                         if (($order = new Order($row))) {
-                            if (($payment_tracking_id = $order->getPaymentTrackingId())) {
-                                // TODO maybe not access the row directly here, for sanity reasons
+                            // TODO make 24h limit configurable
+                            if (86400 < Setup::getNow() - Date::intFromDate($row->date_created)) {
+                                $out = array('success'=>false);
+                                $this->addMessage(__('Payment has expired, please make a new order', 'peatcms'), 'note');
+                            } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
                                 $live_flag = $row->payment_live_flag ?? false;
                                 $out = array('tracking_id' => $payment_tracking_id, 'live_flag' => $live_flag, 'success' => true);
-                            } else {
-                                if (($psp = $instance->getPaymentServiceProvider())) {
-                                    if (false === $psp->hasError()) {
-                                        $live_flag = $psp->isLive();
-                                        if (($tracking_id = $psp->beginTransaction($order, $instance))) {
-                                            // update order with the payment transaction id
-                                            if (Help::getDB()->updateElement(new Type('order'), array(
-                                                'payment_tracking_id' => $tracking_id,
-                                                'payment_live_flag' => $live_flag,
-                                            ), $order->getId()))
-                                                $out = array('tracking_id' => $tracking_id, 'live_flag' => $live_flag, 'success' => true);
-                                        } else {
-                                            $out = array('live_flag' => $live_flag, 'success' => false);
-                                        }
+                            } elseif (($psp = $instance->getPaymentServiceProvider())) {
+                                if (false === $psp->hasError()) {
+                                    $live_flag = $psp->isLive();
+                                    if (($tracking_id = $psp->beginTransaction($order, $instance))) {
+                                        // update order with the payment transaction id
+                                        if (Help::getDB()->updateElement(new Type('order'), array(
+                                            'payment_tracking_id' => $tracking_id,
+                                            'payment_live_flag' => $live_flag,
+                                        ), $order->getId()))
+                                            $out = array('tracking_id' => $tracking_id, 'live_flag' => $live_flag, 'success' => true);
                                     } else {
-                                        $this->addError(sprintf('Payment Service Provider error %s', $psp->getLastError()));
+                                        $out = array('live_flag' => $live_flag, 'success' => false);
                                     }
                                 } else {
-                                    $this->addError(__('No default Payment Service Provider found', 'peatcms'));
+                                    $this->addError(sprintf('Payment Service Provider error %s', $psp->getLastError()));
                                 }
+                            } else {
+                                $this->addError(__('No default Payment Service Provider found', 'peatcms'));
                             }
                         } else {
                             $this->addError(sprintf('Could not get order for %s', htmlentities($post_data->order_number)));

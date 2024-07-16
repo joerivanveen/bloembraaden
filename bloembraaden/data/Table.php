@@ -234,7 +234,7 @@ class Table extends Base
             }
         } elseif ($col_type === 'timestamp') {
             if ($value !== 'NOW()') {
-                if (null === Help::getDate($value)) {
+                if (null === Date::getDate($value)) {
                     $this->addValidationError($col_name, var_export($value, true), 'must be YYYY-MM-DD (HH:MM:SS) or ‘NOW()’');
 
                     return false;
