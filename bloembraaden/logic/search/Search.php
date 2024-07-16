@@ -322,12 +322,12 @@ class Search extends BaseElement
      */
     public function getRelatedForShoppinglist(string $shoppinglist_name, int $quantity = 8): array
     {
-        if ('' === $shoppinglist_name && count(($props = $this->getProperties())) > 0) {
+        $list = (new Shoppinglist($shoppinglist_name))->getRows(); // ordered from old to new by default
+        if (count(($props = $this->getProperties())) > 0) {
             $variant_ids_show = $this->getAllVariantIds(array_keys($props));
-            $variant_ids_in_list = (array)Help::$session->getValue('peatcms_variant_ids_in_list');
+            $variant_ids_in_list = array_map(static function($item) { return $item->variant_id; }, $list);
         } else {
             // this case is for the original shopping cart page
-            $list = (new Shoppinglist($shoppinglist_name))->getRows(); // ordered from old to new by default
             // walk in reverse so the newest item gets the most attention
             $index = count($list);
             $variant_ids_collect = array();

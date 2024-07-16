@@ -66,10 +66,6 @@ class Shoppinglist extends BaseLogic
             'o' => count($this->rows) + 1,
             'deleted' => false,
         );
-        // @since 0.21.0 add to session list that keeps track of all added variant ids
-        $list = Help::$session->getValue('peatcms_variant_ids_in_list') ?? array();
-        $list[] = $variant_id;
-        Help::$session->setVar('peatcms_variant_ids_in_list', array_values($list));
 
         return true;
     }
@@ -88,13 +84,6 @@ class Shoppinglist extends BaseLogic
         foreach ($rows as $index => $row) {
             if ($row->variant_id === $variant_id) {
                 unset($this->rows[$index]);
-
-                // @since 0.21.0 remove from session list that keeps track of all added variant ids
-                $list = array_filter(Help::$session->getValue('peatcms_variant_ids_in_list') ?? array(),
-                    static function ($item) use ($variant_id) {
-                        return $item !== $variant_id;
-                    });
-                Help::$session->setVar('peatcms_variant_ids_in_list', array_values($list));
 
                 return true;
             }
