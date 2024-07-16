@@ -2116,11 +2116,13 @@ PEATCMS_admin.prototype.enhanceToggle = function (elements) {
             toggler.classList.add('open');
             localStorage.setItem(toggler_hash, 'open');
         }
+
         function close(toggler) {
             const toggler_hash = PEATCMS.numericHashFromString(toggler.firstElementChild.innerHTML);
             toggler.classList.remove('open');
             localStorage.removeItem(toggler_hash)
         }
+
         function toggle(toggler) {
             if (toggler.classList.contains('open')) {
                 close(toggler);
@@ -2128,6 +2130,7 @@ PEATCMS_admin.prototype.enhanceToggle = function (elements) {
                 open(toggler);
             }
         }
+
         if (toggler.hasAttribute('data-instance_id') &&
             parseInt(toggler.getAttribute('data-instance_id')) !== self.instance.instance_id
         ) {
