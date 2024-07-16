@@ -513,7 +513,7 @@ class Template extends BaseLogic
 //                        echo '</textarea>';
                     continue;
                 }
-                $parts = explode(':not:', $content); // the content can be divided in true and false part using :not:
+                $parts = $this->splitNot($content); // the content can be divided in true and false part using :not:
                 if (true === isset($equals)) {
                     $str_to_replace = "{{{$tag_name}:==$equals:$content}}";
                 } else {
@@ -574,6 +574,25 @@ class Template extends BaseLogic
         }
 
         return $html;
+    }
+
+    private function splitNot(string $html): array
+    {
+        //return explode(':not:', $html);
+        // split the content by :not:, but only on this level of {{ }}, not a deeper level!
+        $parts = explode(':not:', $html);
+        $assembler = '';
+        foreach ($parts as $index => $part) {
+            $assembler .= $part;
+            // outer {{ (and tag) are removed
+            // so the correct level is the one with no extra {{ or }} around the :not:, that would be 1 level deeper
+            if (substr_count($assembler, '{{') === substr_count($assembler, '}}')) {
+                $assembler .= ':the_real_not';
+            } else {
+                $assembler .= ':not:'; // restore original :not: for later
+            }
+        }
+        return explode(':the_real_not:', $assembler);
     }
 
     /**

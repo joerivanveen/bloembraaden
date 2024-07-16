@@ -1694,7 +1694,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                 html = PEATCMS.replace(`{{${tag_name}:`, `<span class="warn">If-error near ${tag_name}</span>`, html);
                 continue;
             }
-            parts = content.split(':not:'); // the content can be divided in true and false part using :not:
+            parts = this.splitNot(content); // the content can be divided in true and false part using :not:
             if (null === equals) {
                 str_to_replace = `{{${tag_name}:${content}}}`;
             } else {
@@ -1740,6 +1740,27 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     return html; // removesingletagsremaining prevents similar single tags being rendered in an outer loop
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
 }
+
+PEATCMS_template.prototype.splitNot = function(html) {
+    //return html.split(':not:'); // the old way
+    // split the content by :not:, but only on this level of {{ }}, not a deeper level!
+    const parts = html.split(':not:'), len = parts.length;
+    let assembler = '';
+    for (let i = 0; i < len; ++i) {
+        const part = parts[i];
+        assembler += part;
+        if (len === i + 1) break;
+        // outer {{ (and tag) are removed
+        // so the correct level is the one with no extra {{ or }} around the :not:, that would be 1 level deeper
+        if (assembler.split('{{').length === assembler.split('}}').length) {
+            assembler += ':the_real_not:';
+        } else {
+            assembler += ':not:'; // restore original :not: for later
+        }
+    }
+    return assembler.split(':the_real_not:')
+}
+
 PEATCMS_template.prototype.getIfsContent = function (html, start) {
     let end = html.indexOf('}}', start);
     if (-1 === end) {
