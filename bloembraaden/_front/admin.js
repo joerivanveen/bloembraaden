@@ -418,9 +418,8 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
             if (data.hasOwnProperty('close')) {
                 source.close();
                 self.sse_log('Done');
-                slug = self.parent_PEATCMS_element.state.slug || null;
-                if (NAV.getCurrentSlug() === slug) {
-                    NAV.refresh();
+                if ((slug = self.parent_PEATCMS_element.state.slug) && NAV.getCurrentSlug() === slug) {
+                    NAV.refresh(); // Gets the updated element from the server as well
                 } else {
                     PEAT.message('Done processing ' + decodeURI(slug), 'note');
                 }
@@ -447,7 +446,6 @@ PEATCMS_actor.prototype.dropFile = function (event) {
         NAV.fileUpload(function (data) {
             self.set(data);
             self.process();
-            //self.parent_PEATCMS_element.refreshOrGo(data.slug);
         }, files[i], slug, this.DOMElement);
     }
 }
@@ -528,10 +526,10 @@ PEATCMS_actor.prototype.update = function (value, callback_method) {
             PEAT.message('Update not reflected in DOM', 'warn');
         }
         // only if you are editing the currently displayed element should you update the browser view
-        p = NAV.getCurrentElement();
-        if (null !== (table_info = p.getTableInfo()) && data.id === p.getElementId() && data.table_name === table_info.table_name) {
-            NAV.refresh(data.slug); // means el.render + replaceState in history :-)
-        }
+        // p = NAV.getCurrentElement();
+        // if (null !== (table_info = p.getTableInfo()) && data.id === p.getElementId() && data.table_name === table_info.table_name) {
+        //     //NAV.refresh(data.slug); // means el.render + replaceState in history :-) // TODO JOERI
+        // }
     });
 }
 
@@ -1154,7 +1152,7 @@ PEATCMS_column_updater.prototype.delete = function () {
         if (data.hasOwnProperty('deleted') && data.deleted === true) {
             // remove row, how to know what the row is? it may not be one (parent) DOMElement...
             // the row structure is in the template somewhere, at least...
-            // TODO this is a shortcut, please remove the row without refreshing the whole page
+            // TODO Joeri this is a shortcut, please remove the row without refreshing the whole page
             NAV.refresh();
         } else {
             console.error('Delete row failed');
@@ -1174,7 +1172,7 @@ PEATCMS_column_updater.prototype.new = function () {
             }
         };
     NAV.ajax('/__action__/insert_row', data, function (data) {
-        // TODO this is a shortcut, please render a new row without refreshing the whole page
+        // TODO Joeri this is a shortcut, please render a new row without refreshing the whole page
         NAV.refresh();
         if (VERBOSE) console.log(data);
     });

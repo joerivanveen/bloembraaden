@@ -632,7 +632,7 @@ PEATCMS_element.prototype.delete = function () {
             if (json.hasOwnProperty('success') && true === json.success) {
                 self.edit_area.innerHTML = '';
                 CMS_admin.panels.close();
-                NAV.refresh();
+                //NAV.refresh(); // TODO JOERI
             }
         });
     }
@@ -955,7 +955,7 @@ PEATCMS_element.prototype.chainParents = function (column_name, id) {
                 console.warn('chaining:', parent_column, parent_id);
                 self.chainParents(parent_column, parent_id)
             } else { // if we're done, refresh the page
-                self.refreshOrGo(data.slug);
+                NAV.refresh(data.slug);
             }
         });
     } else {
@@ -973,15 +973,7 @@ PEATCMS_element.prototype.set = function (data) {
         }
     }
     // when the whole element is set, show the page
-    this.refreshOrGo(data.slug);
-}
-
-PEATCMS_element.prototype.refreshOrGo = function (slug) {
-    if (slug === NAV.getCurrentSlug()) {
-        NAV.refresh(slug); // means el.render + replaceState in history :-)
-    } /*else { // we don’t ‘go’ anymore, it would disrupt the flow
-        NAV.go(slug);
-    }*/
+    NAV.refresh(data.slug);
 }
 
 PEATCMS_element.prototype.getTableInfo = function () {
@@ -3402,6 +3394,7 @@ PEATCMS_navigator.prototype.refresh = function (path) {
     let slug;
     if (!path) path = this.getCurrentPath(); // replacing default value which is not supported < ES6
     if (window.history && window.history.pushState) {
+        this.last_navigate = null; // refreshing is never navigating
         if (globals.hasOwnProperty('slug')) { // move the first page’s slug into the cache
             slug = globals.slug;
             if (slug.hasOwnProperty('__ref')) {
