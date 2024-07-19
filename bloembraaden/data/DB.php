@@ -1259,12 +1259,12 @@ class DB extends Base
      * @return float the pop_vote value (between 0, the most popular, and 1, the least)
      * @since 0.5.12
      */
-    public function updatePopVote(string $element_name, int $id, bool $down_vote = false): float
+    public function updatePopVote(string $element_name, int $id, int $down_vote = 0): float
     {
         $type = new Type($element_name);
         $table_name = $type->tableName();
         $type_name = $type->typeName();
-        if (false === $down_vote) {
+        if (0 === $down_vote) {
             $statement = $this->conn->prepare("
                 UPDATE $table_name SET date_popvote = NOW() WHERE {$type_name}_id = ? AND instance_id = ?;
             ");
@@ -1276,18 +1276,21 @@ class DB extends Base
             } else {
                 $this->addError("updatePopVote error for $element_name with id $id");
             }
-        } else { // downvote..., move approx one down on every vote by decreasing the date_popvote by random 1 - 20 minutes
+        } else { // downvote..., move approx x down on every vote by decreasing the date_popvote by random 1 - 20 minutes
             // or 8 hours when this is already the lowest
             $statement = $this->conn->prepare("UPDATE $table_name 
                 SET date_popvote = COALESCE(
-                    (SELECT date_popvote - CAST(floor(random() * 20 + 1) ||  ' minutes' as INTERVAL)
-                    FROM $table_name WHERE date_popvote < 
-                         (SELECT date_popvote FROM $table_name 
-                            WHERE {$type_name}_id = :id AND instance_id = :instance_id AND deleted = FALSE) 
-                            ORDER BY date_popvote DESC LIMIT 1), date_popvote - CAST(8 ||  ' hours' as INTERVAL)
+                    (SELECT MIN(date_popvote) - CAST(floor(random() * 20 + 1) ||  ' minutes' as INTERVAL) 
+                     FROM (SELECT date_popvote FROM $table_name 
+                        WHERE date_popvote < (SELECT date_popvote FROM $table_name 
+                            WHERE {$type_name}_id = :id AND instance_id = :instance_id AND deleted = FALSE)
+                        ORDER BY date_popvote DESC LIMIT $down_vote) alias)
+                    , date_popvote - CAST(8 ||  ' hours' as INTERVAL)
                     ) WHERE {$type_name}_id = :id AND instance_id = :instance_id;");
             $statement->bindValue(':id', $id);
             $statement->bindValue(':instance_id', Setup::$instance_id);
+//            var_dump(str_replace(':id', (string)$id, str_replace(':instance_id', (string)Setup::$instance_id, $statement->queryString)));
+//            die();
             $statement->execute();
             $count = $statement->rowCount();
             $statement = null;
@@ -1296,7 +1299,7 @@ class DB extends Base
 
                 return $this->getPopVote($element_name, $id);
             } else {
-                $this->addError(sprintf('updatePopVote returned %s rows affected...', $count));
+                $this->addError("updatePopVote returned $count rows affected...");
             }
         }
 

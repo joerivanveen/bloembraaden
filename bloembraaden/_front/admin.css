@@ -950,9 +950,20 @@ body .PEATCMS_admin .peatcms-link:focus {
     border-radius: 20px;
 }
 
+.edit-area #admin_date_popvote input,
 .edit-area #admin_date_popvote button {
     color: var(--admin-color-paper);
     text-shadow: 0 0 1px var(--admin-color-key);
+}
+
+.edit-area #admin_date_popvote input {
+    display: inline-block;
+    width: 4em;
+    border-bottom: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    box-shadow: none;
 }
 
 /* open / close box for .x_value in properties */

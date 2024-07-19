@@ -117,6 +117,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
         const self = this,
             el = document.createElement('div'),
             up = document.createElement('button'),
+            places = document.createElement('input'),
             down = document.createElement('button');
         up.innerText = '↸';
         up.addEventListener('click', function () {
@@ -128,10 +129,16 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
                 self.showPopVote(json);
             });
         });
+        places.type = 'number';
+        places.value = PEAT.getSessionVar('pop_vote_places') || '1';
+        places.addEventListener('change', function() {
+            PEAT.setSessionVar('pop_vote_places', this.value);
+        })
         down.innerText = '↘';
         down.addEventListener('click', function () {
             NAV.ajax('/__action__/admin_popvote/', {
                 direction: 'down',
+                places: PEAT.getSessionVar('pop_vote_places'),
                 id: self.parent_PEATCMS_element.getElementId(),
                 element_name: self.parent_PEATCMS_element.getElementName(),
             }, function (json) {
@@ -139,6 +146,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
             });
         });
         el.insertAdjacentElement('afterbegin', down);
+        el.insertAdjacentElement('afterbegin', places);
         el.insertAdjacentElement('afterbegin', up);
         NAV.ajax('/__action__/admin_popvote/', {
             direction: 'get',

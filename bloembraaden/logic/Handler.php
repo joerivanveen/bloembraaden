@@ -878,7 +878,7 @@ class Handler extends BaseLogic
                         if (($order = new Order($row))) {
                             // TODO make 24h limit configurable
                             if (86400 < Setup::getNow() - Date::intFromDate($row->date_created)) {
-                                $out = array('success'=>false);
+                                $out = array('success' => false);
                                 $this->addMessage(__('Payment has expired, please make a new order', 'peatcms'), 'note');
                             } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
                                 $live_flag = $row->payment_live_flag ?? false;
@@ -1389,7 +1389,8 @@ class Handler extends BaseLogic
                         if (($direction = $post_data->direction) === 'up') {
                             $pop_vote = Help::getDB()->updatePopVote($element_name, $id);
                         } elseif ($direction === 'down') {
-                            $pop_vote = Help::getDB()->updatePopVote($element_name, $id, true);
+                            $how_much = max(1, (int)($post_data->places ?? 1));
+                            $pop_vote = Help::getDB()->updatePopVote($element_name, $id, $how_much);
                         } else { // return the relative position always
                             $pop_vote = Help::getDB()->getPopVote($element_name, $id);
                         }
