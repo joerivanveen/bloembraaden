@@ -558,7 +558,7 @@ PEATCMS_actor.prototype.set = function (data) {
         this.prettyParent(column_value);
         return;
     }
-    if (this.hasChanged()) {
+    if (true === this.hasChanged()) {
         this.DOMElement.value = column_value;
         PEAT.grabAttention(this.DOMElement, true);
     }
@@ -570,7 +570,7 @@ PEATCMS_actor.prototype.set = function (data) {
 PEATCMS_actor.prototype.hasChanged = function () {
     const DOMElement = this.DOMElement;
     let el, current_value = '';
-    if ('undefined' === typeof DOMElement) return false;
+    if ('undefined' === typeof DOMElement) return true; // forcing a specific value with update() is alright
     if ('undefined' !== typeof DOMElement.selectedIndex) {
         // select lists always return option value as string
         if ('undefined' !== typeof (el = DOMElement.options[DOMElement.selectedIndex])) {
@@ -593,7 +593,7 @@ PEATCMS_actor.prototype.hasChanged = function () {
 }
 
 PEATCMS_actor.prototype.reflectChanged = function () {
-    if (this.hasChanged()) {
+    if (true === this.hasChanged()) {
         this.DOMElement.classList.add('unsaved');
     } else {
         this.DOMElement.classList.remove('unsaved');
