@@ -587,7 +587,7 @@ class Template extends BaseLogic
             // outer {{ (and tag) are removed
             // so the correct level is the one with no extra {{ or }} around the :not:, that would be 1 level deeper
             if (substr_count($assembler, '{{') === substr_count($assembler, '}}')) {
-                $assembler .= ':the_real_not';
+                $assembler .= ':the_real_not:';
             } else {
                 $assembler .= ':not:'; // restore original :not: for later
             }
