@@ -6,28 +6,33 @@ namespace Bloembraaden;
 class Date
 {
     public static function getDate( string $value ): ?\DateTimeImmutable {
-        $timezone = new \DateTimeZone( Setup::$timezone );
-
         // parse the date, it should be YYYY-MM-DD HH:MM:SS.milliseconds+timezone diff compared to UTC
-        if ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s.u O', $value, $timezone ) ) ) {
+        // ‘O’ means timezone, dates in Bloembraaden generally have the timestamp part present,
+        // only user input probably has not
+        if ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s.u O', $value ) ) ) {
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s.u O', $value, $timezone ) ) ) { // official, used by eg Instagram
+        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s.u O', $value ) ) ) { // official, used by eg Instagram
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s O', $value, $timezone ) ) ) {
+        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s O', $value ) ) ) {
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s O', $value, $timezone ) ) ) { // official, used by eg Instagram
+        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s O', $value ) ) ) { // official, used by eg Instagram
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s.u', $value, $timezone ) ) ) {
-            return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $value, $timezone ) ) ) {
-            return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $value, $timezone ) ) ) {
-            return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d', $value, $timezone ) ) ) {
-            return $dt->setTime( 12, 0 ); // when no time is given, set in the middle
+        } else {
+            // when no timestamp, this is user input, an instance should be loaded and its timestamp used
+            $timezone = new \DateTimeZone( Setup::$timezone );
+
+            if ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s.u', $value, $timezone ) ) ) {
+                return $dt;
+            } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $value, $timezone ) ) ) {
+                return $dt;
+            } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $value, $timezone ) ) ) {
+                return $dt;
+            } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d', $value, $timezone ) ) ) {
+                return $dt->setTime( 12, 0 ); // when no time is given, set in the middle
+            }
         }
 
-        //if ($dt === false or array_sum($dt::getLastErrors())) {}
+        //if ($dt === false || array_sum($dt::getLastErrors())) {}
         return null;
     }
 

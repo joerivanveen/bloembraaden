@@ -181,7 +181,7 @@ class Setup
             self::$timezone = 'Europe/Amsterdam'; // this is a correct timezone and for now the default
         }
         if (false === self::getMainDatabaseConnection()->exec(sprintf('SET timezone TO \'%s\';', self::$timezone))) {
-            Help::addError(new Exception('failed to set timezone'));
+            Help::addError(new Exception('Failed to set timezone'));
         } else {
             date_default_timezone_set(self::$timezone);
         }
