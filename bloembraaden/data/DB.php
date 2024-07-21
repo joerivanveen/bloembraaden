@@ -338,6 +338,7 @@ class DB extends Base
         foreach ($clean_terms as $index => $term) {
             // unfortunately special cases for variant...
             if ('variant' === $type_name) {
+                $rows = array();
                 if (in_array($term, array('price_from', 'not_online'))) {
                     $rows = Help::getDB()->findSpecialVariantResults($term);
                 } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))) {
@@ -366,7 +367,7 @@ class DB extends Base
         }
         $statement = null;
         // special term should dictate the order, so should be the first intersected!
-        if (0 < count(($intersected = $arr[$special_variant_term]))) {
+        if (true === isset($arr[$special_variant_term]) && 0 < count(($intersected = $arr[$special_variant_term]))) {
             unset($arr[$special_variant_term]);
         } else { // or else quasi random
             $intersected = array_shift($arr);
