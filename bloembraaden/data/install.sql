@@ -3213,3 +3213,9 @@ ALTER TABLE "public"."cms_variant_x_properties"
     ALTER COLUMN x_value TYPE text;
 
 COMMIT;
+
+-- version 0.21.1
+
+BEGIN;
+
+COMMIT;
