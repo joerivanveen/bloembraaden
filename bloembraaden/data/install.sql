@@ -3219,3 +3219,12 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.22.0
+
+BEGIN;
+
+ALTER TABLE "public"."_cache"
+    ALTER COLUMN slug TYPE varchar(1024);
+
+COMMIT;
