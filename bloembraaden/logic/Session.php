@@ -26,8 +26,25 @@ class Session extends BaseLogic
         $this->instance = $I;
         unset($I);
         // remember client data
-        $this->ip_address = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-        $this->user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
+        if (
+            false === isset($_SERVER['REMOTE_ADDR'])
+            || null === ($remote_addr = $_SERVER['REMOTE_ADDR'])
+        ) {
+            $this->handleErrorAndStop('Cannot serve pages to people without ip address');
+        } else {
+            $binary = inet_pton($remote_addr);
+            if ($binary === false) {
+                $this->handleErrorAndStop('Cannot serve pages to people without ip address');
+            } else {
+                # Convert back to a normalised string
+                $this->ip_address = inet_ntop($binary);
+            }
+        }
+        if (true === isset($_SERVER['HTTP_USER_AGENT']) && true === is_string($_SERVER['HTTP_USER_AGENT'])) {
+            $this->user_agent = mb_convert_encoding($_SERVER['HTTP_USER_AGENT'], 'UTF-8', 'UTF-8');
+        } else {
+            $this->user_agent = 'UNKNOWN';
+        }
         // check for cookie and create it if not present
         $this->token = $this->getCookie('BLOEMBRAADEN');
         if (null === $this->token || strlen($this->token) !== 32) {
