@@ -33,7 +33,7 @@ class Resolver extends BaseLogic
         $src = array();
         if (count($uri) > 1) $src = explode('&', $uri[1]);
         $uri = $uri[0];
-        if ($uri === '/') { // homepage is requested, get slug to retrieve from cache later
+        if ('/' === $uri) { // homepage is requested, get slug to retrieve from cache later
             // TODO optimize getting the slug from the id, maybe by caching in instance?
             $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
         } else {
@@ -212,9 +212,8 @@ class Resolver extends BaseLogic
         return $this->terms;
     }
 
-    public function getElement(?bool &$from_history, ?bool $no_cache = false): BaseLogic
+    public function getElement(bool $no_cache = false): BaseLogic
     {
-        $from_history = false;
         $limit = null;
         // run over the instructions (skipped for regular urls)
         foreach ($this->instructions as $instruction => $value) {
@@ -318,7 +317,7 @@ class Resolver extends BaseLogic
                 if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
                     $element_id = (int)$row->id;
                     $type_name = (string)$row->type_name;
-                    $from_history = true;
+                    //$from_history = true; <- abandoned since 0.22
                 }
             }
         }
