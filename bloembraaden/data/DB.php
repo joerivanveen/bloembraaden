@@ -4054,6 +4054,24 @@ class DB extends Base
         return $statement;
     }
 
+    public function querySitemap(int $instance_id): \PDOStatement
+    {
+        ob_start();
+        foreach ($this->getTablesWithSlugs() as $index=>$row) {
+            echo "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND instance_id = :instance_id\n";
+            echo "UNION ALL\n";
+        }
+        echo "SELECT slug, since AS date_updated FROM _cache WHERE slug LIKE '%/%' AND instance_id = :instance_id";
+        $statement = $this->conn->prepare(ob_get_clean());
+        $statement->bindValue(':instance_id', $instance_id);
+        $statement->execute();
+        if ($statement->rowCount() > 40000) {
+            $this->addError("Sitemap for instance $instance_id reaching 50.000 pages.");
+        }
+
+        return $statement;
+    }
+
     public function queryImagesForImport(): \PDOStatement
     {
         $statement = $this->conn->prepare('

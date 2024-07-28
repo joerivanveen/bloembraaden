@@ -60,6 +60,9 @@ class Resolver extends BaseLogic
                     }
 
                     return false;
+                } elseif ('sitemap.xml' === $value) {
+                    Help::outputSitemap();
+                    die();
                 }
 
                 return true;

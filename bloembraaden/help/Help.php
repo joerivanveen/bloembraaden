@@ -1163,6 +1163,26 @@ class Help
         return true;
     }
 
+    /**
+     * outputs sitemap in xml format for current instance_id (Setup::$instance_id)
+     * @return void
+     */
+    public static function outputSitemap()
+    {
+        echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $domain = Setup::$INSTANCE_DOMAIN;
+        $statement = self::getDB()->querySitemap(Setup::$instance_id);
+        while (($row = $statement->fetch(5))) {
+            echo '<url><loc>';
+            echo 'https://', $domain, '/', urlencode($row->slug);
+            echo '</loc><lastmod>';
+            echo substr($row->date_updated, 0, 10);
+            echo '</lastmod></url>';
+        }
+        $statement = null;
+        echo '</urlset>';
+    }
+
     public static function upgrade(DB $db): void
     {
         $version = $db->getDbVersion();
