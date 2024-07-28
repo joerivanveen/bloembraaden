@@ -358,9 +358,9 @@ switch ($interval) {
                 foreach ($order_out->__items__ as $index => $line) {
                     $quantity = (int)$line->quantity;
                     if (0 === $quantity) continue;
-                    $vat_percentage = Help::getAsFloat($line->vat_percentage);
+                    $vat_percentage = Help::asFloat($line->vat_percentage);
                     $highest_vat = max($highest_vat, $vat_percentage);
-                    $myp_price = (int)(100 * Help::getAsFloat($line->price));
+                    $myp_price = (int)(100 * Help::asFloat($line->price));
                     $myp_vat = (int)($vat_percentage * $myp_price / (100.0 + $vat_percentage));
                     $order_lines[] = (object)array(
                         'quantity' => $quantity,
@@ -375,7 +375,7 @@ switch ($interval) {
                         'shippable' => true
                     );
                 }
-                $shipping_costs = (int)(100 * Help::getAsFloat($order_out->shipping_costs));
+                $shipping_costs = (int)(100 * Help::asFloat($order_out->shipping_costs));
                 $shipping_costs_vat = (int)($highest_vat * $shipping_costs / (100.0 + $highest_vat));
                 $order_lines[] = (object)array(
                     'quantity' => 1,
@@ -418,9 +418,9 @@ switch ($interval) {
                     ),
                     'language' => 'NL',
                     'type' => 'consumer',
-                    'price' => (int)(100 * Help::getAsFloat($order_out->amount_grand_total_ex_vat)),
+                    'price' => (int)(100 * Help::asFloat($order_out->amount_grand_total_ex_vat)),
                     //'vat'=>
-                    'price_after_vat' => (int)(100 * Help::getAsFloat($order_out->amount_grand_total)),
+                    'price_after_vat' => (int)(100 * Help::asFloat($order_out->amount_grand_total)),
                     'shipment' => (object)array(
                         'recipient' => (object)array(
                             'cc' => $shipping_cc,
@@ -1090,7 +1090,7 @@ switch ($interval) {
                 } else {
                     // and update it in the db
                     $expires = isset($return_value->expires_in) ?
-                        Help::getAsInteger($return_value->expires_in, $default_expires) : $default_expires;
+                        Help::asInteger($return_value->expires_in, $default_expires) : $default_expires;
                     if ($db->updateColumns('_instagram_auth', array(
                         'access_token' => $return_value->access_token,
                         'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),

@@ -221,13 +221,13 @@ class Table extends Base
                 return false;
             }
         } elseif (in_array($col_type, array('smallint', 'integer', 'bigint'))) {
-            if (null === Help::getAsInteger($value)) {
+            if (null === Help::asInteger($value)) {
                 $this->addValidationError($col_name, var_export($value, true), __('must be integer', 'peatcms'));
 
                 return false;
             }
         } elseif (in_array($col_type, array('price', 'price_from', 'float', 'double'))) {
-            if (null === Help::getAsFloat($value)) {
+            if (null === Help::asFloat($value)) {
                 $this->addValidationError($col_name, var_export($value, true), __('must be a number (float, decimal, integer)', 'peatcns'));
 
                 return false;

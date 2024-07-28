@@ -37,7 +37,7 @@ class Order extends BaseElement
 
     public function getGrandTotal(): ?float
     {
-        if (isset($this->row->__items__)) return Help::getAsFloat($this->row->amount_grand_total);
+        if (isset($this->row->__items__)) return Help::asFloat($this->row->amount_grand_total);
         if (isset($this->row->amount_grand_total)) return $this->row->amount_grand_total / 100.0;
 
         return null;
@@ -88,8 +88,8 @@ class Order extends BaseElement
         $item_count = 0;
         $vat = array(); // amounts are recorded per percentage
         foreach ($list_rows as $index => $list_row) {
-            $row_price = Help::getAsFloat($list_row->price);
-            $row_price_from = Help::getAsFloat($list_row->price_from);
+            $row_price = Help::asFloat($list_row->price);
+            $row_price_from = Help::asFloat($list_row->price_from);
             $row_total = $list_row->quantity * $row_price;
             $percentage_index = (string)$list_row->vat_percentage;
             $list_row->total = Help::asMoney($row_total);
@@ -111,11 +111,11 @@ class Order extends BaseElement
         $row->amount_row_total = Help::asMoney($amount_row_total);
         $row->item_count = $item_count;
         // add the shippingcosts and make the grandtotal
-        $shipping_costs = (Help::getAsFloat($row->shipping_costs) / 100.0);
+        $shipping_costs = (Help::asFloat($row->shipping_costs) / 100.0);
         if ($shipping_costs !== 0.0) {
             $highest_vat = 0;
             foreach ($vat as $percentage_index => $amount) {
-                $percentage = Help::getAsFloat($percentage_index);
+                $percentage = Help::asFloat($percentage_index);
                 if ($percentage > $highest_vat) $highest_vat = $percentage;
             }
             $vat[(string)$highest_vat] += $shipping_costs;

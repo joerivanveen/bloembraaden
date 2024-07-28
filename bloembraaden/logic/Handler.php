@@ -927,7 +927,7 @@ class Handler extends BaseLogic
                         if (true === $admin->isRelatedElement($element)) {
                             // @since 0.8.19 check the prices
                             if (in_array($post_data->column_name, array('price', 'price_from'))) {
-                                $value = Help::getAsFloat($post_data->column_value);
+                                $value = Help::asFloat($post_data->column_value);
                                 $value = Help::asMoney($value);
                                 if ('' === $value && $value !== $post_data->column_value) {
                                     $this->addMessage(sprintf(
@@ -1782,13 +1782,13 @@ class Handler extends BaseLogic
             return false;
         }
         $variant_id = $data->variant_id;
-        if (null === ($variant_id = Help::getAsInteger($variant_id))) {
+        if (null === ($variant_id = Help::asInteger($variant_id))) {
             $this->addMessage(sprintf(__('Form input ‘%1$s’ must be %2$s', 'peatcms'), 'variant_id', 'integer'), 'warn');
 
             return false;
         }
         // get the quantity (defaults to 1)
-        $quantity = (isset($data->quantity) ? Help::getAsInteger($data->quantity, 1) : 1);
+        $quantity = (isset($data->quantity) ? Help::asInteger($data->quantity, 1) : 1);
         // update list
         $variant = $this->getElementById('variant', $variant_id);
         if ($variant instanceof Variant) {

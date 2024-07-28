@@ -79,7 +79,7 @@ class Search extends BaseElement
                         //echo "$property: ";
                         if ('price_max' === $property && isset($property_values[0])) {
                             if (true === isset($output->price) &&
-                                Help::getAsFloat($property_values[0]) < Help::getAsFloat($output->price)
+                                Help::asFloat($property_values[0]) < Help::asFloat($output->price)
                             ) {
                                 $all_properties_present = false;
                                 break;
@@ -88,7 +88,7 @@ class Search extends BaseElement
                         }
                         if ('price_min' === $property && isset($property_values[0])) {
                             if (true === isset($output->price) &&
-                                Help::getAsFloat($output->price) < Help::getAsFloat($property_values[0])
+                                Help::asFloat($output->price) < Help::asFloat($property_values[0])
                             ) {
                                 $all_properties_present = false;
                                 break;

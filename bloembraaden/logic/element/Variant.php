@@ -17,14 +17,14 @@ class Variant extends BaseElement
      * @since 0.5.1
      */
     public function getPrice():float {
-        return Help::getAsFloat($this->row->price, 0);
+        return Help::asFloat($this->row->price, 0);
     }
     /**
      * @return float
      * @since 0.5.1
      */
     public function getPriceFrom():float {
-        return Help::getAsFloat($this->row->price_from, 0);
+        return Help::asFloat($this->row->price_from, 0);
     }
 
     public function create(?bool $online = true): ?int

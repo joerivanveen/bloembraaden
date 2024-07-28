@@ -1688,7 +1688,7 @@ class DB extends Base
             $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0($instance_id);
             //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if-clause)
             foreach ($order_rows as $index => $row) {
-                $amount_row_total += Help::getAsFloat($row->price) * $row->quantity;
+                $amount_row_total += Help::asFloat($row->price) * $row->quantity;
                 $quantity_total += $row->quantity;
             }
             if ($quantity_total === 0) { // @since 0.7.6 if there is nothing to order, also abandon the process
@@ -1698,8 +1698,8 @@ class DB extends Base
                 return null;
             }
             $amount_grand_total = $amount_row_total;
-            if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
-                $shipping_costs = Help::getAsFloat($country->shipping_costs);
+            if ($amount_grand_total < Help::asFloat($country->shipping_free_from)) {
+                $shipping_costs = Help::asFloat($country->shipping_costs);
                 $amount_grand_total += $shipping_costs;
             }
             // set up the order_number
@@ -1739,7 +1739,7 @@ class DB extends Base
                 foreach ($order_rows as $index => $row) {
                     $variant_row = $this->fetchElementRow(new Type('variant'), $row->variant_id);
                     $vat_row = $vat_categories[$variant_row->vat_category_id] ?? $vat_categories[0] ?? 0;
-                    $vat_percentage = Help::getAsFloat($vat_row->percentage);
+                    $vat_percentage = Help::asFloat($vat_row->percentage);
                     $specs = array(
                         'order_id' => $order_id,
                         'variant_id' => $row->variant_id,

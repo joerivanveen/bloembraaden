@@ -1025,7 +1025,7 @@ $html";
 
     private function peat_as_float(string $str): float
     {
-        return Help::getAsFloat($str, 0);
+        return Help::asFloat($str, 0);
     }
 
     private function peat_minus_one(string $str): string

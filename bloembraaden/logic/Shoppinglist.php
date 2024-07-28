@@ -154,9 +154,9 @@ class Shoppinglist extends BaseLogic
                 }
             }
             $list_row->__variants__ = array($variant_out);
-            $row_price = Help::getAsFloat($list_row->price);
-            $row_price_from = Help::getAsFloat($list_row->price_from);
-            $variant_price = Help::getAsFloat($variant_out->price);
+            $row_price = Help::asFloat($list_row->price);
+            $row_price_from = Help::asFloat($list_row->price_from);
+            $variant_price = Help::asFloat($variant_out->price);
             if ($variant_price !== $row_price) {
                 if ($variant_price > $row_price) {
                     $this->addMessage(sprintf(
@@ -198,8 +198,8 @@ class Shoppinglist extends BaseLogic
             && ($country_id = (int)Help::$session->getValue('shipping_country_id'))
             && ($country = Help::getDB()->getCountryById($country_id))
         ) {
-            if ($amount_grand_total < Help::getAsFloat($country->shipping_free_from)) {
-                $shipping_costs = Help::getAsFloat($country->shipping_costs);
+            if ($amount_grand_total < Help::asFloat($country->shipping_free_from)) {
+                $shipping_costs = Help::asFloat($country->shipping_costs);
                 $output_object->shipping_costs = Help::asMoney($shipping_costs);
                 $amount_grand_total += $shipping_costs;
             }

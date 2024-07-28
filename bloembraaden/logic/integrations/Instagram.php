@@ -111,7 +111,7 @@ class Instagram extends BaseLogic
                 $access_token = $return_value->access_token;
                 $default_expires = $this->config->default_expires;
                 $expires = isset($return_value->expires_in) ?
-                    Help::getAsInteger($return_value->expires_in, $default_expires) : $default_expires;
+                    Help::asInteger($return_value->expires_in, $default_expires) : $default_expires;
                 if ($instagram_auth_id = Help::getDB()->insertRowAndReturnKey('_instagram_auth', array(
                     'instance_id' => $contents->instance_id,
                     'user_id' => $user_id,

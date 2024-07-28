@@ -64,7 +64,7 @@ class Help
      * @return int|null the $var converted to integer, or $default when conversion failed
      * @since 0.4.0
      */
-    public static function getAsInteger($var, ?int $default = null): ?int
+    public static function asInteger($var, ?int $default = null): ?int
     {
         if (is_numeric($var)) {
             // == will compare if the values are the same (because we know the types aren't anyway)
@@ -80,14 +80,14 @@ class Help
      * @return float|null the $var converted to float, or $default when conversion failed
      * @since 0.5.1
      */
-    public static function getAsFloat(mixed $var, ?float $default = null): ?float
+    public static function asFloat(mixed $var, ?float $default = null): ?float
     {
-        if ((string)($float = floatval($var)) === $var) return $float; // return correctly formatted vars immediately
+        if ((string)($float = (float)$var) === $var) return $float; // return correctly formatted vars immediately
         // get the float correctly from string
         $var = str_replace(Setup::$DECIMAL_SEPARATOR, '.', str_replace(array(Setup::$RADIX, ' '), '', (string)$var));
         // convert to float
         if (is_numeric($var)) {
-            return floatval($var);
+            return (float)$var;
         }
 
         return $default;
@@ -121,7 +121,7 @@ class Help
     public static function floatForHumans(?float $float): string
     {
         // floating point not accurate... https://stackoverflow.com/questions/4921466/php-rounding-error
-        if (null === $float || '' === ($sunk = strval($float))) return '';
+        if (null === $float || '' === ($sunk = (string)$float)) return '';
         // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues
         if (($index = strpos($sunk, '00000'))) {
             $sunk = substr($sunk, 0, $index);
@@ -135,7 +135,7 @@ class Help
                 $sunk = (string)((int)$sunk + 1);
             } else {
                 $n = (int)(substr($sunk, -1)); // this can never be nine, so you can add 1 safely
-                $sunk = substr($sunk, 0, -1) . (string)($n + 1);
+                $sunk = substr($sunk, 0, -1) . ($n + 1);
             }
         }
 
@@ -144,7 +144,7 @@ class Help
 
     public static function removeAccents(string $string): string
     {
-        if (!preg_match('/[\x80-\xff]/', $string))
+        if (\false === preg_match('/[\x80-\xff]/', $string))
             return $string;
         $chars = array(
             // Decompositions for Latin-1 Supplement
