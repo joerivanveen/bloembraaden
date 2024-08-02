@@ -132,8 +132,14 @@ class Search extends BaseElement
             $terms = $original_terms;
         }
         $this->row->slug = implode('/', $terms);
-        if (isset($terms[0]) && 'price_from' === $terms[0]) $terms[0] = __('price_from', 'peatcms');
-        $this->row->title = htmlentities(implode(' ', $terms));
+        foreach ($terms as $index => $term) {
+            if ('price_from' === $term) {
+                $terms[$index] = __('price_from', 'peatcms');
+            } else {
+                $terms[$index] = Help::slugify($term);
+            }
+        }
+        $this->row->title = implode(' ', $terms);
         // finally set the results list
         $this->row->__results__ = $results;
     }
