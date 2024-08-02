@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Bloembraaden;
 class Handler extends BaseLogic
 {
-    private Session $session;
     private Resolver $resolver;
     private ?string $action;
 
@@ -105,6 +104,121 @@ class Handler extends BaseLogic
             }
             // this is a get request, without csrf or admin, so don’t give any specific information
             $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
+        } elseif('get_template' === $action) {
+            // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
+            if (isset($post_data->template_name)) {
+                // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
+                if (isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
+                    if (ADMIN && ($row = Help::getDB()->getTemplateRow($template_id))) {
+                        $temp = new Template($row);
+                        if (false === $temp->checkIfPublished()) {
+                            $out = json_decode($temp->getFreshJson());
+                            $out->__template_status__ = 'sandbox';
+                            echo json_encode($out);
+                            die();
+                        }
+                    }
+                    $filename = Setup::$DBCACHE . "templates/$template_id.gz";
+                    if (true === file_exists($filename)) {
+                        header('Content-Type: application/json');
+                        header('Content-Encoding: gzip');
+                        header('Content-Length: ' . filesize($filename));
+                        readfile($filename);
+                        die();
+                    }
+                }
+                // use Template() by loading html from disk
+                $temp = new Template();
+                $admin = ((isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
+                //$out = array('html' => $temp->load($data->template_name, $admin));
+                if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
+                    $out = $temp->getPrepared($html);
+                    $out['__template_status__'] = 'default';
+                } else {
+                    $out['__template_status__'] = 'not found';
+                }
+                if (ob_get_length()) { // false or 0 when there's no content in it
+                    echo json_encode($out);
+                    die();
+                } else {
+                    $response = gzencode(json_encode($out), 9);
+                    header('Content-Type: application/json');
+                    header('Content-Encoding: gzip');
+                    header('Content-Length: ' . strlen($response));
+                    echo $response;
+                }
+                unset($temp);
+                unset($out);
+                unset($response);
+                die();
+            } else {
+                $this->handleErrorAndStop(sprintf('No template_name found in data %s', \var_export($post_data, true)),
+                    __('Could not load template', 'peatcms'));
+            }
+        } elseif ('get_template_by_name' === $action) {
+            if (isset($post_data->template_name)) {
+                if (($template_row = Help::getDB()->getTemplateByName($post_data->template_name))) {
+                    $filename = Setup::$DBCACHE . 'templates/' . $template_row->template_id . '.gz';
+                    // TODO temp fallback remove when all templates are regenerated anew 0.10.5
+                    if (false === file_exists($filename)) {
+                        $filename = CORE . 'presentation/templates/' . $template_row->template_id . '.gz';
+                    }
+                    if (true === file_exists($filename)) {
+                        header('Content-Type: application/json');
+                        header('Content-Encoding: gzip');
+                        header('Content-Length: ' . filesize($filename));
+                        readfile($filename);
+                        die();
+                    } else {
+                        $this->addError(sprintf(
+                            __('Template not found on disk with id ‘%s’', 'peatcms'),
+                            $template_row->template_id
+                        ));
+                    }
+                }
+            }
+        } elseif ('suggest' === $action) {
+            // suggest should post type and id so we can infer some interesting stuff
+            $src = new Search();
+            // terms can be passed as query string ?__terms__=term1,term2 etc in the complex tag, as can limit
+            $props = $this->resolver->getProperties();
+            $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
+            $terms = $props['terms'] ?? $this->resolver->getTerms(); // TODO remove $props['terms'] after pc is updated
+            $src->setProperties($props);
+            $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0] after pc is updated
+            if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
+                if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
+                $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));
+            } elseif ('shoppinglist' === $type_name) { // from the shoppinglist page
+                $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->name, $limit));
+            } elseif ('variant' === $type_name) {
+                $out = array('__variants__' => $src->getRelatedForVariant($terms, $post_data->id ?? 0, $limit));
+            } elseif ('page' === $type_name) {
+                if (count($terms) < 1 && isset($post_data->id)) {
+                    $out = array('__pages__' => $src->getRelatedForPage($post_data->id, $limit));
+                } else {
+                    $out = array('__pages__' => $src->suggestPages($terms, $limit));
+                }
+            } else {
+                if (isset($post_data->hydrate_until)) {
+                    $hydrate_until = (int)$post_data->hydrate_until;
+                } elseif (isset($props['hydrate_until'][0])) {
+                    $hydrate_until = (int)($props['hydrate_until'][0]);
+                } else {
+                    $hydrate_until = -$limit;
+                }
+                if (isset($post_data->only_of_type)) {
+                    $src->findWeighted($terms, $hydrate_until, array($post_data->only_of_type), false);
+                } else {
+                    $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
+                }
+                $out = $src->getOutput();
+            }
+            $src = null;
+            if (is_array($out)) {
+                $out['slug'] = 'suggest';
+            }
+            //$out = array('__variants__' => $variants, 'slug' => 'suggest');
         } elseif ('download' === $action) {
             if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[0] ?? '')) {
                 if ('file' === $el->type_name) {
@@ -364,122 +478,7 @@ class Handler extends BaseLogic
         }
         // following is only valid with csrf
         if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
-            if ('get_template' === $action) {
-                // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
-                if (isset($post_data->template_name)) {
-                    // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
-                    if (isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
-                        if (ADMIN && ($row = Help::getDB()->getTemplateRow($template_id))) {
-                            $temp = new Template($row);
-                            if (false === $temp->checkIfPublished()) {
-                                $out = json_decode($temp->getFreshJson());
-                                $out->__template_status__ = 'sandbox';
-                                echo json_encode($out);
-                                die();
-                            }
-                        }
-                        $filename = Setup::$DBCACHE . "templates/$template_id.gz";
-                        if (true === file_exists($filename)) {
-                            header('Content-Type: application/json');
-                            header('Content-Encoding: gzip');
-                            header('Content-Length: ' . filesize($filename));
-                            readfile($filename);
-                            die();
-                        }
-                    }
-                    // use Template() by loading html from disk
-                    $temp = new Template();
-                    $admin = ((isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
-                    //$out = array('html' => $temp->load($data->template_name, $admin));
-                    if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
-                        $out = $temp->getPrepared($html);
-                        $out['__template_status__'] = 'default';
-                    } else {
-                        $out['__template_status__'] = 'not found';
-                    }
-                    if (ob_get_length()) { // false or 0 when there's no content in it
-                        echo json_encode($out);
-                        die();
-                    } else {
-                        $response = gzencode(json_encode($out), 9);
-                        header('Content-Type: application/json');
-                        header('Content-Encoding: gzip');
-                        header('Content-Length: ' . strlen($response));
-                        echo $response;
-                    }
-                    unset($temp);
-                    unset($out);
-                    unset($response);
-                    die();
-                } else {
-                    $this->handleErrorAndStop(sprintf('No template_name found in data %s', \var_export($post_data, true)),
-                        __('Could not load template', 'peatcms'));
-                }
-            } elseif ('get_template_by_name' === $action) {
-                if (isset($post_data->template_name)) {
-                    if (($template_row = Help::getDB()->getTemplateByName($post_data->template_name))) {
-                        $filename = Setup::$DBCACHE . 'templates/' . $template_row->template_id . '.gz';
-                        // TODO temp fallback remove when all templates are regenerated anew 0.10.5
-                        if (false === file_exists($filename)) {
-                            $filename = CORE . 'presentation/templates/' . $template_row->template_id . '.gz';
-                        }
-                        if (true === file_exists($filename)) {
-                            header('Content-Type: application/json');
-                            header('Content-Encoding: gzip');
-                            header('Content-Length: ' . filesize($filename));
-                            readfile($filename);
-                            die();
-                        } else {
-                            $this->addError(sprintf(
-                                __('Template not found on disk with id ‘%s’', 'peatcms'),
-                                $template_row->template_id
-                            ));
-                        }
-                    }
-                }
-            } elseif ('suggest' === $action) {
-                // suggest should post type and id so we can infer some interesting stuff
-                $src = new Search();
-                // terms can be passed as query string ?__terms__=term1,term2 etc in the complex tag, as can limit
-                $props = $this->resolver->getProperties();
-                $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
-                $terms = $props['terms'] ?? $this->resolver->getTerms(); // TODO remove $props['terms'] after pc is updated
-                $src->setProperties($props);
-                $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0] after pc is updated
-                if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
-                    if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
-                    $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));
-                } elseif ('shoppinglist' === $type_name) { // from the shoppinglist page
-                    $out = array('__variants__' => $src->getRelatedForShoppinglist($post_data->name, $limit));
-                } elseif ('variant' === $type_name) {
-                    $out = array('__variants__' => $src->getRelatedForVariant($terms, $post_data->id ?? 0, $limit));
-                } elseif ('page' === $type_name) {
-                    if (count($terms) < 1 && isset($post_data->id)) {
-                        $out = array('__pages__' => $src->getRelatedForPage($post_data->id, $limit));
-                    } else {
-                        $out = array('__pages__' => $src->suggestPages($terms, $limit));
-                    }
-                } else {
-                    if (isset($post_data->hydrate_until)) {
-                        $hydrate_until = (int)$post_data->hydrate_until;
-                    } elseif (isset($props['hydrate_until'][0])) {
-                        $hydrate_until = (int)($props['hydrate_until'][0]);
-                    } else {
-                        $hydrate_until = -$limit;
-                    }
-                    if (isset($post_data->only_of_type)) {
-                        $src->findWeighted($terms, $hydrate_until, array($post_data->only_of_type), false);
-                    } else {
-                        $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
-                    }
-                    $out = $src->getOutput();
-                }
-                $src = null;
-                if (is_array($out)) {
-                    $out['slug'] = 'suggest';
-                }
-                //$out = array('__variants__' => $variants, 'slug' => 'suggest');
-            } elseif ('set_session_var' === $action) {
+            if ('set_session_var' === $action) {
                 $name = $post_data->name;
                 // times keeps track of how many times this var is (being) updated
                 Help::$session->setVar($name, $post_data->value, $post_data->times);
