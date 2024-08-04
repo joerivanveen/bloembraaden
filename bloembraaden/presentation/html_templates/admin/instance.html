@@ -234,6 +234,7 @@
         </div>
         {%__feeds__%}
         {%__authorizations__%}
+        {%row%}
         <span class="PEATCMS_data_stasher" data-peatcms_id="{{instagram_auth_id}}"
               data-table_name="_instagram_auth"></span>
         <div><strong>{{instagram_username}}</strong> {{access_granted:authorized,:not:<em>failed attempt</em>,}}
@@ -246,6 +247,7 @@
                    data-table_name="_instagram_feed" data-peatcms_handle="new_row" value="Add feed"/>}}
             {{done::not:<em class="note">Loading media approx 4 images / minute</em>}}
         </div>
+        {%row%}
         {%__authorizations__%}
         {%__action__/admin_instagram%}
         <p>Add Instagram accounts by (re-)authorizing Bloembraaden with the appropriate user:
