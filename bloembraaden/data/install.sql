@@ -3227,4 +3227,7 @@ BEGIN;
 ALTER TABLE "public"."_cache"
     ALTER COLUMN slug TYPE varchar(1024);
 
+ALTER TABLE "public"."_instance"
+    ADD COLUMN "payment_link_valid_hours" int DEFAULT 24 NOT NULL;
+
 COMMIT;

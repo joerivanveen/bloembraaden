@@ -875,8 +875,8 @@ class Handler extends BaseLogic
                 if (isset($post_data->order_number)) {
                     if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
                         if (($order = new Order($row))) {
-                            // TODO make 24h limit configurable
-                            if (86400 < Setup::getNow() - Date::intFromDate($row->date_created)) {
+                            $max_age = max(3600,$instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
+                            if ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
                                 $out = array('success' => false);
                                 $this->addMessage(__('Payment has expired, please make a new order', 'peatcms'), 'note');
                             } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {

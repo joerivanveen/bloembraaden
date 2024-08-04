@@ -157,6 +157,14 @@
                        data-table_name="_payment_service_provider" data-peatcms_handle="new_row" value="+"/>
             </h4>
             <section class="psp">
+                <p><label>Payment link valid for</label>
+                    <input type="text" class="PEATCMS_editable small"
+                          data-column_name="payment_link_valid_hours"
+                          data-table_name="_instance"
+                          placeholder="24"
+                          value="{{payment_link_valid_hours}}"
+                          data-handle="update_column"/> hours
+                </p>
                 <p><em>Currently active: </em>
                     <select class="PEATCMS_editable" data-column_name="payment_service_provider_id"
                             data-table_name="_instance" data-handle="update_column"
