@@ -1733,7 +1733,7 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     // e.g. the image:slug of a variant in a product excerpt, but also csrf_token in a form inside something else...
 }
 
-PEATCMS_template.prototype.splitNot = function(html) {
+PEATCMS_template.prototype.splitNot = function (html) {
     //return html.split(':not:'); // the old way
     // split the content by :not:, but only on this level of {{ }}, not a deeper level!
     const parts = html.split(':not:'), len = parts.length;
@@ -1847,7 +1847,7 @@ PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
             end = html.indexOf('}}', end + 2);
         }
         if (-1 === end) {
-            console.error('tag error near: ' + html.slice(start -30, 70) + '...');
+            console.error('tag error near: ' + html.slice(start - 30, 70) + '...');
             html = html.replace('{{', ' <span class="error">TAG ERROR</span> ');
         } else {
             html = PEATCMS.replace(html.substring(start, end + 2), '', html);
@@ -4063,26 +4063,28 @@ PEATCMS.doSlideshow = function (slideshow) {
  * Custom Bloembraaden src sets
  */
 PEATCMS.loadSrcSets = function () {
-    let i, len, el, rect, width, height, i2, len2, source, srcset, current_source, source_height;
-    const elements = document.body.querySelectorAll('[data-srcset]');
+    let i, i2, len2, source, srcset, peatcms_source;
+    const elements = document.body.querySelectorAll('[data-srcset]'),
+        len = elements.length;
 
     function setImage(el, source) {
-        el.current_source = source;
+        el.peatcms_source = source;
         PEATCMS.preloadImage(source.src, function () {
             if ('img' === el.tagName.toLowerCase()) {
                 el.src = source.src;
             } else {
-                el.style.backgroundImage = 'url(' + source.src + ')';
+                el.style.backgroundImage = `url(${source.src})`;
             }
             el.style.opacity = '1';
         });
     }
 
-    for (i = 0, len = elements.length; i < len; ++i) {
-        el = elements[i];
-        rect = el.getBoundingClientRect();
-        width = rect.width;
-        height = rect.height;
+    for (i = 0; i < len; ++i) {
+        const el = elements[i],
+            retina = parseFloat(el.getAttribute('data-retina')) || 1,
+            rect = el.getBoundingClientRect(),
+            width = rect.width * retina,
+            height = rect.height * retina;
         source = null;
         try {
             srcset = JSON.parse(el.dataset.srcset);
@@ -4090,15 +4092,15 @@ PEATCMS.loadSrcSets = function () {
                 if ('' === srcset[i2].height) continue;
                 source = srcset[i2];
                 if (parseInt(source.height) >= height && parseInt(source.width) >= width) {
-                    if ((current_source = el.current_source)) {
-                        if (current_source.height >= source.height) break; // if a larger or same image is already present, keep using that
+                    if ((peatcms_source = el.peatcms_source)) {
+                        if (peatcms_source.height >= source.height) break; // if a larger or same image is already present, keep using that
                     }
                     setImage(el, source);
                     break;
                 }
             }
             // default to the last (should be largest) image
-            if ('undefined' === typeof el.current_source && null !== source) {
+            if ('undefined' === typeof el.peatcms_source && null !== source) {
                 setImage(el, source);
             }
         } catch (e) {
