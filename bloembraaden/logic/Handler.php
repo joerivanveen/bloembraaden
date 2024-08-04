@@ -104,7 +104,7 @@ class Handler extends BaseLogic
             }
             // this is a get request, without csrf or admin, so don’t give any specific information
             $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
-        } elseif('get_template' === $action) {
+        } elseif ('get_template' === $action) {
             // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
             if (isset($post_data->template_name)) {
                 // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
@@ -875,7 +875,7 @@ class Handler extends BaseLogic
                 if (isset($post_data->order_number)) {
                     if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
                         if (($order = new Order($row))) {
-                            $max_age = max(3600,$instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
+                            $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
                             if ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
                                 $out = array('success' => false);
                                 $this->addMessage(__('Payment has expired, please make a new order', 'peatcms'), 'note');
@@ -1454,7 +1454,9 @@ class Handler extends BaseLogic
                 } elseif ('admin_database_report' === $action) {
                     $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
                     $apcuAvailable = function_exists('apcu_enabled') && apcu_enabled(); // todo remove
+                    $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
                     $out['__rows__'][] = array('key' => 'apcu available', 'value' => $apcuAvailable); // todo remove
+                    $out['__rows__'][] = array('key' => 'opcache', 'value' => json_encode($opcache));
                     $out['slug'] = 'admin_database_report';
                 }
             } elseif ('reflect' === $action) {
