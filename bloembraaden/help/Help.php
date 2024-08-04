@@ -1191,7 +1191,7 @@ class Help
 
             return;
         }
-        echo 'Upgrading from ', $version, "\n";
+        echo "Upgrading from $version\n";
         // read the sql file up until the old version and process everything after that. Remember the new version to check
         if (!file_exists(CORE . 'data/install.sql')) {
             echo 'install.sql not found, nothing to do';
@@ -1202,7 +1202,7 @@ class Help
         // if the version mentioned in config is accurate
         $sql = file_get_contents(CORE . 'data/install.sql');
         // skip to the line -- version $version
-        $position_of_current_version_in_sql = strpos($sql, '-- version ' . $version);
+        $position_of_current_version_in_sql = strpos($sql, "-- version $version");
         if ($position_of_current_version_in_sql === false) {
             echo sprintf('Current version %s not found in install.sql, aborting upgrade', $version);
             Help::addError(new \Exception('Install flag switched on, but failing'));
@@ -1212,7 +1212,7 @@ class Help
         $position_of_next_version_in_sql = strpos($sql, '-- version', $position_of_current_version_in_sql + 10);
         $starting_position_of_upgrade_sql = strpos($sql, 'BEGIN;', $position_of_next_version_in_sql);
         // remember last version
-        $version = substr($sql, \strrpos($sql, '-- version '));
+        $version = substr($sql, strrpos($sql, '-- version '));
         $length = strpos($version, 'BEGIN;');
         $version = trim(substr($version, 10, $length - 10));
         if (\version_compare(Setup::$VERSION, $version) !== 0) {
@@ -1242,7 +1242,7 @@ class Help
         }
         sleep(3); // give the db time to report back the new states
         // sync history
-        echo 'Sync history database' . "\n";
+        echo "Sync history database\n";
         Help::syncHistoryDatabase($db);
         // now set the version
         $db->run(sprintf('update _system set version = \'%s\';', $version));
@@ -1253,6 +1253,8 @@ class Help
                 unlink($file); // delete file
             }
         }
+        // clear opcache
+        if (function_exists('opcache_reset')) opcache_reset();
         // done, feedback to user
         echo(sprintf('Successfully upgraded to version %s', $version));
     }
