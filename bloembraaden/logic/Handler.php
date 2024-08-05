@@ -1453,9 +1453,7 @@ class Handler extends BaseLogic
                     }
                 } elseif ('admin_database_report' === $action) {
                     $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
-                    $apcuAvailable = function_exists('apcu_enabled') && apcu_enabled(); // todo remove
                     $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
-                    $out['__rows__'][] = array('key' => 'apcu available', 'value' => $apcuAvailable); // todo remove
                     $out['__rows__'][] = array('key' => 'opcache', 'value' => json_encode($opcache));
                     $out['slug'] = 'admin_database_report';
                 }

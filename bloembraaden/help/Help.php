@@ -1460,9 +1460,9 @@ class Help
                 $installable = false;
                 echo 'please enable imagejpeg', "\n";
             }
-            if (!(function_exists('apcu_enabled') && apcu_enabled())) {
+            if (! function_exists('opcache_get_status') || false === opcache_get_status()) {
                 $installable = false;
-                echo 'please install and enable apcu', "\n";
+                echo 'please install and enable opcache', "\n";
             }
             // check if a first instance domain is provided
             if (isset($_SERVER['HTTP_HOST'])) {
