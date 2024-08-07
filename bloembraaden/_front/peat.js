@@ -2314,7 +2314,7 @@ PEATCMS.prototype.setup_turnstile = function () {
             len = turnstiles.length;
         for (let i = 0; i < len; ++i) {
             const turnstile = turnstiles[i];
-            if (turnstile.querySelector('iframe')) {
+            if (turnstile.querySelector('div')) {
                 continue; // already active :-)
             }
             if (VERBOSE) console.log('Activating turnstile', turnstile, self.turnstile_site_key);
