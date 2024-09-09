@@ -127,28 +127,31 @@ class Image extends BaseElement
         }
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
         // rotate and flip if necessary @since 0.11.0
-        // https://stackoverflow.com/questions/52174789/warning-exif-read-dataphp3kladx-file-not-supported-in-home-i-public-html-ori
-        $exif = @exif_read_data($path);
-        if ($exif && !empty($exif['Orientation'])) {
-            $orientation = $exif['Orientation'];
-            $angle = 0;
-            if (in_array($orientation, [3, 4])) {
-                $angle = 180;
-            } elseif (in_array($orientation, [5, 6])) {
-                $angle = -90;
-                Help::swapVariables($width, $height);
-            } elseif (in_array($orientation, [7, 8])) {
-                $angle = 90;
-                Help::swapVariables($width, $height);
+        try {
+            $exif = exif_read_data($path);
+            if ($exif && isset($exif['Orientation'])) {
+                $orientation = $exif['Orientation'];
+                $angle = 0;
+                if (in_array($orientation, [3, 4])) {
+                    $angle = 180;
+                } elseif (in_array($orientation, [5, 6])) {
+                    $angle = -90;
+                    Help::swapVariables($width, $height);
+                } elseif (in_array($orientation, [7, 8])) {
+                    $angle = 90;
+                    Help::swapVariables($width, $height);
+                }
+                if (0 !== $angle) {
+                    $image = imagerotate($image, $angle, 0);
+                    $logger->log("Rotated image $angle degrees");
+                }
+                if (in_array($orientation, [2, 5, 7, 4])) {
+                    imageflip($image, IMG_FLIP_HORIZONTAL);
+                    $logger->log('Image flipped as well');
+                }
             }
-            if (0 !== $angle) {
-                $image = imagerotate($image, $angle, 0);
-                $logger->log("Rotated image $angle degrees");
-            }
-            if (in_array($orientation, [2, 5, 7, 4])) {
-                imageflip($image, IMG_FLIP_HORIZONTAL);
-                $logger->log('Image flipped as well');
-            }
+        } catch (\Exception $e) {
+            // ignore it when exif cannot be read
         }
         // define necessary paths
         $src = $this->getSlug() . '.webp'; // we save as webp by default with jpg fallback
