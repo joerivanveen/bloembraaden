@@ -2514,7 +2514,7 @@ class DB extends Base
                 // @since 0.21.0 because only 1 linked item is possible, remove the multiple now to reset this
                 $affected = $this->updateColumnsWhere($link_table, array('deleted' => true), $where);
                 $this->addError("Too many found! Removed $affected items.");
-                $this->addMessage(sprintf(__('An error occurred in %s', 'peatcms'), 'upsertLinked'), 'error');
+                $this->addMessage(sprintf(__('An error occurred in %s.', 'peatcms'), 'upsertLinked'), 'error');
                 return true;
             }
         }

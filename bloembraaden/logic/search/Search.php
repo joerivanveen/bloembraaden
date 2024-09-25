@@ -139,7 +139,7 @@ class Search extends BaseElement
                 $terms[$index] = Help::slugify($term);
             }
         }
-        $this->row->title = implode(' ', $terms);
+        $this->row->title = ucfirst(implode(' ', $terms));
         // finally set the results list
         $this->row->__results__ = $results;
     }

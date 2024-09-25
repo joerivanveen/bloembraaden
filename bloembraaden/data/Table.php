@@ -401,8 +401,8 @@ class Column
     {
         $this->name = $name;
         $this->type = explode(' ', $column->type)[0];
-        $this->default = (false === strpos($column->default ?? '', 'nextval')) ? $column->default : 'serial';
-        $this->nullable = (0 !== strpos($column->nullable ?? '', 'NO'));
+        $this->default = (false === str_contains($column->default ?? '', 'nextval')) ? $column->default : 'serial';
+        $this->nullable = (false === str_starts_with($column->nullable ?? '', 'NO'));
         $this->length = $column->length; // for character type columns the maximum number of characters
     }
 

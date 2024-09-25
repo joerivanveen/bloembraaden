@@ -394,9 +394,10 @@ switch ($interval) {
                  * MyParcel expects prices in euro cents
                  */
                 $myparcel_shipping_name = trim(substr(html_entity_decode($order_out->shipping_address_name), -40));
-                if ('' === $myparcel_shipping_name) $myparcel_shipping_name = $order_number;
+                /* #TRANSLATORS: default name is the client name on the shipping label when no name is given */
+                if ('' === $myparcel_shipping_name) $myparcel_shipping_name = __('Default name', 'peatcms');
                 $myparcel_billing_name = trim(substr(html_entity_decode($order_out->billing_address_name), -40));
-                if ('' === $myparcel_billing_name) $myparcel_billing_name = $order_number;
+                if ('' === $myparcel_billing_name) $myparcel_billing_name = __('Default name', 'peatcms');
                 $order_myparcel_json = json_encode((object)array(
                     'external_identifier' => $order_out->order_number_human,
                     'order_date' => $order_out->date_created,
