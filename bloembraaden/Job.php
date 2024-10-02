@@ -551,7 +551,7 @@ switch ($interval) {
         echo "\n";
         $trans->start('Empty expired lockers');
         echo $db->jobEmptyExpiredLockers(), "\n";
-        // Import images, takes precedence over Instagram data refreshment
+        // Import images
         $images = $db->queryImagesForImport();
         if ($images->rowCount() > 0) {
             $trans->start('Import images');
@@ -636,253 +636,6 @@ switch ($interval) {
             if (microtime(true) - $start_timer > 55) break;
         }
         $images = null;
-        // Refresh Instagram media
-        $trans->start('Refresh instagram data');
-        // @since 0.7.8 find deauthorized instagram accounts to trigger the feed updates, set them to deleted afterwards
-        if (null !== ($rows = $db->fetchInstagramDeauthorized())) {
-            foreach ($rows as $index => $row) {
-                $user_id = (int)$row->user_id;
-                $db->invalidateInstagramFeedSpecsByUserId($user_id);
-                $db->deleteInstagramMediaByUserId($user_id);
-                $db->updateColumns('_instagram_auth', array('deleted' => true), $row->instagram_auth_id);
-            }
-        }
-        // get the 25 newest media entries or next 25 when still loading for each user and update the associated entries
-        //https://graph.instagram.com/{user_id}?fields=media&access_token={token}
-        $curl = curl_init(); // start new curl request
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
-        $instagram_user_ids = array();
-        if (($rows = $db->getInstagramUserTokenAndNext())) {
-            echo 'register instagram user ids for new media entries', "\n";
-            foreach ($rows as $index => $row) {
-                // remember the tokens to get media info later
-                $instagram_user_ids[(string)$row->user_id] = $row->access_token;
-                if (false === $row->done && isset($row->next)) {
-                    curl_setopt($curl, CURLOPT_URL, $row->next);
-                } else { // build it yourself
-                    curl_setopt($curl, CURLOPT_URL,
-                        'https://graph.instagram.com/' . $row->user_id .
-                        '?fields=media&access_token=' . urlencode($row->access_token)
-                    );
-                }
-                $result = curl_exec($curl);
-                //$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-                if (false === is_string($result)) {
-                    Help::addError(new \Exception(sprintf('curl returned \'%s\' for instagram user %s',
-                        var_export($result, true),
-                        $row->user_id)));
-                    continue;
-                }
-                $media = json_decode($result);
-                if (json_last_error() === 0) {
-                    if (isset($media->media)) $media = $media->media; // apparently this goes in and out at instagram?!
-                    if (isset($media->data) && is_array($media->data)) {
-                        $ids = $media->data; // check all the media id’s against the database
-                        foreach ($ids as $index2 => $obj) {
-                            if (isset($obj->id) and $media_id = $obj->id) {
-                                echo $media_id;
-                                $check = $db->getInstagramMediaByMediaId($media_id, array('user_id'));
-                                if (null === $check) {
-                                    echo ($db->insertRowAndReturnKey('_instagram_media', array(
-                                        'media_id' => $media_id,
-                                        'user_id' => $row->user_id,
-                                        'flag_for_update' => true,
-                                    ))) ? ': NEW' : ': insert FAILED';
-                                } elseif (null === $check->user_id) {
-                                    echo ($db->updateColumns('_instagram_media', array(
-                                        'user_id' => $row->user_id,
-                                    ), $media_id)) ? ': updated' : ': FAILED';
-                                } else {
-                                    echo ': still good';
-                                }
-                                echo "\n";
-                            }
-                        }
-                    }
-                    if (false === $row->done) {
-                        // paging -> next is where you will have to resume later, if it’s not there,
-                        // remove the next from auth as well, so the next run will start with the newest items
-                        if (isset($media->paging) and isset($media->paging->next)) {
-                            $db->updateColumns('_instagram_auth', array(
-                                'next' => $media->paging->next,
-                            ), $row->instagram_auth_id);
-                        } else {
-                            $db->updateColumns('_instagram_auth', array(
-                                'next' => null,
-                                'done' => true // register that you have walked through all the next-s
-                            ), $row->instagram_auth_id);
-                        }
-                    }
-                } else {
-                    Help::addError(new \Exception(sprintf('json error %s for instagram user %s, result: %s',
-                        json_last_error(),
-                        $row->user_id,
-                        var_export($result, true))));
-                }
-            }
-        }
-        // now get all media entries that have no content (ie where username = null), to update
-        $rows = $db->jobGetInstagramMediaIdsForRefresh(count($instagram_user_ids) * 4); // max 4 every minute per user registered
-        echo 'refresh instagram media entries', "\n";
-        if (0 === count($rows)) { // when there are no new rows, select some old ones just to check if they’re still valid
-            $rows = $db->jobGetInstagramMediaIdsForRefreshByDate(count($instagram_user_ids) * 4);
-            echo '(no new ones found, so checking up on some old ones)', "\n";
-        }
-        $updated_user_ids = array();
-        // https://graph.instagram.com/17896358038720106?fields=caption,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token={}
-        foreach ($rows as $index => $row) {
-            if (false === isset($instagram_user_ids[$row->user_id])) {
-                // this row is weird, can be when a user is deauthorized but has just uploaded media
-                echo 'No access token for this user';
-                if ($db->updateColumns('_instagram_media', array('deleted' => true), $row->media_id)) {
-                    echo ', removed media entry: ', $row->media_id;
-                }
-                echo "\n";
-                continue;
-            }
-            echo $row->media_id, ': ';
-            curl_setopt($curl, CURLOPT_URL,
-                'https://graph.instagram.com/' . $row->media_id .
-                '?fields=caption,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token=' .
-                urlencode($instagram_user_ids[$row->user_id])
-            );
-            $result = curl_exec($curl);
-            $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-            if (false !== $result && 200 === $status_code) {
-                $media = json_decode($result);
-                if (json_last_error() === 0 && isset($media->media_url)) {
-                    $media_url = ($media->thumbnail_url ?? $media->media_url);
-                    $update_data = array(
-                        'caption' => $media->caption ?? '', // (old) instagram posts may have no caption
-                        'media_type' => $media->media_type,
-                        'permalink' => $media->permalink,
-                        'instagram_username' => $media->username,
-                        'instagram_timestamp' => $media->timestamp,
-                        'media_url' => $media_url,
-                        'flag_for_update' => false,
-                    );
-                    // @since 0.19.0 we are not reprocessing images anymore, since you cannot change them on instagram,
-                    // and the url changes are only due to load balancing and such
-//                    if ($media_url !== $row->media_url) {
-//                        $update_data['src'] = null; // have it processed again
-//                    }
-                    // check all the sizes, this can be wrong after importing a site
-                    $folder = Setup::$CDNPATH . '0';
-                    foreach (InstagramImage::SIZES as $size => $pixels) {
-                        if (false === file_exists("$folder/$size/$row->src.webp")
-                            || false === file_exists("$folder/$size/$row->src.jpg")
-                        ) {
-                            $update_data['src'] = null; // have it processed again
-                            break;
-                        }
-                    }
-                    // update the entry
-                    if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
-                        // remember you updated this user_id, so their feeds can be refreshed
-                        $updated_user_ids[(string)$row->user_id] = true;
-                        echo 'OK';
-                    } else {
-                        Help::addError(new \Exception("Insta update failed for {$media->permalink}"));
-                        echo 'failed';
-                    }
-                } else {
-                    echo '(user_id ', $row->user_id, '}): ', $result, ' ';
-                    // this happens when this user_id is a collaborator on the post, it is returned empty
-                    $update_data = array(
-                        'instagram_username' => 'COLLABORATOR',
-                        'flag_for_update' => false,
-                    );
-                    if ($db->updateColumns('_instagram_media', $update_data, $row->media_id)) {
-                        echo 'COLLAB';
-                    } else {
-                        Help::addError(new \Exception("Insta update failed for {$row->media_id}"));
-                        echo 'failed';
-                    }
-                }
-            } elseif ($status_code === 400 || $status_code === 403 || $status_code === 404) { // remove this media entry
-                // update the entry
-                if ($db->updateColumns('_instagram_media', array(
-                    'deleted' => true,
-                ), $row->media_id)) {
-                    // remember you updated this user_id, so their feeds can be refreshed
-                    $updated_user_ids[(string)$row->user_id] = true;
-                    echo 'DELETED';
-                } else {
-                    echo 'DB update failed';
-                }
-            } else {
-                Help::addError(new \Exception("Instagram media update failed with status $status_code and result " . var_export($result, true)));
-                echo 'Nothing done, got status ', $status_code;
-            }
-            echo "\n";
-        }
-        // @since 0.7.4 get all images (media...) that are not yet cached and put them on your own server
-        $trans->start('Caching instagram media');
-        echo 'Caching media_urls for instagram... ', "\n";
-        $rows = $db->jobGetInstagramMediaUrls(true, 15);
-        $logger = new StdOutLogger();
-        foreach ($rows as $index => $row) {
-            $media_url = $row->media_url;
-            $save_path = Setup::$UPLOADS;
-            echo $media_url . "\n";
-            curl_setopt($curl, CURLOPT_URL, $media_url);
-            $result = curl_exec($curl);
-            $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-            if ($status_code === 200) {
-                $size = sha1($media_url) . '.jpg';
-                // save the image and update src
-                if (file_put_contents($save_path . $size, $result)) {
-                    $row->src = $size;
-                    $img = new InstagramImage($row);
-                    if (true === $img->process($logger)) {
-                        if (true === $db->updateColumns('_instagram_media', array('src' => $size), $row->media_id)) {
-                            echo ' DB updated';
-                        }
-                        // remember you updated this user_id, so their feeds can be refreshed
-                        $updated_user_ids[(string)$row->user_id] = true;
-                        echo "\n";
-                        $logger->out();
-                    }
-                }
-            } else { // mark it for update
-                echo 'UNAVAILABLE';
-                $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
-            }
-            $result = null;
-            echo "\n";
-        }
-        curl_close($curl);
-        // after updating the media entries, you can update the feeds for users you updated (some) media for
-        $trans->start('Update instagram feeds');
-        // fill them with an appropriate number of entries
-        echo 'Updating feeds triggered by media updates...', "\n";
-        $updated_feeds = array(); // each feed has to be updated only once here
-        $update_feeds = static function ($feeds) use ($updated_feeds, $db) {
-            foreach ($feeds as $index => $specs) {
-                echo($feed_name = $specs->feed_name);
-                if (isset($updated_feeds[$feed_name])) {
-                    echo ' already done' . "\n";
-                    continue;
-                }
-                $feed = $db->fetchInstagramMediaForFeed($specs->instance_id, $specs->instagram_username, $specs->instagram_hashtag, $specs->quantity, Setup::$CDNROOT);
-                echo ($db->updateColumns('_instagram_feed', array(
-                    'feed' => json_encode($feed),
-                    'feed_updated' => 'NOW()'
-                ), $specs->instagram_feed_id)) ? ': OK' : ': failed';
-                $updated_feeds[$feed_name] = true;
-                echo "\n";
-            }
-        };
-        foreach ($updated_user_ids as $user_id => $ok) {
-            echo 'user ', $user_id, "\n";
-            $feeds = $db->getInstagramFeedSpecsByUserId($user_id);
-            $update_feeds($feeds);
-        }
-        // there may be (changed) feeds that do not yet have an actual feed or need updating anyway
-        echo 'Updating feeds that are outdated...', "\n";
-        $feeds = $db->getInstagramFeedSpecsOutdated();
-        $update_feeds($feeds);
         break;
     case '5': // interval should be 5
         $trans->start('Purge deleted');
@@ -932,19 +685,6 @@ switch ($interval) {
         // process some images that need processing (date_processed = null)
         $upload = Setup::$UPLOADS;
         $logger = new StdOutLogger();
-        // instagram images
-        $trans->start('Process instagram images');
-        foreach ($db->jobFetchInstagramImagesForProcessing() as $index => $row) {
-            $img = new InstagramImage($row);
-            echo $img->getSlug();
-            if (true === $img->process($logger)) {
-                echo ' SUCCES', "\n";
-            } else {
-                // the src will be set to null by ->process, and so it will be picked up by ->jobGetInstagramMediaUrls
-                echo ' FAILED', "\n";
-            }
-            $logger->out();
-        }
         // regular images
         $trans->start('Process images that need processing');
         foreach ($db->jobFetchImagesForProcessing() as $index => $row) {
@@ -1060,54 +800,6 @@ switch ($interval) {
         echo $db->jobDeleteOrphanedShoppinglistVariants(), "\n";
         $trans->start('Remove old _history rows');
         echo $db->jobDeleteOldHistory(300), "\n";
-        // refresh token should be called daily for all long-lived instagram tokens, refresh like 5 days before expiration or something
-        $trans->start('Refresh instagram access token');
-        // @since 0.7.2
-        $rows = $db->jobGetInstagramTokensForRefresh(5);
-        // TODO move this to instagram class or somewhere more appropriate
-        if (count($rows) > 0) {
-            $default_expires = Setup::$INSTAGRAM->default_expires;
-            // https://developers.facebook.com/docs/instagram-basic-display-api/guides/long-lived-access-tokens
-            $curl = curl_init(); // start new curl request
-            curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            foreach ($rows as $index => $row) {
-                curl_setopt($curl, CURLOPT_URL,
-                    'https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=' .
-                    urlencode($row->access_token)
-                );
-                $result = curl_exec($curl);
-                $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-                if (false === $result) {
-                    echo "Instagram refresh response FAIL for id $rows->instagram_auth_id\n";
-                    continue;
-                }
-                $return_value = json_decode($result);
-                if (json_last_error() !== 0 || false === isset($return_value->access_token)) {
-                    echo sprintf(
-                        'Instagram refresh token error, status %1$s, body %2$s',
-                        $status_code, var_export($return_value, true)
-                    ), "\n";
-                } else {
-                    // and update it in the db
-                    $expires = isset($return_value->expires_in) ?
-                        Help::asInteger($return_value->expires_in, $default_expires) : $default_expires;
-                    if ($db->updateColumns('_instagram_auth', array(
-                        'access_token' => $return_value->access_token,
-                        'access_token_expires' => date('Y-m-d G:i:s.u O', time() + $expires),
-                        'access_granted' => true,
-                    ), $row->instagram_auth_id)) {
-                        echo 'OK', "\n";
-                    } else {
-                        echo 'Unable to update settings for Instagram authorization', "\n";
-                    }
-                }
-            }
-            $curl = null;
-        } else {
-            echo 'no tokens to refresh', "\n";
-        }
-        $rows = null;
         // duplicate code, to finish the current job
         $trans->start('Report current job');
         echo date('Y-m-d H:i:s');
@@ -1126,16 +818,7 @@ switch ($interval) {
             if ($fileinfo->isDot()) continue;
             $filename = $fileinfo->getFilename();
             echo $index, ': ', $filename;
-            if ('jpg' === $fileinfo->getExtension()) {
-                if (false === $db->rowExists('_instagram_media', array(
-                        'src' => $filename,
-                    ))
-                ) {
-                    echo ' deleted ', $fileinfo->getRealPath();
-                    unlink($fileinfo->getRealPath());
-                    ++$deleted;
-                }
-            } elseif ('' === $fileinfo->getExtension() && 20 === strlen($filename)) {
+            if ('' === $fileinfo->getExtension() && 20 === strlen($filename)) {
                 if (false === $db->rowExists('cms_image', array(
                         'filename_saved' => $filename,
                     ))
@@ -1160,13 +843,8 @@ switch ($interval) {
         $deleted = 0;
         $cleanFolder = static function ($folder) use ($db, $trans, &$deleted) {
             $instance = basename($folder);
-            if ('0' === $instance) { // instagram images
-                $sizes = InstagramImage::SIZES;
-                $table_name = '_instagram_media';
-            } else { // regular images
-                $sizes = Image::SIZES;
-                $table_name = 'cms_image';
-            }
+            $sizes = Image::SIZES;
+            $table_name = 'cms_image';
             $size = key($sizes);
             $a_week_ago = time() - 604800;
             if (false === file_exists("$folder/$size")) return;
@@ -1214,25 +892,6 @@ switch ($interval) {
         break;
     case 'temp':
         echo 'Notice: this is a temp job, only for testing', "\n";
-        // @since 0.8.12 get the images you have, to check if they are still valid according to Instagram
-        stream_context_set_default(
-            array(
-                'http' => array(
-                    'method' => 'HEAD'
-                )
-            )
-        );
-        $rows = $db->jobGetInstagramMediaUrls(false, 50);
-        foreach ($rows as $index => $row) {
-            $headers = get_headers($row->media_url);
-            if (is_array($headers) and isset($headers[0])) {
-                if (false === str_contains($headers[0], ' 200 OK')) {
-                    $db->updateColumns('_instagram_media', array('flag_for_update' => true), $row->media_id);
-                    echo 'flagged for update: ', $row->media_id, "\n";
-                }
-            }
-            //var_dump($headers);
-        }
 }
 $trans->start('Report current job');
 echo date('Y-m-d H:i:s');

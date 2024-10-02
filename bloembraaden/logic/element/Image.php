@@ -45,17 +45,11 @@ class Image extends BaseElement
     {
         // the saved file should be split up in different sizes (according to instance?) and saved (compressed) under the slug name.
         // file name contains slug and instance_id and size denominator
-        // TODO if the slug changes, the saved files need to change as well, check in history periodically
-        // TODO and make it async, for instance with cron jobs
         $quality = array(0, 55, 65, 80)[$level] ?? 55;
         $data = array(); // the columns to update
         $path = Setup::$UPLOADS;
         if (isset($this->row->filename_saved)) {
             $path .= $this->row->filename_saved;
-        } elseif (isset($this->row->src)) { // provision for instagram images...
-            $src = $this->row->src;
-            $data['src'] = $src; // we want this saved in the end
-            $path .= $src;
         } else {
             $logger->log('Original no longer available');
             return false;

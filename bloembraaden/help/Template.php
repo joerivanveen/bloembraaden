@@ -171,7 +171,7 @@ class Template extends BaseLogic
     }
 
     /**
-     * Add elements when called upon by the template to the output object when found in cache, as well as instagram feeds
+     * Add elements when called upon by the template to the output object when found in cache
      *
      * @param \stdClass $output_object
      * @return \stdClass
@@ -181,11 +181,7 @@ class Template extends BaseLogic
         if (isset($output_object->__ref) && ($ref = $output_object->__ref)) {
             if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->{$ref}))) {
                 foreach ($obj as $path => $template) {
-                    if (0 === strpos($path, '__action__/instagram/feed/')) {
-                        $feed = (new Instagram())->feed(substr($path, 26));
-                        $this->addTags($output_object, (object)array($feed->slug => $feed));
-                    }
-                    if (0 === strpos($path, '__')) continue; // non-insta actions cannot be processed here
+                    if (true === str_starts_with($path, '__')) continue; // actions cannot be processed here
                     // for now, only get it from cache, if not in cache, then accept the progressive loading
                     if (($object_from_cache = Help::getDB()->cached($path))) {
                         $this->addTags($output_object->slugs, $object_from_cache->slugs);

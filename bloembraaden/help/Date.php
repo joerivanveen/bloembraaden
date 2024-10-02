@@ -11,11 +11,11 @@ class Date
         // only user input probably has not
         if ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s.u O', $value ) ) ) {
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s.u O', $value ) ) ) { // official, used by eg Instagram
+        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s.u O', $value ) ) ) { // official
             return $dt;
         } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s O', $value ) ) ) {
             return $dt;
-        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s O', $value ) ) ) { // official, used by eg Instagram
+        } elseif ( ( $dt = \DateTimeImmutable::createFromFormat( 'Y-m-d\TH:i:s O', $value ) ) ) { // official
             return $dt;
         } else {
             // when no timestamp, this is user input, an instance should be loaded and its timestamp used

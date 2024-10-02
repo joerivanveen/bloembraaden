@@ -21,9 +21,6 @@ class DB extends Base
         '_stale',
         '_search_log',
         '_locker',
-        '_instagram_auth',
-        '_instagram_feed',
-        '_instagram_media',
     );
     public const TYPES_WITH_CI_AI = array(
         'brand',
@@ -1421,198 +1418,6 @@ class DB extends Base
     }
 
     /**
-     * @param string $feed_name the name to get the feed by
-     * @return \stdClass|null with ->feed_name, ->instagram_username, ->instagram_hashtag and ->feed which is __media__
-     * since 0.7.3
-     */
-    public function getInstagramFeed(string $feed_name): ?\stdClass
-    { // can only get feed for this instance
-        $statement = $this->conn->prepare('SELECT * FROM _instagram_feed WHERE feed_name = :feed_name AND instance_id = :instance_id AND deleted = FALSE;');
-        $statement->bindValue(':feed_name', $feed_name);
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-        $return_value = $rows[0] ?? null;
-        $rows = null;
-
-        return $return_value;
-    }
-
-    /**
-     * Get appropriate media entries to load in a feed (cache)
-     * @param int $instance_id
-     * @param string|null $username
-     * @param string|null $hashtag
-     * @param int $limit
-     * @param string $cdnroot
-     * @return array
-     * @since 0.7.3
-     */
-    public function fetchInstagramMediaForFeed(int $instance_id, ?string $username, ?string $hashtag, int $limit, string $cdnroot): array
-    {
-        // filter by username and / or hashtag
-        // $username and $hashtag can be null OR an empty string, both cases we treat as not present, hence the weak comparison
-        if (!$username) {
-            $and_username = '';
-        } else {
-            $and_username = 'AND instagram_username = :username';
-        }
-        if (!$hashtag) {
-            $and_hashtag = '';
-        } else {
-            $and_hashtag = 'AND caption LIKE :hashtag';
-        }
-        // users MUST be AUTHORIZED FOR THIS INSTANCE
-        // @since 0.10.0 include the processed images
-        $sql = "SELECT caption, media_type, src, media_url, permalink, user_id, css_class,
-            instagram_username AS username, instagram_timestamp AS timestamp, 
-            concat(cast(:cdnroot AS text), src_tiny) AS src_tiny, width_tiny, height_tiny,
-            concat(cast(:cdnroot AS text), src_small) AS src_small, width_small, height_small,
-            concat(cast(:cdnroot AS text), src_medium) AS src_medium, width_medium, height_medium,
-            concat(cast(:cdnroot AS text), src_large) AS src_large, width_large, height_large
-        FROM _instagram_media
-        WHERE deleted = FALSE
-        AND user_id IN (SELECT user_id FROM _instagram_auth WHERE instance_id = :instance_id AND deleted = FALSE)
-        $and_username
-        $and_hashtag
-        AND NOT instagram_timestamp IS NULL ORDER BY instagram_timestamp DESC LIMIT $limit;";
-        $statement = $this->conn->prepare($sql);
-        $statement->bindValue(':instance_id', $instance_id);
-        $statement->bindValue(':cdnroot', $cdnroot);
-        if ($username) $statement->bindValue(':username', $username);
-        if ($hashtag) $statement->bindValue(':hashtag', '%#' . $hashtag . '%');
-        //select * from _instagram_media where username = and caption like hashtag order by instagram_timestamp desc limit quantity
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    public function fetchInstagramDeauthorized(): ?array
-    {
-        return $this->fetchRows(
-            '_instagram_auth',
-            array('instagram_auth_id', 'user_id'),
-            array('deauthorized' => true, 'deleted' => false, 'instance_id' => null) // deleted=>false is standard but included here for clarity
-        // a deauthorized instagram_auth row will be set to deleted after the process, so no need to select deleted rows
-        );
-    }
-
-    /**
-     * Gets instagram feeds (specs) that may contain media by the provided user id
-     * @param int $user_id
-     * @return array|null
-     * @since 0.7.3
-     */
-    public function getInstagramFeedSpecsByUserId(int $user_id): ?array
-    {
-        $statement = $this->conn->prepare('SELECT * FROM _instagram_feed WHERE instance_id IN 
-            (SELECT instance_id FROM _instagram_auth WHERE user_id = :user_id);');
-        $statement->bindValue(':user_id', $user_id);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * @param int $user_id
-     * @return int the number of instagram feeds that were invalidated
-     * @since 0.7.4
-     */
-    public function invalidateInstagramFeedSpecsByUserId(int $user_id): int
-    {
-        $statement = $this->conn->prepare('UPDATE _instagram_feed SET date_updated = NOW()
-            WHERE instagram_feed_id IN (SELECT instagram_feed_id FROM _instagram_feed WHERE instance_id IN 
-            (SELECT instance_id FROM _instagram_auth WHERE user_id = :user_id));');
-        $statement->bindValue(':user_id', $user_id);
-        $statement->execute();
-        $rows_affected = $statement->rowCount();
-        $statement = null;
-
-        return $rows_affected;
-    }
-
-    /**
-     * @param int $user_id
-     * @return int
-     * @since 0.8.16
-     */
-    public function deleteInstagramMediaByUserId(int $user_id): int
-    {
-        $statement = $this->conn->prepare('UPDATE _instagram_media SET deleted = TRUE WHERE user_id = :user_id;');
-        $statement->bindValue(':user_id', $user_id);
-        $statement->execute();
-        $rows_affected = $statement->rowCount();
-        $statement = null;
-
-        return $rows_affected;
-    }
-
-    /**
-     * Gets feeds (specs) that were updated after their feed was gotten
-     * @return array|null
-     * @since 0.7.3
-     */
-    public function getInstagramFeedSpecsOutdated(): ?array
-    {
-        $statement = $this->conn->prepare('SELECT * FROM _instagram_feed WHERE date_updated > feed_updated;');
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * @param int $instance_id
-     * @return array|null
-     * @since 0.7.3
-     */
-    public function getInstagramFeedSpecs(int $instance_id = -1): ?array
-    {
-        if ($instance_id === -1) $instance_id = Setup::$instance_id;
-
-        return $this->fetchRows('_instagram_feed', array('*'), array('instance_id' => $instance_id));
-    }
-
-    /**
-     * @param int $instance_id
-     * @return array|null
-     * @since 0.7.3
-     */
-    public function getInstagramAuthorizations(int $instance_id = -1): ?array
-    {
-        if ($instance_id === -1) $instance_id = Setup::$instance_id;
-
-        return $this->fetchRows('_instagram_auth', array(
-            'instagram_auth_id',
-            'user_id',
-            'instagram_username',
-            'access_token_expires',
-            'access_granted',
-            'deauthorized',
-            'date_created',
-            'done'
-        ), array('instance_id' => $instance_id));
-    }
-
-    /**
-     * NOTE use this serverside only, never reveal tokens to the client
-     * @return array|null
-     * @since 0.7.3
-     */
-    public function getInstagramUserTokenAndNext(): ?array
-    {
-        return $this->fetchRows('_instagram_auth', array(
-            'instagram_auth_id', 'instance_id', 'user_id', 'access_token', 'next', 'done'
-        ), array('instance_id' => null, 'deauthorized' => false));
-    }
-
-    /**
      * Returns the countries that belong to a specific instance
      * @param int $instance_id defaults to the current instance
      * @return array|null indexed array of \stdClass (row) objects
@@ -2036,90 +1841,6 @@ class DB extends Base
             AND (date_processed IS NULL
                 OR (RIGHT(LEFT(src_large, -5), LENGTH(slug)) <> slug))
             ORDER BY date_updated DESC LIMIT $how_many");
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    public function jobFetchInstagramImagesForProcessing(int $how_many = 12): array
-    {
-        $statement = $this->conn->prepare("SELECT * FROM _instagram_media 
-            WHERE date_processed IS NULL AND src IS NOT NULL AND deleted = FALSE AND flag_for_update IS FALSE
-            ORDER BY date_updated DESC LIMIT $how_many;");
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * Returns Instagram authorizations that are expiring in $days_in_advance days
-     * @param int $days_in_advance default 5
-     * @return array holding $row \stdClass objects with instagram_auth_id and access_token
-     * @since 0.7.3
-     */
-    public function jobGetInstagramTokensForRefresh(int $days_in_advance = 5): array
-    {
-        $statement = $this->conn->prepare("SELECT instagram_auth_id, access_token FROM _instagram_auth 
-            WHERE access_token_expires < NOW() + $days_in_advance * interval '1 days';");
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * Simply gets instagram media entries with NULL for username, indicating they were not processed yet
-     * @param int $limit
-     * @return array
-     * @since 0.7.3
-     */
-    public function jobGetInstagramMediaIdsForRefresh(int $limit = 25): array
-    {
-        // the older entries are the newer instagram media entries since they are loaded / paged in reverse order in the api
-        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url, src FROM _instagram_media 
-            WHERE (flag_for_update = TRUE OR instagram_username IS NULL) AND deleted = FALSE 
-            ORDER BY date_created LIMIT $limit;");
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * Gets instagram media entries that went the longest time without updating
-     * @param int $limit
-     * @return array
-     * @since 0.9.0
-     */
-    public function jobGetInstagramMediaIdsForRefreshByDate(int $limit = 25): array
-    {
-        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url, src FROM _instagram_media 
-            WHERE deleted = FALSE ORDER BY date_updated LIMIT $limit;");
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        return $rows;
-    }
-
-    /**
-     * @param int $limit the maximum number of rows that wil be returned
-     * @param bool $for_src @since 0.7.5 true if you only want entries where the src (cache location) is NULL
-     * @return array the rows containing media_id, user_id and media_url
-     * @since 0.7.4
-     */
-    public function jobGetInstagramMediaUrls(bool $for_src = false, int $limit = 100): array
-    {
-        $src_where = (true === $for_src) ? 'src IS NULL AND' : '';
-        $statement = $this->conn->prepare("SELECT media_id, user_id, media_url
-            FROM _instagram_media WHERE $src_where media_url IS NOT NULL 
-            AND deleted = FALSE AND flag_for_update = FALSE LIMIT $limit;");
         $statement->execute();
         $rows = $statement->fetchAll(5);
         $statement = null;
@@ -3556,7 +3277,7 @@ class DB extends Base
 
     public function fetchTablesToExport(bool $include_user_data = false): array
     {
-        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instagram_auth', '_instagram_media', '_instagram_feed', '_instance_domain', '_order_number');
+        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_client', '_locker', '_system', '_session', '_sessionvars', '_instance_domain', '_order_number');
         if (false === $include_user_data) {
             $never = array_merge($never, array('_payment_status_update', '_address', '_shoppinglist', '_shoppinglist_variant', '_order', '_order_number', '_order_variant', '_user'));
         }
@@ -3707,17 +3428,6 @@ class DB extends Base
 
         return null;
         //return $this->fetchRow($table_name, array('*'), array($table_info->getIdColumn()->getName() => $id));
-    }
-
-    /**
-     * @param string $media_id
-     * @param array $columns
-     * @return \stdClass|null
-     * @since 0.9.0
-     */
-    public function getInstagramMediaByMediaId(string $media_id, array $columns = array('*')): ?\stdClass
-    {
-        return $this->fetchRow('_instagram_media', $columns, array('media_id' => $media_id));
     }
 
     /**

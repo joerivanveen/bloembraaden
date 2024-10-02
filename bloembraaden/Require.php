@@ -29,8 +29,6 @@ require CORE . 'logic/element/Comment.php';
 require CORE . 'logic/element/Menu.php';
 require CORE . 'logic/element/MenuItem.php';
 // integrations
-require CORE . 'logic/integrations/Instagram.php';
-require CORE . 'logic/integrations/InstagramImage.php';
 require CORE . 'logic/integrations/PaymentServiceProviderInterface.php';
 require CORE . 'logic/integrations/PaymentServiceProvider.php';
 require CORE . 'logic/integrations/Mollie.php';

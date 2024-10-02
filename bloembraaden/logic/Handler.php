@@ -296,45 +296,6 @@ class Handler extends BaseLogic
                 $src = new Search();
                 $out = $src->getRelevantPropertyValuesAndPrices($post_data->path);
             }
-        } elseif ('instagram' === $action) { // @since 0.7.2
-            if (isset((($terms = $this->resolver->getTerms()))[0])) {
-                $insta = new Instagram();
-                if ('feed' === ($command = $terms[0])) {
-                    if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
-                        $feed_name = $terms[1] ?? '';
-                        $out = $insta->feed($feed_name);
-                    } else {
-                        $this->addMessage(sprintf(__('%s check failed, please refresh browser', 'peatcms'), 'CSRF'), 'warn');
-                        $out = true;
-                    }
-                } elseif ('authorize' === $command) {
-                    $out = $insta->authorize($post_data);
-                } elseif ('delete' === $command) {
-                    // signed request:
-                    // https://developers.facebook.com/docs/apps/delete-data/
-                    // URL to track the deletion:
-                    $confirmation_code = $insta->delete($post_data);
-                    $status_url = Help::$session->getInstance()->getDomain(true);
-                    $status_url .= '__action__/instagram/confirm/';
-                    $status_url .= $confirmation_code;
-                    // instagram wants the response as json
-                    Help::$OUTPUT_JSON = true;
-                    $out = array(
-                        'url' => $status_url,
-                        'confirmation_code' => $confirmation_code
-                    );
-                } elseif ('confirm' === $command) {
-                    if (isset($term[1])) {
-                        $this->addMessage(sprintf(
-                            __('Bloembraaden has been de-authorized, your data will be removed within 10 minutes. Confirmation code: %s', 'peatcms'),
-                            $terms[1]), 'note');
-                    }
-                    $out = array('redirect_uri' => '/');
-                }
-            } else {
-                $this->addMessage(__('Instagram action needs an instruction what to do', 'peatcms'), 'warn');
-                $out = true;
-            }
         } elseif ('pay' === $action) { // this is a payment link, supply the order number and slug of the payment page
             $properties = $this->resolver->getProperties();
             if (isset($properties['order_number'])) {
@@ -1201,23 +1162,6 @@ class Handler extends BaseLogic
                     // only shows log of the current instance
                     $rows = Help::getDB()->fetchSearchLog();
                     $out = array('__rows__' => $rows, 'item_count' => count($rows));
-                } elseif ('admin_instagram' === $action) {
-                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array(
-                                '__feeds__' => Help::getDB()->getInstagramFeedSpecs($instance_id),
-                                '__authorizations__' => Help::getDB()->getInstagramAuthorizations($instance_id),
-                                'slug' => 'admin_instagram',
-                            );
-                            // @since 0.10.11: allow media to be used directly in admin
-                            foreach ($out['__feeds__'] as $key => $feed) {
-                                if (isset($feed->feed)) {
-                                    $feed->__media__ = json_decode($feed->feed);
-                                    unset($feed->feed);
-                                }
-                            }
-                        }
-                    }
                 } elseif ('admin_redirect' === $action) {
                     if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                         if ($admin->isRelatedInstanceId($instance_id)) {
@@ -1643,7 +1587,7 @@ class Handler extends BaseLogic
             $out->dark_mode = $session->getValue('dark_mode');
             // render in template
             $temp = new Template();
-            // @since 0.10.6 add complex tags (menus, instagram feeds, other elements) to make integral to the first output
+            // @since 0.10.6 add complex tags (menus, other elements) to make integral to the first output
             $temp->addComplexTags($out);
             // render the page already
             $temp->render($out);
@@ -2037,24 +1981,6 @@ class Handler extends BaseLogic
                         $this->handleErrorAndStop(sprintf('Table ‘%s’ not recognized by insert_row',
                             $post_data->table_name));
                 }
-            } elseif ($post_data->where->parent_id_name === 'instagram_auth_id'
-                and $instagram_auth_id = (int)$post_data->where->parent_id_value) {
-                // check if the user already has access to this instagram authorization:
-                $rows = Help::getDB()->getInstagramAuthorizations();
-                foreach ($rows as $index => $row) {
-                    if ($row->instagram_auth_id === $instagram_auth_id) {
-                        $feed_id = Help::getDB()->insertRowAndReturnKey('_instagram_feed', array(
-                            'instagram_auth_id' => $instagram_auth_id,
-                            'instance_id' => Setup::$instance_id,
-                            'quantity' => 12,
-                        ));
-
-                        return (object)array('instagram_feed_id' => $feed_id);
-                    }
-                }
-                $this->addMessage('You must (re-)authorize Instagram', 'warn');
-
-                return (object)true;
             } else {
                 $this->addError('No appropriate parent id received');
 

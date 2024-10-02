@@ -10,7 +10,6 @@ class Type extends Base
         'page' => 'cms_page',
         'embed' => 'cms_embed',
         'image' => 'cms_image',
-        'instagram_image' => '_instagram_media',
         'file' => 'cms_file',
         'menu' => 'cms_menu',
         'menu_item' => 'cms_menu_item',

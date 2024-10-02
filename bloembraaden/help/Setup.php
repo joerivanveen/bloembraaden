@@ -18,7 +18,7 @@ class Setup
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH;
     public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
     public static array $translations;
-    public static stdClass $MAIL, $INSTAGRAM, $POSTCODE, $PDFMAKER;
+    public static stdClass $MAIL, $POSTCODE, $PDFMAKER;
     private static int $seconds_delta;
     private static ?PDO $DB_MAIN_CONN = null, $DB_HIST_CONN = null;
     private static stdClass $DB_MAIN, $DB_HIST;
@@ -145,7 +145,6 @@ class Setup
         self::$DB_MAIN = $config->DB_MAIN;
         self::$DB_HIST = $config->DB_HISTORY;
         self::$MAIL = $config->MAIL;
-        self::$INSTAGRAM = $config->integrations->instagram;
         self::$POSTCODE = $config->integrations->postcode;
         self::$PDFMAKER = $config->integrations->pdfmaker;
         self::$NEWRELIC_RECORDS_BACKEND = $config->newrelic_records_backend ?? false;
