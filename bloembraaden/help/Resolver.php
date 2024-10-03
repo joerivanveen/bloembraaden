@@ -151,7 +151,9 @@ class Resolver extends BaseLogic
 
     public function getAction(): ?string
     {
-        if (isset($this->instructions['action'])) {
+        if (true === isset($this->instructions['action'])
+            && true === is_string($this->instructions['action'])
+        ) {
             return $this->instructions['action'];
         }
 
@@ -160,7 +162,7 @@ class Resolver extends BaseLogic
 
     public function hasInstructions(): bool
     {
-        return (isset($this->instructions) && count($this->instructions) > 0);
+        return (true === isset($this->instructions) && 0 < count($this->instructions));
     }
 
     /**
