@@ -1,5 +1,5 @@
--- PAY ATTENTION each table must have a primary key column, which is returned upon insert automatically
--- peatcms crashes if the primary key is missing
+-- PAY ATTENTION each table must have a primary key column, which is returned upon insert
+-- automatically, Bloembraaden crashes if the primary key is missing
 
 BEGIN;
 
@@ -1961,58 +1961,6 @@ COMMIT;
 -- version 0.7.2
 
 BEGIN;
--- integrate Instagram
-DROP TABLE IF EXISTS "public"."_instagram"; -- old
-DROP TABLE IF EXISTS "public"."_instagram_auth";
-CREATE TABLE "public"."_instagram_auth"
-(
-    "instagram_auth_id"    SERIAL PRIMARY KEY,
-    "instance_id"          int                                    NOT NULL,
-    "user_id"              Text,
-    "instagram_username"   Text,
-    "access_token"         Text,
-    "access_token_expires" Timestamp With Time Zone,
-    "access_granted"       Boolean                  DEFAULT false NOT NULL,
-    "next"                 Text,
-    "done"                 Boolean                  DEFAULT false NOT NULL,
-    "date_created"         Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "date_updated"         Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "deleted"              Boolean                  DEFAULT false NOT NULL,
-    CONSTRAINT "unique_instagram_auth_id" UNIQUE ("instagram_auth_id")
-);
-DROP TABLE IF EXISTS "public"."_instagram_feed";
-CREATE TABLE "public"."_instagram_feed"
-(
-    "instagram_feed_id"  SERIAL PRIMARY KEY,
-    "instagram_auth_id"  int                                    NOT NULL,
-    "instance_id"        int                                    NOT NULL,
-    "feed_name"          Text,
-    "instagram_username" Text                     DEFAULT ''    NOT NULL,
-    "instagram_hashtag"  Text                     DEFAULT ''    NOT NULL,
-    "feed"               Text,
-    "quantity"           int                                    NOT NULL,
-    "date_created"       Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "date_updated"       Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "feed_updated"       Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "deleted"            Boolean                  DEFAULT false NOT NULL,
-    CONSTRAINT "unique_instagram_feed_id" UNIQUE ("instagram_feed_id")
-);
-DROP TABLE IF EXISTS "public"."_instagram_media";
-CREATE TABLE "public"."_instagram_media"
-(
-    "media_id"            bigint                                 NOT NULL,
-    "user_id"             Text                                   NOT NULL,
-    "caption"             Text,
-    "media_type"          Text,
-    "media_url"           Text,
-    "permalink"           Text,
-    "instagram_timestamp" Timestamp With Time Zone,
-    "instagram_username"  Text,
-    "date_created"        Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "date_updated"        Timestamp With Time Zone DEFAULT now() NOT NULL,
-    "deleted"             Boolean                  DEFAULT false NOT NULL,
-    CONSTRAINT "unique_media_id" PRIMARY KEY ("media_id")
-);
 
 -- special table of lockers with keys, used to validate requests from somewhere else and share info with them through the key
 DROP TABLE IF EXISTS "public"."_key";
@@ -2045,10 +1993,6 @@ COMMIT;
 -- version 0.7.4
 
 BEGIN;
-ALTER TABLE "public"."_instagram_media"
-    ADD COLUMN if not exists "src" Text;
-ALTER TABLE "public"."_instagram_media"
-    ADD COLUMN if not exists "flag_for_update" boolean not null default false;
 
 COMMIT;
 
@@ -2097,9 +2041,6 @@ COMMIT;
 -- version 0.7.8
 
 BEGIN;
-
-ALTER TABLE "public"."_instagram_auth"
-    ADD COLUMN if not exists "deauthorized" boolean not null default false;
 
 COMMIT;
 
@@ -2248,12 +2189,6 @@ ALTER TABLE cms_variant
 
 ALTER TABLE cms_variant
     DROP COLUMN if exists "upc";
-
--- instagram restart after bugfix
-TRUNCATE TABLE _instagram_auth;
-TRUNCATE TABLE _instagram_feed;
-TRUNCATE TABLE _instagram_media;
-
 
 COMMIT;
 
@@ -2618,34 +2553,6 @@ BEGIN;
 
 ALTER TABLE cms_image
     ADD COLUMN if not exists date_processed TimeStamp With Time Zone;
-
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists date_processed TimeStamp With Time Zone;
-
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists src_tiny text;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists width_tiny smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists height_tiny smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists src_small text;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists width_small smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists height_small smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists src_medium text;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists width_medium smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists height_medium smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists src_large text;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists width_large smallInt;
-ALTER TABLE _instagram_media
-    ADD COLUMN if not exists height_large smallInt;
 
 ALTER TABLE cms_image
     ALTER COLUMN filename_saved DROP NOT NULL;
@@ -3072,11 +2979,6 @@ COMMIT;
 
 BEGIN;
 
-ALTER TABLE "public"."_instagram_media"
-    ADD COLUMN if not exists "css_class" character varying(255);
-
-UPDATE "public"."_instagram_media" SET media_url = 're-process-all-insta-images' WHERE src IS NOT NULL;
-
 COMMIT;
 
 -- version 0.17.0
@@ -3231,3 +3133,13 @@ ALTER TABLE "public"."_instance"
     ADD COLUMN "payment_link_valid_hours" int DEFAULT 24 NOT NULL;
 
 COMMIT;
+
+-- version 0.22.1
+
+BEGIN;
+
+DROP TABLE IF EXISTS "public"."_instagram_feed";
+DROP TABLE IF EXISTS "public"."_instagram_auth";
+DROP TABLE IF EXISTS "public"."_instagram_media";
+
+END;
