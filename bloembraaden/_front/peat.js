@@ -3392,7 +3392,6 @@ PEATCMS_navigator.prototype.reloadThenRefresh = function (tag) {
 PEATCMS_navigator.prototype.refresh = function (path) {
     const self = this, globals = window.PEATCMS_globals
     let slug;
-    if (!path) path = this.getCurrentPath(); // replacing default value which is not supported < ES6
     if (window.history && window.history.pushState) {
         this.last_navigate = null; // refreshing is never navigating
         if (globals.hasOwnProperty('slug')) { // move the first page’s slug into the cache
@@ -3414,6 +3413,7 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             }, true);
             //delete globals.slugs;
         }
+        if (!slug && !path) path = this.getCurrentPath()
         // if you have the slug object, construct directly from it
         new PEATCMS_element(slug || path, function (el) {
             if (el === false) {
