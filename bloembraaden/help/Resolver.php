@@ -27,17 +27,19 @@ class Resolver extends BaseLogic
         }
         $GLOBALS['slugs'] = new \stdClass();
         // urldecode means get utf-8 characters of requested path + querystring
-        $request_uri = strip_tags(mb_strtolower(urldecode($request_uri)));
-        // deconstruct path + querystring
-        $uri = explode('?', $request_uri);
-        $src = array();
-        if (count($uri) > 1) $src = explode('&', $uri[1]);
-        $uri = $uri[0];
-        if ('/' === $uri) { // homepage is requested, get slug to retrieve from cache later
-            // TODO optimize getting the slug from the id, maybe by caching in instance?
-            $uri = array(Help::getDB()->fetchHomeSlug($instance_id));
+        $request_parts = explode('?', strip_tags(mb_strtolower(urldecode($request_uri))));
+        $request_path = $request_parts[0];
+        if (true === isset($request_parts[1])) {
+            $src = explode('&', $request_parts[1]);
         } else {
-            $uri = array_values(array_filter(explode('/', $uri), function ($value) {
+            $src = array();
+        }
+//        var_dump($request_path);
+//        die();
+        if ('/' === $request_path) { // homepage is requested, get slug to retrieve from cache later
+            $uri_parts = array(Setup::$HOMEPAGE_SLUG);
+        } else {
+            $uri_parts = array_values(array_filter(explode('/', $request_path), function ($value) {
                 if ('' === $value) {
                     return false;
                 } elseif (str_starts_with($value, '__')) {
@@ -90,9 +92,9 @@ class Resolver extends BaseLogic
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
         if (true === isset($this->instructions['action'])) {
             // todo backwards compatible with __action__/suggest syntax, remove when sites use __action__:suggest
-            if (count($uri) > 0) {
-                $this->instructions['action'] = htmlentities($uri[0]);
-                unset($uri[0]);
+            if (count($uri_parts) > 0) {
+                $this->instructions['action'] = htmlentities($uri_parts[0]);
+                unset($uri_parts[0]);
             }
         } elseif (true === isset($post_data->action)) {
             $this->instructions['action'] = $post_data->action;
@@ -107,13 +109,13 @@ class Resolver extends BaseLogic
             if (isset($values[1])) $this->addProperty($values[0], explode(',', $values[1]));
         }
         // remove properties (filters) from path and add them to query
-        foreach ($uri as $index => $value) {
+        foreach ($uri_parts as $index => $value) {
             if (false === str_contains($value, ':')) continue;
             $values = explode(':', $value);
             $this->addProperty($values[0], explode(',', $values[1]));
-            unset($uri[$index]);
+            unset($uri_parts[$index]);
         }
-        $this->addTerms(array_values($uri)); // $terms are the uri parts separated by / (forward slash)
+        $this->addTerms(array_values($uri_parts)); // $terms are the uri parts separated by / (forward slash)
 
         if (0 === count($this->terms)) { // if you do not have a term, try to get one from the properties
             foreach ($this->getProperties() as $property => $value) {
@@ -130,7 +132,7 @@ class Resolver extends BaseLogic
     }
 
     private function addTerms(array $terms): void {
-        if (isset($this->terms)) {
+        if (true === isset($this->terms)) {
             $terms = array_merge($this->terms, $terms);
         }
         $this->terms = $terms;
@@ -139,6 +141,10 @@ class Resolver extends BaseLogic
     public function getPostData()
     {
         return $this->post_data;
+    }
+
+    public function isHomepage():bool {
+        return isset($this->terms[0]) && Setup::$HOMEPAGE_SLUG === $this->terms[0];
     }
 
     public function escape(\stdClass $post_data): \stdClass
@@ -407,7 +413,7 @@ class Resolver extends BaseLogic
 
     public function getPath(): string
     {
-        if (!isset($this->path)) {
+        if (false === isset($this->path)) {
             $this->path = Help::turnIntoPath($this->terms, $this->properties);
         }
 
