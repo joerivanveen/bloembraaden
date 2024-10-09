@@ -1228,17 +1228,15 @@ class DB extends Base
     }
 
     /**
-     * Fetches the slug of the homepage for the specified instance by instance_id
-     * @param int $instance_id
+     * Fetches the slug of a page for a specific page_id
+     * @param int $page_id
      * @return string
      * @since 0.8.3
      */
-    public function fetchHomeSlug(int $instance_id): string
+    public function fetchPageSlug(int $page_id): string
     {
-        $statement = $this->conn->prepare('SELECT slug FROM cms_page 
-            WHERE page_id = (SELECT homepage_id FROM _instance WHERE instance_id = :instance_id);'
-        );
-        $statement->bindValue(':instance_id', $instance_id);
+        $statement = $this->conn->prepare('SELECT slug FROM cms_page WHERE page_id = :page_id;');
+        $statement->bindValue(':page_id', $page_id);
         $statement->execute();
         $slug = $statement->fetchColumn() ?: 'homepage';
         $statement = null;

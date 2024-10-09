@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Bloembraaden;
+
 class Instance extends BaseLogic
 {
     private array $menus;

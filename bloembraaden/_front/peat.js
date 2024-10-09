@@ -3438,8 +3438,8 @@ PEATCMS_navigator.prototype.setState = function () {
     const el = this.element;
     if (window.history && window.history.pushState) {
         if (el) {
-            const title = el.state.title;
-            const path = el.state.path || el.state.slug;
+            const title = el.state.title,
+                path = el.state.path || el.state.slug;
             window.history.replaceState({
                 path: path,
                 title: title,
@@ -3455,7 +3455,8 @@ PEATCMS_navigator.prototype.setState = function () {
 }
 
 PEATCMS_navigator.prototype.getRoot = function (trailingSlash) {
-    return this.root + (trailingSlash ? '/' : '');
+    if (trailingSlash) return `${this.root}/`;
+    return this.root;
 }
 
 PEATCMS_navigator.prototype.getCurrentPath = function () { // returned path uri is clean, no extra slashes
@@ -3469,15 +3470,15 @@ PEATCMS_navigator.prototype.getCurrentUri = function () {
     return (PEATCMS_globals.root || '') + '/' + this.getCurrentPath();
 }
 PEATCMS_navigator.prototype.getCurrentSlug = function () {
-    const slugs = this.getCurrentPath().split('/');
-    let i;
-    if (slugs.length === 1) {
-        return decodeURIComponent(slugs[0]);
+    const slugs = this.getCurrentPath().split('/'), len = slugs.length;
+    if (1 === len) {
+        return slugs[0];
     } else {
-        for (i = 0; i < slugs.length; i++) {
-            if (slugs[i] === '__admin__') continue;
-            if (slugs[i] === '__action__') continue;
-            return decodeURIComponent(slugs[i]);
+        for (let i = 0; i < len; i++) {
+            const slug = slugs[i];
+            if ('__admin__' === slug) continue;
+            if ('__action__' === slug) continue;
+            return slug;
         }
     }
     return this.getCurrentElement().slug; // used to have decodeURIComponent around it?!

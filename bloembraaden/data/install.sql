@@ -3109,10 +3109,10 @@ ALTER TABLE "public"."_instance"
 
 -- (bugfix 0.21.0) remove size limit on x_value, previously this was varchar(40)
 ALTER TABLE "public"."cms_page_x_properties"
-    ALTER COLUMN x_value TYPE text;
+    ALTER COLUMN if not exists x_value TYPE text;
 
 ALTER TABLE "public"."cms_variant_x_properties"
-    ALTER COLUMN x_value TYPE text;
+    ALTER COLUMN if not exists x_value TYPE text;
 
 COMMIT;
 
@@ -3130,7 +3130,7 @@ ALTER TABLE "public"."_cache"
     ALTER COLUMN slug TYPE varchar(1024);
 
 ALTER TABLE "public"."_instance"
-    ADD COLUMN "payment_link_valid_hours" int DEFAULT 24 NOT NULL;
+    ADD COLUMN if not exists "payment_link_valid_hours" int DEFAULT 24 NOT NULL;
 
 COMMIT;
 
@@ -3141,5 +3141,8 @@ BEGIN;
 DROP TABLE IF EXISTS "public"."_instagram_feed";
 DROP TABLE IF EXISTS "public"."_instagram_auth";
 DROP TABLE IF EXISTS "public"."_instagram_media";
+
+ALTER TABLE "public"."_instance"
+    ADD COLUMN if not exists "homepage_slug" Character Varying(127);
 
 END;

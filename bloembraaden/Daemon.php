@@ -152,16 +152,21 @@ class Daemon
                 }
             }
             if (0 === $total_count) ob_clean();
-            /* update csp, if necessary */
+            /* update csp and homepage slug, if necessary */
             $total_count = 0;
-            $trans->start('Do instance CSP default-src');
+            $trans->start('Do instance CSP default-src and homepage slug');
             $rows = $db->fetchInstances();
             foreach ($rows as $index => $row) {
                 $instance = new Instance($row);
                 //Setup::loadInstanceSettings($instance);
                 if ($row->csp_default_src !== ($src = $instance->fetchDefaultSrc())) {
                     $db->updateInstance($row->instance_id, array('csp_default_src' => $src));
-                    echo "Update $row->instance_id to $src\n";
+                    echo "Update $row->instance_id default-src to $src\n";
+                    $total_count++;
+                }
+                if ($row->homepage_slug !== ($slug = $db->fetchPageSlug($row->homepage_id))) {
+                    $db->updateInstance($row->instance_id, array('homepage_slug' => $slug));
+                    echo "Update $row->instance_id slug to $slug\n";
                     $total_count++;
                 }
             }

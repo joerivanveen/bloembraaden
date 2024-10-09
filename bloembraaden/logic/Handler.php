@@ -1482,12 +1482,16 @@ class Handler extends BaseLogic
             }
         }
         // set path to __ref if not present
-        if (isset($out->__ref)) {
+        if (true === isset($out->__ref)) {
             $out_path =& $out->slugs->{$out->__ref}->path;
-            if (!isset($out_path)) $out_path = $out->__ref;
+            if (true === $this->resolver->isHomepage()) {
+                $out_path = '';
+            } elseif (false === isset($out_path)) {
+                $out_path = $out->__ref;
+            }
         }
         // variant paging
-        if (isset($out->variant_page) && $out->variant_page !== 1) {
+        if (isset($out->variant_page) && 1 !== $out->variant_page) {
             $out->slugs->{$out->__ref}->path .= "/variant_page$out->variant_page";
         }
         // use a properly filled element to check some of the settings
