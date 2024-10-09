@@ -211,7 +211,10 @@ class Resolver extends BaseLogic
         if (isset($post_data->full_feedback)) $out->full_feedback = $post_data->full_feedback;
         // some fields can never be output:
         unset($out->password_hash);
-        if (false === ADMIN) unset($out->recaptcha_secret_key);
+        if (false === ADMIN) {
+            unset($out->recaptcha_secret_key);
+            unset($out->myparcel_api_key);
+        }
 
         unset($post_data);
 

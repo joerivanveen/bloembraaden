@@ -1539,6 +1539,8 @@ function PEATCMS_admin() {
         // set homepage button
         document.querySelectorAll('button[data-peatcms_handle="set_homepage"]').forEach(
             function (btn) { //, key, parent) {
+                if (btn.hasAttribute('data-peatcms_active')) return;
+                btn.setAttribute('data-peatcms_active','1');
                 btn.addEventListener('click', function () {
                     self.setHomepage();
                 });
@@ -1628,6 +1630,8 @@ function PEATCMS_admin() {
             });
         }
         document.querySelectorAll('.session_destroy').forEach(function (el) {
+            if (el.hasAttribute('data-peatcms_active')) return;
+            el.setAttribute('data-peatcms_active','1');
             el.addEventListener('peatcms.form_posted', function (e) {
                 if (e.detail.json.success) {
                     this.innerHTML = 'Marked for destruction';
@@ -1635,8 +1639,10 @@ function PEATCMS_admin() {
             });
         });
         document.querySelectorAll('[type="file"]').forEach(function (el) {
+            if (el.hasAttribute('data-peatcms_active')) return;
+            el.setAttribute('data-peatcms_active','1');
             const form = el.form;
-            const label = el.label;
+            //const label = el.label;
             if (!form) {
                 console.error('File input element has no form', el);
                 return;
@@ -1671,6 +1677,8 @@ function PEATCMS_admin() {
         });
         // for paging, set proximity
         document.querySelectorAll('.PEATCMS_admin .paging').forEach(function (div) {
+            if (div.hasAttribute('data-peatcms_active')) return;
+            div.setAttribute('data-peatcms_active','1');
             const nodes = div.querySelectorAll('a'),
                 len = nodes.length;
 

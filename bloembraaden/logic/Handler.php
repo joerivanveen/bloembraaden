@@ -1343,9 +1343,9 @@ class Handler extends BaseLogic
                     if (isset($post_data->slug)) {
                         if (!$out = Help::getDB()->setHomepage(Setup::$instance_id, $post_data->slug)) {
                             $this->addError(sprintf(
-                                '->getDB()->setHomepage failed with slug ‘%1$s’ for instanceid %2$s',
+                                '->getDB()->setHomepage failed with slug %1$s for instanceid %2$s',
                                 var_export($post_data->slug, true), Setup::$instance_id));
-                            $out = $instance;
+                            $out = $instance->row;
                         }
                     }
                 } elseif ('file_upload_admin' === $action) {
