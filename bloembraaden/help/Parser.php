@@ -115,7 +115,7 @@ class Parser extends Base
     private function echoParagraphWhenNecessary()
     {
         // the img must be 'in' another tag unless this is a sub text
-        if (false === $this->is_sub_parser and null === $this->getOpenTag()) {
+        if (false === $this->is_sub_parser && null === $this->getOpenTag()) {
             echo $this->openTag('p');
         }
     }
@@ -126,7 +126,7 @@ class Parser extends Base
         $pointer = $this->pointer; // the pointer is at the first character of the signature of this command
         if ((microtime(true) - $this->started) > 3) {
             $this->handleErrorAndStop(
-                sprintf('Parser timeout error near %s', $pointer),
+                sprintf("Parser timeout error near %s\nTEXT:\n%s", $pointer, strip_tags($this->text)),
                 __('Parser timeout error', 'peatcms')
             );
         }
