@@ -2591,9 +2591,9 @@ class DB extends Base
             foreach ($rows as $index=>$row) {
                 $items = $this->fetchShoppingListRows($row->shoppinglist_id);
                 if (0 < ($count = count($items))) {
-                    $lists[$row->shoppinglist_id] = "$count items";
+                    $lists[var_export($row, true)] = "$count items";
                 } else {
-                    $lists[$row->shoppinglist_id] = 'Empty';
+                    $lists[var_export($row, true)] = 'Empty';
                 }
             }
             $count = $this->deleteRowWhereAndReturnAffected('_shoppinglist', $data);
