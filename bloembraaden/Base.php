@@ -101,7 +101,8 @@ class Base
                 header("$protocol 500 Bloembraaden Fatal Error", true, 500);
             }
             if (true === Help::$OUTPUT_JSON) {
-                echo '{ "error": ', json_encode($s), ', "__messages__": ', json_encode(Help::getMessages()), ' }';
+                Help::addMessage($s, 'error');
+                echo '{ "__messages__": ', json_encode(Help::getMessages()), ' }';
             } else {
                 // TODO customizable error pages
                 echo str_replace('{{message}}', $s, file_get_contents(CORE . 'presentation/error.html'));

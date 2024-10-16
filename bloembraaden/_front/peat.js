@@ -1179,7 +1179,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 if (true === xhr.peatcms_track_progress) self.ajaxRemovePending(xhr);
-                if (500 === xhr.status) {
+                if (500 === xhr.status && xhr.statusText) {
                     console.error(xhr.statusText);
                 }
                 // @since 0.8.16 permit simple ‘downloading’ (ie copying) of text content

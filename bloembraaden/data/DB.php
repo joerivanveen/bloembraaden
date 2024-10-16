@@ -2586,8 +2586,21 @@ class DB extends Base
             $shoppinglist_id = $this->insertRowAndReturnLastId('_shoppinglist', $data);
             $row = $this->fetchRow('_shoppinglist', array('*'), array('shoppinglist_id' => $shoppinglist_id));
         } else {
+            // build informative error message, what is going on here?
+            $lists = array();
+            foreach ($rows as $index=>$row) {
+                $items = $this->fetchShoppingListRows($row->shoppinglist_id);
+                if (0 < ($count = count($items))) {
+                    $lists[$row->shoppinglist_id] = "$count items";
+                } else {
+                    $lists[$row->shoppinglist_id] = 'Empty';
+                }
+            }
             $count = $this->deleteRowWhereAndReturnAffected('_shoppinglist', $data);
-            $this->handleErrorAndStop("Deleted $count shoppinglist entries.", __('Could not get shoppinglist', 'peatcms'));
+            $this->handleErrorAndStop(
+                sprintf("Deleted $count shoppinglist entries. %s", var_export($lists, true)),
+                __('Could not get shoppinglist', 'peatcms')
+            );
             $row = null;
         }
 
