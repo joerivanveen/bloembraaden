@@ -84,7 +84,7 @@ class Base
         }
         // log the error
         if (false === error_log($error_message, 3, Setup::$LOGFILE)) {
-            $s = "$s (could not be logged)";
+            $s = "$s (not logged)";
         }
         // send to newrelic
         if (true === extension_loaded('newrelic')) {
@@ -92,8 +92,6 @@ class Base
         }
         if (Help::$LOGGER instanceof LoggerInterface) {
             Help::$LOGGER->log($s);
-        } elseif (ob_get_length()) { // false or 0 when there's no content in it, but when there is you cannot send header
-            die($s);
         } else {
             // send error header
             if (false === headers_sent()) {
@@ -101,6 +99,9 @@ class Base
                 header("$protocol 500 Bloembraaden Fatal Error", true, 500);
             }
             if (true === Help::$OUTPUT_JSON) {
+                if (headers_sent()) {
+                    echo "#BLOEMBRAADEN_JSON:#\n";
+                }
                 Help::addMessage($s, 'error');
                 echo '{ "__messages__": ', json_encode(Help::getMessages()), ' }';
             } else {
