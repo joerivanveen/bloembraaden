@@ -3145,4 +3145,4 @@ DROP TABLE IF EXISTS "public"."_instagram_media";
 ALTER TABLE "public"."_instance"
     ADD COLUMN if not exists "homepage_slug" Character Varying(127);
 
-END;
+COMMIT;
