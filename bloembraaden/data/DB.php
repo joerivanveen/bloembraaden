@@ -2588,7 +2588,7 @@ class DB extends Base
         } else {
             // build informative error message, what is going on here?
             $lists = array();
-            foreach ($rows as $index=>$row) {
+            foreach ($rows as $index => $row) {
                 $items = $this->fetchShoppingListRows($row->shoppinglist_id);
                 if (0 < ($count = count($items))) {
                     $lists[var_export($row, true)] = "$count items";
@@ -3777,12 +3777,15 @@ class DB extends Base
 
     public function querySitemap(int $instance_id): \PDOStatement
     {
+        $skip = array('image', 'file', 'menu', 'comment'); //todo make user configurable
         ob_start();
-        foreach ($this->getTablesWithSlugs() as $index=>$row) {
+        foreach ($this->getTablesWithSlugs() as $index => $row) {
+            if (true === in_array(str_replace('cms_', '', $row->table_name), $skip)) continue;
             echo "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND instance_id = :instance_id\n";
             echo "UNION ALL\n";
         }
         echo "SELECT slug, since AS date_updated FROM _cache WHERE slug LIKE '%/%' AND instance_id = :instance_id";
+        echo ' AND type_name NOT IN(\'', implode('\', \'', $skip), '\');';
         $statement = $this->conn->prepare(ob_get_clean());
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
