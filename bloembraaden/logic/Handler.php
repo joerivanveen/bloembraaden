@@ -1398,7 +1398,7 @@ class Handler extends BaseLogic
                 } elseif ('admin_database_report' === $action) {
                     $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
                     $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
-                    $out['__rows__'][] = array('key' => 'opcache', 'value' => json_encode($opcache));
+                    $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
                     $out['slug'] = 'admin_database_report';
                 }
             } elseif ('reflect' === $action) {

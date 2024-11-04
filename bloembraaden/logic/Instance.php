@@ -107,15 +107,6 @@ class Instance extends BaseLogic
         Help::prepareAdminRowForOutput($this->row, 'instance', $this->getDomain());
     }
 
-    public function getMenus(): array
-    {
-        if (false === isset($this->menus)) {
-            $this->menus = Help::getDB()->fetchInstanceMenus($this->getId());
-        }
-
-        return $this->menus;
-    }
-
     /**
      * @return PaymentServiceProvider|null
      * @since 0.6.2
@@ -165,11 +156,11 @@ class Instance extends BaseLogic
     private function load(string $domain): void
     {
         // load the instance based on the supplied host
-        if (!($this->row = Help::getDB()->fetchInstance($domain))) {
+        if (null === ($this->row = Help::getDB()->fetchInstance($domain))) {
             // try to find alternative hosts to provide a 301 redirect
             if (($canonical = Help::getDB()->fetchInstanceCanonicalDomain($domain))) {
                 // @since 0.7.1 also supply the originally requested uri...
-                header('Location: https://' . $canonical . urldecode($_SERVER['REQUEST_URI']), true, 301);
+                header("Location: https://$canonical" . urldecode($_SERVER['REQUEST_URI']), true, 301);
                 die();
             } else {
                 // @since 0.10.2 no more error reporting for these kinds of requests

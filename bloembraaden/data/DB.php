@@ -7,7 +7,7 @@ class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
-    private array $table_infos, $stale_slugs, $tables_with_slugs, $id_exists;
+    private array $cache_keys, $stale_slugs, $tables_with_slugs, $id_exists;
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
         '_ci_ai',
@@ -1117,6 +1117,7 @@ class DB extends Base
      * @param array|null $properties
      * @return array
      * @since 0.8.0
+     * @noinspection PhpTooManyParametersInspection
      */
     public function fetchElementRowsLinkedX(Type $peat_type, int $id, Type $linked_type, int $variant_page_size, int $variant_page, ?array $properties): array
     {
@@ -1170,6 +1171,7 @@ class DB extends Base
      * @param int $variant_page_size
      * @param int $variant_page
      * @return array
+     * @noinspection PhpTooManyParametersInspection
      */
     public function fetchElementRowsLinked(Type $peat_type, int $id, Type $linked_type, string $relation, int $variant_page_size, int $variant_page): array
     {
@@ -2195,6 +2197,7 @@ class DB extends Base
         return $success;
     }
 
+    /** @noinspection PhpTooManyParametersInspection */
     public function upsertLinked(Type $type, int $id, Type $sub_type, int $sub_id, bool $delete = false, int $order = 0): bool
     {
         $type_name = $type->typeName();
@@ -2312,12 +2315,20 @@ class DB extends Base
         return $count;
     }
 
-    public function fetchSessionsWithoutReverseDns()
+    /**
+     * @return array
+     */
+    public function fetchSessionsWithoutReverseDns(): array
     {
         $statement = $this->conn->prepare('SELECT token, ip_address FROM _session WHERE reverse_dns IS NULL');
         $statement->execute();
         $rows = $statement->fetchAll(5);
         $statement = null;
+
+        if (false === $rows) {
+            $this->addError('->fetchSessionsWithoutReverseDns returned false');
+            $rows = array();
+        }
 
         return $rows;
     }
@@ -2856,11 +2867,11 @@ class DB extends Base
             // TODO this goes wrong with multiple clients
             if ($this->rowExists('_instance', array('domain' => $domain, 'deleted' => false))) {
                 $this->addMessage(__(sprintf('Domain %s already taken', $domain), 'peatcms'));
-            } else {
-                if ($arr = $this->updateRowsWhereAndReturnKeys('_instance',
-                    array('deleted' => false),
-                    array('client_id' => $client_id, 'domain' => $domain),
-                )) return $arr[0];
+            } elseif ($arr = $this->updateRowsWhereAndReturnKeys('_instance',
+                array('deleted' => false),
+                array('client_id' => $client_id, 'domain' => $domain),
+            )) {
+                return $arr[0];
                 // for _instance table key and id are the same
             }
         } else {
@@ -3124,7 +3135,7 @@ class DB extends Base
 
     public function registerSessionAccess(string $token, string $ip_address = null): bool
     {
-        if (is_null($ip_address)) {
+        if (null === $ip_address) {
             $statement = $this->conn->prepare('UPDATE _session SET date_accessed = NOW() WHERE token = ?;');
             $statement->execute(array($token));
         } else {
@@ -3179,24 +3190,6 @@ class DB extends Base
 
             return null; // success... $var is gone now
         }
-    }
-
-    /**
-     * @param int $session_id
-     * @param array $vars
-     * @return int rows affected
-     * @since 0.5.12 new version uses the updateSessionVar method
-     */
-    public function updateSessionVars(int $session_id, array $vars): int
-    {
-        // $vars is an array holding name=>value pairs
-        foreach ($vars as $name => $var) {
-            // TODO have the session manage change for each var and update ONLY the changed vars using the singular function below
-            // upsert current vars
-            $this->updateSessionVar($session_id, $name, $var);
-        }
-
-        return 0; // unused anyway
     }
 
     /**
@@ -3269,21 +3262,21 @@ class DB extends Base
 
     private function getTablesWithSlugs(): array
     {
-        if (false === isset($this->tables_with_slugs)) {
+        return $this->withApplicationCaching('var.tables_with_slugs', function () {
             // get all tables that contain a slug column, except tables where slug is used as foreign key
             $statement = $this->conn->prepare("
-            SELECT t.table_name FROM information_schema.tables t
-            INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
-            WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name <> '_cache' AND t.table_name <> '_stale' AND t.table_name <> '_ci_ai'
-        ");
+                SELECT t.table_name FROM information_schema.tables t
+                INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
+                WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+                AND t.table_name <> '_cache' AND t.table_name <> '_stale' AND t.table_name <> '_ci_ai'
+            ");
             $statement->bindValue(':schema', $this->db_schema);
             $statement->execute();
-            $this->tables_with_slugs = $statement->fetchAll(5);
+            $tables = $statement->fetchAll(5);
             $statement = null;
-        }
 
-        return $this->tables_with_slugs;
+            return $tables;
+        });
     }
 
     public function fetchTablesToExport(bool $include_user_data = false): array
@@ -3422,6 +3415,11 @@ class DB extends Base
         return $this->fetchRows($table_name, $columns, $where, true);
     }
 
+    /**
+     * @param string $table_name
+     * @param $key
+     * @return \stdClass|null
+     */
     public function selectRow(string $table_name, $key): ?\stdClass
     {
         $table_info = $this->getTableInfo($table_name); // fatal error is thrown when table_name is wrong
@@ -3529,6 +3527,12 @@ class DB extends Base
         }
     }
 
+    /**
+     * @param string $table_name
+     * @param array $col_val
+     * @param $key
+     * @return bool
+     */
     private function updateRowAndReturnSuccess(string $table_name, array $col_val, $key): bool
     {
         $table_info = $this->getTableInfo($table_name); // fatal error is thrown when table_name is wrong
@@ -3618,6 +3622,11 @@ class DB extends Base
         return $return_keys;
     }
 
+    /**
+     * @param string $table_name
+     * @param $key
+     * @return bool
+     */
     private function deleteRowAndReturnSuccess(string $table_name, $key): bool
     {
         $table_info = $this->getTableInfo($table_name); // throws fatal error when table_name is wrong
@@ -3643,6 +3652,12 @@ class DB extends Base
         return (1 === $row_count);
     }
 
+    /**
+     * @param $table_name
+     * @param array $where
+     * @param array $where_not
+     * @return int
+     */
     private function deleteRowWhereAndReturnAffected($table_name, array $where, array $where_not = array()): int
     {
         $table_info = $this->getTableInfo($table_name); // throws fatal error when table_name is wrong
@@ -3724,7 +3739,7 @@ class DB extends Base
     }
 
     /**
-     * This also caches the table info for the request TODO cache table info for the application
+     * This also caches the table info for the request
      *
      * @param string $table_name
      * @return TableInfo
@@ -3732,27 +3747,27 @@ class DB extends Base
      */
     public function getTableInfo(string $table_name): TableInfo
     {
-        if (false === isset($this->table_infos[$table_name])) {
-            $this->table_infos[$table_name] = $this->fetchTableInfo($table_name);
-        }
-
-        return $this->table_infos[$table_name];
+        return $this->withApplicationCaching($table_name, function () use ($table_name) {
+            return $this->fetchTableInfo($table_name);
+        });
     }
 
     public function jobFetchCrossTables(): array
     {
-        // get all tables with _x_ in the name
-        $statement = $this->conn->prepare("
-            SELECT t.table_name FROM information_schema.tables t
-            WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-            AND t.table_name LIKE '%_x_%'
-        ");
-        $statement->bindValue(':schema', $this->db_schema);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
+        return $this->withApplicationCaching('var.cross_tables', function () {
+            // get all tables with _x_ in the name
+            $statement = $this->conn->prepare("
+                SELECT t.table_name FROM information_schema.tables t
+                WHERE t.table_schema = :schema AND t.table_type = 'BASE TABLE'
+                AND t.table_name LIKE '%_x_%'
+            ");
+            $statement->bindValue(':schema', $this->db_schema);
+            $statement->execute();
+            $rows = $statement->fetchAll(5);
+            $statement = null;
 
-        return $rows;
+            return $rows;
+        });
     }
 
     public function queryAllRows(string $table_name, array $columns = array('*'), ?int $instance_id = null): \PDOStatement
@@ -3816,16 +3831,6 @@ class DB extends Base
      */
     private function fetchTableInfo(string $table_name): TableInfo
     {
-        // @since 0.7.7 the contents is cached
-        $version = Setup::$VERSION;
-        $file_name = "$this->cache_folder$version.$table_name.serialized";
-        if (true === file_exists($file_name)) {
-            if (false !== ($obj = unserialize(file_get_contents($file_name)))) {
-                return $obj;
-            } else {
-                unlink($file_name);
-            }
-        }
         $statement = $this->conn->prepare('SELECT column_name AS name, data_type AS type, column_default AS default, 
             is_nullable AS nullable, character_octet_length / 4 AS length FROM information_schema.columns 
             WHERE table_schema = :schema_name AND table_name = :table_name;');
@@ -3844,8 +3849,6 @@ class DB extends Base
         if (0 < count($rows)) {
             $info->setPrimaryKeyColumn($rows[0][0]);
         }
-        // @since 0.7.7 cache the object if not already cached
-        if (false === file_exists($file_name)) file_put_contents($file_name, serialize($info), LOCK_EX);
 
         return $info;
     }
@@ -4603,5 +4606,51 @@ class DB extends Base
 
         // replace any pipe character that is not escaped (negative lookbehind for backslash)
         return preg_replace('/(?<!\\\\)\\|/', '', ob_get_clean());
+    }
+
+    /**
+     * Will cache the value returned by $callback using the $key
+     *  - for this request (= very fast when reused, no effect when not)
+     *  - for this version of Bloembraaden, using opcache, 4 x faster than file caching
+     * @param string $key
+     * @param callable $callback
+     * @return mixed the original value returned by $callback
+     */
+    private function withApplicationCaching(string $key, callable $callback): mixed
+    {
+        if (false === isset($this->cache_keys[$key])) {
+            $version_key = Setup::$VERSION . ".$key";
+            $val = $this->app_cache_get($version_key);
+            if (false === $val) {
+                $val = $callback();
+                $this->app_cache_set($version_key, $val);
+            }
+            $this->cache_keys[$key] = $val;
+        }
+        return $this->cache_keys[$key];
+    }
+
+    /**
+     * @param string $key
+     * @param $val
+     * @return void
+     */
+    private function app_cache_set(string $key, $val): void
+    {
+        $val = base64_encode(serialize($val));
+        // Write to temp file first to ensure atomicity
+        $tmp = "$this->cache_folder$key." . uniqid('', true) . '.tmp';
+        file_put_contents($tmp, "<?php \$val = unserialize(base64_decode('$val'));", LOCK_EX);
+        rename($tmp, "$this->cache_folder$key.serialized");
+    }
+
+    /**
+     * @param string $key
+     * @return mixed|false the original value put in cache for $key, or false when not yet cached
+     */
+    private function app_cache_get(string $key): mixed
+    {
+        @include "$this->cache_folder$key.serialized";
+        return $val ?? false;
     }
 }
