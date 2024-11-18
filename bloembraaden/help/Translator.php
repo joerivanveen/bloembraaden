@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 function __($text, $domain)
 {
     if (isset(\Bloembraaden\Setup::$translations[$text])) return \Bloembraaden\Setup::$translations[$text];
@@ -6,7 +8,6 @@ function __($text, $domain)
 }
 
 // https://stackoverflow.com/questions/1949162/how-could-i-parse-gettext-mo-files-in-php4-without-relying-on-setlocale-locales
-
 
 class MoParser
 {
@@ -16,9 +17,9 @@ class MoParser
     private function _readMOData($bytes)
     {
         if ($this->_bigEndian === false) {
-            return unpack('V' . $bytes, fread($this->_file, 4 * $bytes));
+            return unpack("V$bytes", fread($this->_file, 4 * $bytes));
         } else {
-            return unpack('N' . $bytes, fread($this->_file, 4 * $bytes));
+            return unpack("N$bytes", fread($this->_file, 4 * $bytes));
         }
     }
 

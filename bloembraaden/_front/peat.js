@@ -134,9 +134,11 @@ function Address_getEmptyFields() {
 
 function Address(wrapper) {
     let i, len;
-    const inputs = wrapper.querySelectorAll('input');
+    const inputs = wrapper.querySelectorAll('input'),
+        myparcel = wrapper.querySelector('[name="myparcel-suggest"]');
     this.wrapper = wrapper;
     this.inputs = inputs;
+    this.myparcel = null !== myparcel;
     this.postcode_nl_fields = {};
     for (i = 0, len = inputs.length; i < len; ++i) {
         this.enhanceInput(inputs[i]);
@@ -184,8 +186,8 @@ Address.prototype.enhanceWrapper = function () {
             }
             if ((reset = wrapper.querySelector('.paging.reset'))) {
                 reset.addEventListener('click', function () {
-                    let index = 0, fields = Address_getEmptyFields();
-                    wrapper.setAttribute('data-paging-index', index);
+                    const fields = Address_getEmptyFields();
+                    wrapper.setAttribute('data-paging-index', 0);
                     wrapper.Address.save(fields, true);
                     wrapper.Address.checkPostcodeFirst(null, fields);
                 });
@@ -193,21 +195,65 @@ Address.prototype.enhanceWrapper = function () {
         }
     }
 }
+Address.prototype.getCountryCode = function () {
+    console.warn(this);
+    const country = this.wrapper.querySelector('[data-field="country"]'),
+        option = country ? country.options[country.selectedIndex] : null;
+    if (option) return option.getAttribute('data-iso2');
+    return '';
+}
 Address.prototype.enhanceInput = function (input) {
     input.Address = this;
-    // throttle type action, and save address on the type action as well as check postcode.nl validity etc.
-    /*input.addEventListener('keyup', function () {
-        var self = this; // the input element
-        // throttle updating
-        clearTimeout(self.timeout);
-        self.timeout = setTimeout(function () {
-            self.Address.send(self);
-        }, 708);
-    });*/
-    // just do it on change for now, less stressful
-    input.addEventListener('change', function () {
-        this.Address.send(this);
+    input.addEventListener('click', function() {
+        console.warn('hallo klikkie');
     });
+    if (this.myparcel && 'myparcel-suggest' === input.getAttribute('name')) {
+        // throttle type action, find address using myparcel
+        input.insertAdjacentHTML('beforebegin', `<ul class="suggestions"></ul>`);
+        input.addEventListener('keyup', function (e) {
+            const self = this; // the input element
+            console.warn(e.key);
+            if (e.key) { // some handy key commands
+                switch (e.key.toLowerCase()) {
+                    case 'tab':
+                    case 'enter': // choose current value
+                        break;
+                }
+            }
+            if (this.getAttribute('data-value') === this.value) {
+                return; // don’t do anything for unchanged values
+            }
+            this.setAttribute('data-value', this.value);
+            // throttle updating
+            clearTimeout(self.timeout);
+            self.timeout = setTimeout(function () {
+                NAV.ajax('/__action__/addresses', {
+                    country_code: self.Address.getCountryCode(),
+                    query: self.value,
+                }, function (json) {
+                    const list = self.parentElement.querySelector('.suggestions');
+                    if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
+                        const ul = document.createElement('ul');
+                        for (const i in json.suggestions) {
+                            const suggestion = json.suggestions[i],
+                                li = document.createElement('li');
+                            li.setAttribute('data-suggestion', JSON.stringify(suggestion));
+                            li.innerText = `${suggestion.street} ${suggestion.houseNumber}, ${suggestion.postalCode} ${suggestion.city}`;
+                            ul.appendChild(li);
+                            console.warn(suggestion);
+                        }
+                        list.innerHTML = ul.innerHTML;
+                    } else {
+                        list.innerHTML = '<li>(Nog) geen suggestie gevonden</li>';
+                    }
+                });
+            }, 505);
+        });
+    } else {
+        input.addEventListener('change', function () {
+            this.Address.send();
+        });
+    }
 }
 Address.prototype.enhanceCountryList = function () {
     const self = this, select_list = this.wrapper.querySelector('select[data-field=country]');
@@ -229,6 +275,11 @@ Address.prototype.enhanceLists = function () {
     }
 }
 Address.prototype.send = function (input) {
+    if (this.myparcel) {
+        this.save(this.getFields());
+        return;
+    }
+    // todo remove next lines including checkPostcodeFirst when MyParcel address endpoint is implemented
     const self = this;
     // send will save the address and also check postcode.nl if relevant
     self.checkPostcodeFirst(input, self.getFields(), function (input, fields) {

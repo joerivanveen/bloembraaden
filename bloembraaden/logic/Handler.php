@@ -534,7 +534,13 @@ class Handler extends BaseLogic
             } elseif ('countries' === $action) {
                 $out = array('__rows__' => Help::getDB()->getCountries());
                 $out['slug'] = 'countries';
-            } elseif ('postcode' === $action) { // TODO refactor completely but now I’m in a hurry
+            } elseif ('addresses' === $action) {
+                $country_code = substr($post_data->country_code, 0, 2);
+                $query = htmlspecialchars($post_data->query, ENT_QUOTES);
+                $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
+                $suggestions = $addresses->suggest($country_code, $query);
+                $out = array('success' => true, 'suggestions' => $suggestions);
+            } elseif ('postcode' === $action) { // Deprecated
                 // check here: https://api.postcode.nl/documentation/nl/v1/Address/viewByPostcode
                 if (isset($post_data->postal_code) && isset($post_data->number)) {
                     $addition = $post_data->number_addition ?? null;

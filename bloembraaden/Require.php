@@ -54,6 +54,7 @@ require CORE . 'help/Setup.php'; // static class with settings and variables
 require CORE . 'help/Mailer.php';
 require CORE . 'help/Warmup.php';
 require CORE . 'help/Postcode.php';
+require CORE . 'help/Addresses.php';
 require CORE . 'help/Resolver.php';
 require CORE . 'help/Template.php';
 require CORE . 'help/Parser.php'; // markdown parser
