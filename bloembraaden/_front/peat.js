@@ -149,7 +149,6 @@ function Address(wrapper) {
 
 Address.prototype.enhanceWrapper = function () {
     let wrapper = this.wrapper, user_addresses, fields = this.getFields(), next, prev, reset;
-    wrapper.setAttribute('data-paging', '0');
     // a wrapper that is not an individual user address can page through user addresses, if available
     // so the user can select a shipping_ and billing_ address easily
     // so, for it to work you need paging buttons, no address_id field, and at least one user address
@@ -204,19 +203,62 @@ Address.prototype.getCountryCode = function () {
 }
 Address.prototype.enhanceInput = function (input) {
     input.Address = this;
-    input.addEventListener('click', function() {
-        console.warn('hallo klikkie');
-    });
     if (this.myparcel && 'myparcel-suggest' === input.getAttribute('name')) {
+        const hipster = input.closest('.hipster-input');
+        // manage suggestions list visibility
+        input.addEventListener('focus', function () {
+            hipster.classList.remove('done-suggesting');
+            if (this.value) {
+                this.Address.updateSuggestionsList(this);
+            }
+        });
+        document.addEventListener('click', function (e) {
+            const coords = {x: e.clientX, y: e.clientY};
+            // if the click is not inside this element, remove suggestions
+            if (false === pc_coords_in_rect(coords, hipster.getBoundingClientRect())) {
+                hipster.classList.add('done-suggesting');
+            }
+        });
+        // block submit / validate for search bar
+        input.addEventListener('keydown', function (e) {
+            switch (e.key.toLowerCase()) {
+                case 'enter': // choose current value when it exists
+                    e.preventDefault();
+                    e.stopPropagation();
+            }
+        });
         // throttle type action, find address using myparcel
-        input.insertAdjacentHTML('beforebegin', `<ul class="suggestions"></ul>`);
         input.addEventListener('keyup', function (e) {
-            const self = this; // the input element
-            console.warn(e.key);
+            const type = this.Address.wrapper.getAttribute('data-address_type') || 'shipping';
+            //hipster = self.closest('.hipster-input');
             if (e.key) { // some handy key commands
-                switch (e.key.toLowerCase()) {
+                const active_suggestion = hipster.querySelector('.suggestions .active'),
+                    key = e.key.toLowerCase();
+                if ('tab' !== key) { // apparently we are not done!
+                    hipster.classList.remove('done-suggesting');
+                }
+                switch (key) {
+                    case 'enter': // choose current value when it exists
                     case 'tab':
-                    case 'enter': // choose current value
+                        if (active_suggestion && active_suggestion.hasAttribute('data-suggestion')) {
+                            this.Address.set(JSON.parse(active_suggestion.getAttribute('data-suggestion')), type);
+                        }
+                        break;
+                    case 'arrowdown': // activate next value, if any
+                        if (active_suggestion && active_suggestion.nextElementSibling) {
+                            active_suggestion.classList.remove('active');
+                            active_suggestion.nextElementSibling.classList.add('active');
+                        }
+                        if (!active_suggestion) {
+                            const first = hipster.querySelector('[data-suggestion]');
+                            if (first) first.classList.add('active');
+                        }
+                        break;
+                    case 'arrowup': // activate previous value, if any
+                        if (active_suggestion && active_suggestion.previousElementSibling) {
+                            active_suggestion.classList.remove('active');
+                            active_suggestion.previousElementSibling.classList.add('active');
+                        }
                         break;
                 }
             }
@@ -224,30 +266,7 @@ Address.prototype.enhanceInput = function (input) {
                 return; // don’t do anything for unchanged values
             }
             this.setAttribute('data-value', this.value);
-            // throttle updating
-            clearTimeout(self.timeout);
-            self.timeout = setTimeout(function () {
-                NAV.ajax('/__action__/addresses', {
-                    country_code: self.Address.getCountryCode(),
-                    query: self.value,
-                }, function (json) {
-                    const list = self.parentElement.querySelector('.suggestions');
-                    if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
-                        const ul = document.createElement('ul');
-                        for (const i in json.suggestions) {
-                            const suggestion = json.suggestions[i],
-                                li = document.createElement('li');
-                            li.setAttribute('data-suggestion', JSON.stringify(suggestion));
-                            li.innerText = `${suggestion.street} ${suggestion.houseNumber}, ${suggestion.postalCode} ${suggestion.city}`;
-                            ul.appendChild(li);
-                            console.warn(suggestion);
-                        }
-                        list.innerHTML = ul.innerHTML;
-                    } else {
-                        list.innerHTML = '<li>(Nog) geen suggestie gevonden</li>';
-                    }
-                });
-            }, 505);
+            this.Address.updateSuggestionsList(this);
         });
     } else {
         input.addEventListener('change', function () {
@@ -255,13 +274,54 @@ Address.prototype.enhanceInput = function (input) {
         });
     }
 }
-Address.prototype.enhanceCountryList = function () {
-    const self = this, select_list = this.wrapper.querySelector('select[data-field=country]');
-    if (select_list) {
-        select_list.addEventListener('change', function () {
-            self.send(this);
+Address.prototype.updateSuggestionsList = function (input) {
+    const hipster = input.closest('.hipster-input'),
+        type = this.wrapper.getAttribute('data-address_type');
+    // throttle updating
+    clearTimeout(input.timeout);
+    input.timeout = setTimeout(function () {
+        NAV.ajax('/__action__/addresses', {
+            country_code: input.Address.getCountryCode(),
+            query: input.value,
+        }, function (json) {
+            const list = hipster.querySelector('.suggestions');
+            if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
+                const ul = document.createElement('ul');
+                ul.classList.add('suggestions');
+                for (const i in json.suggestions) {
+                    const suggestion = json.suggestions[i],
+                        number = suggestion.houseNumber,
+                        part_1 = parseInt(number).toString(), // check for true numbers or whether the addition is included
+                        adapted = {
+                            postal_code: suggestion.postalCode,
+                            number: number,
+                            number_addition: suggestion.houseNumberAddition || '', // not present for now
+                            street: suggestion.street,
+                            city: suggestion.city,
+                        },
+                        li = document.createElement('li');
+                    adapted.street = PEATCMS.replace("'", '’', adapted.street);
+                    if (part_1 !== number) {
+                        const part_2 = number.substring(part_1.length);
+                        adapted.number = part_1;
+                        adapted.number_addition = (`${part_2} ${adapted.number_addition}`).trim();
+                    }
+                    li.setAttribute('data-suggestion', JSON.stringify(adapted));
+                    li.innerText = `${adapted.street} ${number}, ${adapted.postal_code} ${adapted.city}`;
+                    li.addEventListener('mouseup', function (e) {
+                        input.Address.set(adapted, type);
+                    });
+                    ul.appendChild(li);
+                    console.warn(`joeri ${type}`, li, suggestion, adapted);
+                }
+                hipster.insertAdjacentElement('beforeend', ul);
+            } else {
+                const text = __('No suggestions found');
+                hipster.insertAdjacentHTML('beforeend', `<ul class="suggestions"><li>${text}</li></ul>`);
+            }
+            if (list) list.remove();
         });
-    }
+    }, 505);
 }
 Address.prototype.enhanceLists = function () {
     const self = this, select_lists = this.wrapper.querySelectorAll('select');
@@ -269,13 +329,37 @@ Address.prototype.enhanceLists = function () {
     if (select_lists) {
         for (i = 0, len = select_lists.length; i < len; ++i) {
             select_lists[i].addEventListener('change', function () {
-                self.send(this);
+                if (this.hasAttribute('data-field') && 'country' === this.getAttribute('data-field')) {
+                    const type = self.wrapper.getAttribute('data-address_type');
+                    // changing the country invalidates the rest of the address obviously
+                    self.set({
+                        street: '',
+                        number: '',
+                        number_addition: '',
+                        postal_code: '',
+                        city: '',
+                    }, type);
+                } else {
+                    self.send(this);
+                }
             });
         }
     }
 }
+Address.prototype.set = function (values, type) {
+    for (const key in values) {
+        const input = document.getElementById(`address_${key}_${type}`)
+        if (!input) {
+            console.error(`Setting Address, input with id address_${key}_${type} does not exist`);
+        }
+        input.value = values[key];
+    }
+    this.send(); // save it as well
+}
 Address.prototype.send = function (input) {
     if (this.myparcel) {
+        const myparcel_suggestions = document.querySelector('.myparcel_suggest .suggestions');
+        if (myparcel_suggestions) myparcel_suggestions.remove();
         this.save(this.getFields());
         return;
     }
@@ -307,6 +391,7 @@ Address.prototype.getFields = function () {
     var i, len, input, inputs = this.inputs, input_name, fields = {}, select_list, option;
     for (i = 0, len = inputs.length; i < len; ++i) {
         input = inputs[i];
+        if ('search' === input.type) continue; // no need to remember suggest search box
         // NOTE the fields’ names must be neutral, so remove shipping or billing prefix from the input names in the form
         input_name = input.name.replace('shipping_', '').replace('billing_', '');
         fields[input_name] = input.value;
