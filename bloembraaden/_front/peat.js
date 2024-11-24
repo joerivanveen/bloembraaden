@@ -195,7 +195,6 @@ Address.prototype.enhanceWrapper = function () {
     }
 }
 Address.prototype.getCountryCode = function () {
-    console.warn(this);
     const country = this.wrapper.querySelector('[data-field="country"]'),
         option = country ? country.options[country.selectedIndex] : null;
     if (option) return option.getAttribute('data-iso2');
@@ -329,7 +328,7 @@ Address.prototype.enhanceLists = function () {
     if (select_lists) {
         for (i = 0, len = select_lists.length; i < len; ++i) {
             select_lists[i].addEventListener('change', function () {
-                if (this.hasAttribute('data-field') && 'country' === this.getAttribute('data-field')) {
+                if ('shipping_country_id' === this.getAttribute('name')) {
                     const type = self.wrapper.getAttribute('data-address_type');
                     // changing the country invalidates the rest of the address obviously
                     self.set({
@@ -363,7 +362,7 @@ Address.prototype.send = function (input) {
         this.save(this.getFields());
         return;
     }
-    // todo remove next lines including checkPostcodeFirst when MyParcel address endpoint is implemented
+    // todo implement address validation using MyParcel in lieu of checkPostcodeFirst
     const self = this;
     // send will save the address and also check postcode.nl if relevant
     self.checkPostcodeFirst(input, self.getFields(), function (input, fields) {
@@ -509,7 +508,11 @@ Address.prototype.updateClientCountryList = function (fields) {
 }
 Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
     let addition, number, postal_code, prev = this.postcode_nl_fields, el, self = this;
-    if (fields.hasOwnProperty('address_postal_code') && fields.hasOwnProperty('address_number')) {
+    if (fields.hasOwnProperty('address_country_iso2')
+        && 'NL' === fields.address_country_iso2
+        && fields.hasOwnProperty('address_postal_code')
+        && fields.hasOwnProperty('address_number')
+    ) {
         addition = fields.hasOwnProperty('address_number_addition') ? fields['address_number_addition'] : null;
         number = fields['address_number'];
         postal_code = fields['address_postal_code'];
@@ -544,8 +547,8 @@ Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
             timestamp: this.timestamp
         }, function (json) {
             let postcode_suggestion,
-                el = document.getElementById('shipping_address_not_recognized')
-                    || self.wrapper.querySelector('.error')
+                el = self.wrapper.querySelector('.error')
+                    || document.getElementById('shipping_address_not_recognized')
                     || null;
             //console.warn(self.timestamp +' === '+ json['timestamp']);
             if (self.timestamp !== json['timestamp']) return;
