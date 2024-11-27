@@ -25,9 +25,61 @@ class Addresses extends Base
             'query' => $query, // todo or use postcode + housenumber
         );
 
+        list($result, $error, $status_code) = $this->get(self::SUGGESTION_ENDPOINT, $params);
+
+        if ($error) {
+            $this->addError($error);
+        } elseif (400 < $status_code) {
+            $this->addError("MyParcel addresses returned status $status_code / $result");
+        } else {
+            $return_object = json_decode($result);
+            if (0 === json_last_error() && isset($return_object->results)) {
+                return $return_object->results;
+            } else {
+                $this->addError("Did not understand MyParcel addresses response $result");
+            }
+        }
+
+        return array();
+    }
+
+    public function validate(string $country_code, string $postal_code, string $house_number, string $street, string $city): ?bool
+    {
+        $params = array(
+            'countryCode' => $country_code, // required
+            'postalCode' => $postal_code, // required
+            'houseNumber' => $house_number,
+            'street' => $street,
+            'city' => $city,
+        );
+
+        // do not validate when items are missing
+        if (array_filter($params, function($item) { return '' === trim($item); })) {
+            return null;
+        }
+
+        list($result, $error, $status_code) = $this->get(self::VALIDATION_ENDPOINT, $params);
+
+        if ($error) {
+            $this->addError($error);
+        } elseif (400 < $status_code) {
+            $this->addError("MyParcel addresses returned status $status_code / $result");
+        } else {
+            $return_object = json_decode($result);
+            if (0 === json_last_error() && isset($return_object->valid)) {
+                return $return_object->valid;
+            }
+        }
+
+        return null; // we don’t know
+    }
+
+    private function get(string $endpoint, array $params): array
+    {
         $curl = curl_init();
+        $query = http_build_query($params);
         curl_setopt_array($curl, array(
-            CURLOPT_URL => self::SUGGESTION_ENDPOINT . '?' . http_build_query($params),
+            CURLOPT_URL => "$endpoint?$query",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -42,22 +94,10 @@ class Addresses extends Base
             ),
         ));
         $result = curl_exec($curl);
-        $err = curl_error($curl);
-        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);   //get status code
+        $error = curl_error($curl);
+        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
         curl_close($curl);
-        if ($err) {
-            $this->addError($err);
-        } elseif (400 < $status_code) {
-            $this->addError("MyParcel addresses returned status $status_code / $result");
-        } else {
-            $return_object = json_decode($result);
-            if (0 === json_last_error() && isset($return_object->results)) {
-                return $return_object->results;
-            } else {
-                $this->addError("Did not understand MyParcel addresses response $result");
-            }
-        }
 
-        return array();
+        return array($result, $error, $status_code);
     }
 }

@@ -167,7 +167,6 @@ Address.prototype.enhanceWrapper = function () {
                     }
                     wrapper.setAttribute('data-paging-index', index);
                     wrapper.Address.save(fields, true);
-                    wrapper.Address.checkPostcodeFirst(null, fields);
                 });
             }
             if ((prev = wrapper.querySelector('.paging.prev'))) {
@@ -180,7 +179,6 @@ Address.prototype.enhanceWrapper = function () {
                     }
                     wrapper.setAttribute('data-paging-index', index);
                     wrapper.Address.save(fields, true);
-                    wrapper.Address.checkPostcodeFirst(null, fields);
                 });
             }
             if ((reset = wrapper.querySelector('.paging.reset'))) {
@@ -188,7 +186,6 @@ Address.prototype.enhanceWrapper = function () {
                     const fields = Address_getEmptyFields();
                     wrapper.setAttribute('data-paging-index', 0);
                     wrapper.Address.save(fields, true);
-                    wrapper.Address.checkPostcodeFirst(null, fields);
                 });
             }
         }
@@ -279,8 +276,8 @@ Address.prototype.updateSuggestionsList = function (input) {
     // throttle updating
     clearTimeout(input.timeout);
     input.timeout = setTimeout(function () {
-        NAV.ajax('/__action__/addresses', {
-            country_code: input.Address.getCountryCode(),
+        NAV.ajax('/__action__/suggest_address', {
+            address_country_iso2: input.Address.getCountryCode(),
             query: input.value,
         }, function (json) {
             const list = hipster.querySelector('.suggestions');
@@ -320,7 +317,7 @@ Address.prototype.updateSuggestionsList = function (input) {
             }
             if (list) list.remove();
         });
-    }, 505);
+    }, 323);
 }
 Address.prototype.enhanceLists = function () {
     const self = this, select_lists = this.wrapper.querySelectorAll('select');
@@ -355,19 +352,12 @@ Address.prototype.set = function (values, type) {
     }
     this.send(); // save it as well
 }
-Address.prototype.send = function (input) {
+Address.prototype.send = function () {
     if (this.myparcel) {
         const myparcel_suggestions = document.querySelector('.myparcel_suggest .suggestions');
         if (myparcel_suggestions) myparcel_suggestions.remove();
-        this.save(this.getFields());
-        return;
     }
-    // todo implement address validation using MyParcel in lieu of checkPostcodeFirst
-    const self = this;
-    // send will save the address and also check postcode.nl if relevant
-    self.checkPostcodeFirst(input, self.getFields(), function (input, fields) {
-        self.save(fields);
-    });
+    this.save(this.getFields());
 }
 Address.prototype.save = function (fields, in_session_only) {
     const self = this, wrapper = self.wrapper;
@@ -385,6 +375,22 @@ Address.prototype.save = function (fields, in_session_only) {
             wrapper.removeAttribute('data-updating');
         });
     }
+    // @since 0.23.0 also check the address if possible
+    NAV.ajax('/__action__/validate_address', fields, function (json) {
+        console.warn(json);
+        const el = wrapper.querySelector('.error')
+            || document.getElementById('shipping_address_not_recognized')
+            || null;
+        // show unconfirmed message if applicable
+        if (el) {
+            if (json.hasOwnProperty('valid') && false === json.valid) {
+                el.innerHTML = el.getAttribute('data-message');
+                el.style.opacity = '1';
+            } else {
+                el.style.opacity = '0';
+            }
+        }
+    });
 }
 Address.prototype.getFields = function () {
     var i, len, input, inputs = this.inputs, input_name, fields = {}, select_list, option;

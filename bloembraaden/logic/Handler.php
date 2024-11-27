@@ -534,12 +534,31 @@ class Handler extends BaseLogic
             } elseif ('countries' === $action) {
                 $out = array('__rows__' => Help::getDB()->getCountries());
                 $out['slug'] = 'countries';
-            } elseif ('addresses' === $action) {
-                $country_code = substr($post_data->country_code, 0, 2);
+            } elseif ('suggest_address' === $action) {
+                $country_code = $post_data->address_country_iso2;
                 $query = htmlspecialchars($post_data->query, ENT_QUOTES);
                 $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
                 $suggestions = $addresses->suggest($country_code, $query);
                 $out = array('success' => true, 'suggestions' => $suggestions);
+            } elseif ('validate_address' === $action) {
+                if (isset($post_data->address_country_iso2,
+                    $post_data->address_postal_code,
+                    $post_data->address_street,
+                    $post_data->address_number,
+                    $post_data->address_city)
+                ) {
+                    $country_code = $post_data->address_country_iso2;
+                    $postal_code = $post_data->address_postal_code;
+                    $street = $post_data->address_street;
+                    $number = $post_data->address_number;
+                    $city = $post_data->address_city;
+                    $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
+                    $valid = $addresses->validate($country_code, $postal_code, $street, $number, $city);
+                    $out = array('success' => true, 'valid' => $valid);
+                } else {
+                    $this->addError('Cannot validate incomplete address');
+                    $out = array('success' => false);
+                }
             } elseif ('postcode' === $action) { // Deprecated
                 // check here: https://api.postcode.nl/documentation/nl/v1/Address/viewByPostcode
                 if (isset($post_data->postal_code) && isset($post_data->number)) {
