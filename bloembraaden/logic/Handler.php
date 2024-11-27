@@ -558,39 +558,8 @@ class Handler extends BaseLogic
                 } else {
                     $out = array('success' => false);
                 }
-            } elseif ('postcode' === $action) { // Deprecated
-                // check here: https://api.postcode.nl/documentation/nl/v1/Address/viewByPostcode
-                if (isset($post_data->postal_code) && isset($post_data->number)) {
-                    $addition = $post_data->number_addition ?? null;
-                    try {
-                        $Postcode = new \PostcodeNl_Api_RestClient(
-                            Setup::$POSTCODE->api_key,
-                            Setup::$POSTCODE->secret,
-                            Setup::$POSTCODE->api_url
-                        );
-                        $response = $Postcode->lookupAddress($post_data->postal_code, $post_data->number, $addition);
-                        $out = array('response' => $response, 'success' => true);
-                    } catch (\Exception $e) { // it uses exceptions as a means of control
-                        $this->addError($e->getMessage());
-                        $error_type = '';
-                        if ($e instanceof \PostcodeNl_Api_RestClient_ClientException)
-                            $error_type = 'Client error';
-                        else if ($e instanceof \PostcodeNl_Api_RestClient_ServiceException)
-                            $error_type = 'Service error';
-                        else if ($e instanceof \PostcodeNl_Api_RestClient_AddressNotFoundException)
-                            $error_type = 'Address not found';
-                        else if ($e instanceof \PostcodeNl_Api_RestClient_InputInvalidException)
-                            $error_type = 'Input error';
-                        else if ($e instanceof \PostcodeNl_Api_RestClient_AuthenticationException)
-                            $error_type = 'Authentication error';
-                        //$this->addMessage($type, 'warn'); // todo not always like this make it more user friendly
-                        $this->addError($error_type); // silently ignore
-                        $out = array('success' => false, 'error_message' => $error_type);
-                    }
-                } else {
-                    $this->addMessage(__('Did not receive postal_code and number for address checking', 'peatcms'));
-                    $out = true;
-                }
+            } elseif ('postcode' === $action) {
+                $this->addError('postcode check is deprecated, use validate_address');
             } elseif ('order' === $action) {
                 if (true === Help::recaptchaVerify($instance, $post_data)) {
                     $post_data = $this->resolver->escape($post_data);
