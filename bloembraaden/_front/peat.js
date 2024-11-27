@@ -475,18 +475,18 @@ Address.prototype.updateClientCountryList = function (fields) {
     let select_list, options, option, i, len, wrapper = this.wrapper;
     if ((select_list = wrapper.querySelector('select[name="country"]'))
         || (select_list = wrapper.querySelector('select[name="billing_country"]'))) {
-        // the first option becomes the chosen one, with all 3 properties filled
-        if (select_list.options[0].hasAttribute('data-chosen')) {
-            option = select_list.options[0];
-        } else {
-            option = document.createElement('option');
-            select_list.insertAdjacentElement('afterbegin', option);
+        if ((option = select_list.querySelector(`[data-iso2="${fields['address_country_iso2']}"]`))) {
+            select_list.value = option.value;
+        } else { // country is not present in the select list yet
+            console.error('Country is missing from select list');
+            // option = document.createElement('option');
+            // option.setAttribute('data-iso2', fields['address_country_iso2']);
+            // option.setAttribute('data-iso3', fields['address_country_iso3']);
+            // option.value = fields['address_country_name'];
+            // option.innerText = fields['address_country_name'];
+            // select_list.insertAdjacentElement('afterbegin', option);
+            // select_list.selectedIndex = 0; // select the appropriate option
         }
-        option.setAttribute('data-iso2', fields['address_country_iso2']);
-        option.setAttribute('data-iso3', fields['address_country_iso3']);
-        option.value = fields['address_country_name'];
-        option.innerText = fields['address_country_name'];
-        select_list.selectedIndex = 0; // select the appropriate option
     } else { // this is a specific shipping country list where the values are id’s
         if ((select_list = wrapper.querySelector('select[name="shipping_country_id"]'))) {
             options = select_list.options;
