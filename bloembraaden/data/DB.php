@@ -2786,6 +2786,7 @@ class DB extends Base
 
     public function insertAdmin(string $email, string $hash, int $client_id, int $instance_id = 0): ?int
     {
+        $email = mb_strtolower($email);
         if ($this->rowExists('_admin', array('email' => $email))) { // already exists
             $this->addMessage(sprintf(__('Admin with email %s already exists.', 'peatcms'), $email));
         } else { // insert the admin
@@ -2803,6 +2804,7 @@ class DB extends Base
 
     public function insertUserAccount(string $email, string $hash): ?int
     {
+        $email = mb_strtolower($email);
         if ($this->rowExists('_user', array(
             'email' => $email,
             'is_account' => true,
@@ -2830,6 +2832,7 @@ class DB extends Base
      */
     public function updateUserPassword(string $email, string $hash): bool
     {
+        $email = mb_strtolower($email);
         $affected = $this->updateColumnsWhere('_user', array(
             'password_hash' => $hash,
         ), array(

@@ -121,10 +121,10 @@ class Session extends BaseLogic
         if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
             if (true === password_verify($pass, $row->hash)) {
                 if (false === $as_admin) {
-                    if ($this->user = new User($row->id)) {
+                    if (($this->user = new User($row->id))) {
                         return $this->refreshAfterLogin(array('user_id' => $row->id));
                     }
-                } elseif ($this->admin = new Admin($row->id)) {
+                } elseif (($this->admin = new Admin($row->id))) {
                     return $this->refreshAfterLogin(array('admin_id' => $row->id));
                 }
                 $this->addError("Email $email checks out in password_verify(), but no user is found.");
