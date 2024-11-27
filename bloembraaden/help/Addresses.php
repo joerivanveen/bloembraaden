@@ -54,7 +54,9 @@ class Addresses extends Base
         );
 
         // do not validate when items are missing
-        if (array_filter($params, function($item) { return '' === trim($item); })) {
+        if (array_filter($params, function ($item) {
+            return '' === trim($item);
+        })) {
             return null;
         }
 
@@ -76,6 +78,10 @@ class Addresses extends Base
 
     private function get(string $endpoint, array $params): array
     {
+        if ('' === trim($this->api_key)) {
+            return array('', 'No api key', 403);
+        }
+
         $curl = curl_init();
         $query = http_build_query($params);
         curl_setopt_array($curl, array(

@@ -308,7 +308,7 @@ Address.prototype.updateSuggestionsList = function (input) {
                         input.Address.set(adapted, type);
                     });
                     ul.appendChild(li);
-                    console.warn(`joeri ${type}`, li, suggestion, adapted);
+                    //console.warn(`joeri ${type}`, li, suggestion, adapted);
                 }
                 hipster.insertAdjacentElement('beforeend', ul);
             } else {
@@ -377,7 +377,6 @@ Address.prototype.save = function (fields, in_session_only) {
     }
     // @since 0.23.0 also check the address if possible
     NAV.ajax('/__action__/validate_address', fields, function (json) {
-        console.warn(json);
         const el = wrapper.querySelector('.error')
             || document.getElementById('shipping_address_not_recognized')
             || null;
@@ -511,87 +510,6 @@ Address.prototype.updateClientCountryList = function (fields) {
             }
         }
     }
-}
-Address.prototype.checkPostcodeFirst = function (input, fields, callback) {
-    let addition, number, postal_code, prev = this.postcode_nl_fields, el, self = this;
-    if (fields.hasOwnProperty('address_country_iso2')
-        && 'NL' === fields.address_country_iso2
-        && fields.hasOwnProperty('address_postal_code')
-        && fields.hasOwnProperty('address_number')
-    ) {
-        addition = fields.hasOwnProperty('address_number_addition') ? fields['address_number_addition'] : null;
-        number = fields['address_number'];
-        postal_code = fields['address_postal_code'];
-        // if the following conditions are met just send it to the callback without checking postcode.nl
-        if ( // check if the postal_code and number are halfway decent
-            (false === PEATCMS.isInt(number) || PEATCMS.replace(' ', '', postal_code).length !== 6)
-            // do not request if the info has not changed
-            || JSON.stringify(prev) === JSON.stringify(fields)
-            /*|| ((prev.hasOwnProperty('postal_code') && postal_code === prev.postal_code)
-            && (prev.hasOwnProperty('number') && number === prev.number))*/
-        ) {
-            if (typeof callback === 'function') callback(input, fields);
-            return;
-        }
-        // in the case of collect, also don’t bother
-        if ((el = document.getElementById('shipping_address_collect')) && el.checked === true) {
-            if ((el = document.getElementById('shipping_address_not_recognized'))) {
-                el.innerHTML = '';
-                el.style.opacity = 0;
-            }
-            if (typeof callback === 'function') callback(input, fields);
-            return;
-        }
-        // cache the current values
-        this.postcode_nl_fields = fields;
-        // ok inquire chez postcode.nl
-        this.timestamp = Date.now();
-        NAV.ajax('/__action__/postcode', {
-            postal_code: postal_code,
-            number: number,
-            number_addition: addition,
-            timestamp: this.timestamp
-        }, function (json) {
-            let postcode_suggestion,
-                el = self.wrapper.querySelector('.error')
-                    || document.getElementById('shipping_address_not_recognized')
-                    || null;
-            //console.warn(self.timestamp +' === '+ json['timestamp']);
-            if (self.timestamp !== json['timestamp']) return;
-            if (VERBOSE) console.log(json);
-            // if we receive a whole address, update the inputs
-            if (json.success) {
-                postcode_suggestion = json.response;
-                // normalize to our own naming convention
-                fields.address_street = postcode_suggestion.streetNen;
-                fields.address_number = postcode_suggestion.houseNumber;
-                fields.address_number_addition = postcode_suggestion.houseNumberAddition || addition || '';
-                fields.address_postal_code = postcode_suggestion.postcode;
-                fields.address_city = postcode_suggestion.cityShort;
-                fields.address_country_iso2 = 'NL';
-                fields.address_country_iso3 = 'NLD';
-                fields.address_country_name = 'Nederland';
-                if (el) {
-                    el.innerHTML = '';
-                    el.style.opacity = '0';
-                }
-            } else { // show unconfirmed message if applicable
-                if (json.hasOwnProperty('error_message')) {
-                    if ('Address not found' === json.error_message) {
-                        if (el) {
-                            el.innerHTML = el.getAttribute('data-message');
-                            el.style.opacity = '1';
-                        }
-                    } else {
-                        console.error('Postcode.nl error:', json.error_message);
-                    }
-                }
-            }
-            if (typeof callback === 'function') callback(input, fields);
-        });
-        return;
-    }
-    if (typeof callback === 'function') callback(input, fields);
 }
 
 /**

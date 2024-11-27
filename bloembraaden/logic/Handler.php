@@ -553,10 +553,9 @@ class Handler extends BaseLogic
                     $number = $post_data->address_number;
                     $city = $post_data->address_city;
                     $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
-                    $valid = $addresses->validate($country_code, $postal_code, $street, $number, $city);
+                    $valid = $addresses->validate($country_code, $postal_code, $number, $street, $city);
                     $out = array('success' => true, 'valid' => $valid);
                 } else {
-                    $this->addError('Cannot validate incomplete address');
                     $out = array('success' => false);
                 }
             } elseif ('postcode' === $action) { // Deprecated
