@@ -1478,8 +1478,7 @@ class DB extends Base
     public function placeOrder(Shoppinglist $shoppinglist, Session $session, array $vars): ?string
     {
         // we need specific vars for the ordering process, validation process has run, if something misses you should throw an error
-        //count($order_rows = $this->fetchShoppingListRows($shoppinglist_id)) > 0
-        if (count($order_rows = $shoppinglist->getRows()) > 0) {
+        if (count(($order_rows = $shoppinglist->getRows())) > 0) {
             // TODO we need the session_id and the user_id (if exists) from that session as well...
             if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
@@ -1520,9 +1519,9 @@ class DB extends Base
                 'session_id' => $session->getId(),
                 'user_id' => (($user = $session->getUser()) ? $user->getId() : 0),
                 // you need float for humans here to prevent rounding errors, but I think there is more to it than that
-                'amount_grand_total' => intval(100 * (float)Help::floatForHumans($amount_grand_total)),
-                'amount_row_total' => intval(100 * (float)Help::floatForHumans($amount_row_total)),
-                'shipping_costs' => intval(100 * (float)Help::floatForHumans($shipping_costs)),
+                'amount_grand_total' => (int)(100 * (float)Help::floatForHumans($amount_grand_total)),
+                'amount_row_total' => (int)(100 * (float)Help::floatForHumans($amount_row_total)),
+                'shipping_costs' => (int)(100 * (float)Help::floatForHumans($shipping_costs)),
                 'user_gender' => $vars['gender'] ?? '',
                 'user_email' => $vars['email'],
                 'user_phone' => $vars['phone'] ?? '',
@@ -1531,7 +1530,50 @@ class DB extends Base
                 'shipping_address_country_iso3' => $country->iso3,
                 'order_number' => $order_number,
             );
-            $order_fields = array_merge($vars, $order_fields); // last array overwrites first if the keys are the same
+            // loop through the other fields we are going to insert
+            foreach (array(
+                         'billing_address_name',
+                         'billing_address_company',
+                         'billing_address_postal_code',
+                         'billing_address_number',
+                         'billing_address_number_addition',
+                         'billing_address_street',
+                         'billing_address_street_addition',
+                         'billing_address_city',
+                         'billing_address_country_name',
+                         'billing_address_country_iso2',
+                         'billing_address_country_iso3',
+                         'shipping_address_name',
+                         'shipping_address_company',
+                         'shipping_address_postal_code',
+                         'shipping_address_number',
+                         'shipping_address_number_addition',
+                         'shipping_address_street',
+                         'shipping_address_street_addition',
+                         'shipping_address_city',
+                         'newsletter_subscribe',
+                         'preferred_delivery_day',
+                         'remarks_user',
+                     ) as $index => $key)
+            {
+                $value = $vars[$key] ?? '';
+                switch ($key) {
+                    case 'remarks_user':
+                        break;
+                    case 'newsletter_subscribe':
+                        $value = (bool) $value;
+                        break;
+                    case 'billing_address_country_iso2':
+                        $value = substr($value, 0, 2);
+                        break;
+                    case 'billing_address_country_iso3':
+                        $value = substr($value, 0, 3);
+                        break;
+                    default:
+                        $value = substr($value, 0, 127);
+                }
+                $order_fields[$key] = $value;
+            }
             try {
                 $this->conn->beginTransaction();
                 if (null === ($order_id = $this->insertRowAndReturnLastId('_order', $order_fields))) {
