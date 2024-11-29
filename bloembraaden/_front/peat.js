@@ -272,14 +272,22 @@ Address.prototype.enhanceInput = function (input) {
 }
 Address.prototype.updateSuggestionsList = function (input) {
     const hipster = input.closest('.hipster-input'),
-        type = this.wrapper.getAttribute('data-address_type');
+        type = this.wrapper.getAttribute('data-address_type'),
+        self = this;
     // throttle updating
     clearTimeout(input.timeout);
     input.timeout = setTimeout(function () {
+        const timestamp = Date.now();
+        self.bloembraaden_suggest_timestamp = timestamp;
         NAV.ajax('/__action__/suggest_address', {
             address_country_iso2: input.Address.getCountryCode(),
             query: input.value,
+            timestamp: timestamp,
         }, function (json) {
+            if (json.timestamp < self.bloembraaden_suggest_timestamp) {
+                console.warn('Suggest address result stale');
+                return;
+            }
             const list = hipster.querySelector('.suggestions');
             if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
                 const ul = document.createElement('ul');
@@ -360,7 +368,7 @@ Address.prototype.send = function () {
     this.save(this.getFields());
 }
 Address.prototype.save = function (fields, in_session_only) {
-    const self = this, wrapper = self.wrapper;
+    const self = this, wrapper = self.wrapper, timestamp = Date.now();
     wrapper.setAttribute('data-updating', '1');
     if (fields.hasOwnProperty('address_id') && !in_session_only) {
         NAV.submitData('/__action__/update_address', fields, function (json) {
@@ -376,7 +384,12 @@ Address.prototype.save = function (fields, in_session_only) {
         });
     }
     // @since 0.23.0 also check the address if possible
+    self.bloembraaden_validate_timestamp = fields.timestamp = timestamp;
     NAV.ajax('/__action__/validate_address', fields, function (json) {
+        if (json.timestamp < self.bloembraaden_validate_timestamp) {
+            console.warn('Validate address result stale');
+            return;
+        }
         const el = wrapper.querySelector('.error')
             || document.getElementById('shipping_address_not_recognized')
             || null;
