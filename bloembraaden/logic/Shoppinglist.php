@@ -13,14 +13,24 @@ class Shoppinglist extends BaseLogic
         parent::__construct();
         $this->name = $name;
         $this->type_name = 'shoppinglist';
-        // get the list from db
-        $this->row = Help::getDB()->fetchShoppingList(
-            $name,
-            Help::$session->getId(),
-            (null === ($user = Help::$session->getUser())) ? 0 : $user->getId()
-        );
+        // @since 0.7.9 get shoppinglist either by session or by user
+        $session = Help::$session;
+        $user = $session->getUser();
+        if (null === $user) {
+            $this->row = Help::getDB()->fetchShoppingList(
+                $name,
+                $session->getId(),
+                0
+            );
+        } else {
+            $this->row = Help::getDB()->fetchShoppingList(
+                $name,
+                0,
+                $user->getId()
+            );
+        }
         $this->rows = Help::getDB()->fetchShoppingListRows($this->getId());
-        // remember the state so you can update the db on __shutdown
+        // remember the state, so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
         register_shutdown_function(array($this, '__shutdown'));
     }

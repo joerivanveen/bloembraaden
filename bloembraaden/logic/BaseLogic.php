@@ -26,20 +26,11 @@ class BaseLogic extends Base
         } else {
             $this->row = $row;
             if (isset($row->type_name)) $this->type_name = (string)$row->type_name;
-//            if (isset($row->template_pointer)) {
-//                $this->template_pointer = $row->template_pointer;
-//            } elseif (isset($row->template_name)) {
-//                $this->template_pointer = (object)(array(
-//                    'name' => $row->template_name,
-//                    'admin' => false, // admin defaults to false always
-//                ));
-//            }
         }
     }
 
     public function __destruct()
     {
-        parent::__destruct();
         $this->row = null;
     }
 

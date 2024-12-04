@@ -1554,14 +1554,13 @@ class DB extends Base
                          'newsletter_subscribe',
                          'preferred_delivery_day',
                          'remarks_user',
-                     ) as $index => $key)
-            {
+                     ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
                     case 'remarks_user':
                         break;
                     case 'newsletter_subscribe':
-                        $value = (bool) $value;
+                        $value = (bool)$value;
                         break;
                     case 'billing_address_country_iso2':
                         $value = substr($value, 0, 2);
@@ -2619,9 +2618,8 @@ class DB extends Base
      * @return \stdClass the row from the _list
      * @since 0.5.1
      */
-    public function fetchShoppingList(string $name, int $session_id, int $user_id = 0): \stdClass
+    public function fetchShoppingList(string $name, int $session_id, int $user_id): \stdClass
     {
-        if ($user_id !== 0) $session_id = 0; // @since 0.7.9 get shoppinglist either by session or by user
         $data = array(
             'instance_id' => Setup::$instance_id,
             'session_id' => $session_id,
@@ -2629,16 +2627,44 @@ class DB extends Base
             'name' => $name,
             'deleted' => false,
         );
-        if (($count = count($rows = $this->fetchRows('_shoppinglist', array('*'), $data))) === 1) {
-            $row = $rows[0];
-            // update userid if appropriate
-            if ($user_id !== 0 and $user_id !== $row->user_id) {
-                $this->updateColumns('_shoppinglist', array('user_id' => $user_id), $row->shoppinglist_id);
+
+        // create a shoppinglist if not already exists
+        if (0 === count($rows = $this->fetchRows('_shoppinglist', array('*'), $data))) {
+//insert into posts (id, title, body)
+// select 1, 'First post', 'Awesome'
+// where not exists (
+//  select null from posts
+//  where (title, body) = ('First post', 'Awesome')
+// )
+            // the insert must only happen if not just executed by another thread already, hence the exists
+            $column_list = implode(', ', array_keys($data));
+            $statement = $this->conn->prepare("
+                INSERT INTO _shoppinglist ($column_list) 
+                SELECT :instance_id, :session_id, :user_id, :name, :deleted
+                    WHERE NOT EXISTS(
+                        SELECT 1 FROM _shoppinglist
+                                 WHERE ($column_list) = (:instance_id, :session_id, :user_id, :name, :deleted)
+                    ) RETURNING *;");
+            $statement->bindValue(':instance_id', $data['instance_id']);
+            $statement->bindValue(':session_id', $data['session_id']);
+            $statement->bindValue(':user_id', $data['user_id']);
+            $statement->bindValue(':name', $data['name']);
+            $statement->bindValue(':deleted', '0');
+            $statement->execute();
+            $rows = $statement->fetchAll(5);
+            $statement = null;
+            if (0 === count($rows)) { // not inserted (this time), probably already exists then
+                $rows = $this->fetchRows('_shoppinglist', array('*'), $data);
+                if (0 === count($rows)) {
+                    $this->handleErrorAndStop(
+                        'Unable to create shoppinglist ' . var_export($data, true),
+                        __('Could not get shoppinglist', 'peatcms')
+                    );
+                }
             }
-        } elseif ($count === 0) {
-            $shoppinglist_id = $this->insertRowAndReturnLastId('_shoppinglist', $data);
-            $row = $this->fetchRow('_shoppinglist', array('*'), array('shoppinglist_id' => $shoppinglist_id));
-        } else {
+        }
+
+        if (1 !== count($rows)) {
             // build informative error message, what is going on here?
             $lists = array();
             foreach ($rows as $index => $row) {
@@ -2654,10 +2680,9 @@ class DB extends Base
                 sprintf("Deleted $count shoppinglist entries. %s", var_export($lists, true)),
                 __('Could not get shoppinglist', 'peatcms')
             );
-            $row = null;
         }
 
-        return $row;
+        return $rows[0];
     }
 
     /**

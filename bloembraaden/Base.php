@@ -11,10 +11,6 @@ class Base
     {
     }
 
-    public function __destruct()
-    {
-    }
-
     /**
      * Messages are meant for client, so should be localized and not contain sensitive information
      *

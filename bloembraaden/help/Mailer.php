@@ -78,9 +78,8 @@ class Mailer extends Base
         register_shutdown_function(array($this, '__shutdown'));
     }
 
-    public function __shutdown()
+    public function __shutdown(): void
     {
-        parent::__destruct();
         if (isset($this->curl)) curl_close($this->curl);
     }
 
