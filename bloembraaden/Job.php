@@ -393,10 +393,10 @@ switch ($interval) {
                  * afhalen = package_type 3 (letter)
                  * MyParcel expects prices in euro cents
                  */
-                $myparcel_shipping_name = trim(substr(html_entity_decode($order_out->shipping_address_name), -40));
+                $myparcel_shipping_name = mb_substr($order_out->shipping_address_name, -40);
                 /* #TRANSLATORS: default name is the client name on the shipping label when no name is given */
                 if ('' === $myparcel_shipping_name) $myparcel_shipping_name = __('Default name', 'peatcms');
-                $myparcel_billing_name = trim(substr(html_entity_decode($order_out->billing_address_name), -40));
+                $myparcel_billing_name = mb_substr($order_out->billing_address_name, -40);
                 if ('' === $myparcel_billing_name) $myparcel_billing_name = __('Default name', 'peatcms');
                 $order_myparcel_json = json_encode((object)array(
                     'external_identifier' => $order_out->order_number_human,
@@ -404,15 +404,15 @@ switch ($interval) {
                     'invoice_address' => (object)array(
                         'cc' => $order_out->billing_address_country_iso2,
                         'street' => implode(' ', array(
-                            html_entity_decode($order_out->billing_address_street),
+                            $order_out->billing_address_street,
                             $order_out->billing_address_number,
                             $order_out->billing_address_number_addition,
                         )),
                         'person' => $myparcel_billing_name,
-                        'company' => Help::truncate(html_entity_decode($order_out->billing_address_company), 50),
+                        'company' => Help::truncate($order_out->billing_address_company, 50),
                         'email' => $order_out->user_email,
                         'phone' => $order_out->user_phone,
-                        'city' => html_entity_decode($order_out->billing_address_city),
+                        'city' => $order_out->billing_address_city,
                         'postal_code' => $order_out->billing_address_postal_code,
                         //'number'=> '31',
                         //'number_suffix'=> 'bis',
@@ -426,15 +426,15 @@ switch ($interval) {
                         'recipient' => (object)array(
                             'cc' => $shipping_cc,
                             'street' => implode(' ', array(
-                                html_entity_decode($order_out->shipping_address_street),
+                                $order_out->shipping_address_street,
                                 $order_out->shipping_address_number,
                                 $order_out->shipping_address_number_addition,
                             )),
                             'person' => $myparcel_shipping_name,
-                            'company' => Help::truncate(html_entity_decode($order_out->shipping_address_company), 50),
+                            'company' => Help::truncate($order_out->shipping_address_company, 50),
                             'email' => $order_out->user_email,
                             'phone' => $order_out->user_phone,
-                            'city' => html_entity_decode($order_out->shipping_address_city),
+                            'city' => $order_out->shipping_address_city,
                             'postal_code' => $order_out->shipping_address_postal_code,
                             //'number'=> '31',
                             //'number_suffix'=> 'bis',

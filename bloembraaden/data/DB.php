@@ -1523,8 +1523,8 @@ class DB extends Base
                 'amount_row_total' => (int)(100 * (float)Help::floatForHumans($amount_row_total)),
                 'shipping_costs' => (int)(100 * (float)Help::floatForHumans($shipping_costs)),
                 'user_gender' => $vars['gender'] ?? '',
-                'user_email' => $vars['email'],
-                'user_phone' => $vars['phone'] ?? '',
+                'user_email' => strtolower(trim($vars['email'])),
+                'user_phone' => strtolower(trim($vars['phone'] ?? '')),
                 'shipping_address_country_name' => $country->name,
                 'shipping_address_country_iso2' => $country->iso2,
                 'shipping_address_country_iso3' => $country->iso3,
@@ -1569,7 +1569,7 @@ class DB extends Base
                         $value = substr($value, 0, 3);
                         break;
                     default:
-                        $value = substr($value, 0, 127);
+                        $value = mb_substr(trim($value), 0, 127);
                 }
                 $order_fields[$key] = $value;
             }
