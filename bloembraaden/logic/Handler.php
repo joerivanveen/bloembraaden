@@ -578,12 +578,12 @@ class Handler extends BaseLogic
                         }
                         if (true === $valid) {
                             // check the other mandatory fields
-                            foreach ([
+                            foreach (array(
                                          'shipping_address_postal_code',
                                          'shipping_address_number',
                                          'shipping_address_street',
                                          'shipping_address_city',
-                                     ] as $index => $field_name) {
+                                     ) as $index => $field_name) {
                                 if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
                                     $this->addMessage(sprintf(__('Mandatory field ‘%s’ not found in post data', 'peatcms'), $field_name), 'warn');
                                     $valid = false;

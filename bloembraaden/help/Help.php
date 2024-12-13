@@ -142,6 +142,11 @@ class Help
         return $sunk;
     }
 
+    public static function truncate(string $string, int $characters) {
+        if (strlen($string) <= $characters) return $string;
+        return substr($string, 0, $characters - 3) . '...';
+    }
+
     public static function removeAccents(string $string): string
     {
         if (\false === preg_match('/[\x80-\xff]/', $string))

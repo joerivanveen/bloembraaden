@@ -47,7 +47,7 @@ switch ($interval) {
             // send the internal mail to the internal addresses...
             if (true === $mailer->hasError()) return;
             if (null === $mailer->get('to')) return; // apparently, no mail was sent :-P
-            echo '=== cc confirmation copy to ===', "\n";
+            echo "=== cc confirmation copy to ===\n";
             if ('' !== trim($row->confirmation_copy_to)) {
                 // create internal mail
                 if (null !== ($template_id = $row->template_id_internal_confirmation)) {
@@ -319,7 +319,7 @@ switch ($interval) {
                         $cc_confirmation_copy_to($mailer, $row, $instance_id, $order_output_object);
                     }
                 }
-            } // todo: log mail into _history?
+            }
         }
         unset($mailer);
         $rows = $db->jobGetOrdersForMyParcel();
@@ -409,7 +409,7 @@ switch ($interval) {
                             $order_out->billing_address_number_addition,
                         )),
                         'person' => $myparcel_billing_name,
-                        'company' => html_entity_decode($order_out->billing_address_company),
+                        'company' => Help::truncate(html_entity_decode($order_out->billing_address_company), 50),
                         'email' => $order_out->user_email,
                         'phone' => $order_out->user_phone,
                         'city' => html_entity_decode($order_out->billing_address_city),
@@ -431,7 +431,7 @@ switch ($interval) {
                                 $order_out->shipping_address_number_addition,
                             )),
                             'person' => $myparcel_shipping_name,
-                            'company' => html_entity_decode($order_out->shipping_address_company),
+                            'company' => Help::truncate(html_entity_decode($order_out->shipping_address_company), 50),
                             'email' => $order_out->user_email,
                             'phone' => $order_out->user_phone,
                             'city' => html_entity_decode($order_out->shipping_address_city),
