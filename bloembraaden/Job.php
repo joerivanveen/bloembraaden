@@ -125,6 +125,7 @@ switch ($interval) {
                             $row->html = $html;
                         } else {
                             Help::addError(new \Exception(sprintf(
+                            //#translators %1$s: order number, %2$s: instance domain
                                 __('Could not save order html for %1$s (%2$s)', 'peatcms'),
                                 $order_number,
                                 $row->domain
@@ -138,7 +139,41 @@ switch ($interval) {
                 }
                 // 1) mail order confirmation
                 if (false === $row->emailed_order_confirmation) {
-                    echo 'Order confirmation', "\n";
+                    if (0 !== $row->user_id) {
+                        echo "Check address for account\n";
+                        // get all addresses for this user_id, md5 them
+                        $addresses = $db->fetchAddressesByUserId($row->user_id);
+                        $by_hash = array();
+                        foreach ($addresses as $index => $address) {
+                            $hash = md5("$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2");
+                            $by_hash[$hash] = $address;
+                        }
+                        $addresses = null;
+                        // get shipping / billing address -> md5, if not in the addresses md5, add it
+                        foreach (array('billing', 'shipping') as $index => $address_type) {
+                            $hash = md5($row->{"{$address_type}_address_postal_code"} . $row->{"{$address_type}_address_street"} . $row->{"{$address_type}_address_number"} . $row->{"{$address_type}_address_number_addition"} . $row->{"{$address_type}_address_country_iso2"});
+                            if (false === isset($by_hash[$hash])) {
+                                if ($db->insertRowAndReturnKey('_address', array(
+                                    'user_id' => $row->user_id,
+                                    'instance_id' => $instance_id,
+                                    'address_name' => $row->{"{$address_type}_address_name"},
+                                    'address_company' => $row->{"{$address_type}_address_company"},
+                                    'address_postal_code' => $row->{"{$address_type}_address_postal_code"},
+                                    'address_number' => $row->{"{$address_type}_address_number"},
+                                    'address_number_addition' => $row->{"{$address_type}_address_number_addition"},
+                                    'address_street' => $row->{"{$address_type}_address_street"},
+                                    'address_street_addition' => $row->{"{$address_type}_address_street_addition"},
+                                    'address_city' => $row->{"{$address_type}_address_city"},
+                                    'address_country_name' => $row->{"{$address_type}_address_country_name"},
+                                    'address_country_iso2' => $row->{"{$address_type}_address_country_iso2"},
+                                    'address_country_iso3' => $row->{"{$address_type}_address_country_iso3"},
+                                ))) {
+                                    echo 'Added ', $row->{"{$address_type}_address_street"}, ' ', $row->{"{$address_type}_address_number"}, ' ', $row->{"{$address_type}_address_number_addition"}, "\n";
+                                }
+                            }
+                        }
+                    }
+                    echo "Order confirmation\n";
                     $mailer->clear();
                     // https://www.trompetters.nl/__action__/pay/order_number:202184610579
                     $order_output_object->payment_link = "https://$row->domain/__action__/pay/order_number:$row->order_number";
