@@ -139,7 +139,6 @@ function Address(wrapper) {
     this.wrapper = wrapper;
     this.inputs = inputs;
     this.myparcel = null !== myparcel;
-    this.postcode_nl_fields = {};
     for (i = 0, len = inputs.length; i < len; ++i) {
         this.enhanceInput(inputs[i]);
     }
@@ -148,64 +147,85 @@ function Address(wrapper) {
 }
 
 Address.prototype.enhanceWrapper = function () {
-    let wrapper = this.wrapper, user_addresses, fields = this.getFields(), next, prev, reset;
-    // a wrapper that is not an individual user address can page through user addresses, if available
-    // so the user can select a shipping_ and billing_ address easily
-    // so, for it to work you need paging buttons, no address_id field, and at least one user address
-    if (wrapper.querySelector('.paging') && fields.hasOwnProperty('address_id') === false) {
-        if ((user_addresses = Address_getAllUserAddresses()).length > 0) {
-            wrapper.setAttribute('data-paging', '1');
-            wrapper.setAttribute('data-paging-index', '1');
-            if ((next = wrapper.querySelector('.paging.next'))) {
-                next.addEventListener('click', function () {
-                    let index = 1 + parseInt(wrapper.getAttribute('data-paging-index')),
-                        fields = Address_getEmptyFields(); // default to empty
-                    if (index > user_addresses.length) {
-                        index = 0; // the empty address
-                    } else {
-                        fields = user_addresses[index - 1]; // index = 0 based
-                    }
-                    wrapper.setAttribute('data-paging-index', index);
-                    wrapper.Address.save(fields, true);
-                });
-            }
-            if ((prev = wrapper.querySelector('.paging.prev'))) {
-                prev.addEventListener('click', function () {
-                    let index = -1 + parseInt(wrapper.getAttribute('data-paging-index')),
-                        fields = Address_getEmptyFields(); // default to empty
-                    if (index !== 0) {
-                        if (index < 0) index = user_addresses.length; // the empty address
-                        fields = user_addresses[index - 1]; // index = 0 based
-                    }
-                    wrapper.setAttribute('data-paging-index', index);
-                    wrapper.Address.save(fields, true);
-                });
-            }
-            if ((reset = wrapper.querySelector('.paging.reset'))) {
-                reset.addEventListener('click', function () {
-                    const fields = Address_getEmptyFields();
-                    wrapper.setAttribute('data-paging-index', 0);
-                    wrapper.Address.save(fields, true);
-                });
-            }
-        }
+    const self = this,
+        wrapper = this.wrapper,
+        button = wrapper.querySelector('.choose-address'),
+        user_addresses = Address_getAllUserAddresses(),
+        fields = this.getFields();
+    if (fields.hasOwnProperty('address_id')) return; // saved addresses can not be replaced
+    if (1 > user_addresses.length) return; // don’t bother if there are no addresses / no user
+    if (!button) {
+        console.warn('Add .choose-address button to your address template');
+        return;
     }
+    // switch dormant state of button
+    button.classList.remove('hidden');
+    button.classList.add('active');
+    // todo construct a modal where addresses can be chosen
+    button.addEventListener('click', function () {
+        function popup(template, out) {
+            let pop = document.getElementById('popup');
+            if (pop) pop.remove();
+            // create a fresh popup element
+            pop = document.createElement('div');
+            pop.id = 'popup';
+            pop.innerHTML = template.render(out);
+            pop.peatcms_addresses = out.addresses || {};
+            pop.peatcms_address = self;
+            document.body.appendChild(pop);
+            pop.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
+                bubbles: true,
+                detail: {
+                    placeholder_element: pop, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
+                    parent_element: document.body, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
+                    slug: out.slug || null,
+                }
+            }));
+        }
+
+        if (!this.hasAttribute('data-template_name')) {
+            console.warn('Add data-template_name to this button for the template you use', this);
+            return;
+        }
+        if (this.popupTemplate) {
+            popup(this.popupTemplate, {
+                addresses: user_addresses,
+            });
+        } else { // get the template first
+            NAV.ajax('/__action__/get_template_by_name', {
+                admin: false,
+                template_name: this.getAttribute('data-template_name')
+            }, function (data) {
+                //self.template = data['html'] || data['__template_status__'] || '<h1>ERROR LOADING</h1>';
+                if (data.hasOwnProperty('__html__')) {
+                    self.popupTemplate = new PEATCMS_template(data);
+                    popup(self.popupTemplate, {
+                        addresses: user_addresses,
+                    });
+                } else {
+                    console.error('Template not loaded');
+                }
+            });
+        }
+    });
+    wrapper.insertAdjacentElement('afterbegin', button);
 }
 Address.prototype.getCountryCode = function () {
     const country = this.wrapper.querySelector('[data-field="country"]'),
         option = country ? country.options[country.selectedIndex] : null;
     if (option) return option.getAttribute('data-iso2');
-    return '';
+    return null;
 }
 Address.prototype.enhanceInput = function (input) {
-    input.Address = this;
+    input.Address = this; // TODO remove once petit clos uses peatcms_address
+    input.peatcms_address = this;
     if (this.myparcel && 'myparcel-suggest' === input.getAttribute('name')) {
         const hipster = input.closest('.hipster-input');
         // manage suggestions list visibility
         input.addEventListener('focus', function () {
             hipster.classList.remove('done-suggesting');
             if (this.value) {
-                this.Address.updateSuggestionsList(this);
+                this.peatcms_address.updateSuggestionsList(this);
             }
         });
         document.addEventListener('click', function (e) {
@@ -225,7 +245,6 @@ Address.prototype.enhanceInput = function (input) {
         });
         // throttle type action, find address using myparcel
         input.addEventListener('keyup', function (e) {
-            const type = this.Address.wrapper.getAttribute('data-address_type') || 'shipping';
             //hipster = self.closest('.hipster-input');
             if (e.key) { // some handy key commands
                 const active_suggestion = hipster.querySelector('.suggestions .active'),
@@ -237,7 +256,7 @@ Address.prototype.enhanceInput = function (input) {
                     case 'enter': // choose current value when it exists
                     case 'tab':
                         if (active_suggestion && active_suggestion.hasAttribute('data-suggestion')) {
-                            this.Address.set(JSON.parse(active_suggestion.getAttribute('data-suggestion')), type);
+                            this.peatcms_address.set(JSON.parse(active_suggestion.getAttribute('data-suggestion')));
                         }
                         break;
                     case 'arrowdown': // activate next value, if any
@@ -262,11 +281,11 @@ Address.prototype.enhanceInput = function (input) {
                 return; // don’t do anything for unchanged values
             }
             this.setAttribute('data-value', this.value);
-            this.Address.updateSuggestionsList(this);
+            this.peatcms_address.updateSuggestionsList(this);
         });
     } else {
         input.addEventListener('change', function () {
-            this.Address.send();
+            this.peatcms_address.send();
         });
     }
 }
@@ -278,9 +297,14 @@ Address.prototype.updateSuggestionsList = function (input) {
     clearTimeout(input.timeout);
     input.timeout = setTimeout(function () {
         const timestamp = Date.now();
+        let iso2 = input.peatcms_address.getCountryCode();
+        if (null === iso2) {
+            console.warn('Address suggest says: choose country first', input);
+            return;
+        }
         self.bloembraaden_suggest_timestamp = timestamp;
         NAV.ajax('/__action__/suggest_address', {
-            address_country_iso2: input.Address.getCountryCode(),
+            address_country_iso2: iso2,
             query: input.value,
             timestamp: timestamp,
         }, function (json) {
@@ -297,23 +321,23 @@ Address.prototype.updateSuggestionsList = function (input) {
                         number = suggestion.houseNumber,
                         part_1 = parseInt(number).toString(), // check for true numbers or whether the addition is included
                         adapted = {
-                            postal_code: suggestion.postalCode,
-                            number: number,
-                            number_addition: suggestion.houseNumberAddition || '', // not present for now
-                            street: suggestion.street,
-                            city: suggestion.city,
+                            address_postal_code: suggestion.postalCode,
+                            address_number: number,
+                            address_number_addition: suggestion.houseNumberAddition || '', // not present for now
+                            address_street: suggestion.street,
+                            address_city: suggestion.city,
                         },
                         li = document.createElement('li');
-                    adapted.street = PEATCMS.replace("'", '’', adapted.street);
+                    adapted.address_street = PEATCMS.replace("'", '’', adapted.address_street);
                     if (part_1 !== number) {
                         const part_2 = number.substring(part_1.length);
-                        adapted.number = part_1;
-                        adapted.number_addition = (`${part_2} ${adapted.number_addition}`).trim();
+                        adapted.address_number = part_1;
+                        adapted.address_number_addition = (`${part_2} ${adapted.address_number_addition}`).trim();
                     }
                     li.setAttribute('data-suggestion', JSON.stringify(adapted));
-                    li.innerText = `${adapted.street} ${number}, ${adapted.postal_code} ${adapted.city}`;
+                    li.innerText = `${adapted.address_street} ${number}, ${adapted.address_postal_code} ${adapted.address_city}`;
                     li.addEventListener('mouseup', function (e) {
-                        input.Address.set(adapted, type);
+                        input.peatcms_address.set(adapted);
                     });
                     ul.appendChild(li);
                     //console.warn(`joeri ${type}`, li, suggestion, adapted);
@@ -328,35 +352,39 @@ Address.prototype.updateSuggestionsList = function (input) {
     }, 323);
 }
 Address.prototype.enhanceLists = function () {
-    const self = this, select_lists = this.wrapper.querySelectorAll('select');
-    let i, len;
-    if (select_lists) {
-        for (i = 0, len = select_lists.length; i < len; ++i) {
-            select_lists[i].addEventListener('change', function () {
-                if ('shipping_country_id' === this.getAttribute('name')) {
-                    const type = self.wrapper.getAttribute('data-address_type');
-                    // changing the country invalidates the rest of the address obviously
-                    self.set({
-                        street: '',
-                        number: '',
-                        number_addition: '',
-                        postal_code: '',
-                        city: '',
-                    }, type);
-                } else {
-                    self.send(this);
-                }
-            });
-        }
+    const self = this, select_lists = this.wrapper.querySelectorAll('select'),
+        len = select_lists.length;
+    for (let i = 0; i < len; ++i) {
+        select_lists[i].addEventListener('change', function () {
+            if ('shipping_country_id' === this.getAttribute('name')) {
+                // changing the country invalidates the rest of the address obviously
+                self.set({
+                    street: '',
+                    number: '',
+                    number_addition: '',
+                    postal_code: '',
+                    city: '',
+                });
+            } else {
+                self.send(this);
+            }
+        });
     }
 }
-Address.prototype.set = function (values, type) {
+Address.prototype.set = function (values, deprecated_type) {
+    if (deprecated_type) console.warn('used deprecated address type input', values);
+    const type = this.wrapper.getAttribute('data-address_type');
+    if (!type) {
+        console.error('Address wrapper needs data-address_type', this.wrapper);
+    }
     for (const key in values) {
-        const input = document.getElementById(`address_${key}_${type}`)
-        if (!input) {
-            console.error(`Setting Address, input with id address_${key}_${type} does not exist`);
+        const input = document.getElementById(`${key}_${type}`);
+        if (input) {
+            input.value = values[key];
         }
-        input.value = values[key];
+        if ('address_country_iso2' === key) {
+            this.updateClientCountryList({address_country_iso2: values[key]});
+        }
     }
     this.send(); // save it as well
 }
@@ -1578,16 +1606,14 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     el.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
                         bubbles: true,
                         detail: {
-                            placeholder_element: el, // todo DEPRECATED!
-                            parent_element: parent_node,
+                            placeholder_element: el, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
+                            parent_element: parent_node, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
                             slug: slug
                         }
                     }));
                     // @since 0.7.2: for non-dynamic tags, load only once, remove placeholder so it is skipped from now on
-                    // TODO make it more logical which ones can stay and which ones can’t
                     //console.error(render_in_tag + ' will remove node? ' + (render_in_tag.indexOf('__') !== 0));
                     if (render_in_tag.indexOf('__') !== 0) el.remove();
-                    if (render_in_tag.indexOf('/instagram/feed/') !== -1) el.remove();
                 } catch (e) {
                     console.error(e);
                 }
@@ -2136,12 +2162,12 @@ PEATCMS_template.prototype.peat_encode_for_template = function (str) {
     return this.peat_no_render(p.innerHTML);
 }
 PEATCMS_template.prototype.peat_as_float = function (str) {
-    var flt;
     str = PEATCMS.replace(PEATCMS_globals.radix, '', str);
     str = PEATCMS.replace(' ', '', str);
     str = PEATCMS.replace(PEATCMS_globals.decimal_separator, '.', str);
     // convert to float
-    if ((flt = parseFloat(str))) {
+    const flt = parseFloat(str)
+    if (flt) {
         return flt;
     }
     console.error('as_float templating function failed on ' + str);
@@ -2257,12 +2283,12 @@ const PEATCMS = function () {
         let el, i, len;
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i]; // this is a container holding address elements you want to enhance
-            el.Address = new Address(el);
+            el.Address = el.peatcms_address = new Address(el); // TODO remove el.Address once petit clos uses peatcms_address
             // addresses in wrappers can be present as sessionvars!
             if (false === el.hasAttribute('id')) {
                 console.error('Address wrapper element needs a unique id');
             } else {
-                el.Address.updateClientOnly(PEAT.getSessionVar(el.id));
+                el.peatcms_address.updateClientOnly(PEAT.getSessionVar(el.id));
             }
         }
     }

@@ -790,10 +790,10 @@ class Handler extends BaseLogic
                         $this->addMessage(__('Address could not be updated', 'peatcms'), 'warn');
                     }
                 } elseif (isset($post_data->address_id)) {
-                        $this->addMessage(__('You need to be logged in to manage addresses', 'peatcms'), 'warn');
-                    } else {
-                        $this->addError('address_id is missing');
-                    }
+                    $this->addMessage(__('You need to be logged in to manage addresses', 'peatcms'), 'warn');
+                } else {
+                    $this->addError('address_id is missing');
+                }
                 if (false === isset($out)) $out = array('success' => false);
             } elseif ('create_address' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);

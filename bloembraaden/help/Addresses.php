@@ -26,6 +26,16 @@ class Addresses extends Base
         );
 
         list($result, $error, $status_code) = $this->get(self::SUGGESTION_ENDPOINT, $params);
+//        // LOG FOR MYPARCEL
+//        $log_path = substr(Setup::$LOGFILE, 0, strrpos(Setup::$LOGFILE, '/'));
+//        $string = $result;
+//        if ($string){
+//            $string = '';
+//            foreach (json_decode($result)->results as $address) {
+//                $string .= "\n" . var_export($address, true);
+//            }
+//        }
+//        file_put_contents("$log_path/joeri.log", self::SUGGESTION_ENDPOINT . ", params:\n" . var_export($params, true) . "\nresult:$string\n---\n", FILE_APPEND);
 
         if ($error) {
             $this->addError($error);
@@ -61,7 +71,9 @@ class Addresses extends Base
         }
 
         list($result, $error, $status_code) = $this->get(self::VALIDATION_ENDPOINT, $params);
-
+        // LOG FOR MYPARCEL
+//        $log_path = substr(Setup::$LOGFILE, 0, strrpos(Setup::$LOGFILE, '/'));
+//        file_put_contents("$log_path/joeri.log", self::VALIDATION_ENDPOINT . ", params:\n" . var_export($params, true) . "\n\tresult: " . var_export($result, true) . "\n---\n",FILE_APPEND);
         if ($error) {
             $this->addError($error);
         } elseif (400 < $status_code) {

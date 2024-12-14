@@ -1437,9 +1437,9 @@ function PEATCMS_admin() {
                 }
                 document.addEventListener('peatcms.document_ready', enhanceToggles);
                 document.addEventListener('peatcms.progressive_ready', function (e) {
-                    const detail = e.detail;
-                    if (detail.hasOwnProperty('slug') && detail.hasOwnProperty('parent_element')) {
-                        CMS_admin.enhanceToggle(detail.parent_element.querySelectorAll('.toggle_button'));
+                    const detail = e.detail, parent_element = e.target.parentNode;
+                    if (detail.hasOwnProperty('slug')) {
+                        CMS_admin.enhanceToggle(parent_element.querySelectorAll('.toggle_button'));
                     }
                 });
             } else {
@@ -2217,7 +2217,8 @@ if (document.readyState !== 'loading') {
  * Set some things on the admin page, not dependent on actual admin
  */
 document.addEventListener('peatcms.progressive_ready', function (e) {
-    if (e.detail.slug === 'admin_search') {
+    const slug = e.detail.slug;
+    if ('admin_search' === slug) {
         // load the template_id options and on return update all the select lists for template_id
         if (document.querySelector('select[data-column_name="template_id"]')) {
             NAV.ajax('/__action__/admin_get_templates', {
@@ -2239,7 +2240,7 @@ document.addEventListener('peatcms.progressive_ready', function (e) {
                 });
             });
         }
-    } else if ('admin_get_templates' === e.detail.slug) {
+    } else if ('admin_get_templates' === slug) {
         [
             'select[data-column_name="template_id_order_confirmation"]',
             'select[data-column_name="template_id_payment_confirmation"]',
