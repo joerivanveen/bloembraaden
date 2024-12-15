@@ -773,6 +773,10 @@ class Handler extends BaseLogic
                 if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
                     $address_id = intval($post_data->address_id);
                     if ('delete_address' === $action) $post_data->deleted = true;
+                    // clean posted data befor updating
+                    unset($post_data->json);
+                    unset($post_data->timestamp);
+                    unset($post_data->csrf_token);
                     if (1 === Help::getDB()->updateColumnsWhere(
                             '_address',
                             (array)$post_data,

@@ -172,6 +172,8 @@ Address.prototype.enhanceWrapper = function () {
             pop.innerHTML = template.render(out);
             pop.peatcms_addresses = out.addresses || {};
             pop.peatcms_address = self;
+            PEAT.ajaxifyDOMElements(pop);
+            PEAT.currentSlugs(pop);
             document.body.appendChild(pop);
             pop.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
                 bubbles: true,
