@@ -153,7 +153,7 @@ switch ($interval) {
                         foreach (array('billing', 'shipping') as $index => $address_type) {
                             $hash = md5($row->{"{$address_type}_address_postal_code"} . $row->{"{$address_type}_address_street"} . $row->{"{$address_type}_address_number"} . $row->{"{$address_type}_address_number_addition"} . $row->{"{$address_type}_address_country_iso2"});
                             if (false === isset($by_hash[$hash])) {
-                                if ($db->insertRowAndReturnKey('_address', array(
+                                $address = array(
                                     'user_id' => $row->user_id,
                                     'instance_id' => $instance_id,
                                     'address_name' => $row->{"{$address_type}_address_name"},
@@ -167,7 +167,9 @@ switch ($interval) {
                                     'address_country_name' => $row->{"{$address_type}_address_country_name"},
                                     'address_country_iso2' => $row->{"{$address_type}_address_country_iso2"},
                                     'address_country_iso3' => $row->{"{$address_type}_address_country_iso3"},
-                                ))) {
+                                );
+                                if ($db->insertRowAndReturnKey('_address', $address)) {
+                                    $by_hash[$hash] = $address;
                                     echo 'Added ', $row->{"{$address_type}_address_street"}, ' ', $row->{"{$address_type}_address_number"}, ' ', $row->{"{$address_type}_address_number_addition"}, "\n";
                                 }
                             }
