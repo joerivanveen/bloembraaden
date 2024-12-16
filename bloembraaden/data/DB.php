@@ -1483,6 +1483,9 @@ class DB extends Base
             if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
             if ($this->hasError()) return null;
+            // @since 0.9.0 add vat, @since 0.23.0 allow ex-vat
+            $ex_vat = true === isset($vars['vat_valid']) && true === $vars['vat_valid'];
+            $highest_vat = 0.0;
             // set up the necessary vars
             $instance_id = Setup::$instance_id;
             $country = $this->getCountryById((int)$vars['shipping_country_id']);
@@ -1492,8 +1495,26 @@ class DB extends Base
             $vat_categories = $this->getVatCategoriesByIdWithDefaultIn0($instance_id);
             //$order_rows = $this->fetchShoppingListRows($shoppinglist_id); (already in if-clause)
             foreach ($order_rows as $index => $row) {
-                $amount_row_total += Help::asFloat($row->price) * $row->quantity;
-                $quantity_total += $row->quantity;
+                $quantity = $row->quantity;
+                $variant_row = $this->fetchElementRow(new Type('variant'), $row->variant_id);
+                $vat_row = $vat_categories[$variant_row->vat_category_id] ?? $vat_categories[0] ?? 0;
+                $vat_percentage = Help::asFloat($vat_row->percentage);
+                // remember the highest vat for the shipping costs
+                if ($vat_percentage > $highest_vat) $highest_vat = (float)$vat_percentage;
+                if (true === $ex_vat) { // re-calculate prices to be ex-vat
+                    $row->price_from = 100 * Help::asFloat($row->price_from) / (100 + $vat_percentage);
+                    $row->price = 100 * Help::asFloat($row->price) / (100 + $vat_percentage);
+                    $row->vat_percentage = 0.0;
+                } else {
+                    $row->vat_percentage = $vat_percentage;
+                }
+                // @since 0.5.16 enrich with some default values
+                $row->title = $variant_row->title;
+                $row->mpn = $variant_row->mpn;
+                $row->sku = $variant_row->sku;
+                // count totals
+                $amount_row_total += $row->price * $quantity;
+                $quantity_total += $quantity;
             }
             if ($quantity_total === 0) { // @since 0.7.6 if there is nothing to order, also abandon the process
                 $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
@@ -1504,6 +1525,9 @@ class DB extends Base
             $amount_grand_total = $amount_row_total;
             if ($amount_grand_total < Help::asFloat($country->shipping_free_from)) {
                 $shipping_costs = Help::asFloat($country->shipping_costs);
+                if ($ex_vat && $highest_vat) {
+                    $shipping_costs = 100 * $shipping_costs / (100 + $highest_vat);
+                }
                 $amount_grand_total += $shipping_costs;
             }
             // set up the order_number
@@ -1588,24 +1612,8 @@ class DB extends Base
                 }
                 // now the rows
                 foreach ($order_rows as $index => $row) {
-                    $variant_row = $this->fetchElementRow(new Type('variant'), $row->variant_id);
-                    $vat_row = $vat_categories[$variant_row->vat_category_id] ?? $vat_categories[0] ?? 0;
-                    $vat_percentage = Help::asFloat($vat_row->percentage);
-                    $specs = array(
-                        'order_id' => $order_id,
-                        'variant_id' => $row->variant_id,
-                        'o' => $row->o,
-                        'price_from' => $row->price_from,
-                        'price' => $row->price,
-                        'quantity' => $row->quantity,
-                        // @since 0.5.16 enrich with some default values
-                        'title' => $variant_row->title,
-                        'mpn' => $variant_row->mpn,
-                        'sku' => $variant_row->sku,
-                        // @since 0.9.0 add vat
-                        'vat_percentage' => $vat_percentage,
-                    );
-                    if (null === $this->insertRowAndReturnLastId('_order_variant', $specs)) {
+                    $row->order_id = $order_id;
+                    if (null === $this->insertRowAndReturnLastId('_order_variant', (array) $row)) {
                         $this->resetConnection();
                         $this->addMessage(__('Order row insert failed', 'peatcms'), 'error');
                         $this->addError('Order row insert failed');
