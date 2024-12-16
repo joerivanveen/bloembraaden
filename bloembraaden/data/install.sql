@@ -3109,10 +3109,10 @@ ALTER TABLE "public"."_instance"
 
 -- (bugfix 0.21.0) remove size limit on x_value, previously this was varchar(40)
 ALTER TABLE "public"."cms_page_x_properties"
-    ALTER COLUMN if not exists x_value TYPE text;
+    ALTER COLUMN x_value TYPE text;
 
 ALTER TABLE "public"."cms_variant_x_properties"
-    ALTER COLUMN if not exists x_value TYPE text;
+    ALTER COLUMN x_value TYPE text;
 
 COMMIT;
 
@@ -3146,3 +3146,19 @@ ALTER TABLE "public"."_instance"
     ADD COLUMN if not exists "homepage_slug" Character Varying(127);
 
 COMMIT;
+
+-- version 0.23.0
+
+BEGIN;
+
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "vat_number" Character Varying(127);
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "vat_country_iso2" Character Varying(2);
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "vat_valid" BOOLEAN default FALSE not null;
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "vat_history" Text;
+
+COMMIT;
+

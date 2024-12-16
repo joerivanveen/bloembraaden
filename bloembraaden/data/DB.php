@@ -1554,11 +1554,16 @@ class DB extends Base
                          'newsletter_subscribe',
                          'preferred_delivery_day',
                          'remarks_user',
+                         'vat_number',
+                         'vat_country_iso2',
+                         'vat_valid',
+                         'vat_history',
                      ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
                     case 'remarks_user':
                         break;
+                    case 'vat_valid':
                     case 'newsletter_subscribe':
                         $value = (bool)$value;
                         break;

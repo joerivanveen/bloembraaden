@@ -427,9 +427,10 @@ Address.prototype.save = function (fields, in_session_only) {
         if (el) {
             if (json.hasOwnProperty('valid') && false === json.valid) {
                 el.innerHTML = el.getAttribute('data-message');
-                el.style.opacity = '1';
+                el.classList.remove('hidden');
             } else {
-                el.style.opacity = '0';
+                el.innerHTML = ''; // no more message
+                el.classList.add('hidden');
             }
         }
     });

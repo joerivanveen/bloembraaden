@@ -591,6 +591,19 @@ class Handler extends BaseLogic
                             }
                         }
                         if (true === $valid) {
+                            // check vat, if supplied
+                            if (isset($post_data->vat_number, $post_data->vat_country_iso2)) {
+                                $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
+                                if (false === isset($check['valid']) || false === $check['valid']) {
+                                    $valid = false;
+                                    $this->addMessage('Vat number not valid according to VIES', 'warn');
+                                } else {
+                                    $post_data->vat_valid = true;
+                                    $post_data->vat_history = json_encode($check);
+                                }
+                            }
+                        }
+                        if (true === $valid) {
                             $session =& Help::$session; // point to this session
                             $shoppinglist = new Shoppinglist($post_data->shoppinglist);
                             if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
@@ -766,6 +779,9 @@ class Handler extends BaseLogic
                         );
                     $out['__user__'] = Help::$session->getUser()->getOutput();
                 }
+            } elseif ('validate_vat' === $action) {
+                $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
+                $out['success'] = true;
             } elseif (('update_address' === $action || 'delete_address' === $action)
                 && (true === Help::recaptchaVerify($instance, $post_data))
             ) {

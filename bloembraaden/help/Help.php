@@ -142,7 +142,8 @@ class Help
         return $sunk;
     }
 
-    public static function truncate(string $string, int $characters) {
+    public static function truncate(string $string, int $characters)
+    {
         if (strlen($string) <= $characters) return $string;
         return substr($string, 0, $characters - 3) . '...';
     }
@@ -502,6 +503,30 @@ class Help
         $html = str_replace("\r\n\r\n", "\r\n", $html);
 
         return $html;
+    }
+
+    public static function validate_vat(string $country_iso2, string $number): array
+    {
+        if (2 !== strlen($country_iso2) || strlen($number) < 5) {
+            return array('success' => true, 'valid' => false);
+        }
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/$country_iso2/vat/$number");
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $result = (array)json_decode(curl_exec($ch));
+        curl_close($ch);
+        if (0 === json_last_error()) {
+            return array(
+                'response' => $result,
+                'valid' => $result['isValid'],
+                'success' => true,
+            );
+        } else {
+            Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'VIES'), 'warn');
+
+            return array('success' => false);
+        }
     }
 
     /**
@@ -1465,7 +1490,7 @@ class Help
                 $installable = false;
                 echo 'please enable imagejpeg', "\n";
             }
-            if (! function_exists('opcache_get_status') || false === opcache_get_status()) {
+            if (!function_exists('opcache_get_status') || false === opcache_get_status()) {
                 $installable = false;
                 echo 'please install and enable opcache', "\n";
             }
