@@ -440,11 +440,11 @@ switch ($interval) {
                     'order_date' => $order_out->date_created,
                     'invoice_address' => (object)array(
                         'cc' => $order_out->billing_address_country_iso2,
-                        'street' => implode(' ', array(
+                        'street' => mb_substr(implode(' ', array(
                             $order_out->billing_address_street,
                             $order_out->billing_address_number,
                             $order_out->billing_address_number_addition,
-                        )),
+                        )), -40),
                         'person' => $myparcel_billing_name,
                         'company' => Help::truncate($order_out->billing_address_company, 50),
                         'email' => $order_out->user_email,
@@ -462,11 +462,11 @@ switch ($interval) {
                     'shipment' => (object)array(
                         'recipient' => (object)array(
                             'cc' => $shipping_cc,
-                            'street' => implode(' ', array(
+                            'street' => mb_substr(implode(' ', array(
                                 $order_out->shipping_address_street,
                                 $order_out->shipping_address_number,
                                 $order_out->shipping_address_number_addition,
-                            )),
+                            )), -40),
                             'person' => $myparcel_shipping_name,
                             'company' => Help::truncate($order_out->shipping_address_company, 50),
                             'email' => $order_out->user_email,
