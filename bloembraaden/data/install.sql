@@ -3160,5 +3160,8 @@ ALTER TABLE "public"."_order"
 ALTER TABLE "public"."_order"
     ADD COLUMN if not exists "vat_history" Text;
 
+/* improve retrieving recent history for ‘poll’ request */
+CREATE INDEX if not exists "index_history_date_created" ON "public"."_history" USING btree ("instance_id", "date_created" Desc NULLS Last);
+
 COMMIT;
 
