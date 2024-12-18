@@ -1500,10 +1500,12 @@ class DB extends Base
                 $vat_row = $vat_categories[$variant_row->vat_category_id] ?? $vat_categories[0] ?? 0;
                 $vat_percentage = Help::asFloat($vat_row->percentage);
                 // remember the highest vat for the shipping costs
-                if ($vat_percentage > $highest_vat) $highest_vat = (float)$vat_percentage;
+                if ($vat_percentage > $highest_vat) $highest_vat = $vat_percentage;
                 if (true === $ex_vat) { // re-calculate prices to be ex-vat
-                    $row->price_from = 100 * Help::asFloat($row->price_from) / (100 + $vat_percentage);
-                    $row->price = 100 * Help::asFloat($row->price) / (100 + $vat_percentage);
+                    if ('' !== $row->price_from) {
+                        $row->price_from = Help::asMoney(100 * Help::asFloat($row->price_from) / (100 + $vat_percentage));
+                    }
+                    $row->price = Help::asMoney(100 * Help::asFloat($row->price) / (100 + $vat_percentage)); // price_ex_vat
                     $row->vat_percentage = 0.0;
                 } else {
                     $row->vat_percentage = $vat_percentage;
@@ -1513,7 +1515,7 @@ class DB extends Base
                 $row->mpn = $variant_row->mpn;
                 $row->sku = $variant_row->sku;
                 // count totals
-                $amount_row_total += $row->price * $quantity;
+                $amount_row_total += Help::asFloat($row->price) * $quantity;
                 $quantity_total += $quantity;
             }
             if ($quantity_total === 0) { // @since 0.7.6 if there is nothing to order, also abandon the process
@@ -1613,7 +1615,7 @@ class DB extends Base
                 // now the rows
                 foreach ($order_rows as $index => $row) {
                     $row->order_id = $order_id;
-                    if (null === $this->insertRowAndReturnLastId('_order_variant', (array) $row)) {
+                    if (null === $this->insertRowAndReturnLastId('_order_variant', (array)$row)) {
                         $this->resetConnection();
                         $this->addMessage(__('Order row insert failed', 'peatcms'), 'error');
                         $this->addError('Order row insert failed');

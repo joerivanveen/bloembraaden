@@ -88,20 +88,31 @@ class Order extends BaseElement
         $item_count = 0;
         $vat = array(); // amounts are recorded per percentage
         foreach ($list_rows as $index => $list_row) {
+            $quantity = $list_row->quantity;
             $row_price = Help::asFloat($list_row->price);
             $row_price_from = Help::asFloat($list_row->price_from);
-            $row_total = $list_row->quantity * $row_price;
+            $row_total = $quantity * $row_price;
             $percentage_index = (string)$list_row->vat_percentage;
             $list_row->total = Help::asMoney($row_total);
-            $list_row->price = Help::asMoney($row_price);
             if ($row_price_from > $row_price) {
                 $list_row->price_from = Help::asMoney($row_price_from);
             } else {
                 $list_row->price_from = '';
             }
-            $vat[$percentage_index] = $row_total + ($vat[$percentage_index] ?? 0);
+            // To keep calculating in line with DB process for EU companies
+            // calculate ex-vat price for 1 item, then subtract it from the
+            // inc vat price to get vat amount.
+            // Also convert between money and float to stay consistent.
+            $price_ex_vat = Help::asMoney(100 * $row_price / (100 + $list_row->vat_percentage));
+            // this way prevents rounding discrepancies with db routine
+            $vat_amount = $quantity * ($row_price - Help::asFloat($price_ex_vat));
+            if (isset($vat[$percentage_index])) {
+                $vat[$percentage_index] += $vat_amount;
+            } else {
+                $vat[$percentage_index] = $vat_amount;
+            }
             $amount_row_total += $row_total;
-            $item_count += $list_row->quantity;
+            $item_count += $quantity;
         }
         $row->__items__ = $list_rows;
         unset($list_rows);
@@ -111,14 +122,16 @@ class Order extends BaseElement
         $row->amount_row_total = Help::asMoney($amount_row_total);
         $row->item_count = $item_count;
         // add the shippingcosts and make the grandtotal
-        $shipping_costs = (Help::asFloat($row->shipping_costs) / 100.0);
+        $shipping_costs = Help::asFloat($row->shipping_costs) / 100;
         if ($shipping_costs !== 0.0) {
             $highest_vat = 0;
             foreach ($vat as $percentage_index => $amount) {
                 $percentage = Help::asFloat($percentage_index);
                 if ($percentage > $highest_vat) $highest_vat = $percentage;
             }
-            $vat[(string)$highest_vat] += $shipping_costs;
+            $price_ex_vat = 100 * $shipping_costs / (100 + $highest_vat);
+            $vat_amount = $shipping_costs - $price_ex_vat;
+            $vat[(string)$highest_vat] += $vat_amount;
         }
         $amount_grand_total = $amount_row_total + $shipping_costs;
         $row->amount_grand_total = Help::asMoney($amount_grand_total);
@@ -127,11 +140,20 @@ class Order extends BaseElement
         // format order number:
         $row->order_number_human = wordwrap($order_number, 4, ' ', true);
         // the real VAT @since 0.9.0
-        foreach ($vat as $percentage_index => $amount) {
-            $vat_amount = $amount - ($amount / (1 + ($percentage_index / 100)));
+        // @since 0.23.0 make a more logical vat-rows property
+        $row->vat_rows = array();
+        ksort($vat); // make vat appear from lower to higher percentages
+        foreach ($vat as $percentage_index => $vat_amount) {
             $amount_grand_total -= $vat_amount;
+            $vat_amount_display = Help::asMoney($vat_amount);
+            // old style (DEPRECATED) todo remove when petit clos uses new style
             $percentage_tag = "vat_percentage_$percentage_index";
-            $row->{$percentage_tag} = Help::asMoney($vat_amount);
+            $row->{$percentage_tag} = $vat_amount_display;
+            // new style:
+            $row->vat_rows[] = (object)array(
+                'percentage' => $percentage_index,
+                'amount' => $vat_amount_display,
+            );
         }
         $row->amount_grand_total_ex_vat = Help::asMoney($amount_grand_total);
         // @since 0.18.1 remove session_id, not really a secret, but no need to leak it either
