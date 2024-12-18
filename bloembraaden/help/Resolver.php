@@ -26,6 +26,8 @@ class Resolver extends BaseLogic
             Setup::loadInstanceSettings(new Instance($row));
         }
         $GLOBALS['slugs'] = new \stdClass();
+        // since @0.23.0 replace &nbsp; by regular space
+        $request_uri = trim(str_replace('%C2%A0', ' ', $request_uri));
         // urldecode means get utf-8 characters of requested path + querystring
         $request_parts = explode('?', strip_tags(mb_strtolower(urldecode($request_uri))));
         $request_path = $request_parts[0];
@@ -131,7 +133,8 @@ class Resolver extends BaseLogic
         }
     }
 
-    private function addTerms(array $terms): void {
+    private function addTerms(array $terms): void
+    {
         if (true === isset($this->terms)) {
             $terms = array_merge($this->terms, $terms);
         }
@@ -143,7 +146,8 @@ class Resolver extends BaseLogic
         return $this->post_data;
     }
 
-    public function isHomepage():bool {
+    public function isHomepage(): bool
+    {
         return isset($this->terms[0]) && Setup::$HOMEPAGE_SLUG === $this->terms[0];
     }
 
