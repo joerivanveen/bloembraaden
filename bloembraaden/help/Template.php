@@ -178,14 +178,14 @@ class Template extends BaseLogic
      */
     public function addComplexTags(\stdClass $output_object): \stdClass
     {
-        if (isset($output_object->__ref) && ($ref = $output_object->__ref)) {
+        if (true === isset($output_object->__ref) && ($ref = $output_object->__ref)) {
             if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->{$ref}))) {
                 foreach ($obj as $path => $template) {
                     if (true === str_starts_with($path, '__')) continue; // actions cannot be processed here
                     // for now, only get it from cache, if not in cache, then accept the progressive loading
                     if (($object_from_cache = Help::getDB()->cached($path))) {
                         $this->addTags($output_object->slugs, $object_from_cache->slugs);
-                        if (isset($object_from_cache->__ref) && ($ref = $object_from_cache->__ref)) {
+                        if (true === isset($object_from_cache->__ref) && ($ref = $object_from_cache->__ref)) {
                             $this->addTags($output_object, (object)array($ref => $object_from_cache->slugs->{$ref}));
                         }
                     }
@@ -401,7 +401,7 @@ class Template extends BaseLogic
                     $html = str_replace("{{{$tag_name}}}", $output_object, $html);
                 }
                 // @since 0.4.6: simple tags can be processed using a function, {{tag|function_name}}
-                while (($str_pos = strpos($html, "{{{$tag_name}|")) !== false) {
+                while (false !== ($str_pos = strpos($html, "{{{$tag_name}|"))) {
                     // for each occurrence, grab the function name and (try to) execute it
                     $str_pos = $str_pos + strlen($tag_name) + 3;
                     $end_pos = strpos($html, '}}', $str_pos);

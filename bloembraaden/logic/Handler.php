@@ -1434,7 +1434,7 @@ class Handler extends BaseLogic
                 // pass timestamp when available
                 if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
                 // @since 0.6.1 add any changed session vars for update on client
-                $out->__session__ = Help::$session->getUpdatedVars();
+                $out->__updated_session_vars__ = Help::$session->getUpdatedVars();
                 if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
                 $response = gzencode(json_encode($out), 6);
                 // todo, log json error when present?
@@ -1527,9 +1527,9 @@ class Handler extends BaseLogic
             if ('search' !== $type_name) $out->table_info = $this->getTableInfoForOutput(new Type($type_name));
         } elseif (
             // @since 0.7.6 do not show items that are not online
-            (isset($base_element->online) && false === $base_element->online)
+            (true === isset($base_element->online) && false === $base_element->online)
             // @since 0.8.19 do not show items that are not yet published
-            || (isset($base_element->is_published) && false === $base_element->is_published)
+            || (true === isset($base_element->is_published) && false === $base_element->is_published)
         ) {
             $element = new Search();
             $element->findWeighted(array($base_element->title));
@@ -1550,7 +1550,7 @@ class Handler extends BaseLogic
             }
             $out->__messages__ = Help::getMessages();
             // @since 0.6.1 add any changed session vars for update on client
-            $out->__session__ = Help::$session->getUpdatedVars();
+            $out->__updated_session_vars__ = Help::$session->getUpdatedVars();
             if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
             $response = gzencode(json_encode($out), 6);
             unset($out);
@@ -1570,7 +1570,6 @@ class Handler extends BaseLogic
             }
             $session = Help::$session;
             // add some global items
-            $out->csrf_token = $session->getValue('csrf_token'); // necessary for login page at the moment
             $out->nonce = Help::randomString(32);
             $out->version = Setup::$VERSION;
             $root = $instance->getDomain(true);
@@ -1599,7 +1598,8 @@ class Handler extends BaseLogic
                 $out->is_account = true;
             }
             // @since 0.8.18 TODO make a mechanism to distinguish session values that must be directly output...
-            $out->dark_mode = $session->getValue('dark_mode');
+            $out->dark_mode = $session->getValue('dark_mode'); // DEPRECATED todo 0.24.0 remove
+            $out->__session__ = $session->getValues();
             // render in template
             $temp = new Template();
             // @since 0.10.6 add complex tags (menus, other elements) to make integral to the first output

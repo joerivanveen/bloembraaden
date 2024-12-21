@@ -207,6 +207,15 @@ class Session extends BaseLogic
         return $this->vars;
     }
 
+    public function getValues(): array
+    {
+        $values = array();
+        foreach ($this->vars as $key => $var) {
+            $values[$key] = $var->value;
+        }
+        return $values;
+    }
+
     /**
      * @return array named array holding session variables that were updated during this request
      * @since 0.6.1

@@ -1307,8 +1307,8 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 // @since 0.6.1 update session variables that were changed on the server
-                if (true === json.hasOwnProperty('__session__')) {
-                    obj = json['__session__'];
+                if (true === json.hasOwnProperty('__updated_session_vars__')) {
+                    obj = json['__updated_session_vars__'];
                     for (i in obj) {
                         if (obj.hasOwnProperty(i) && obj[i]) PEAT.updateSessionVarClientOnly(i, obj[i]);
                     }
@@ -1631,9 +1631,8 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
 }
 
 PEATCMS_template.prototype.render = function (out) {
-    if (!out.hasOwnProperty('dark_mode')) {
-        out.dark_mode = PEAT.getSessionVar('dark_mode');
-    }
+    out.dark_mode = PEAT.getSessionVar('dark_mode'); // deprecated TODO 0.24.0 remove
+    out.__session__ = PEAT.getSessionValues();
     // master template contains page html broken down in parts
     //console.log(this.template);
     // benchmarking (was: ~380 ms 2020-02-10 with petitclos template)
@@ -1645,7 +1644,7 @@ PEATCMS_template.prototype.render = function (out) {
     for (i = 0; i < 1000; ++i) {
         this.renderOutput(out, this.template);
     }
-    console.log('it took (ms): ' + (new Date() - hallo));*/
+    console.log('it took (ms): ' + (new Date() - hallo));//*/
     return this.convertTagsRemaining(this.renderOutput(out, this.template));
 }
 // check if the string needle is currently in an open html tag in string haystack
@@ -3214,11 +3213,18 @@ PEATCMS.prototype.setScrolledStatus = function () {
  * @returns {null|*}
  */
 PEATCMS.prototype.getSessionVar = function (name) {
-    var session = this.session;
+    const session = this.session;
     if (session && session.hasOwnProperty(name)) {
         return session[name].value;
     }
     return null;
+}
+PEATCMS.prototype.getSessionValues = function() {
+    const session = this.session, values = [];
+    for (const key in session) {
+        values[key] = session[key].value;
+    }
+    return values;
 }
 /**
  * @param name
@@ -3234,6 +3240,8 @@ PEATCMS.prototype.updateSessionVarClientOnly = function (name, session_var) {
         if (VERBOSE) {
             console.log(`Session var ${name} updated:`, session_var);
         }
+    } else if (!session[name]) {
+        console.error('Session var does not exist', session_var);
     } else if (session_var.value !== session[name].value) {
         console.warn(`Refused session var ${name} because it’s too old`);
     }
