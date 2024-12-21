@@ -1587,6 +1587,7 @@ class DB extends Base
                      ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
+                    case 'vat_history':
                     case 'remarks_user':
                         break;
                     case 'vat_valid':

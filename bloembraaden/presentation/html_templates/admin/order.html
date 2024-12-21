@@ -12,7 +12,22 @@
 <div class="page_content PEATCMS_admin">
     {%__order__%}
     <h1><a href="/__order__">&#x25C0; Orders overview</a></h1>
-    <h2>{{order_number_human}} (€ {{amount_grand_total}}) {{myparcel_exported_success:&rarr; <a href="https://backoffice.myparcel.nl/orders">MyParcel</a>}}</h2>
+    <div class="toggle">
+        <header>
+            <button class="toggle_button" alt="Open / close"></button>
+            {{order_number_human}} (€ {{amount_grand_total}}{{vat_valid: ex btw}}) {{myparcel_exported_success:&rarr; <a href="https://backoffice.myparcel.nl/orders">MyParcel</a>}}
+        </header>
+        <section>
+            <textarea class="code">
+                {{myparcel_exported:MyParcel ({{myparcel_exported_date}}):
+                {{myparcel_exported_response}}
+                }}
+                {{vat_valid:VAT check response:
+                {{vat_history}}
+                }}
+            </textarea>
+        </section>
+    </div>
     <!--<h3>TEST: {{payment_afterwards}} {{payment_afterwards_captured}} {{payment_transaction_id}}</h3>
     <p>{{payment_tracking_id}} {{payment_tracking_text}}
     <button data-peatcms_handle="admin_payment_capture" data-order_id="{{order_id}}">CAPT</button> </p>-->
