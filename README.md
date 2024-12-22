@@ -149,10 +149,8 @@ The website itself is build with simple templates that you put in the admin inte
 You also point to the `/_site/example` folder through that admin interface.
 
 #### Known bugs
-The templating engine has 2 known bugs:
-1) If you define two regions that are exactly the same (in compressed html), only one is processed.
-Just add a css class to one of the regions to have them differ and process correctly.
-2) The detecting of nested tags fails in some complex situations where the same tags are repeated on the page.
+The templating engine has a known bug.
+The detecting of nested tags fails in some complex situations where the same tags are repeated on the page.
 Unfortunately there is no workaround, this has to be fixed. Working on it.
 
 ### SSL

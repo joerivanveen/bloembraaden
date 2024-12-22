@@ -199,7 +199,7 @@ Address.prototype.enhanceWrapper = function () {
                 template_name: this.getAttribute('data-template_name')
             }, function (data) {
                 //self.template = data['html'] || data['__template_status__'] || '<h1>ERROR LOADING</h1>';
-                if (data.hasOwnProperty('__html__')) {
+                if (true === data.hasOwnProperty('__html__')) {
                     self.popupTemplate = new PEATCMS_template(data);
                     popup(self.popupTemplate, {
                         addresses: user_addresses,

@@ -773,7 +773,10 @@ class Template extends BaseLogic
             if (($string = $this->getComplexTagString($tag_name, $html))) {
                 $number = count($template[$tag_name]);
                 $template[$tag_name][$number] = $this->prepare($this->getInnerContent($string));
-                $html = str_replace($string, "{{{$tag_name}[$number]}}", $html);
+                // @since 0.24.0 replace only once, for the same exact command can occur multiple times
+                $pos = strpos($html, $string);
+                $html = substr($html, 0, $pos) . "{{{$tag_name}[$number]}}" . substr($html, $pos + strlen($string));
+                //$html = str_replace($string, "{{{$tag_name}[$number]}}", $html);
             } else {
                 $this->addMessage(
                     sprintf(__('Error in complex tag string %s', 'peatcms'), $tag_name),
@@ -783,7 +786,7 @@ class Template extends BaseLogic
         }
         // add the correct javascript and css location(s) this template needs
         // instance has a global date_published for now we should adhere to regarding the js and css versioning
-        if (false !== strpos($html, '</head>')) {
+        if (true === str_contains($html, '</head>')) {
             // build css and js link for the head
             ob_start();
             if (!isset($this->row->element) || 'invoice' !== $this->row->element) {
