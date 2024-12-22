@@ -370,11 +370,11 @@ class Template extends BaseLogic
     }
 
     /**
-     * @param $output
+     * @param \stdClass $output
      * @param array $template
      * @return string
      */
-    private function renderOutput($output, array $template): string
+    private function renderOutput(\stdClass $output, array $template): string
     {
         $html = $template['__html__'];
         // @since 0.8.0 use __ref
@@ -382,11 +382,6 @@ class Template extends BaseLogic
             $output = (object)array_merge((array)$GLOBALS['slugs']->{$output->__ref}, (array)$output);
             unset($output->__ref);
         }
-//        if (isset($output->__ref)) {
-//            $output = $GLOBALS['slugs']->{$output->__ref};
-//            unset($output->__ref);
-//        }
-        //
         $check_if = array(); // @since 0.10.7 remember simple tags to check for if-statements in template last
         foreach ($output as $tag_name => $output_object) { // for each tag in the output object
             if (in_array($out_type = gettype($output_object), array('string', 'integer', 'double', 'boolean'))) {
@@ -470,7 +465,9 @@ class Template extends BaseLogic
                                 }
                             }
                         }
-                        $sub_html = $this->renderOutput($output_object, $sub_template);
+                        // propagate session to sub-object (todo more standard properties?)
+                        $output_object['__session__'] = $output->__session__;
+                        $sub_html = $this->renderOutput((object)$output_object, $sub_template);
                         // remove entirely if no content was added
                         if ($sub_html === $temp_remember_html) {
                             $sub_html = '';

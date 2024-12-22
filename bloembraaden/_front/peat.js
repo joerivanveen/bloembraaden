@@ -1650,7 +1650,7 @@ PEATCMS_template.prototype.render = function (out) {
 // check if the string needle is currently in an open html tag in string haystack
 PEATCMS_template.prototype.inOpenTag = function (needle, haystack) {
     const pos = haystack.indexOf(needle) + needle.length;
-    return haystack.indexOf('<', pos) >= haystack.indexOf('>', pos);
+    return haystack.indexOf('<', pos) > haystack.indexOf('>', pos);
 }
 
 PEATCMS_template.prototype.renderOutput = function (out, template) {
@@ -1735,6 +1735,8 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                             sub_template.__html__ = sub_template.__html__.replace(`{{__row__[${temp_i}]}}`, build_rows);
                         }
                     }
+                    // propagate session to sub-object (todo more standard properties?)
+                    output_object.__session__ = out.__session__;
                     sub_html = this.renderOutput(output_object, sub_template);
                     // remove entirely if no content was added
                     if (sub_html === temp_remember_html) {
