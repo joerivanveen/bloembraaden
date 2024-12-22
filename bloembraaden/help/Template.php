@@ -466,7 +466,7 @@ class Template extends BaseLogic
                             }
                         }
                         // propagate session to sub-object (todo more standard properties?)
-                        $output_object['__session__'] = $output->__session__;
+                        if ('__session__' !== $tag_name) $output_object['__session__'] = $output->__session__;
                         $sub_html = $this->renderOutput((object)$output_object, $sub_template);
                         // remove entirely if no content was added
                         if ($sub_html === $temp_remember_html) {
