@@ -155,7 +155,7 @@ Address.prototype.enhanceWrapper = function () {
     if (fields.hasOwnProperty('address_id')) return; // saved addresses can not be replaced
     if (1 > user_addresses.length) return; // don’t bother if there are no addresses / no user
     if (!button) {
-        console.warn('Add .choose-address button to your address template');
+        if (VERBOSE && window.PEATCMS_globals.is_account) console.warn('Add .choose-address button to your address template');
         return;
     }
     // switch dormant state of button
