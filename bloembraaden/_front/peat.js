@@ -1344,7 +1344,11 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                         }
                     }
                 }
-                window.PEATCMS_globals.__guest__ = window.PEATCMS_globals.is_account ? {} : {show: true};
+                if (true === window.PEATCMS_globals.is_account) {
+                    delete(window.PEATCMS_globals.__guest__);
+                } else {
+                    window.PEATCMS_globals.__guest__ = {show: true};
+                }
                 if (json.hasOwnProperty('slugs')) json = unpack_temp(json);
                 // do the callback
                 on_done(json);
