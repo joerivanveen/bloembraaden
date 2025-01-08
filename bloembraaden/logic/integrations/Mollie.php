@@ -10,6 +10,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
     {
         return array(
             'returnUrl' => 'Return url (after payment)',
+            'cancelUrl' => 'Return url when no payment is done',
             'api_key' => 'The api key used for authorization',
             'default_src' => 'Space separated list of domain names for CSP header',
             'gateway_url' => 'The full url of the api endpoint',
@@ -51,6 +52,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
             "description": "' . htmlentities($out->order_number . ' ' . $instance->getName()) . '",
             "redirectUrl": "' . htmlentities((string)$this->getFieldValue('returnUrl')) . '",
             "webhookUrl": "' . str_replace('/', '\/', $instance_domain) . '\/__action__\/payment_status_update",
+            "cancelUrl": "' . htmlentities((string)$this->getFieldValue('cancelUrl')) . '",
             "shippingAddress": {
                 "country": "' . htmlentities($out->shipping_address_country_iso2) . '",
                 "city": "' . htmlentities($out->shipping_address_city) . '",
