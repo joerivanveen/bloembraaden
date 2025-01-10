@@ -2193,6 +2193,19 @@ PEATCMS_template.prototype.peat_format_money = function (str) { // TODO use the 
         j = (i.length) > 3 ? i.length % 3 : 0;
     return s + (j ? i.slice(0, j) + t : "") + i.slice(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 }
+// string manipulation
+PEATCMS_template.prototype.peat_to_lower = function (str) {
+    if (!str) return str;
+    return str.toLowerCase();
+}
+PEATCMS_template.prototype.peat_to_upper = function (str) {
+    if (!str) return str;
+    return str.toUpperCase();
+}
+PEATCMS_template.prototype.peat_uc_first = function (str) {
+    if (!str) return str;
+    return str[0].toUpperCase() + str.slice(1);
+}
 
 /**
  * site object is called PEATCMS, instantiated later as global PEAT

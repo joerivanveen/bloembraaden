@@ -1049,4 +1049,19 @@ $html";
     {
         return str_replace('"', '&quot;', $str);
     }
+
+    private function peat_to_upper(string $str): string
+    {
+        return mb_strtoupper($str);
+    }
+
+    private function peat_to_lower(string $str): string
+    {
+        return mb_strtolower($str);
+    }
+
+    private function peat_uc_first(string $str): string
+    {
+        return ucfirst($str);
+    }
 }
