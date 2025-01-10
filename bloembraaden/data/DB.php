@@ -2681,21 +2681,32 @@ class DB extends Base
         }
 
         if (1 !== count($rows)) {
-            // build informative error message, what is going on here?
+            // order rows by shoppinglist_id ascending so the oldest one perseveres
+            // (in case it already has something attached)
+            usort($rows, function($a, $b) {
+                return $a->shoppinglist_id <=> $b->shoppinglist_id;
+            });
+            // build informative error message, and delete the superfluous ones (row > 1)
             $lists = array();
             foreach ($rows as $index => $row) {
+                $deleted = 'NO';
+                if (0 !== $index) {
+                    $deleted = $this->deleteRowImmediately('_shoppinglist', $row->shoppinglist_id);
+                }
                 $items = $this->fetchShoppingListRows($row->shoppinglist_id);
                 if (0 < ($count = count($items))) {
-                    $lists[var_export($row, true)] = "$count items";
+                    $lists[var_export($row, true)] = "$count items DEL: $deleted";
                 } else {
-                    $lists[var_export($row, true)] = 'Empty';
+                    $lists[var_export($row, true)] = "Empty DEL: $deleted";
                 }
             }
-            $count = $this->deleteRowWhereAndReturnAffected('_shoppinglist', $data);
-            $this->handleErrorAndStop(
-                sprintf("Deleted $count shoppinglist entries. %s", var_export($lists, true)),
-                __('Could not get shoppinglist', 'peatcms')
-            );
+            // report
+            $this->addError(sprintf("Too many shoppinglists.\n%s", var_export($lists, true)));
+//            $count = $this->deleteRowWhereAndReturnAffected('_shoppinglist', $data);
+//            $this->handleErrorAndStop(
+//                sprintf("Deleted $count shoppinglist entries. %s", var_export($lists, true)),
+//                __('Could not get shoppinglist', 'peatcms')
+//            );
         }
 
         return $rows[0];
