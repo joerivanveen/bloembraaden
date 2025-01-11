@@ -39,7 +39,8 @@ class User extends BaseLogic
     {
         $this->row->__addresses__ = $this->getAddresses();
         $this->row->__orders__ = $this->getOrders();
-        $this->row->__has_multiple_sessions__ = 1 < Help::getDB()->fetchUserSessionCount($this->getId());
+        // TODO because this is not used currently and there is no index on user_id in _session, remove entirely
+        //$this->row->__has_multiple_sessions__ = 1 < Help::getDB()->fetchUserSessionCount($this->getId());
         $this->row->slug = '__user__'; //the default slug...
     }
 

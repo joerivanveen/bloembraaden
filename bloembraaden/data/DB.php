@@ -2358,11 +2358,8 @@ class DB extends Base
     public function fetchUserSessionCount(int $user_id): int
     {
         $statement = $this->conn->prepare('
-            SELECT COUNT(s.session_id)
-            FROM _session s 
-                LEFT OUTER JOIN _user u
-                    ON u.user_id = s.user_id
-            WHERE s.user_id = :user_id AND s.deleted = FALSE
+            SELECT COUNT(session_id) FROM _session
+            WHERE user_id = :user_id AND deleted = FALSE
         ');
         $statement->bindValue(':user_id', $user_id);
         $statement->execute();
