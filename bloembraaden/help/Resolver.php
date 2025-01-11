@@ -331,12 +331,10 @@ class Resolver extends BaseLogic
             if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, $no_cache))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type_name;
-            } elseif (null !== ($slug = Help::getDB()->getCurrentSlugBySlug($term))) {
-                if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug, $no_cache))) {
-                    $element_id = (int)$row->id;
-                    $type_name = (string)$row->type_name;
-                    //$from_history = true; <- abandoned since 0.22
-                }
+            } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeByAncientSlug($term))) {
+                $element_id = (int)$row->id;
+                $type_name = (string)$row->type_name;
+                //$from_history = true; <- abandoned since 0.22
             }
         }
         $peat_type = new Type($type_name);

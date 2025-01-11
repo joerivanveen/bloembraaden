@@ -536,7 +536,7 @@ class DB extends Base
             $statement->execute(); // error handling necessary?
             $rows = $statement->fetchAll(5);
         }
-        if (count($rows) === 0) {
+        if (0 === count($rows)) {
             $statement = $this->conn->prepare('
                 SELECT page_id AS id, \'page\' AS type_name FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
@@ -3932,9 +3932,9 @@ class DB extends Base
      * Returns the current slug based on an old slug by looking in the redirect and history tables
      *
      * @param string $slug the slug to search for in redirect table and history
-     * @return string|null the current slug or null when nothing is found
+     * @return \stdClass|null the typeName + id of the corresponding element or null when nothing is found
      */
-    public function getCurrentSlugBySlug(string $slug): ?string
+    public function fetchElementIdAndTypeByAncientSlug(string $slug): ?\stdClass
     {
         $slug = mb_strtolower($slug);
         // @since 0.8.1: use the redirect table for specific slugs (you probably need to clear cache to pick them up)
@@ -3945,10 +3945,10 @@ class DB extends Base
         $statement->bindValue(':term', $slug);
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
-        if (count($rows = $statement->fetchAll(3)) === 1) {
+        if (1 === count(($rows = $statement->fetchAll(3)))) {
             $statement = null;
 
-            return $rows[0][0];
+            return $this->fetchElementIdAndTypeBySlug($rows[0][0]);
         }
         // no need to look further if the slug is not a real slug
         if ($slug !== Help::slugify($slug)) return null;
@@ -3961,13 +3961,19 @@ class DB extends Base
             $statement = null;
             $row = $rows[0];
             $table_name = $row->table_name;
-            if (str_starts_with($table_name, 'cms_')) {
-                $element_name = substr($table_name, 4);
-                if (($row = $this->fetchRow($table_name, array('slug'), array("{$element_name}_id" => $row->key)))) {
-                    return $row->slug; // you know it might be offline or deleted, but you handle that after the redirect.
+            if (true === str_starts_with($table_name, 'cms_')) {
+                $type_name = substr($table_name, 4);
+                if (true === $this->rowExists($table_name, array("{$type_name}_id" => $row->key))) {
+                    // you know it might be offline or deleted, but you handle that after the redirect.
+                    return (object)array(
+                        'id' => $row->key,
+                        'type_name'=>$type_name,
+                    );
                 }
             }
         }
+
+        return null; // bypass history database for now (0.23.0)
         // TODO remove the following logic except 'return null' when _history is filled
         // look in the history database, get all tables that contain a slug column
         // those tables must also have the standard columns (data_updated, etc.)
@@ -3985,9 +3991,9 @@ class DB extends Base
         foreach ($rows as $key => $row) {
             if (false === str_starts_with($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
             if (ob_get_length()) echo 'UNION ALL ';
-            $element_name = substr($row->table_name, 4);//str_replace('cms_', '', $row->table_name);
-            echo "SELECT {$element_name}_id as id, '$element_name' as type_name, date_updated 
-                FROM cms_$element_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
+            $type_name = substr($row->table_name, 4);//str_replace('cms_', '', $row->table_name);
+            echo "SELECT {$type_name}_id as id, '$type_name' as type_name, date_updated 
+                FROM cms_$type_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
         }
         echo 'ORDER BY date_updated DESC LIMIT 1;';
         $statement = Setup::getHistoryDatabaseConnection()->prepare(ob_get_clean());
