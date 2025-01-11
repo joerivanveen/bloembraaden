@@ -2372,24 +2372,6 @@ class DB extends Base
         return $count;
     }
 
-    /**
-     * @return array
-     */
-    public function fetchSessionsWithoutReverseDns(): array
-    {
-        $statement = $this->conn->prepare('SELECT token, ip_address FROM _session WHERE reverse_dns IS NULL');
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-
-        if (false === $rows) {
-            $this->addError('->fetchSessionsWithoutReverseDns returned false');
-            $rows = array();
-        }
-
-        return $rows;
-    }
-
     public function fetchSession(string $token): ?\stdClass
     {
         // NOTE sessions are by instance_id
@@ -2398,6 +2380,7 @@ class DB extends Base
             'admin_id',
             'session_id',
             'ip_address',
+            'reverse_dns',
         ), array('token' => $token))) {
             //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
             return null;
@@ -2407,7 +2390,7 @@ class DB extends Base
             $vars = [];
             foreach ($var_rows as $var_key => $var_row) {
                 // next line makes sure when a var occurs more than once we load the one with the highest times only
-                if (isset($vars[($var_name = $var_row->name)]) and $vars[$var_name]->times > $var_row->times) continue;
+                if (isset($vars[($var_name = $var_row->name)]) && $vars[$var_name]->times > $var_row->times) continue;
                 // set the var from the db into the array
                 $vars[$var_name] = (object)array('value' => json_decode($var_row->value), 'times' => $var_row->times);
             }
@@ -3223,11 +3206,6 @@ class DB extends Base
             'user_agent' => $user_agent,
             'instance_id' => Setup::$instance_id,
         ));
-    }
-
-    public function updateSession(string $token, array $data): bool
-    {
-        return $this->updateRowAndReturnSuccess('_session', $data, $token);
     }
 
     public function registerSessionAccess(string $token, string $ip_address = null): bool

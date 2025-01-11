@@ -712,13 +712,6 @@ switch ($interval) {
                 }
             }
         }
-        // fill in reverse dns-es
-        $trans->start('Reverse dns for sessions');
-        $sessions = $db->fetchSessionsWithoutReverseDns();
-        foreach ($sessions as $key => $session) {
-            $reverse_dns = gethostbyaddr($session->ip_address);
-            $db->updateSession($session->token, array('reverse_dns' => $reverse_dns));
-        }
         // process some images that need processing (date_processed = null)
         $upload = Setup::$UPLOADS;
         $logger = new StdOutLogger();

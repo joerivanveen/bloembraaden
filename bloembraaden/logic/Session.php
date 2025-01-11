@@ -9,7 +9,7 @@ class Session extends BaseLogic
     // TODO the session currently saves user_agent only once, it is never updated, so a long running
     // TODO session can have an outdated user_agent string.
     private int $session_id;
-    private ?string $token, $user_agent, $ip_address;
+    private ?string $token, $user_agent, $ip_address, $reverse_dns = null;
     private Instance $instance;
     private ?User $user;
     private ?Admin $admin;
@@ -94,6 +94,11 @@ class Session extends BaseLogic
             if (null === $var) $var = (object)array('delete' => true);
             Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
+        // register reverse dns when not already present
+        if (null === $this->reverse_dns) {
+            $reverse_dns = gethostbyaddr($this->ip_address);
+            Help::getDB()->updateColumns('_session', array('reverse_dns' => $reverse_dns), $this->token);
+        }
     }
 
 
@@ -148,8 +153,8 @@ class Session extends BaseLogic
         // $columns_to_update holds the user_id or admin_id that you must update in the _session table
         $new_token = $this->generateToken();
         $columns_to_update['token'] = $new_token; // also update the token
-        if (Help::getDB()->updateSession($this->token, $columns_to_update)) {
-            if ($this->setCookie('BLOEMBRAADEN', $new_token)) { // the new cookie SHOULD now reach the client
+        if (true === Help::getDB()->updateColumns('_session', $columns_to_update, $this->token)) {
+            if (true === $this->setCookie('BLOEMBRAADEN', $new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
                 if (isset($columns_to_update['user_id']) && ($user_id = \intval($columns_to_update['user_id'])) > 0) {
                     $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
@@ -162,6 +167,11 @@ class Session extends BaseLogic
                     __('Session lost, token could not be set.', 'peatcms')
                 );
             }
+        } else {
+            $this->handleErrorAndStop(
+                sprintf('updateColumns returned false after logging in with %s', var_export($columns_to_update, true)),
+                __('Session lost, token could not be set.', 'peatcms')
+            );
         }
 
         return true;
@@ -329,8 +339,10 @@ class Session extends BaseLogic
             if (true === $register_access) {
                 if ($this->ip_address !== $session_row->ip_address) {
                     Help::getDB()->registerSessionAccess($this->token, $this->ip_address);
+                    $this->reverse_dns = null;
                 } else {
                     Help::getDB()->registerSessionAccess($this->token);
+                    $this->reverse_dns = $session_row->reverse_dns;
                 }
             }
 
