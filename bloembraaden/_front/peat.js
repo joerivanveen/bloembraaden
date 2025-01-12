@@ -285,9 +285,11 @@ Address.prototype.enhanceInput = function (input) {
             this.setAttribute('data-value', this.value);
             this.peatcms_address.updateSuggestionsList(this);
         });
-        input.addEventListener('blur', function() {
+        input.addEventListener('blur', function () {
             const suggestions = hipster.querySelector('.suggestions');
-            if (suggestions) suggestions.remove();
+            setTimeout(function () {
+                if (suggestions) suggestions.remove();
+            }, 200);
         });
     } else {
         input.addEventListener('change', function () {
@@ -321,7 +323,11 @@ Address.prototype.updateSuggestionsList = function (input) {
             }
             hipster.classList.remove('loading');
             const list = hipster.querySelector('.suggestions');
-            if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
+            if (input === document.activeElement
+                && json.success
+                && json.hasOwnProperty('suggestions')
+                && 0 < json.suggestions.length)
+            {
                 const ul = document.createElement('ul');
                 ul.classList.add('suggestions');
                 for (const i in json.suggestions) {
@@ -1350,7 +1356,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                     }
                 }
                 if (true === window.PEATCMS_globals.is_account) {
-                    delete(window.PEATCMS_globals.__guest__);
+                    delete (window.PEATCMS_globals.__guest__);
                 } else {
                     window.PEATCMS_globals.__guest__ = {show: true};
                 }
@@ -3243,7 +3249,7 @@ PEATCMS.prototype.getSessionVar = function (name) {
     }
     return null;
 }
-PEATCMS.prototype.getSessionValues = function() {
+PEATCMS.prototype.getSessionValues = function () {
     const session = this.session, values = [];
     for (const key in session) {
         values[key] = session[key].value;
