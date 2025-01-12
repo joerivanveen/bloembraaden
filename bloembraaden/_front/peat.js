@@ -285,6 +285,10 @@ Address.prototype.enhanceInput = function (input) {
             this.setAttribute('data-value', this.value);
             this.peatcms_address.updateSuggestionsList(this);
         });
+        input.addEventListener('blur', function() {
+            const suggestions = hipster.querySelector('.suggestions');
+            if (suggestions) suggestions.remove();
+        });
     } else {
         input.addEventListener('change', function () {
             this.peatcms_address.send();
@@ -293,7 +297,7 @@ Address.prototype.enhanceInput = function (input) {
 }
 Address.prototype.updateSuggestionsList = function (input) {
     const hipster = input.closest('.hipster-input'),
-        type = this.wrapper.getAttribute('data-address_type'),
+        //type = this.wrapper.getAttribute('data-address_type'),
         self = this;
     // throttle updating
     clearTimeout(input.timeout);
@@ -305,6 +309,7 @@ Address.prototype.updateSuggestionsList = function (input) {
             return;
         }
         self.bloembraaden_suggest_timestamp = timestamp;
+        hipster.classList.add('loading');
         NAV.ajax('/__action__/suggest_address', {
             address_country_iso2: iso2,
             query: input.value,
@@ -314,6 +319,7 @@ Address.prototype.updateSuggestionsList = function (input) {
                 console.warn('Suggest address result stale');
                 return;
             }
+            hipster.classList.remove('loading');
             const list = hipster.querySelector('.suggestions');
             if (json.success && json.hasOwnProperty('suggestions') && 0 < json.suggestions.length) {
                 const ul = document.createElement('ul');
@@ -346,8 +352,7 @@ Address.prototype.updateSuggestionsList = function (input) {
                 }
                 hipster.insertAdjacentElement('beforeend', ul);
             } else {
-                const text = __('No suggestions found');
-                hipster.insertAdjacentHTML('beforeend', `<ul class="suggestions"><li>${text}</li></ul>`);
+                hipster.insertAdjacentHTML('beforeend', '<ul class="suggestions"></ul>');
             }
             if (list) list.remove();
         });
