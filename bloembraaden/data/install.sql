@@ -3163,5 +3163,8 @@ ALTER TABLE "public"."_order"
 /* improve retrieving recent history for ‘poll’ request */
 CREATE INDEX if not exists "index_history_date_created" ON "public"."_history" USING btree ("instance_id", "date_created" Desc NULLS Last);
 
+ALTER TABLE "public"."_shoppinglist_variant"
+    ADD COLUMN if not exists "variant_slug" Character Varying(127);
+
 COMMIT;
 

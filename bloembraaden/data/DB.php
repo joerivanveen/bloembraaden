@@ -2700,7 +2700,7 @@ class DB extends Base
     public function fetchShoppingListRows(int $shoppinglist_id): array
     {
         $statement = $this->conn->prepare('
-            SELECT variant_id, quantity, price, price_from, o, deleted
+            SELECT variant_id, variant_slug, quantity, price, price_from, o, deleted
             FROM _shoppinglist_variant WHERE shoppinglist_id = ?
             ORDER BY o, shoppinglist_variant_id DESC
         ');
@@ -2723,16 +2723,17 @@ class DB extends Base
      * @param int $shoppinglist_id
      * @param array $rows
      */
-    public function upsertShoppingListRows(int $shoppinglist_id, array $rows)
+    public function upsertShoppingListRows(int $shoppinglist_id, array $rows): void
     {
         // insert current rows
         $placeholders = array();
         $values = array();
         foreach ($rows as $index => $row) {
             if (false === $row->deleted) {
-                $placeholders[] = '(?, ?, ?, ?, ?, ?)'; // shoppinglist_id, variant_id, quantity, price, price_from, o
+                $placeholders[] = '(?, ?, ?, ?, ?, ?, ?)'; // shoppinglist_id, variant_id, variant_slug, quantity, price, price_from, o
                 $values[] = $shoppinglist_id;
                 $values[] = $row->variant_id;
+                $values[] = $row->variant_slug;
                 $values[] = $row->quantity;
                 $values[] = $row->price;
                 $values[] = $row->price_from;
@@ -2742,7 +2743,7 @@ class DB extends Base
         if (count($placeholders) > 0) {
             $placeholders_str = implode(', ', $placeholders);
             $statement = $this->conn->prepare("
-                INSERT INTO _shoppinglist_variant (shoppinglist_id, variant_id, quantity, price, price_from, o) 
+                INSERT INTO _shoppinglist_variant (shoppinglist_id, variant_id, variant_slug, quantity, price, price_from, o) 
                 VALUES $placeholders_str RETURNING shoppinglist_variant_id;
             ");
             $statement->execute($values);

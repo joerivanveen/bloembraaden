@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Bloembraaden;
 class Shoppinglist extends BaseLogic
 {
-    // TODO it's a bit wonky, with the 'rows' variable holding the rows
+    // TODO it's a bit wonky, with the 'rows' property holding the rows
     private string $name, $state;
     private array $rows;
 
@@ -40,6 +40,7 @@ class Shoppinglist extends BaseLogic
      */
     public function __shutdown(): void
     {
+        $this->addError(' vowerk, SHUTDOWN MF');
         if (true === $this->hasChanged()) {
             Help::getDB()->upsertShoppingListRows($this->getId(), $this->rows);
         }
@@ -70,6 +71,7 @@ class Shoppinglist extends BaseLogic
         }
         $this->rows[] = (object)array(
             'variant_id' => $variant_id,
+            'variant_slug' => $variant->getSlug(),
             'quantity' => $quantity,
             'price_from' => $variant->getPriceFrom(),
             'price' => $variant->getPrice(),
@@ -141,12 +143,36 @@ class Shoppinglist extends BaseLogic
         $row_count = 0; // @since 0.7.6. also count the rows
         // @since 0.5.9 take into account changed variants as well
         foreach ($list_rows as $index => $list_row) {
-            $variant = new Variant();
-            if (null === $variant->fetchById($list_row->variant_id)
-                // @since 0.7.6 items that are not online are also considered unavailable
-                || false === ($variant_out = $variant->getOutputFull())->online
-                || false === $variant_out->for_sale // @since 0.8.14 for sale can be switched off
-            ) {
+            // @since 0.23.0 try to get variant from cache before building the whole thing
+            if (isset($list_row->variant_slug)) {
+                $variant_out = Help::getDB()->cached($list_row->variant_slug);
+                if (null !== $variant_out) {
+                    $variant_out = $variant_out->slugs->{$variant_out->__ref};
+                    if ('variant' !== $variant_out->type_name) { // no longer a variant behind this slug
+                        $variant_out = null;
+                    }
+                }
+//                $message = $variant_out ? $variant_out->slug : '...but not found';
+//                $this->addMessage("From cache! $message",'note');
+            } else {
+                $variant_out = null;
+            }
+            if (null === $variant_out) { // not found in cache, build it fresh, hopefully never
+                $variant = (new Variant())->fetchById($list_row->variant_id);
+                if (null === $variant) {
+                    $list_row->deleted = true;
+                    $this->addMessage(sprintf(
+                        __('An item in %s is no longer available and has been removed', 'peatcms'),
+                        $this->name), 'note'
+                    );
+                    continue;
+                }
+                $variant_out = $variant->getOutputFull();
+                $list_row->variant_slug = $variant_out->slug;
+//                $this->addMessage("Fresh build $variant_out->slug",'warn');
+            }
+
+            if (false === $variant_out->online || false === $variant_out->for_sale) {
                 $list_row->deleted = true;
                 $this->addMessage(sprintf(
                     __('An item in %s is no longer available and has been removed', 'peatcms'),
@@ -156,7 +182,7 @@ class Shoppinglist extends BaseLogic
             } elseif (false === Setup::$NOT_IN_STOCK_CAN_BE_ORDERED && false === $variant_out->in_stock) {
                 // @since 0.7.6 items that are out of stock will be set to 0, a message can be shown using {{in_stock::not:MESSAGE}}
                 if ($list_row->quantity > 0) {
-                    $this->updateQuantity($variant, 0);
+                    $list_row->quantity = 0;
                     $this->addMessage(sprintf(
                         __('An item in %s is out of stock', 'peatcms'),
                         $this->name), 'note'
