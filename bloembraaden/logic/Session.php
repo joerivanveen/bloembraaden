@@ -94,11 +94,11 @@ class Session extends BaseLogic
             if (null === $var) $var = (object)array('delete' => true);
             Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
-        // register reverse dns when not already present
-        if (null === $this->reverse_dns) {
-            $reverse_dns = gethostbyaddr($this->ip_address);
-            Help::getDB()->updateColumns('_session', array('reverse_dns' => $reverse_dns), $this->token);
-        }
+        // register reverse dns when not already present TODO this is very slow sometimes, move it back to a job
+//        if (null === $this->reverse_dns) {
+//            $reverse_dns = gethostbyaddr($this->ip_address);
+//            Help::getDB()->updateColumns('_session', array('reverse_dns' => $reverse_dns), $this->token);
+//        }
     }
 
 
