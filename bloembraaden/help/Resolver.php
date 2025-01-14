@@ -230,7 +230,7 @@ class Resolver extends BaseLogic
         return $this->terms;
     }
 
-    public function getElement(bool $no_cache = false): BaseLogic
+    public function getElement(?bool &$from_history = false, bool $no_cache = false): BaseLogic
     {
         $limit = null;
         // run over the instructions (skipped for regular urls)
@@ -334,7 +334,7 @@ class Resolver extends BaseLogic
             } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeByAncientSlug($term))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type_name;
-                //$from_history = true; <- abandoned since 0.22
+                $from_history = true;
             }
         }
         $peat_type = new Type($type_name);

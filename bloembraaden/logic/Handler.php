@@ -1483,13 +1483,23 @@ class Handler extends BaseLogic
             // check if it’s a paging error
             $out = ($variant_page !== 1) ? Help::getDB()->cached($slug, 1) : null;
             if (null === $out) {
-                $element = $this->resolver->getElement();
-                $out = $element->cacheOutputObject(true);
-                unset($element);
-                if (extension_loaded('newrelic')) {
-                    $transaction_name = (ADMIN) ? 'Admin: ' : 'Visit: ';
-                    newrelic_name_transaction($transaction_name . 'cache');
+                $element = $this->resolver->getElement($from_history);
+                // try the cache one more time with the new slug, else cache it
+                if (true === $from_history
+                    && null !== ($out = Help::getDB()->cached($element->getSlug()))
+                ) {
+                    if (extension_loaded('newrelic')) {
+                        $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
+                        newrelic_name_transaction("$transaction_name from history");
+                    }
+                } else {
+                    $out = $element->cacheOutputObject(true);
+                    if (extension_loaded('newrelic')) {
+                        $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
+                        newrelic_name_transaction("$transaction_name cache");
+                    }
                 }
+                unset($element);
             }
         }
         // set path to __ref if not present
