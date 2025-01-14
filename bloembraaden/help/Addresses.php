@@ -5,8 +5,8 @@ namespace Bloembraaden;
 
 class Addresses extends Base
 {
-    const SUGGESTION_ENDPOINT = 'https://address.api.myparcel.nl/addresses';
-    const VALIDATION_ENDPOINT = 'https://address.api.myparcel.nl/validate';
+    public const SUGGESTION_ENDPOINT = 'https://address.api.myparcel.nl/addresses';
+    public const VALIDATION_ENDPOINT = 'https://address.api.myparcel.nl/validate';
 
     private string $api_key;
 
@@ -101,8 +101,8 @@ class Addresses extends Base
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 12,
+            CURLOPT_CONNECTTIMEOUT => 2,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
