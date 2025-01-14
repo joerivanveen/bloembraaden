@@ -1816,7 +1816,8 @@ class DB extends Base
 
     public function deleteSearchIndex(BaseElement $element): bool
     {
-        $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE type_name = :type AND id = :id;');
+        $statement = $this->conn->prepare('DELETE FROM _ci_ai WHERE instance_id = :instance_id AND type_name = :type AND id = :id;');
+        $statement->bindValue(':instance_id', $element->getInstanceId());
         $statement->bindValue(':type', $element->getTypeName());
         $statement->bindValue(':id', $element->getId());
         $statement->execute();
@@ -1835,8 +1836,9 @@ class DB extends Base
         if (true === $row->deleted) {
             $statement = $this->conn->prepare("
                 DELETE FROM _ci_ai 
-                WHERE type_name = :type_name AND _ci_ai.id = :id;
+                WHERE instance_id = :instance_id AND type_name = :type_name AND _ci_ai.id = :id;
             ");
+            $statement->bindValue(':instance_id', $element->getInstanceId()); // to use index
             $statement->bindValue(':type_name', $element->getTypeName());
             $statement->bindValue(':id', $row->id);
             $statement->execute();
@@ -2356,7 +2358,7 @@ class DB extends Base
     }
 
     public function fetchUserSessionCount(int $user_id): int
-    {
+    { // TODO slow query not used atm
         $statement = $this->conn->prepare('
             SELECT COUNT(session_id) FROM _session
             WHERE user_id = :user_id AND deleted = FALSE
@@ -2372,19 +2374,19 @@ class DB extends Base
     public function fetchSession(string $token): ?\stdClass
     {
         // NOTE sessions are by instance_id
-        if (!$row = $this->fetchRow('_session', array(
+        if (!($row = $this->fetchRow('_session', array(
             'user_id',
             'admin_id',
             'session_id',
             'ip_address',
             'reverse_dns',
-        ), array('token' => $token))) {
+        ), array('token' => $token)))) {
             //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
             return null;
         }
         // get session vars
-        if ($var_rows = $this->fetchRows('_sessionvars', array('name', 'value', 'times'), array('session_id' => $row->session_id))) {
-            $vars = [];
+        if (($var_rows = $this->fetchRows('_sessionvars', array('name', 'value', 'times'), array('session_id' => $row->session_id)))) {
+            $vars = array();
             foreach ($var_rows as $var_key => $var_row) {
                 // next line makes sure when a var occurs more than once we load the one with the highest times only
                 if (isset($vars[($var_name = $var_row->name)]) && $vars[$var_name]->times > $var_row->times) continue;
