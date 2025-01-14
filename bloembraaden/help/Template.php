@@ -973,12 +973,14 @@ $html";
                 return $this->json_by_template_id[$template_id];
             }
             $obj = null;
+            // todo for non-admin, get template from opcache (and save it there, upon publish, removing need for json_prepared)
             if (isset($this->row) || ($this->row = Help::getDB()->getTemplateRow($template_id))) {
                 if (ADMIN) {
                     $obj = json_decode($this->getFreshJson());
                 } else { // get the published value
                     $obj = json_decode($this->row->json_prepared);
                 }
+                // todo also: save the default template ids in cache
             } elseif (isset($out->id) && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
                 // this can only happen when templates are deleted willy nilly...
                 if (($this->row = Help::getDB()->getTemplateRow($template_id))) {
