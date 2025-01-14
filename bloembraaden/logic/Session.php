@@ -46,15 +46,15 @@ class Session extends BaseLogic
             $this->user_agent = 'UNKNOWN';
         }
         // check for cookie and create it if not present
-        $this->token = $this->getCookie('BLOEMBRAADEN');
+        $this->token = $this->getSessionCookie();
         if (null === $this->token || strlen($this->token) !== 32) {
             $this->token = $this->newSession();
-            $this->setCookie('BLOEMBRAADEN', $this->token);
+            $this->setSessionCookie($this->token);
         }
         if (false === $this->load()) {
             // if loading fails, the cookie is wrong apparently, or old maybe, create a new session then
             $this->token = $this->newSession();
-            $this->setCookie('BLOEMBRAADEN', $this->token);
+            $this->setSessionCookie($this->token);
             if (false === $this->load(false)) {
                 // if that fails, handleErrorAndStop
                 $this->handleErrorAndStop($this->getLastError(), __('Could not start session.', 'peatcms'));
@@ -154,7 +154,7 @@ class Session extends BaseLogic
         $new_token = $this->generateToken();
         $columns_to_update['token'] = $new_token; // also update the token
         if (true === Help::getDB()->updateColumns('_session', $columns_to_update, $this->token)) {
-            if (true === $this->setCookie('BLOEMBRAADEN', $new_token)) { // the new cookie SHOULD now reach the client
+            if (true === $this->setSessionCookie($new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
                 if (isset($columns_to_update['user_id']) && ($user_id = \intval($columns_to_update['user_id'])) > 0) {
                     $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
@@ -312,7 +312,7 @@ class Session extends BaseLogic
     public function load(bool $register_access = true): bool
     {
         // get all the stuff from the database
-        if ($session_row = Help::getDB()->fetchSession($this->token)) {
+        if (($session_row = Help::getDB()->fetchSession($this->token))) {
             // get user
             if ($session_row->user_id > 0) {
                 $this->user = new User($session_row->user_id);
@@ -354,15 +354,15 @@ class Session extends BaseLogic
         }
     }
 
-    private function getCookie(string $name): ?string
+    private function getSessionCookie(): ?string
     {
-        return $_COOKIE[$name] ?? null;
+        return $_COOKIE['BLOEMBRAADEN'] ?? null;
     }
 
-    private function setCookie(string $name, string $value): bool
+    private function setSessionCookie(string $value): bool
     {
         // returns false when there's already been output, true when it successfully runs
-        return setCookie($name, $value, array(
+        return setCookie('BLOEMBRAADEN', $value, array(
             'expires' => time() + 31536000,
             'path' => '/',
             'domain' => '',
