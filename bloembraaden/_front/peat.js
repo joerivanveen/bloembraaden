@@ -2613,7 +2613,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         return false;
     } else {
         template = this.templates[template_cache_name];
-        if (VERBOSE) console.log(`Templator ${template_cache_name} from cache:`, template);
+        if (VERBOSE) console.log(`Template ${template_cache_name} from cache:`, template);
         // cache which template is currently active
         this.template_cache_name = template_cache_name;
     }
@@ -2834,7 +2834,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
         template.renderProgressive(); // document.body.innerHTML
         this.registerAssetLoad(document); // we're loaded!
     } else {
-        console.error('Templator could not render output');
+        console.error('Template could not render output');
     }
     //return this.DOMElement;
 }
