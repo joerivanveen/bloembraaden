@@ -52,7 +52,7 @@ switch ($interval) {
                 // create internal mail
                 if (null !== ($template_id = $row->template_id_internal_confirmation)) {
                     try {
-                        $temp = new Template($db->getTemplateRow($template_id, $instance_id));
+                        $temp = new Template($template_id, $instance_id);
                         $html = $temp->renderObject($order_output_object);
                         $mailer->set(array(
                             'text' => Help::html_to_text($html),
@@ -190,7 +190,7 @@ switch ($interval) {
                         // make a confirmation mail for the client
                         if (null !== ($template_id = $row->template_id_order_confirmation)) {
                             try {
-                                $temp = new Template($db->getTemplateRow($template_id, $instance_id));
+                                $temp = new Template($template_id, $instance_id);
                                 $html = $temp->renderObject($order_output_object);
                             } catch (\Exception $e) {
                                 Help::addError($e);
@@ -321,7 +321,7 @@ switch ($interval) {
                             $html = $payment_confirmation_short_text;
                             if (null !== ($template_id = $row->template_id_payment_confirmation)) {
                                 try {
-                                    $temp = new Template($db->getTemplateRow($template_id, $instance_id));
+                                    $temp = new Template($template_id, $instance_id);
                                     $html = $temp->renderObject($order_output_object);
                                 } catch (\Exception $e) {
                                     Help::addError($e);

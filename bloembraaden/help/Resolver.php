@@ -361,22 +361,20 @@ class Resolver extends BaseLogic
                     $element = $session->getAdmin();
                     break;
                 case 'instance':
-                    if (isset($terms[1])) {
+                    if (true === isset($terms[1])) {
                         $element = new Instance(Help::getDB()->fetchInstance($terms[1]));
                     } else {
                         $element = $session->getInstance();
                     }
                     break;
                 case 'template':
-                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
-                        if (($row = Help::getDB()->getTemplateRow($id, null))) {
-                            $element = new Template($row);
-                            if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
-                        }
+                    if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
+                        $element = new Template($id, null);
+                        if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
                     }
                     break;
                 case 'search_settings':
-                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
+                    if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
                         if (($element = (new Search())->fetchById($id))) {
                             $element->setForAdmin();
                             if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
@@ -385,7 +383,7 @@ class Resolver extends BaseLogic
                     break;
                 case 'menu_item':
                     // get the menu_item_id and fetch it
-                    if (isset($terms[1]) && ($id = (int)$terms[1])) {
+                    if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
                         // menu items are only returned for the current instance
                         $type = new Type('menu_item');
                         $element = $type->getElement(Help::getDB()->fetchElementRow($type, $id));

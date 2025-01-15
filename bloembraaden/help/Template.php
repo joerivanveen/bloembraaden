@@ -10,18 +10,32 @@ namespace Bloembraaden;
  */
 class Template extends BaseLogic
 {
-    private array $partial_templates, $hints, $doublechecking, $json_by_template_id;
-    private string $json_fresh, $html, $version;
+    private array $json_fresh, $partial_templates, $hints, $doublechecking, $json_by_template_id;
+    private string $html, $version;
+    private int $template_id; // instead of row, preventing slow getting of templates
 
-    public function __construct(?\stdClass $row = null)
+    public function __construct(mixed $template, ?int $instance_id = null)
     {
         // @since 0.5.16 you can instantiate the template with null and load it later
         //if ($row === null) $this->handleErrorAndStop('Attempting to instantiate template with $row null');
-        parent::__construct($row);
+        parent::__construct();
         $this->version = Setup::$VERSION;
         $this->type_name = 'template';
         $this->doublechecking = array(); // I don’t want to worry about it being empty
         $this->json_by_template_id = array(); // I don’t want to worry about it being empty
+
+        // a full row may be supplied, when that is available from the originating call
+        if ($template instanceof \stdClass) {
+            $this->row = $template;
+            $this->template_id = $template_id = $template->template_id;
+            $this->row->json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
+        } elseif (null !== $template) {
+            $this->template_id = (int)$template;
+            if (ADMIN) {
+                if (-1 === $instance_id) $instance_id = Setup::$instance_id;
+                $this->row = Help::getDB()->fetchTemplateRow((int)$template, $instance_id);
+            }
+        }
     }
 
     public function __destruct()
@@ -33,18 +47,14 @@ class Template extends BaseLogic
 
     public function checkIfPublished(): bool
     {
-        if ($this->getFreshJson() === $this->row->json_prepared) {
-            return true;
-        }
-
-        return false;
+        return (json_encode($this->getFreshJson()) === json_encode($this->row->json_prepared));
     }
 
-    public function getFreshJson(): string
+    public function getFreshJson(): array
     {
         if (false === isset($this->json_fresh)) {
             $fresh = $this->prepare($this->cleanTemplateHtml($this->row->html));
-            $this->json_fresh = json_encode($fresh);
+            $this->json_fresh = $fresh;
         }
 
         return $this->json_fresh;
@@ -52,48 +62,48 @@ class Template extends BaseLogic
 
     public function publish(): bool
     {
+        // double check existence of folder
+        $template_folder = Setup::$DBCACHE . 'templates/';
+        if (false === file_exists($template_folder)) {
+            $this->addMessage(sprintf(__('Folder %s does not exist', 'peatcms'), $template_folder), 'error');
+
+            return false;
+        }
         // grab the html, prepare into a json object
         $json_prepared = $this->getFreshJson();
-        // save it in json_prepared for this template
-        if (true === Help::getDB()->updateColumns(
-                '_template',
-                array('json_prepared' => $json_prepared),
-                $this->getId(),
-            )) {
-            $this->row->json_prepared = $json_prepared;
-            //gzencode ( string $data [, int $level = -1 [, int $encoding_mode = FORCE_GZIP ]] ) : string
-            // save it to disk: /presentation/[template_id].gz
-            $template_folder = Setup::$DBCACHE . 'templates/';
-            if (true === file_exists($template_folder)) {
-                $template_file = "$template_folder{$this->getId()}.gz"; // json saved as gzipped string
-                if (false === file_put_contents(
-                        $template_file,
-                        gzencode($json_prepared, 9), // compress as well
-                        LOCK_EX
-                    )
-                ) {
-                    $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), $template_file), 'error');
+        $this->row->json_prepared = $json_prepared; // for checkIfPublished method
+        $template_id = $this->template_id;
+        // save it to opcache for this template
+        if (false === Help::getDB()->appCacheSet("templates/$template_id", $json_prepared)) {
+            $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), "template $template_id"), 'error');
 
-                    return false;
-                }
+            return false;
+        }
+        // save gzipped version for frontend
+        //gzencode ( string $data [, int $level = -1 [, int $encoding_mode = FORCE_GZIP ]] ) : string
+        // save it to disk: /templates/[template_id].gz
+        $template_file = "$template_folder$template_id.gz"; // json saved as gzipped string
+        $encoded_json = json_encode($json_prepared);
+        if (false === $encoded_json || false === file_put_contents(
+                $template_file,
+                gzencode($encoded_json, 9), // compress as well
+                LOCK_EX
+            )
+        ) {
+            $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), $template_file), 'error');
 
-                return Help::getDB()->updateColumns('_template', array(
-                    'published' => true,
-                    'date_published' => 'NOW()',
-                ), $this->getId());
-            } else {
-                $this->addMessage(sprintf(__('Folder %s does not exist', 'peatcms'), $template_folder), 'error');
-
-                return false;
-            }
+            return false;
         }
 
-        return false;
+        return Help::getDB()->updateColumns('_template', array(
+            'published' => true,
+            'date_published' => 'NOW()',
+        ), $this->getId());
     }
 
     public function getId(): int
     {
-        return $this->row->template_id;
+        return $this->template_id;
     }
 
     public function completeRowForOutput(): void
@@ -115,7 +125,7 @@ class Template extends BaseLogic
     {
         $element_name = strtolower($element_name);
         if (($template_id = Help::getDB()->getDefaultTemplateIdFor($element_name))) {
-            $this->row = Help::getDB()->getTemplateRow($template_id);
+            $this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id);
         } elseif (null === $this->loadByTemplatePointer($element_name)) { // try to get it from disk, the peatcms defaults, if that fails you have to throw an error
             throw new \Exception(sprintf('Could not load default template for %s', $element_name));
         }
@@ -179,8 +189,8 @@ class Template extends BaseLogic
     public function addComplexTags(\stdClass $output_object): \stdClass
     {
         if (true === isset($output_object->__ref) && ($ref = $output_object->__ref)) {
-            if (null !== ($obj = $this->getTemplateObjectForElement($output_object->slugs->{$ref}))) {
-                foreach ($obj as $path => $template) {
+            if (null !== ($temp = $this->getTemplateForElement($output_object->slugs->{$ref}))) {
+                foreach ($temp as $path => $template) {
                     if (true === str_starts_with($path, '__')) continue; // actions cannot be processed here
                     // for now, only get it from cache, if not in cache, then accept the progressive loading
                     if (($object_from_cache = Help::getDB()->cached($path))) {
@@ -190,7 +200,7 @@ class Template extends BaseLogic
                         }
                     }
                 }
-                unset($obj);
+                unset($temp);
             }
         }
 
@@ -312,12 +322,12 @@ class Template extends BaseLogic
             return '';
         }
         if (ADMIN) {
-            $obj = json_decode($this->getFreshJson());
+            $temp = $this->getFreshJson();
         } else { // get the published value
-            $obj = json_decode($this->row->json_prepared);
+            $temp = $this->row->json_prepared;
         }
-        if (null !== $obj) { // probably null if never published or id's changed in the database
-            return $this->convertTagsRemaining($this->renderOutput($output, (array)$obj));
+        if (null !== $temp) { // probably null if never published or id's changed in the database
+            return $this->convertTagsRemaining($this->renderOutput($output, $temp));
         }
         $this->addError('Template not published or accessible during ->renderObject');
 
@@ -342,9 +352,9 @@ class Template extends BaseLogic
             $out = (object)array_merge((array)$GLOBALS['slugs']->{$out->__ref}, (array)$out);
             unset($out->__ref);
         }
-        if (null !== ($obj = $this->getTemplateObjectForElement($out))) {
-            $this->html = $this->convertTagsRemaining($this->renderOutput($out, (array)$obj));
-            unset($obj);
+        if (null !== ($temp = $this->getTemplateForElement($out))) {
+            $this->html = $this->convertTagsRemaining($this->renderOutput($out, $temp));
+            unset($temp);
 
             return;
         }
@@ -964,34 +974,48 @@ $html";
      * Caches the object by template_id for the request
      *
      * @param \stdClass $out
-     * @return \stdClass|null
+     * @return array|null
      */
-    private function getTemplateObjectForElement(\stdClass $out): ?\stdClass
+    private function getTemplateForElement(\stdClass $out): ?array
     {
         if ('template' !== ($type_name = $out->type_name) && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
-            if (isset($this->json_by_template_id[$template_id])) {
+            if (true === isset($this->json_by_template_id[$template_id])) {
                 return $this->json_by_template_id[$template_id];
             }
-            $obj = null;
-            // todo for non-admin, get template from opcache (and save it there, upon publish, removing need for json_prepared)
-            if (isset($this->row) || ($this->row = Help::getDB()->getTemplateRow($template_id))) {
-                if (ADMIN) {
-                    $obj = json_decode($this->getFreshJson());
-                } else { // get the published value
-                    $obj = json_decode($this->row->json_prepared);
+            $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
+            // non-admins only need the json, or bust
+            if (!ADMIN) {
+                file_put_contents(Setup::$DBCACHE . '../logs/joeri.log', "--- Get template $template_id ---\n", FILE_APPEND);
+                if (false === $json_prepared) {
+                    $this->addError(sprintf("Template $template_id not published in %s", Setup::$INSTANCE_DOMAIN));
+                    return null;
                 }
-                // todo also: save the default template ids in cache
+                $this->json_by_template_id[$template_id] = $json_prepared;
+                return $json_prepared;
+            }
+
+            // admins need to get fresh json, and fill the row for other methods
+            $json_admin = null;
+            // ADMIN can get any template, for editing, so supply null for instance_id
+            if (isset($this->row) || ($this->row = Help::getDB()->fetchTemplateRow($template_id, null))) {
+                if (null === $json_prepared) {
+                    $this->row->json_prepared = null;
+                } else {
+                    $this->row->json_prepared = $json_prepared;
+                }
+                $json_admin = $this->getFreshJson();
             } elseif (isset($out->id) && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
+                // todo also: save the default template ids in cache
                 // this can only happen when templates are deleted willy nilly...
-                if (($this->row = Help::getDB()->getTemplateRow($template_id))) {
-                    $obj = json_decode($this->getFreshJson());
+                if (($this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
+                    $json_admin = $this->getFreshJson();
                     Help::getDB()->updateElement(new Type($type_name), array('template_id' => $template_id), $out->id);
                     $this->addError("Template id updated to $template_id for $out->title_parsed ($type_name)");
                 }
             }
-            $this->json_by_template_id[$template_id] = $obj; // can be null if never published or id's changed in the database
+            $this->json_by_template_id[$template_id] = $json_admin; // can be null if never published or id's changed in the database
 
-            return $obj;
+            return $json_admin;
         }
 
         return null;

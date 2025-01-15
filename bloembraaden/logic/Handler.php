@@ -109,11 +109,11 @@ class Handler extends BaseLogic
             if (isset($post_data->template_name)) {
                 // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
                 if (isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
-                    if (ADMIN && ($row = Help::getDB()->getTemplateRow($template_id))) {
+                    if (ADMIN && ($row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                         $temp = new Template($row);
                         if (false === $temp->checkIfPublished()) {
-                            $out = json_decode($temp->getFreshJson());
-                            $out->__template_status__ = 'sandbox';
+                            $out = $temp->getFreshJson();
+                            $out['__template_status__'] = 'sandbox';
                             echo json_encode($out);
                             die();
                         }
@@ -128,7 +128,7 @@ class Handler extends BaseLogic
                     }
                 }
                 // use Template() by loading html from disk
-                $temp = new Template();
+                $temp = new Template(null);
                 $admin = ((isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
                 //$out = array('html' => $temp->load($data->template_name, $admin));
                 if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
@@ -1302,7 +1302,7 @@ class Handler extends BaseLogic
                             }
                         } elseif ($posted_table_name === '_template') {
                             if ($posted_column_name === 'published') {
-                                $temp = new Template(Help::getDB()->getTemplateRow($posted_id, null));
+                                $temp = new Template(Help::getDB()->fetchTemplateRow($posted_id, null));
                                 if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
                                     // this always sends true as value, attempt to publish the template
                                     $update_arr = array('published' => $temp->publish());
@@ -1611,7 +1611,7 @@ class Handler extends BaseLogic
             $out->dark_mode = $session->getValue('dark_mode'); // DEPRECATED todo 0.24.0 remove
             $out->__session__ = $session->getValues();
             // render in template
-            $temp = new Template();
+            $temp = new Template(null);
             // @since 0.10.6 add complex tags (menus, other elements) to make integral to the first output
             $temp->addComplexTags($out);
             // render the page already

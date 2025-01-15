@@ -1916,10 +1916,8 @@ class DB extends Base
      * @param int|null $instance_id @since 0.5.7
      * @return \stdClass|null the templaterow from the database
      */
-    public function getTemplateRow(int $template_id, ?int $instance_id = -1): ?\stdClass
+    public function fetchTemplateRow(int $template_id, ?int $instance_id): ?\stdClass
     {
-        if ($instance_id === -1) $instance_id = Setup::$instance_id;
-
         return $this->fetchRow('_template', array('*'), array('template_id' => $template_id, 'instance_id' => $instance_id));
     }
 
@@ -2666,7 +2664,7 @@ class DB extends Base
         if (1 !== count($rows)) {
             // order rows by shoppinglist_id ascending so the oldest one perseveres
             // (in case it already has something attached)
-            usort($rows, function($a, $b) {
+            usort($rows, function ($a, $b) {
                 return $a->shoppinglist_id <=> $b->shoppinglist_id;
             });
             // build informative error message, and delete the superfluous ones (row > 1)
@@ -3968,7 +3966,7 @@ class DB extends Base
                     // you know it might be offline or deleted, but you handle that after the redirect.
                     return (object)array(
                         'id' => $row->key,
-                        'type_name'=>$type_name,
+                        'type_name' => $type_name,
                     );
                 }
             }
@@ -4693,7 +4691,7 @@ class DB extends Base
     /**
      * Will cache the value returned by $callback using the $key
      *  - for this request (= very fast when reused, no effect when not)
-     *  - for this version of Bloembraaden, using opcache, 4 x faster than file caching
+     *  - supposing opcache is faster than file caching, pending testing
      * @param string $key
      * @param callable $callback
      * @return mixed the original value returned by $callback
@@ -4702,10 +4700,10 @@ class DB extends Base
     {
         if (false === isset($this->cache_keys[$key])) {
             $version_key = Setup::$VERSION . ".$key";
-            $val = $this->app_cache_get($version_key);
+            $val = $this->appCacheGet($version_key);
             if (false === $val) {
                 $val = $callback();
-                $this->app_cache_set($version_key, $val);
+                $this->appCacheSet($version_key, $val);
             }
             $this->cache_keys[$key] = $val;
         }
@@ -4715,22 +4713,25 @@ class DB extends Base
     /**
      * @param string $key
      * @param $val
-     * @return void
+     * @return bool whether it worked
      */
-    private function app_cache_set(string $key, $val): void
+    public function appCacheSet(string $key, $val): bool
     {
         $val = base64_encode(serialize($val));
         // Write to temp file first to ensure atomicity
         $tmp = "$this->cache_folder$key." . uniqid('', true) . '.tmp';
-        file_put_contents($tmp, "<?php \$val = unserialize(base64_decode('$val'));", LOCK_EX);
-        rename($tmp, "$this->cache_folder$key.serialized");
+        $prm = "$this->cache_folder$key.serialized";
+        return
+            false !== file_put_contents($tmp, "<?php \$val = unserialize(base64_decode('$val'));", LOCK_EX)
+            && rename($tmp, $prm)
+            && opcache_compile_file($prm);
     }
 
     /**
      * @param string $key
      * @return mixed|false the original value put in cache for $key, or false when not yet cached
      */
-    private function app_cache_get(string $key): mixed
+    public function appCacheGet(string $key): mixed
     {
         @include "$this->cache_folder$key.serialized";
         return $val ?? false;
