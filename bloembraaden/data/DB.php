@@ -1616,6 +1616,7 @@ class DB extends Base
                 // now the rows
                 foreach ($order_rows as $index => $row) {
                     $row->order_id = $order_id;
+                    unset($row->variant_slug); // this is not saved in the order, prevent logging by removing now
                     if (null === $this->insertRowAndReturnLastId('_order_variant', (array)$row)) {
                         $this->resetConnection();
                         $this->addMessage(__('Order row insert failed', 'peatcms'), 'error');
