@@ -1950,16 +1950,40 @@ class DB extends Base
     }
 
     /**
+     * Can only be gotten for current instance
+     *
      * @param string $for_element
-     * @param int $instance_id
+     * @return int|null
+     */
+    public function getDefaultTemplateIdFor(string $for_element): ?int
+    {
+        $instance_id = Setup::$instance_id;
+        // get from cache if possible
+        $defaults = $this->appCacheGet("templates/defaults.$instance_id") ?: array(); // because it does not start with id will not be cleaned up
+        if (true === isset($defaults[$for_element])
+            && ($template_id = (int) $defaults[$for_element])
+        ) {
+            return $template_id;
+        }
+        // add this default to the cache element
+        $template_id = $this->fetchDefaultTemplateIdFor($for_element); // can be null
+        $defaults[$for_element] = $template_id;
+        $this->appCacheSet("templates/defaults.$instance_id", $defaults);
+
+        return $template_id;
+    }
+
+    /**
+     * @param string $for_element
      * @return int|null
      * @since 0.5.7
      */
-    public function getDefaultTemplateIdFor(string $for_element, int $instance_id = -1): ?int
+    public function fetchDefaultTemplateIdFor(string $for_element): ?int
     {
-        if ($instance_id === -1) $instance_id = Setup::$instance_id;
-        $statement = $this->conn->prepare('SELECT template_id FROM _template WHERE instance_id = ? AND element = ? ORDER BY name;');
-        $statement->execute(array($instance_id, $for_element));
+        $statement = $this->conn->prepare('SELECT template_id FROM _template WHERE instance_id = :instance_id AND element = :element ORDER BY name;');
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':element', $for_element);
+        $statement->execute();
         $rows = $statement->fetchAll(3);
         $statement = null;
         if (count($rows) > 0) return $rows[0][0];

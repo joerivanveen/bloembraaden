@@ -1187,6 +1187,8 @@ class Help
                 return false;
             }
         }
+        // clear template default id cache
+        self::getDB()->appCacheSet("templates/defaults.$instance_id", array());
         self::addMessage(__('Publishing done', 'peatcms'));
         unset($rows);
 
