@@ -397,13 +397,11 @@ switch ($interval) {
                     if (0 === $quantity) continue;
                     $vat_percentage = Help::asFloat($line->vat_percentage);
                     $highest_vat = max($highest_vat, $vat_percentage);
-                    $myp_price = (int)(100 * Help::asFloat($line->price));
-                    $myp_vat = (int)($vat_percentage * $myp_price / (100.0 + $vat_percentage));
                     $order_lines[] = (object)array(
                         'quantity' => $quantity,
-                        'price' => $myp_price - $myp_vat,
-                        'vat' => $myp_vat,
-                        'price_after_vat' => $myp_price,
+                        'price' => $line->price_ex_vat,
+                        'vat' => $line->vat_amount,
+                        'price_after_vat' => $line->price,
                         'product' => (object)array(
                             'sku' => $line->sku,
                             'name' => $line->title

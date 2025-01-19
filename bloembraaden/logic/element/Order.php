@@ -105,7 +105,7 @@ class Order extends BaseElement
             // Also convert between money and float to stay consistent.
             $price_ex_vat = Help::asMoney(100 * $row_price / (100 + $list_row->vat_percentage));
             // this way prevents rounding discrepancies with db routine
-            $vat_amount = $quantity * ($row_price - Help::asFloat($price_ex_vat));
+            $vat_amount = Help::asFloat(Help::asMoney($quantity * ($row_price - Help::asFloat($price_ex_vat))));
             if (isset($vat[$percentage_index])) {
                 $vat[$percentage_index] += $vat_amount;
             } else {
@@ -113,6 +113,9 @@ class Order extends BaseElement
             }
             $amount_row_total += $row_total;
             $item_count += $quantity;
+            // register the complicated calculation on the row, for use further down the line (e.g. myparcel export)
+            $list_row->price_ex_vat = $price_ex_vat;
+            $list_row->vat_amount = Help::asMoney($vat_amount);
         }
         $row->__items__ = $list_rows;
         unset($list_rows);

@@ -120,6 +120,8 @@ class Help
      */
     public static function floatForHumans(?float $float): string
     {
+        if (null === $float) return '';
+        return (string)$float;
         // floating point not accurate... https://stackoverflow.com/questions/4921466/php-rounding-error
         if (null === $float || '' === ($sunk = (string)$float)) return '';
         // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues

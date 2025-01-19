@@ -1543,10 +1543,10 @@ class DB extends Base
                 'instance_id' => $instance_id,
                 'session_id' => $session->getId(),
                 'user_id' => (($user = $session->getUser()) ? $user->getId() : 0),
-                // you need float for humans here to prevent rounding errors, but I think there is more to it than that
-                'amount_grand_total' => (int)(100 * (float)Help::floatForHumans($amount_grand_total)),
-                'amount_row_total' => (int)(100 * (float)Help::floatForHumans($amount_row_total)),
-                'shipping_costs' => (int)(100 * (float)Help::floatForHumans($shipping_costs)),
+                // you need float for humans here to prevent rounding errors
+                'amount_grand_total' => (int)Help::floatForHumans(100 * $amount_grand_total),
+                'amount_row_total' => (int)Help::floatForHumans(100 * $amount_row_total),
+                'shipping_costs' => (int)Help::floatForHumans(100 * $shipping_costs),
                 'user_gender' => $vars['gender'] ?? '',
                 'user_email' => strtolower(trim($vars['email'])),
                 'user_phone' => strtolower(trim($vars['phone'] ?? '')),
