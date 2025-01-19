@@ -1479,7 +1479,6 @@ class DB extends Base
     {
         // we need specific vars for the ordering process, validation process has run, if something misses you should throw an error
         if (count(($order_rows = $shoppinglist->getRows())) > 0) {
-            // TODO we need the session_id and the user_id (if exists) from that session as well...
             if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
             if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
             if ($this->hasError()) return null;
@@ -1518,7 +1517,7 @@ class DB extends Base
                 $amount_row_total += Help::asFloat($row->price) * $quantity;
                 $quantity_total += $quantity;
             }
-            if ($quantity_total === 0) { // @since 0.7.6 if there is nothing to order, also abandon the process
+            if (0 === $quantity_total) { // @since 0.7.6 if there is nothing to order, also abandon the process
                 $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
                 $this->addError('DB->placeOrder: no rows in shoppinglist to order');
 

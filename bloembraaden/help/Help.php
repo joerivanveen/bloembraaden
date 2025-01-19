@@ -508,7 +508,7 @@ class Help
     public static function validate_vat(string $country_iso2, string $number): array
     {
         if (2 !== strlen($country_iso2) || strlen($number) < 5) {
-            return array('success' => true, 'valid' => false);
+            return array('success' => true, 'valid' => false, 'response' => 'Incorrect format');
         }
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/$country_iso2/vat/$number");
@@ -517,10 +517,16 @@ class Help
         $result = (array)json_decode(curl_exec($ch));
         curl_close($ch);
         if (0 === json_last_error()) {
+            $valid = $result['isValid'];
+            $success = true;
+            if (false === $valid && true === isset($result['userError']) && 'MS_UNAVAILABLE' === $result['userError']) {
+                $success = false; // Member state unavailable
+                self::addMessage(__('Member state VAT check service unavailable', 'peatcms'), 'warn');
+            }
             return array(
                 'response' => $result,
-                'valid' => $result['isValid'],
-                'success' => true,
+                'valid' => $valid,
+                'success' => $success,
             );
         } else {
             Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'VIES'), 'warn');

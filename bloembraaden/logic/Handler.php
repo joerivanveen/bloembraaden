@@ -781,7 +781,6 @@ class Handler extends BaseLogic
                 }
             } elseif ('validate_vat' === $action) {
                 $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
-                $out['success'] = true;
             } elseif (('update_address' === $action || 'delete_address' === $action)
                 && (true === Help::recaptchaVerify($instance, $post_data))
             ) {
