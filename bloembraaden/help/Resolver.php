@@ -370,7 +370,11 @@ class Resolver extends BaseLogic
                 case 'template':
                     if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
                         $element = new Template($id, null);
-                        if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
+                        if (null === ($element_instance_id = $element->getInstanceId()) // when deleted
+                            || (false === $session->getAdmin()->isRelatedInstanceId($element_instance_id))
+                        ) {
+                            unset($element);
+                        }
                     }
                     break;
                 case 'search_settings':
