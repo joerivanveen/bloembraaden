@@ -509,6 +509,7 @@ class Help
 
     public static function validate_vat(string $country_iso2, string $number): array
     {
+        // check availability: https://ec.europa.eu/taxation_customs/vies/#/self-monitoring
         if (2 !== strlen($country_iso2) || strlen($number) < 5) {
             return array('success' => true, 'valid' => false, 'response' => 'Incorrect format');
         }
