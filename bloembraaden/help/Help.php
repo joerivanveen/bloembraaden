@@ -897,7 +897,12 @@ class Help
             return $value->table_name;
         }, $db->fetchTablesToExport(true));
         // remove remnants of previous import
-        array_map('unlink', glob("$folder_name/$instance_id.*.json"));
+        $files = glob("$folder_name$instance_id.*.json");
+        foreach ($files as $index => $file) {
+            if (is_file($file)) {
+                unlink($file); // delete file
+            }
+        }
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
