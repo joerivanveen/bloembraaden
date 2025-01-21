@@ -896,6 +896,8 @@ class Help
         $tables = array_map(function ($value) {
             return $value->table_name;
         }, $db->fetchTablesToExport(true));
+        // remove remnants of previous import
+        array_map('unlink', glob("$folder_name/$instance_id.*.json"));
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
@@ -930,6 +932,7 @@ class Help
             $table_name = '';
             if ($handle) {
                 $row_treat = 'save'; // skip, wait, save
+                $id_column_name = null;
                 // fgets read a line until eol, or 'length' bytes of the same line
                 while (($buffer = fgets($handle, 4096)) !== false) {
                     $string .= $buffer;
@@ -937,7 +940,6 @@ class Help
                     if ("\n" === mb_substr($string, -1)) {
                         $string = trim($string, "\t\r\n\,");
                         $json = (array)json_decode("{{$string}}");
-                        $id_column_name = null;
                         if (0 === json_last_error()) {
                             $value = reset($json);
                             $key = key($json);
@@ -954,6 +956,7 @@ class Help
                                 if (false === in_array($table_name, $tables)) {
                                     $logger->log("Table $table_name is not imported");
                                     $string = '';
+                                    // following rows must be skipped, until a new ‘table’ is encountered
                                     $row_treat = 'skip';
                                     continue;
                                 } elseif ('_order' === $table_name) {
@@ -974,7 +977,8 @@ class Help
                                             $column_name_to_check = $ids[$column_name];
                                             if (false === $column_name_to_check) continue;
                                             if (is_string($column_name_to_check)
-                                                && false === isset($ids[$column_name_to_check])) {
+                                                && false === isset($ids[$column_name_to_check])
+                                            ) {
                                                 $logger->log("Column $column_name -> $column_name_to_check not filled yet");
                                                 $row_treat = 'wait';
                                                 break;
@@ -996,7 +1000,7 @@ class Help
                                         // import the table line by line and register the id->id translation
                                         $ids[$id_column_name] = array();
                                     }
-                                } elseif ('wait' === $row_treat) {
+                                } else { // 'wait' === $row_treat
                                     $logger->log("Save table $table_name for later");
                                     // register this table for importing later and write the object to disk
                                     $file_name = "$folder_name$instance_id.$table_name.json";
@@ -1028,6 +1032,7 @@ class Help
                                             $col_trans = $col_name;
                                         }
                                         if ($id_column_name === $col_name) {
+                                            // don’t save the primary key
                                             unset($row[$col_name]);
                                         } elseif (true === isset($ids[$col_trans])) {
                                             if (is_string($ids[$col_trans])) {
@@ -1036,7 +1041,7 @@ class Help
                                                     self::handleErrorAndStop("No ids found for column $col_name translated to $col_trans");
                                                 }
                                             }
-                                            if (is_array($ids_for_col = $ids[$col_trans])) {
+                                            if (is_array(($ids_for_col = $ids[$col_trans]))) {
                                                 // 0 is possible as a default value for id's
                                                 if (0 === $col_value) {
                                                     $row[$col_name] = 0;
