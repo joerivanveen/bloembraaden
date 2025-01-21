@@ -1958,15 +1958,14 @@ class DB extends Base
     {
         $instance_id = Setup::$instance_id;
         // get from cache if possible
-        $defaults = $this->appCacheGet("templates/defaults.$instance_id") ?: array(); // because it does not start with id will not be cleaned up
-        if (true === isset($defaults[$for_element])
-            && ($template_id = (int) $defaults[$for_element])
-        ) {
-            return $template_id;
+        // because it does not start with (int) id will not be cleaned up by job
+        $defaults = $this->appCacheGet("templates/defaults.$instance_id") ?: array();
+        if (true === isset($defaults[$for_element])) {
+            return $defaults[$for_element]; // 0 for non existent
         }
         // add this default to the cache element
         $template_id = $this->fetchDefaultTemplateIdFor($for_element); // can be null
-        $defaults[$for_element] = $template_id;
+        $defaults[$for_element] = (int)$template_id;
         $this->appCacheSet("templates/defaults.$instance_id", $defaults);
 
         return $template_id;
@@ -3615,10 +3614,11 @@ class DB extends Base
                 return null;
             }
         } catch (\Exception $e) {
+            $this->addError($e->getMessage());
+
             if ($e instanceof \PDOException && '23505' === $e->getCode()) {
                 $this->healTable($table_name);
             }
-            $this->addError($e->getMessage());
 
             return null;
         }
