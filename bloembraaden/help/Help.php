@@ -890,12 +890,7 @@ class Help
         set_time_limit(0); // this might take a while
         $static_root = null;
         $update_order_numbers = false;
-        $files = array($file_name);
         $folder_name = self::import_export_folder();
-        $db = self::getDB();
-        $tables = array_map(function ($value) {
-            return $value->table_name;
-        }, $db->fetchTablesToExport(true));
         // remove remnants of previous import
         $files = glob("$folder_name$instance_id.*.json");
         foreach ($files as $index => $file) {
@@ -903,6 +898,12 @@ class Help
                 unlink($file); // delete file
             }
         }
+        // prepare some vars
+        $files = array($file_name);
+        $db = self::getDB();
+        $tables = array_map(function ($value) {
+            return $value->table_name;
+        }, $db->fetchTablesToExport(true));
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
