@@ -182,7 +182,7 @@ class DB extends Base
     {
         return 0 !== $this->updateColumnsWhere('_system', array(
                 $column_name => $value,
-            ), []);
+            ), array());
     }
 
     /**
@@ -3356,7 +3356,7 @@ class DB extends Base
         return $slug;
     }
 
-    private function getTablesWithSlugs(): array
+    public function getTablesWithSlugs(): array
     {
         return $this->withApplicationCaching('var.tables_with_slugs', function () {
             // get all tables that contain a slug column, except tables where slug is used as foreign key
@@ -4470,6 +4470,20 @@ class DB extends Base
         } else {
             return false;
         }
+    }
+
+    public function updateHistoryKey(int $key, array $where): void
+    {
+        if (0 === count($where)) {
+            $this->addError('updateHistoryKey() does not work with empty where');
+            return;
+        }
+        $table_info = $this->getTableInfo('_history');
+        $table = new Table($table_info);
+        $where = $table->formatColumnsAndData($where, true);
+        $where_statement = implode(' AND ', $where['parameterized']);
+        $statement = $this->conn->prepare("UPDATE _history SET key = $key WHERE $where_statement");
+        $statement->execute($where['values']);
     }
 
     public function healTable(string $table_name): bool

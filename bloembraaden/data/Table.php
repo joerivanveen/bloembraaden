@@ -131,8 +131,9 @@ class Table extends Base
             }
         }
         // format for (where / update) statement
+        $table_info = $this->getInfo();
         foreach ($cols as $column_name => $value) {
-            if (($col = $this->getInfo()->getColumnByName($column_name))) {
+            if (($col = $table_info->getColumnByName($column_name))) {
                 // validate before save
                 if (true === $for_update && false === $this->isValid($col, $value)) {
                     $return_value['discarded'][] = $column_name;
@@ -148,7 +149,7 @@ class Table extends Base
                     $return_value['values'][] = $value;
                     if (false === $for_update) {
                         // if the value starts and / or ends with %, treat this as a LIKE statement
-                        if (0 === strpos($value, '%') || strrpos($value, '%') === strlen($value) - 1) $like = true;
+                        if (true === str_starts_with($value, '%') || strrpos($value, '%') === strlen($value) - 1) $like = true;
                         // ci_ai and token (_session) are already lower, prevent the table scan here
                         if ('ci_ai' !== $column_name && 'token' !== $column_name) {
                             $column_name = "lower($column_name)";
@@ -183,7 +184,7 @@ class Table extends Base
         }
         // format
         foreach ($cols as $key => $name) {
-            if ($column = $info->getColumnByName($name)) {// skip invalid columns
+            if (($column = $info->getColumnByName($name))) { // skip invalid columns
                 $r['columns'][$key] = $column;
                 $r['names'][] = $name;
             }

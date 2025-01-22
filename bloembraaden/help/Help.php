@@ -967,7 +967,7 @@ class Help
                                 } elseif ('_order' === $table_name) {
                                     $update_order_numbers = true;
                                 }
-                                if ('_history' !== $table_name) { // history has no id column, no checks necessary
+                                if ('_history' !== $table_name) { // history has no id column
                                     $id_column_name = $info->getIdColumn()->getName();
                                     // check the columns, if any _id column is present, it has to be translated
                                     foreach ($info->getColumnNames() as $index => $column_name) {
@@ -1124,12 +1124,46 @@ class Help
         ) {
             $logger->log('Updated order numbers table');
         }
-//        // reindex tables (and repair if necessary)
-//        $logger->log('Healing tables ...');
-//        foreach ($tables as $i => $table_name) {
-//            $db->healTable($table_name);
-//        }
-//        $logger->log('... done');
+        // update slugs in _history table to have auto-redirect restored
+        $logger->log('Update history for redirects');
+        $tables_with_slugs = array();
+        foreach ($db->getTablesWithSlugs() as $index => $row) {
+            $tables_with_slugs[$row->table_name] = $index;
+        }
+        foreach ($ids as $col_name => $translated_ids) {
+            if (false === is_array($translated_ids)) continue;
+            // get table name from id:
+            $table_name = 'cms_' . substr($col_name, 0, -3);
+            if (false === isset($tables_with_slugs[$table_name])) continue;
+            // todo loop door de ids in $translated_ids, maar check op overlappingen, en doe die laatst,
+            // zodat je niet de net geüpdatete nog een keer update (van 1 naar 3 en van 3 naar 5)
+            /**
+             * 1 => 3
+             * 2 => 4
+             * 3 => 5
+             * 5 => 2
+             * 4 => 8 <- als deze naar 1 gaat kan het dus niet :-P
+             */
+            while (0 !== ($count = count($translated_ids))) {
+                foreach ($translated_ids as $old => $new) {
+                    // save for later, when this value exists as old as well
+                    if (isset($translated_ids[$new])) continue;
+                    // update the history table
+                    $db->updateHistoryKey($new, array(
+                        'instance_id' => $instance_id,
+                        'table_name' => $table_name,
+                        'key' => $old,
+                    ));
+                    // this one is done
+                    unset($translated_ids[$old]);
+                }
+                if ($count === count($translated_ids)) {
+                    $logger->log('ERROR: loop detected in history, cannot update');
+                    break;
+                }
+            }
+            $logger->log("$table_name done");
+        }
         // prepare images for import
         if (null === $static_root) {
             $logger->log('ERROR: static root missing in import file, cannot import images');
