@@ -1358,7 +1358,7 @@ class Handler extends BaseLogic
                             $out = $instance->row;
                         }
                     }
-                } elseif ('file_upload_admin' === $action) {
+                } elseif ('admin_file_upload' === $action) {
                     if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
                         Help::$OUTPUT_JSON = true;
                         $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);

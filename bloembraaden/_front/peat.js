@@ -1209,7 +1209,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
         self.feedbackUpload(event, prgrs);
     }, false);
     // open after setting event listener (Firefox ignores the listener otherwise)
-    xhr.open('POST', '/__action__/file_upload_admin/', true);
+    xhr.open('POST', '/__action__/admin_file_upload/', true);
     this.setUpProcess(xhr, callback);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream;'); // has no effect on the server
     xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name)); // maybe .fileName, for older Firefox browsers?
