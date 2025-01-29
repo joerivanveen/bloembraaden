@@ -38,7 +38,7 @@ class Search extends BaseElement
         $this->row->content = 'Bloembraaden searched for these terms: `' . var_export($terms, true) .
             "\n" . '` and these properties: `' . var_export($properties, true) . '`';
         // set template_id to default search template, if necessary (and if it exists)
-        if (!isset($this->row->template_id)) {
+        if (false === isset($this->row->template_id)) {
             $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('search');
         }
         $template_settings = $this->getAndSetTemplateSettings();
@@ -62,6 +62,7 @@ class Search extends BaseElement
         $results = $this->getResults($terms, $clean_types);
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until || $hydrate_until < 0) {
+            $hydrate_until = (null === $hydrate_until) ? $item_count : abs($hydrate_until);
             // make elements from results
             foreach ($results as $i => $result) {
                 $type_name = $result->type_name;
@@ -70,14 +71,23 @@ class Search extends BaseElement
                     && count($this->row->__variants__) > $template_settings->variant_page_size) {
                     continue;
                 }
-                if (!($element = (new Type($type_name))->getElement()->fetchById($result->id))) continue;
-                $output = $element->getOutputFull();
+                // TODO this is a performance bottleneck, we need to be able to filter the items before getting output / from the db, or get the properties + price quickly in 1 go
+                // maybe look at getRelevantPropertyValuesAndPrices for inspiration
+                // @since 0.23.1 use cache for individual elements reducing queries
+                if (null !== ($output = Help::getDB()->cached($result->slug))) {
+                    $output = $output->slugs->{$output->__ref}; // get output full
+                    // prevent search results in search results, probably the original item is offline
+                    if ('search' === $output->type_name) continue;
+                } else { // go for the even slower version :-(
+                    if (null === ($element = (new Type($type_name))->getElement()->fetchById($result->id))) continue;
+                    $output = $element->getOutputFull();
+                }
                 // only include if all properties are present
                 $all_properties_present = true;
                 if (true === isset($output->__x_values__)) {
                     foreach ($properties as $property => $property_values) {
                         //echo "$property: ";
-                        if ('price_max' === $property && isset($property_values[0])) {
+                        if ('price_max' === $property && true === isset($property_values[0])) {
                             if (true === isset($output->price) &&
                                 Help::asFloat($property_values[0]) < Help::asFloat($output->price)
                             ) {
@@ -86,7 +96,7 @@ class Search extends BaseElement
                             }
                             continue;
                         }
-                        if ('price_min' === $property && isset($property_values[0])) {
+                        if ('price_min' === $property && true === isset($property_values[0])) {
                             if (true === isset($output->price) &&
                                 Help::asFloat($output->price) < Help::asFloat($property_values[0])
                             ) {
@@ -98,7 +108,8 @@ class Search extends BaseElement
                         foreach ($property_values as $index => $value) {
                             //echo "$value, ";
                             foreach ($output->__x_values__ as $x_i => $x_value) {
-                                if (false === is_int($x_i)) continue; // not a row
+                                // ATTENTION bugfix: is_int returns false for string '0', '1', etc. as returned by cache
+                                if (false === is_numeric($x_i)) continue; // not a row
                                 if ($x_value->property_slug === $property && $x_value->slug === $value) {
                                     //echo "YES\n";
                                     continue 3; // means 'or' todo make and / or configurable?
@@ -111,26 +122,26 @@ class Search extends BaseElement
                         break;
                     }
                 }
-                $output = null;
+                //$output = null;
                 if ($all_properties_present) {
                     $plural = "__{$type_name}s__";
                     if (false === isset($this->row->{$plural})) $this->row->{$plural} = array();
-                    $this->row->{$plural}[] = $element->getOutput();
+                    $this->row->{$plural}[] = $output;//$element->getOutput();
                     $this->row->item_count += 1;
                 }
                 // set it so the entry in results list will be replaced by the element
                 unset($result->slug);
-                $result->__ref = $element->getSlug();
-                // todo not calculate this every iteration
-                if (isset($hydrate_until) && $this->row->item_count === abs($hydrate_until)) break;
+                $result->__ref = $output->slug;//$element->getSlug();
+                unset($output);
+                if ($this->row->item_count === $hydrate_until) break;
             }
-            if (isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
+            if (true === isset($terms[0]) && 'not_online' !== $terms[0]) $this->result_count = $this->row->item_count; // means it will be cached if > 0
         } else {
             $this->row->item_count = $item_count;
         }
-        if (0 === $this->result_count) {
-            $terms = $original_terms;
-        }
+//        if (0 === $this->result_count) {
+//            $terms = $original_terms;
+//        }
         $this->row->slug = implode('/', $terms);
         foreach ($terms as $index => $term) {
             if ('price_from' === $term) {
@@ -147,13 +158,13 @@ class Search extends BaseElement
     private function getResults(array $clean_terms, array $clean_types): array
     {
         // unfortunately special cases:
-        if (count(($special_cases = array_filter($clean_terms, static function ($item) {
-                return in_array($item,array('not_online', 'price_from'));
-            }))) > 0
+        if (count(array_filter($clean_terms, static function ($item) {
+                return in_array($item, array('not_online', 'price_from'));
+            })) > 0
         ) {
             return Help::getDB()->findElementResults('variant', $clean_terms, $this->getProperties());
         }
-        // todo, why findElementResults and findCiAi? They are almost the same, except properties en weight function
+        // todo, why findElementResults and findCiAi? They are almost the same, except properties and weight function
 
         return Help::getDB()->findCiAi($clean_terms, $clean_types, static function (string $haystack, array $needles): float {
             // the getWeight function
@@ -176,12 +187,12 @@ class Search extends BaseElement
 
     public function cleanTerms(array $terms): array
     {
-        if (count($terms) > 1 and isset($this->row->slug)) {
+        $terms = array_map('strtolower', array_values(array_unique($terms)));
+        if (1 < count($terms) && true === isset($this->row->slug)) {
             if ($terms[0] === $this->row->slug) unset($terms[0]);
         }
         // todo swap alternatives for correct entries
         // todo remove stop words
-        // todo remove duplicate entries
         // order the terms following a fixed way, currently alphabetically
         usort($terms, function ($a, $b) {
             if (is_numeric($a) && !is_numeric($b))
@@ -331,7 +342,9 @@ class Search extends BaseElement
         $list = (new Shoppinglist($shoppinglist_name))->getRows(); // ordered from old to new by default
         if (count(($props = $this->getProperties())) > 0) {
             $variant_ids_show = $this->getAllVariantIds(array_keys($props));
-            $variant_ids_in_list = array_map(static function($item) { return $item->variant_id; }, $list);
+            $variant_ids_in_list = array_map(static function ($item) {
+                return $item->variant_id;
+            }, $list);
         } else {
             // this case is for the original shopping cart page
             // walk in reverse so the newest item gets the most attention
@@ -411,6 +424,9 @@ class Search extends BaseElement
 
     public function completeRowForOutput(): void
     {
+        if (true === isset($this->row->slug) && 0 < count(($properties = $this->getProperties()))) {
+            $this->row->slug = Help::turnIntoPath(explode('/', $this->row->slug), $properties);
+        }
         if (true === $this->admin) {
             Help::prepareAdminRowForOutput($this->row, 'search_settings', (string)$this->getId());
             $this->row->template_id = null;

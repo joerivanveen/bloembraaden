@@ -50,7 +50,7 @@ class BaseLogic extends Base
         if (null === $this->row) {
             $type_name = $this->getType()->typeName();
             $this->addError("{$type_name}->getRow() called while row is NULL");
-            $this->row = (object)array('type_name'=>$type_name);
+            $this->row = (object)array('type_name' => $type_name);
         }
         $return_value = $this->row;
         $return_value->template_pointer = $this->getTemplatePointer();
@@ -75,16 +75,24 @@ class BaseLogic extends Base
             // continue for all elements
             $row =& $this->row;
             // hidden columns that are never output
-            if (isset($row->ci_ai)) unset($row->ci_ai);
+            if (true === isset($row->ci_ai)) unset($row->ci_ai);
             // constructed fields
-            if (!isset($row->template_pointer)) $row->template_pointer = $this->getTemplatePointer();
+            if (false === isset($row->template_pointer)) $row->template_pointer = $this->getTemplatePointer();
             $row->type_name = $this->getType()->typeName();
             // fields title, excerpt, description and content need to be parsed
             $parser = new Parser();
-            $row->excerpt_parsed = $parser->parse($row->excerpt ?? null);
-            $row->description_parsed = $parser->parse($row->description ?? null);
-            $row->content_parsed = $parser->parse($row->content ?? null);
-            $row->title_parsed = $parser->parse($row->title ?? null, true);
+            if (true === isset($row->excerpt)) {
+                $row->excerpt_parsed = $parser->parse($row->excerpt);
+            }
+            if (true === isset($row->description)) {
+                $row->description_parsed = $parser->parse($row->description);
+            }
+            if (true === isset($row->content)) {
+                $row->content_parsed = $parser->parse($row->content);
+            }
+            if (true === isset($row->title)) {
+                $row->title_parsed = $parser->parse($row->title, true);
+            }
             $parser = null;
         }
 
@@ -93,7 +101,7 @@ class BaseLogic extends Base
 
     public function getOutputObject(): \stdClass
     {
-        if (isset($this->output_object)) return $this->output_object;
+        if (true === isset($this->output_object)) return $this->output_object;
         // @since 0.7.1 set master template settings, this is done only once per request
         // all children obey to these settings due to __construct() in BaseLogic
         $GLOBALS['template_settings'] = $this->getAndSetTemplateSettings();
@@ -105,7 +113,6 @@ class BaseLogic extends Base
     }
 
     /**
-     *
      * @param bool $returnOutputObject
      * @return \stdClass|null
      * @since 0.8.8
@@ -114,15 +121,24 @@ class BaseLogic extends Base
     {
         $out = $this->getOutputObject();
         // cache the slug if it’s not a dynamic one (containing ‘__’)
-        if (isset($out->__ref) && false === str_contains($out->__ref, '__')) {
+        if (true === isset($out->__ref) && false === str_contains(($slug = $out->__ref), '__')) {
             $db = Help::getDB();
-            // update slug...
-            $slug = $out->__ref;
-            // for elements with no results, drop the cache
+            // for elements with no results or that are not online, drop the cache
             if (0 === $this->getResultCount()) {
                 $db->deleteFromCache($slug);
 
-                return ($returnOutputObject) ? $this->getOutputObject() : null;
+                if (true === $returnOutputObject) return $out;
+                return null;
+            } elseif (false === $this->isOnline()) {
+                $this->addError(sprintf('%s is not cached', $out->__ref));
+                // remove from cache if this element (type) is cached, leave it when replaced by a search page
+                $obj = $db->cached($slug);
+                if (null !== $obj && 'search' !== $obj->slugs->{$obj->__ref}->type_name) {
+                    $db->deleteFromCache($slug);
+                }
+
+                if (true === $returnOutputObject) return $out;
+                return null;
             }
             // cache the first page always
             $db->cache($out, $this->getTypeName(), $this->getId(), 1);
@@ -165,7 +181,8 @@ class BaseLogic extends Base
             }
         }
 
-        return (($returnOutputObject) ? $out : null);
+        if (true === $returnOutputObject) return $out;
+        return null;
     }
 
     /**
@@ -190,7 +207,7 @@ class BaseLogic extends Base
 
     public function getTemplatePointer(): object
     {
-        if (isset($this->template_pointer)) {
+        if (true === isset($this->template_pointer)) {
             return $this->template_pointer;
         } else {
             return (object)array(
@@ -212,8 +229,8 @@ class BaseLogic extends Base
      */
     public function getAndSetTemplateSettings(): \stdClass
     {
-        if (isset($this->template_settings)) return $this->template_settings;
-        if (!isset($this->row->template_id) or null === ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) { // return default settings
+        if (true === isset($this->template_settings)) return $this->template_settings;
+        if (false === isset($this->row->template_id) || null === ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) { // return default settings
             $settings = (object)array(
                 'nested_max' => $this->nested_max,
                 'nested_show_first_only' => $this->nested_show_first_only,
@@ -249,11 +266,16 @@ class BaseLogic extends Base
      */
     public function isOnline(): bool
     {
-        if (isset($this->row->deleted) && true === $this->row->deleted) return false;
-        $this->getOutput();
-        if (isset($this->row->is_published) && false === $this->row->is_published) return false;
-        // if the column is absent, the element can only be online
-        return $this->row->online ?? true;
+        if (true === isset($this->row->deleted) && true === $this->row->deleted) return false;
+        if (true === isset($this->row->online) && false === $this->row->online) return false;
+        // ATTENTION slightly duplicate code in BaseElement :-(
+        if (true === isset($this->row->date_published)
+            && false !== ($timestamp = strtotime($this->row->date_published))
+        ) {
+            return ($timestamp <= Setup::getNow());
+        }
+        // nothing apparently prevents this from being seen
+        return true;
     }
 
     /**

@@ -1407,9 +1407,12 @@ function unpack_rec(obj, nest_level) {
     }
     for (n in obj) {
         if (obj.hasOwnProperty(n)) {
-            if ('__ref' === n && !obj.hasOwnProperty('slug')) { // check for slug to prevent bugs where __ref and slug are present
+            if ('__ref' === n
+                && !obj.hasOwnProperty('slug') // check for slug to prevent bugs where __ref and slug are present
+                && window.PEATCMS_globals.slugs[obj.__ref] // it could be missing (@since 0.23.1)
+            ) {
                 // __ref is considered to be this level
-                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj[n]], nest_level));
+                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj.__ref], nest_level));
             }
             if (Array.isArray(obj[n])) {
                 for (i = 0, arr = obj[n], len = arr.length; i < len; ++i) {

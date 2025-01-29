@@ -220,10 +220,10 @@ class Handler extends BaseLogic
             }
             //$out = array('__variants__' => $variants, 'slug' => 'suggest');
         } elseif ('download' === $action) {
-            if ($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[0] ?? '')) {
+            if (($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[0] ?? ''))) {
                 if ('file' === $el->type_name) {
-                    $f = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
-                    $f->serve();
+                    $file = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
+                    $file->serve();
                 }
             }
         } elseif ('account_delete_session' === $action) {
@@ -1419,7 +1419,7 @@ class Handler extends BaseLogic
         }
         if ($out !== null) {
             $out = (object)$out;
-            $out->slugs = $GLOBALS['slugs'];
+            $out->slugs = $GLOBALS['slugs']; //<- *RECURSION* ?? when, why
             $out = $this->resolver->cleanOutboundProperties($out);
             if (headers_sent()) {
                 echo "#BLOEMBRAADEN_JSON:#\n";
@@ -1459,7 +1459,7 @@ class Handler extends BaseLogic
     {
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();
-        if (isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {
+        if (false === ADMIN && true === isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {
             $check_timestamp = (int)$_SERVER['HTTP_X_CACHE_TIMESTAMP'];
             // check if it’s ok, then just return ok immediately
             if (true === Help::getDB()->cachex($slug, $check_timestamp)) {
@@ -1471,18 +1471,17 @@ class Handler extends BaseLogic
                 die();
             }
         }
-        $instance = Help::$session->getInstance();
-        // usually we get the element from cache, only when not cached yet get it from the resolver
+        // usually we get the src from cache, only when not cached yet get it from the resolver
         // @since 0.8.2 admin also gets from cache, table_info is added later anyway
         // warmup does an update of the cache row (getDB()->cache handles this automatically) so the client never misses out
         if ($this->resolver->hasInstructions()) {
             $element = $this->resolver->getElement();
             $out = $element->getOutputObject();
+            unset($element);
         } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page))) {
             // check if it’s a paging error
-            $out = ($variant_page !== 1) ? Help::getDB()->cached($slug, 1) : null;
-            if (null === $out) {
-                $element = $this->resolver->getElement($from_history);
+            if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1);
+            if (null === $out && ($element = $this->resolver->getElement($from_history)) instanceof BaseElement) {
                 // try the cache one more time with the new slug, else cache it
                 if (true === $from_history
                     && null !== ($out = Help::getDB()->cached($element->getSlug()))
@@ -1501,6 +1500,7 @@ class Handler extends BaseLogic
                 unset($element);
             }
         }
+        process_out:
         // set path to __ref if not present
         if (true === isset($out->__ref)) {
             $out_path =& $out->slugs->{$out->__ref}->path;
@@ -1515,16 +1515,30 @@ class Handler extends BaseLogic
             $out->slugs->{$out->__ref}->path .= "/variant_page$out->variant_page";
         }
         // use a properly filled element to check some of the settings
-        $base_element = (true === isset($out->__ref)) ? $out->slugs->{$out->__ref} : $out;
+        $element_row = (true === isset($out->__ref)) ? $out->slugs->{$out->__ref} : $out;
         if (true === ADMIN) {
+            $type_name = $element_row->type_name;
+            // if you get a search page from cache as admin, check if the original slug also exists to see it (can be offline etc)
+            if ('search' === $type_name
+                && null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug(explode('/', $slug)[0], true))
+            ) {
+                $this->addMessage(__('Replaced by a search page for visitors.', 'peatcms'), 'warn');
+                $type = new Type($row->type_name);
+                $element = $type->getElement();
+                $element->fetchById($row->id);
+                $element->setProperties($this->resolver->getProperties());
+                $out = $element->getOutputObject();
+                unset($element);
+                goto process_out;
+            }
             // security: check access
-            if (isset($base_element->instance_id) && $base_element->instance_id !== Setup::$instance_id) {
-                if (false === Help::$session->getAdmin()->isRelatedInstanceId($base_element->instance_id)) {
+            if (true === isset($element_row->instance_id) && $element_row->instance_id !== Setup::$instance_id) {
+                if (false === Help::$session->getAdmin()->isRelatedInstanceId($element_row->instance_id)) {
                     $this->handleErrorAndStop(
                         sprintf('admin %1$s tried to access %2$s (instance_id %3$s)',
                             Help::$session->getAdmin()->getId(),
                             $this->resolver->getPath(),
-                            $base_element->instance_id)
+                            $element_row->instance_id)
                         , __('It seems this does not belong to you', 'peatcms')
                     );
                 }
@@ -1532,19 +1546,25 @@ class Handler extends BaseLogic
             // prepare object for admin
             $out->__adminerrors__ = Help::getErrorMessages();
             // @since 0.8.2 admin also uses cache
-            $type_name = $base_element->type_name;
             if ('search' !== $type_name) $out->table_info = $this->getTableInfoForOutput(new Type($type_name));
         } elseif (
             // @since 0.7.6 do not show items that are not online
-            (true === isset($base_element->online) && false === $base_element->online)
+            (true === isset($element_row->online) && false === $element_row->online)
             // @since 0.8.19 do not show items that are not yet published
-            || (true === isset($base_element->is_published) && false === $base_element->is_published)
+            || (true === isset($element_row->is_published) && false === $element_row->is_published)
         ) {
             $element = new Search();
-            $element->findWeighted(array($base_element->title));
-            $out = $element->getOutputObject();
+            $element->setProperties($this->resolver->getProperties());
+            $element->findWeighted(array(mb_strtolower($element_row->title)));
+            //$out = $src->getOutputObject();
+            $out = $element->cacheOutputObject(true);
+            unset($element);
         }
-        unset($base_element);
+        unset($element_row);
+//        $o = $out->slugs->{$out->__ref};
+//        var_dump($o->path, $o->type_name);
+//        die(' kwkkwkkwk');
+        $instance = Help::$session->getInstance();
         // @since 0.7.9 load the properties in the out object as well
         $out->__query_properties__ = $this->resolver->getProperties();
         $out->template_published = strtotime($instance->getSetting('date_updated'));

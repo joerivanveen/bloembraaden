@@ -16,7 +16,7 @@ class BaseElement extends BaseLogic implements Element
     public function fetchById(int $id = 0): ?BaseElement
     {
         if ($id > 0) {
-            if (!empty($this->row)) {
+            if (true === isset($this->row)) {
                 $type_name = $this->getType()->typeName();
                 $this->addError("fetchById() called on an already filled $type_name with id: $id");
             }
@@ -474,7 +474,7 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
-        if (isset($GLOBALS['slugs'])) {
+        if (true === isset($GLOBALS['slugs'])) {
             $GLOBALS['slugs']->{$slug} = $this->row;
 
             return (object)array('__ref' => $slug);

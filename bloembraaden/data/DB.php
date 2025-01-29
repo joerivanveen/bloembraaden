@@ -442,6 +442,12 @@ class DB extends Base
                 $intersected = array_intersect_key($term, $intersected);
             }
         }
+        /**
+         * Next line fixes a bug where the original item (not online) in the search results has the exact same
+         * slug as the search results. This slug would be registered in cache as a search, but would point
+         * to the original item (in json). This leads to several problems down the line.
+         */
+        if (1 === count($arr)) unset($intersected[array_key_first($arr)]);
         if (null === $intersected) return array(); // nothing found
         // calculate the weights
         foreach ($intersected as $index => $row) {
@@ -460,6 +466,7 @@ class DB extends Base
      * For cases 'price_from' and 'not_online' returns the variants
      *
      * @param string $case
+     * @param int|null $id
      * @return array
      * @since 0.12.0
      */
@@ -4127,7 +4134,7 @@ class DB extends Base
 
         $obj = json_decode($row->row_as_json);
         $obj->x_cache_timestamp = strtotime($row->since); // @since 0.8.2
-        if (isset($row->variant_page_json)) {
+        if (true === isset($row->variant_page_json)) {
             $obj->__variant_pages__ = json_decode($row->variant_page_json);
         } else {
             $obj->__variant_pages__ = array(); // @since 0.8.6
@@ -4173,8 +4180,6 @@ class DB extends Base
         // @since 0.8.2: warmup is used instead of delete
         if (false === (new Warmup())->Warmup($slug, Setup::$instance_id)) {
             $this->addError(sprintf(__('Warmup failed for %s', 'peatcms'), $slug));
-            // only when warmup fails we delete
-            $this->deleteFromCache($slug);
 
             return false;
         }

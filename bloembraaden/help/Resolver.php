@@ -230,7 +230,7 @@ class Resolver extends BaseLogic
         return $this->terms;
     }
 
-    public function getElement(?bool &$from_history = false, bool $no_cache = false): BaseLogic
+    public function getElement(?bool &$from_history = false): BaseLogic
     {
         $limit = null;
         // run over the instructions (skipped for regular urls)
@@ -327,8 +327,8 @@ class Resolver extends BaseLogic
             $element_id = Help::$session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             $term = $terms[0];
-            // find element by slug
-            if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, $no_cache))) {
+            // find element by slug TODO: no cache is necessary, but also slower, how to fix
+            if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, true))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type_name;
             } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeByAncientSlug($term))) {
@@ -342,6 +342,15 @@ class Resolver extends BaseLogic
         // null means element is deleted or something, perform a default search
         if (null === $element->fetchById($element_id)) {
             $element = new Search();
+            // convert a single slug to separate terms for searching
+            if (1 === $num_terms) {
+                $this->terms = $element->cleanTerms(explode('-', $terms[0]));
+            }
+        } elseif (false === ADMIN && false === $element->isOnline()) { // @since 0.23.1 do not get offline stuff when not admin (also prevents caching of offline items)
+            $title = $element->row->title;
+            $this->addError("{$element->getSlug()} is offline and replaced by a search for visitors");
+            $element = new Search();
+            $this->terms = $element->cleanTerms(explode(' ', $title));
         }
         // load the properties, to be used by filters
         $element->setProperties($this->getProperties());
