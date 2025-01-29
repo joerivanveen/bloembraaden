@@ -943,7 +943,7 @@ $html";
     private function getInnerContent(string $string): string // this assumes the string is correct, there are no checks
     {
         $start = strpos($string, '%}') + 2; // start at the end of the opening tag
-        $end = strrpos($string, '{%'); // end at the beginning of the end tag (notice strrpos: REVERSE here)
+        $end = strrpos($string, '{%'); // end at the beginning of the closing tag (notice strrpos: REVERSE here)
 
         return substr($string, $start, $end - $start);
     }
@@ -985,7 +985,6 @@ $html";
             $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
             // non-admins only need the json, or bust
             if (!ADMIN) {
-                file_put_contents(Setup::$DBCACHE . '../logs/joeri.log', "--- Get template $template_id ---\n", FILE_APPEND);
                 if (false === $json_prepared) {
                     $this->addError(sprintf("Template $template_id not published in %s", Setup::$INSTANCE_DOMAIN));
                     return null;
@@ -1005,7 +1004,6 @@ $html";
                 }
                 $json_admin = $this->getFreshJson();
             } elseif (isset($out->id) && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
-                // todo also: save the default template ids in cache
                 // this can only happen when templates are deleted willy nilly...
                 if (($this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                     $json_admin = $this->getFreshJson();

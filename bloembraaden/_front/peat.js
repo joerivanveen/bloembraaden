@@ -528,11 +528,12 @@ Address.prototype.updateClientGenderList = function (fields) {
 Address.prototype.updateClientCountryList = function (fields) {
     let select_list, options, option, i, len, wrapper = this.wrapper;
     if ((select_list = wrapper.querySelector('select[name="country"]'))
-        || (select_list = wrapper.querySelector('select[name="billing_country"]'))) {
+        || (select_list = wrapper.querySelector('select[name="billing_country"]'))
+    ) {
         if ((option = select_list.querySelector(`[data-iso2="${fields['address_country_iso2']}"]`))) {
             select_list.value = option.value;
         } else { // country is not present in the select list yet
-            console.error('Country is missing from select list');
+            console.error(`Country ${fields['address_country_iso2']} is missing from select list.`);
             // option = document.createElement('option');
             // option.setAttribute('data-iso2', fields['address_country_iso2']);
             // option.setAttribute('data-iso3', fields['address_country_iso3']);
