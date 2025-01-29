@@ -786,9 +786,9 @@ class Handler extends BaseLogic
             ) {
                 //$post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
-                    $address_id = intval($post_data->address_id);
+                    $address_id = (int)$post_data->address_id;
                     if ('delete_address' === $action) $post_data->deleted = true;
-                    // clean posted data befor updating
+                    // clean posted data before updating
                     unset($post_data->json);
                     unset($post_data->timestamp);
                     unset($post_data->csrf_token);

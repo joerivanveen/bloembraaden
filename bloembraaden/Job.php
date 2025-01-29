@@ -148,6 +148,7 @@ switch ($interval) {
                             $hash = md5("$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2");
                             $by_hash[$hash] = $address;
                         }
+                        // todo have the shop addresses appear in the hashes, to not add the ‘collect’ address to the account
                         $addresses = null;
                         // get shipping / billing address -> md5, if not in the addresses md5, add it
                         foreach (array('billing', 'shipping') as $index => $address_type) {
