@@ -183,9 +183,9 @@ class Handler extends BaseLogic
             // terms can be passed as query string ?__terms__=term1,term2 etc in the complex tag, as can limit
             $props = $this->resolver->getProperties();
             $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
-            $terms = $props['terms'] ?? $this->resolver->getTerms(); // TODO remove $props['terms'] after pc is updated
+            $terms = $this->resolver->getTerms();
             $src->setProperties($props);
-            $type_name = $props['type'][0] ?? $post_data->type ?? 'variant'; // TODO remove $props['type'][0] after pc is updated
+            $type_name = $post_data->type ?? 'variant';
             if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
                 if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
                 $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));
@@ -1482,9 +1482,15 @@ class Handler extends BaseLogic
             // check if it’s a paging error
             if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1);
             if (null === $out && ($element = $this->resolver->getElement($from_history)) instanceof BaseElement) {
+                // construct the new path for this old slug
+                if (($properties = $this->resolver->getProperties())) {
+                    $path = Help::turnIntoPath(explode('/', $element->getSlug()), $properties);
+                } else {
+                    $path = $element->getSlug();
+                }
                 // try the cache one more time with the new slug, else cache it
                 if (true === $from_history
-                    && null !== ($out = Help::getDB()->cached($element->getSlug()))
+                    && null !== ($out = Help::getDB()->cached($path))
                 ) {
                     if (extension_loaded('newrelic')) {
                         $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
