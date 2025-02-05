@@ -157,14 +157,14 @@ class Search extends BaseElement
 
     private function getResults(array $clean_terms, array $clean_types): array
     {
-        // unfortunately special cases:
-        if (count(array_filter($clean_terms, static function ($item) {
+        // unfortunately special cases (findElementResults is faster esp. for variant):
+        if ((1 === count($clean_types) && 'variant' === $clean_types[0])
+            || 0 < count(array_filter($clean_terms, static function ($item) {
                 return in_array($item, array('not_online', 'price_from'));
-            })) > 0
+            }))
         ) {
             return Help::getDB()->findElementResults('variant', $clean_terms, $this->getProperties());
         }
-        // todo, why findElementResults and findCiAi? They are almost the same, except properties and weight function
 
         return Help::getDB()->findCiAi($clean_terms, $clean_types, static function (string $haystack, array $needles): float {
             // the getWeight function

@@ -356,7 +356,21 @@ class Resolver extends BaseLogic
         $element->setProperties($this->getProperties());
         // if it’s a search go do that
         if ($element instanceof Search) {
-            $element->findWeighted($this->getTerms(), $limit);
+            // find the types we need from the template
+            // todo for admin when working on templates without publishing, elements will be missing...
+            // todo expand this to other places to reduce data (e.g. petitclos.nl/drank)
+            $template_id = Help::getDB()->getDefaultTemplateIdFor('search');
+            $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
+            if (is_array($json_prepared)) {
+                $types = array();
+                $keys = array_flip(array_keys($json_prepared)); // flip to use isset which is fast
+                foreach (DB::TYPES_WITH_CI_AI as $index => $type_name) {
+                    if (true === isset($keys["__{$type_name}s__"])) $types[] = $type_name;
+                }
+                $element->findWeighted($this->getTerms(), $limit, $types, false);
+            } else { // ignore optimization possible with types
+                $element->findWeighted($this->getTerms(), $limit);
+            }
         }
 
         return $element;
