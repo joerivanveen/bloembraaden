@@ -31,7 +31,6 @@ class Search extends BaseElement
     public function findWeighted(array $terms, ?int $hydrate_until = null, array $types = array(), bool $ignore_types = true): void
     {
         // search queries are also cached by path! when result_count > 0.
-        $original_terms = $terms;
         $terms = $this->cleanTerms($terms);
         $properties = $this->getProperties();
         $this->row->item_count = 0;

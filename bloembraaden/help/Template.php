@@ -17,7 +17,6 @@ class Template extends BaseLogic
     public function __construct(mixed $template, ?int $instance_id = null)
     {
         // @since 0.5.16 you can instantiate the template with null and load it later
-        //if ($row === null) $this->handleErrorAndStop('Attempting to instantiate template with $row null');
         parent::__construct();
         $this->version = Setup::$VERSION;
         $this->type_name = 'template';
@@ -978,7 +977,10 @@ $html";
      */
     private function getTemplateForElement(\stdClass $out): ?array
     {
-        if ('template' !== ($type_name = $out->type_name) && isset($out->template_id) && ($template_id = $out->template_id) > 0) {
+        if ('template' !== ($type_name = $out->type_name)
+            && true === isset($out->template_id)
+            && 0 < ($template_id = $out->template_id)
+        ) {
             if (true === isset($this->json_by_template_id[$template_id])) {
                 return $this->json_by_template_id[$template_id];
             }
