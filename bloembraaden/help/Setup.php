@@ -108,7 +108,7 @@ class Setup
                 return self::initializeDatabaseConnection($db_properties, ++$tries);
             } else {
                 Help::$OUTPUT_JSON = file_get_contents('php://input') || 0 < count($_POST);
-                Help::handleErrorAndStop($e, sprintf(__('No connection to database %s (tries: %d)', 'peatcms'), $db_properties->name, $tries));
+                Help::handleErrorAndStop($e, sprintf(__('No connection to database %s (tries: %d).', 'peatcms'), $db_properties->name, $tries));
             }
         }
     }

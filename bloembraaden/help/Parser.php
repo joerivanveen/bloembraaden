@@ -126,8 +126,8 @@ class Parser extends Base
         $pointer = $this->pointer; // the pointer is at the first character of the signature of this command
         if ((microtime(true) - $this->started) > 3) {
             $this->handleErrorAndStop(
-                sprintf("Parser timeout error near %s\nTEXT:\n%s", $pointer, strip_tags($this->text)),
-                __('Parser timeout error', 'peatcms')
+                sprintf("Parser timeout error near %s\nTEXT:\n%s.", $pointer, strip_tags($this->text)),
+                __('Parser timeout error.', 'peatcms')
             );
         }
         $tag = $cmd['tag'];
@@ -262,7 +262,7 @@ class Parser extends Base
                             echo $link;
                         } else {
                             $this->addMessage(sprintf(
-                                __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                                __('Incorrect link format at %1$s near %2$s.', 'peatcms'),
                                 $pointer,
                                 substr($text, $pointer - 5, 20)
                             ), 'warn');
@@ -297,7 +297,7 @@ class Parser extends Base
                             $href = trim(substr($text, $tag_sig_end, $end - $tag_sig_end));
                             if (strlen($href) === 0) {
                                 $this->addMessage(sprintf(
-                                    __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                                    __('Incorrect link format at %1$s near %2$s.', 'peatcms'),
                                     $pointer,
                                     substr($text, $pointer - 5, 20)
                                 ), 'warn');
@@ -325,14 +325,14 @@ class Parser extends Base
                             $sig = '';
                         } else {
                             $this->addMessage(sprintf(
-                                __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                                __('Incorrect link format at %1$s near %2$s.', 'peatcms'),
                                 $pointer,
                                 substr($text, $pointer - 10, 20)
                             ), 'warn');
                         }
                     } else {
                         $this->addMessage(sprintf(
-                            __('Incorrect link format at %1$s near %2$s', 'peatcms'),
+                            __('Incorrect link format at %1$s near %2$s.', 'peatcms'),
                             $pointer,
                             substr($text, $pointer - 10, 20)
                         ), 'warn');
@@ -481,7 +481,7 @@ class Parser extends Base
         $needle = "\n[$id]:";
         $pos = strpos($text, $needle);
         if (false === $pos) {
-            $this->addMessage(sprintf(__('No link found for id `%s`', 'peatcms'), $id), 'warn');
+            $this->addMessage(sprintf(__('No link found for id %s.', 'peatcms'), $id), 'warn');
             $link = $id;
         } else {
             $pos += strlen($needle);
@@ -579,7 +579,7 @@ class Parser extends Base
             $open_tag = array_pop($this->open_tags);
             return "</$open_tag>";
         }
-        $this->addError(__('closeTag called while no tags were open', 'peatcms'));
+        $this->addError(__('closeTag called while no tags were open.', 'peatcms'));
 
         return '';
     }

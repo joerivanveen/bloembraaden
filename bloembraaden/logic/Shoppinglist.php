@@ -162,7 +162,7 @@ class Shoppinglist extends BaseLogic
                 if (null === $variant) {
                     $list_row->deleted = true;
                     $this->addMessage(sprintf(
-                        __('An item in %s is no longer available and has been removed', 'peatcms'),
+                        __('An item in %s is no longer available and has been removed.', 'peatcms'),
                         $this->name), 'note'
                     );
                     continue;
@@ -175,7 +175,7 @@ class Shoppinglist extends BaseLogic
             if (false === $variant_out->online || false === $variant_out->for_sale) {
                 $list_row->deleted = true;
                 $this->addMessage(sprintf(
-                    __('An item in %s is no longer available and has been removed', 'peatcms'),
+                    __('An item in %s is no longer available and has been removed.', 'peatcms'),
                     $this->name), 'note'
                 );
                 continue;
@@ -184,7 +184,7 @@ class Shoppinglist extends BaseLogic
                 if ($list_row->quantity > 0) {
                     $list_row->quantity = 0;
                     $this->addMessage(sprintf(
-                        __('An item in %s is out of stock', 'peatcms'),
+                        __('An item in %s is out of stock.', 'peatcms'),
                         $this->name), 'note'
                     );
                 }
@@ -197,13 +197,13 @@ class Shoppinglist extends BaseLogic
                 if ($variant_price > $row_price) {
                     $this->addMessage(sprintf(
                     // #TRANSLATORS: 1 = name of shoppinglist, 2 = title of variant, 3 = currency symbol, 4 = amount
-                        __('Price change in %1$s: %2$s is now %3$s %4$s', 'peatcms'),
+                        __('Price change in %1$s: %2$s is now %3$s %4$s.', 'peatcms'),
                         $this->name, $variant_out->title, '€', Help::asMoney($variant_price)
                     ), 'note');
                 } else {
                     $this->addMessage(sprintf(
                     // #TRANSLATORS: 1 = name of shoppinglist, 2 = title of variant, 3 = currency symbol, 4 = amount
-                        __('Price drop in %1$s: %2$s is now %3$s %4$s', 'peatcms'),
+                        __('Price drop in %1$s: %2$s is now %3$s %4$s.', 'peatcms'),
                         $this->name, $variant_out->title, '€', Help::asMoney($variant_price)
                     ), 'note');
                 }

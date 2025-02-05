@@ -49,7 +49,7 @@ class Type extends Base
         } else {
             $this->handleErrorAndStop(
                 "$type_name is not a recognized type",
-                sprintf(__('%s is not a recognized type', 'peatcms'), $type_name)
+                sprintf(__('%s is not a recognized type.', 'peatcms'), $type_name)
             );
         }
     }
@@ -216,13 +216,13 @@ class Table extends Base
         $col_name = $col->getName();
         if ($col_type === 'boolean') {
             if (true !== $value and false !== $value) {
-                $this->addValidationError($col_name, var_export($value, true), __('must be boolean', 'peatcms'));
+                $this->addValidationError($col_name, var_export($value, true), __('must be boolean.', 'peatcms'));
 
                 return false;
             }
         } elseif (in_array($col_type, array('smallint', 'integer', 'bigint'))) {
             if (null === Help::asInteger($value)) {
-                $this->addValidationError($col_name, var_export($value, true), __('must be integer', 'peatcms'));
+                $this->addValidationError($col_name, var_export($value, true), __('must be integer.', 'peatcms'));
 
                 return false;
             }
@@ -254,7 +254,7 @@ class Table extends Base
     {
         $this->addError(sprintf('Value %1$s rejected for %2$s', htmlentities(strip_tags($value)), $col_name));
         if (function_exists('__')) {
-            $this->addMessage(sprintf(__('Value rejected for %s', 'peatcms'), $col_name) . ', ' . $message, 'warn');
+            $this->addMessage(sprintf(__('Value rejected for %s.', 'peatcms'), $col_name) . ', ' . $message, 'warn');
         }
     }
 }

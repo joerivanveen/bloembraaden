@@ -34,7 +34,7 @@ class Menu extends BaseElement
             $items_belong_to_this_instance = false;
         }
         if (false === $items_belong_to_this_instance) {
-            $this->addMessage(__('Security warning, after multiple warnings your account may be blocked', 'peatcms'), 'warn');
+            $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
             return false;
         }
         // $relative can be 'child': put $item_id directly under the $to_item_id, or 'order': put it above it on the same level

@@ -524,7 +524,7 @@ class Help
             $success = true;
             if (false === $valid && true === isset($result['userError']) && 'MS_UNAVAILABLE' === $result['userError']) {
                 $success = false; // Member state unavailable
-                self::addMessage(__('Member state VAT check service unavailable', 'peatcms'), 'warn');
+                self::addMessage(__('Member state VAT check service unavailable.', 'peatcms'), 'warn');
             }
             return array(
                 'response' => $result,
@@ -532,7 +532,7 @@ class Help
                 'success' => $success,
             );
         } else {
-            Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'VIES'), 'warn');
+            Help::addMessage(sprintf(__('Error reading %s response.', 'peatcms'), 'VIES'), 'warn');
 
             return array('success' => false);
         }
@@ -549,7 +549,7 @@ class Help
         if ($instance->getSetting('turnstile_site_key') === '') return true;
         if (($turnstile_secret_key = $instance->getSetting('turnstile_secret_key')) === '') {
             Help::addError(new \Exception('Turnstile secret key not filled in'));
-            Help::addMessage(__('Turnstile configuration error', 'peatcms'), 'error');
+            Help::addMessage(__('Turnstile configuration error.', 'peatcms'), 'error');
 
             return false;
         }
@@ -572,17 +572,17 @@ class Help
                 if (false === $result['success']) {
                     $turnstile_errors = $result['error-codes'];
                     Help::addError(new \Exception('Turnstile error: ' . var_export($turnstile_errors, true)));
-                    Help::addMessage(sprintf(__('Turnstile error (%s)', 'peatcms'), $turnstile_errors[0] ?? 'unknown'), 'error');
+                    Help::addMessage(sprintf(__('Turnstile error (%s).', 'peatcms'), $turnstile_errors[0] ?? 'unknown'), 'error');
 
                     return false;
                 }
             } else {
-                Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'turnstile json'), 'warn');
+                Help::addMessage(sprintf(__('Error reading %s response.', 'peatcms'), 'turnstile json'), 'warn');
 
                 return false;
             }
         } else { // cf-turnstile-response is missing
-            Help::addMessage(__('No turnstile response received', 'peatcms'), 'error');
+            Help::addMessage(__('No turnstile response received.', 'peatcms'), 'error');
 
             return false;
         }
@@ -604,13 +604,13 @@ class Help
         if ($instance->getSetting('recaptcha_site_key') === '') return true;
         if (($recaptcha_secret_key = $instance->getSetting('recaptcha_secret_key')) === '') {
             Help::addError(new \Exception('Recaptcha secret key not filled in'));
-            Help::addMessage(__('Recaptcha configuration error', 'peatcms'), 'error');
+            Help::addMessage(__('Recaptcha configuration error.', 'peatcms'), 'error');
 
             return false;
         }
         $recaptcha_pass_score = floatval($instance->getSetting('recaptcha_pass_score'));
         if ($recaptcha_pass_score === 0.0) {
-            Help::addMessage(__('Recaptcha pass score of 0 will not let anything through', 'peatcms'), 'warn');
+            Help::addMessage(__('Recaptcha pass score of 0 will not let anything through.', 'peatcms'), 'warn');
         }
         if (isset($post_data->{'g-recaptcha-token'}) and ($g_recaptcha_token = $post_data->{'g-recaptcha-token'})) {
             $url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -631,21 +631,21 @@ class Help
                 if (false === $result['success']) {
                     $recaptcha_errors = $result['error-codes'];
                     Help::addError(new \Exception('Recaptcha error: ' . var_export($recaptcha_errors, true)));
-                    Help::addMessage(sprintf(__('Recaptcha error (%s)', 'peatcms'), $recaptcha_errors[0] ?? 'unknown'), 'error');
+                    Help::addMessage(sprintf(__('Recaptcha error (%s).', 'peatcms'), $recaptcha_errors[0] ?? 'unknown'), 'error');
 
                     return false;
                 } elseif (floatval($result['score']) < $recaptcha_pass_score) {
-                    Help::addMessage(sprintf(__('%1$s score %2$s too low', 'peatcms'), 'reCaptcha', $result['score']), 'warn');
+                    Help::addMessage(sprintf(__('%1$s score %2$s too low.', 'peatcms'), 'reCaptcha', $result['score']), 'warn');
 
                     return false;
                 }
             } else {
-                Help::addMessage(sprintf(__('Error reading %s response', 'peatcms'), 'reCaptcha json'), 'warn');
+                Help::addMessage(sprintf(__('Error reading %s response.', 'peatcms'), 'reCaptcha json'), 'warn');
 
                 return false;
             }
         } else { // g-recaptcha-token is missing
-            Help::addMessage(__('No recaptcha token received', 'peatcms'), 'error');
+            Help::addMessage(__('No recaptcha token received.', 'peatcms'), 'error');
 
             return false;
         }
@@ -1202,7 +1202,7 @@ class Help
         if (false === Help::getDB()->updateColumns('_instance', array(
                 'date_published' => 'NOW()'
             ), $instance_id)) {
-            self::addMessage(__('Could not update date published', 'peatcms'), 'warn');
+            self::addMessage(__('Could not update date published.', 'peatcms'), 'warn');
         }
         // @since 0.9.4 cache css file on disk when all templates are published, to be included later
         $edit_instance = new Instance(Help::getDB()->fetchInstanceById($instance_id));

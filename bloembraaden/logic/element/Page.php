@@ -16,7 +16,7 @@ class Page extends BaseElement
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New document', 'peatcms'),
-            'content' => __('Default content', 'peatcms'),
+            'content' => __('Default content.', 'peatcms'),
             'date_published' => 'NOW()',
             'online' => $online,
         ));

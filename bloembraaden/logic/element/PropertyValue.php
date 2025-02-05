@@ -16,7 +16,7 @@ class PropertyValue extends BaseElement
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New property value', 'peatcms'),
-            'content' => __('SEO text here', 'peatcms'),
+            'content' => __('SEO text here.', 'peatcms'),
             'excerpt' => '',
             'online' => $online,
         ));

@@ -16,7 +16,7 @@ class Brand extends BaseElement
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New brand', 'peatcms'),
-            'content' => __('Default content', 'peatcms'),
+            'content' => __('Default content.', 'peatcms'),
             'excerpt' => '',
             'online' => $online,
         ));

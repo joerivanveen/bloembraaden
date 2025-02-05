@@ -64,7 +64,7 @@ class Template extends BaseLogic
         // double check existence of folder
         $template_folder = Setup::$DBCACHE . 'templates/';
         if (false === file_exists($template_folder)) {
-            $this->addMessage(sprintf(__('Folder %s does not exist', 'peatcms'), $template_folder), 'error');
+            $this->addMessage(sprintf(__('Folder %s does not exist.', 'peatcms'), $template_folder), 'error');
 
             return false;
         }
@@ -74,7 +74,7 @@ class Template extends BaseLogic
         $template_id = $this->template_id;
         // save it to opcache for this template
         if (false === Help::getDB()->appCacheSet("templates/$template_id", $json_prepared)) {
-            $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), "template $template_id"), 'error');
+            $this->addMessage(sprintf(__('Could not write %s to disk.', 'peatcms'), "template $template_id"), 'error');
 
             return false;
         }
@@ -89,7 +89,7 @@ class Template extends BaseLogic
                 LOCK_EX
             )
         ) {
-            $this->addMessage(sprintf(__('Could not write %s to disk', 'peatcms'), $template_file), 'error');
+            $this->addMessage(sprintf(__('Could not write %s to disk.', 'peatcms'), $template_file), 'error');
 
             return false;
         }
@@ -298,7 +298,7 @@ class Template extends BaseLogic
             if (false === $pos) {
                 $this->handleErrorAndStop(
                     'Template does not contain head and / or body tags',
-                    sprintf(__('Template must contain at least: %s', 'peatcms'), htmlentities('<html>, <head>, <body>'))
+                    sprintf(__('Template must contain at least: %s.', 'peatcms'), htmlentities('<html>, <head>, <body>'))
                 );
             }
             $this->html = substr_replace($existing_html, $html_to_insert, $pos, 0);
@@ -366,14 +366,14 @@ class Template extends BaseLogic
             } else {
                 $this->handleErrorAndStop(
                     "Template $template_pointer->name not found in theme ",
-                    sprintf(__('Could not get template %s', 'peatcms'), $template_pointer->name)
+                    sprintf(__('Could not get template %s.', 'peatcms'), $template_pointer->name)
                 );
             }
         }
         if (false === isset($this->html)) {
             $this->handleErrorAndStop(
                 'Template html is not set during render',
-                sprintf(__('Could not get template %s', 'peatcms'), '')
+                sprintf(__('Could not get template %s.', 'peatcms'), '')
             );
         }
     }
@@ -687,7 +687,7 @@ class Template extends BaseLogic
                 } else {
                     if (isset($this->doublechecking[$string])) {
                         $this->addError("Error in ->getComplexTagString for this string: $string");
-                        $this->addMessage(sprintf(__('Error in template for %s', 'peatcms'), htmlentities($string)), 'error');
+                        $this->addMessage(sprintf(__('Error in template for %s.', 'peatcms'), htmlentities($string)), 'error');
 
                         return str_replace($search, '', $string); // this is clearly broken, it will display something ugly anyway
                     } else {
@@ -742,7 +742,7 @@ class Template extends BaseLogic
             $partials = array(); // named array holding template rows, by template_name
             foreach ($rows as $key => $row) {
                 if (isset($partials[$partial_name = strtolower($row->name)])) {
-                    $this->addMessage(sprintf(__('Multiple templates found with name %s', 'peatcms'), $partial_name), 'warn');
+                    $this->addMessage(sprintf(__('Multiple templates found with name %s.', 'peatcms'), $partial_name), 'warn');
                 }
                 $partials[$partial_name] = $row;
             }
@@ -771,7 +771,7 @@ class Template extends BaseLogic
                 $temp = new Template($partials[$partial_name_lower]);
                 $html = str_replace("{{>$partial_name}}", $this->cleanTemplateHtml($temp->row->html), $html); // insert the partial into this html
             } else {
-                $this->addMessage(sprintf(__('Template %1$s not found for inclusion in %2$s', 'peatcms'), $partial_name, $this->row->name), 'warn');
+                $this->addMessage(sprintf(__('Template %1$s not found for inclusion in %2$s.', 'peatcms'), $partial_name, $this->row->name), 'warn');
                 $html = str_replace("{{>$partial_name}}", '', $html); // remove the partial tag
             }
         }
@@ -788,7 +788,7 @@ class Template extends BaseLogic
                 //$html = str_replace($string, "{{{$tag_name}[$number]}}", $html);
             } else {
                 $this->addMessage(
-                    sprintf(__('Error in complex tag string %s', 'peatcms'), $tag_name),
+                    sprintf(__('Error in complex tag string %s.', 'peatcms'), $tag_name),
                     'warn');
                 $html = str_replace("{%$tag_name", '', $html);
             }

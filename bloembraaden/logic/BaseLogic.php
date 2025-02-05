@@ -168,7 +168,7 @@ class BaseLogic extends Base
                 if (null === ($out = $db->cached($slug, 1))) {
                     usleep(387); // wait for the database to get ready an arbitrary number of milliseconds
                     if (null === ($out = $db->cached($slug, 1))) {
-                        $this->handleErrorAndStop('Could not read cache after creating it', __('Cache error, please try again', 'peatcms'));
+                        $this->handleErrorAndStop('Could not read cache after creating it', __('Cache error, please try again.', 'peatcms'));
                     }
                 }
             }

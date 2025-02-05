@@ -62,7 +62,7 @@ class DB extends Base
             try {
                 $this->conn->rollBack();
             } catch (\Exception $e) {
-                $this->handleErrorAndStop($e, __('Database error', 'peatcms'));
+                $this->handleErrorAndStop($e, __('Database error.', 'peatcms'));
             }
         }
     }
@@ -210,7 +210,7 @@ class DB extends Base
         $tries = 10; // don’t go on indefinitely because something else is probably wrong
         while ($statement->rowCount() !== 1) {
             if ($tries-- === 0) {
-                $this->addMessage(__('Could not set key', 'peatcms'), 'warn');
+                $this->addMessage(__('Could not set key.', 'peatcms'), 'warn');
 
                 return null;
             }

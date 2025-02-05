@@ -33,7 +33,7 @@ class Mailer extends Base
             $this->api_key = $mail->{$mail->active}->api_key;
             $this->api_url = $mail->{$mail->active}->api_url;
         } catch (\Exception $e) {
-            $this->handleErrorAndStop($e, __('Mail configuration error', 'peatcms'));
+            $this->handleErrorAndStop($e, __('Mail configuration error.', 'peatcms'));
         }
         if ($this->active_provider === 'mailgun' && false === strpos(($custom_domain = trim($custom_domain)), '.')) {
             $this->addError(sprintf('%s is not a valid custom domain for Mailer', $custom_domain));
@@ -71,7 +71,7 @@ class Mailer extends Base
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         } else {
-            $this->handleErrorAndStop('No active mail provider found.', __('Mail configuration error', 'peatcms'));
+            $this->handleErrorAndStop('No active mail provider found.', __('Mail configuration error.', 'peatcms'));
         }
         $this->curl = $curl;
         // @since 0.6.17 changed __destruct to __shutdown for stability reasons

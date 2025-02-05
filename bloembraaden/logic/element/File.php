@@ -46,7 +46,7 @@ class File extends BaseElement
                 readfile($filename);
                 die();
             } else {
-                $this->handleErrorAndStop($filename . ' not found', __('File not found on server', 'peatcms'));
+                $this->handleErrorAndStop($filename . ' not found', __('File not found on server.', 'peatcms'));
             }
         }
     }

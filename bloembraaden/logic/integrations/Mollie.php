@@ -89,7 +89,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         curl_close($curl);
         if ($err) {
             $this->addError($err);
-            $this->addMessage(__('Payment request generated an error on the server', 'peatcms'), 'error');
+            $this->addMessage(__('Payment request generated an error on the server.', 'peatcms'), 'error');
         } else {
             $return_object = json_decode($result);
             if ($status_code >= 400) {
@@ -98,13 +98,13 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 } else {
                     $this->addError($result);
                 }
-                $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
+                $this->addMessage(sprintf(__('Payment request was bad (status %s).', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
                 if (json_last_error() === 0) {
                     return $return_object->id;
                 } else {
                     $this->addError($result);
-                    $this->addMessage(__('Payment response was not recognized', 'peatcms'), 'error');
+                    $this->addMessage(__('Payment response was not recognized.', 'peatcms'), 'error');
                 }
             }
         }
@@ -142,7 +142,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         curl_close($curl);
         if ($err) {
             $this->addError($err);
-            $this->addMessage(__('Payment request generated an error on the server', 'peatcms'), 'error');
+            $this->addMessage(__('Payment request generated an error on the server.', 'peatcms'), 'error');
         } else {
             $return_object = json_decode($result);
             if ($status_code >= 400) {
@@ -151,13 +151,13 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 } else {
                     $this->addError($result);
                 }
-                $this->addMessage(sprintf(__('Payment request was bad (status %s)', 'peatcms'), $status_code), 'error');
+                $this->addMessage(sprintf(__('Payment request was bad (status %s).', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
                 if (json_last_error() === 0) {
                     return $return_object;
                 } else {
                     $this->addError($result);
-                    $this->addMessage(__('Payment response was not recognized', 'peatcms'), 'error');
+                    $this->addMessage(__('Payment response was not recognized.', 'peatcms'), 'error');
                 }
             }
         }

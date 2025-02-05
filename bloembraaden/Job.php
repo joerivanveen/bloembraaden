@@ -126,7 +126,7 @@ switch ($interval) {
                         } else {
                             Help::addError(new \Exception(sprintf(
                             //#translators %1$s: order number, %2$s: instance domain
-                                __('Could not save order html for %1$s (%2$s)', 'peatcms'),
+                                __('Could not save order html for %1$s (%2$s).', 'peatcms'),
                                 $order_number,
                                 $row->domain
                             )));

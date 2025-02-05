@@ -21,7 +21,7 @@ class MenuItem extends BaseElement
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('Menu item', 'peatcms'),
             'act' => '{}',
-            'content' => __('Type content here, if your template uses it', 'peatcms'),
+            'content' => __('Type content here, if your template uses it.', 'peatcms'),
             'online' => $online,
         ));
     }

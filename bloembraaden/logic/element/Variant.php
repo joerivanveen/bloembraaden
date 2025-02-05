@@ -31,7 +31,7 @@ class Variant extends BaseElement
     {
         return Help::getDB()->insertElement($this->getType(), array(
             'title' => __('New variant', 'peatcms'),
-            'content' => __('Default content', 'peatcms'),
+            'content' => __('Default content.', 'peatcms'),
             'online' => $online,
         ));
     }
