@@ -128,9 +128,6 @@ class Search extends BaseElement
                     $this->row->{$plural}[] = $output;//$element->getOutput();
                     $this->row->item_count += 1;
                 }
-                // set it so the entry in results list will be replaced by the element
-                unset($result->slug);
-                $result->__ref = $output->slug;//$element->getSlug();
                 unset($output);
                 if ($this->row->item_count === $hydrate_until) break;
             }
@@ -138,9 +135,6 @@ class Search extends BaseElement
         } else {
             $this->row->item_count = $item_count;
         }
-//        if (0 === $this->result_count) {
-//            $terms = $original_terms;
-//        }
         $this->row->slug = implode('/', $terms);
         foreach ($terms as $index => $term) {
             if ('price_from' === $term) {
