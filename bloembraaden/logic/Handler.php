@@ -1474,7 +1474,7 @@ class Handler extends BaseLogic
         // usually we get the src from cache, only when not cached yet get it from the resolver
         // @since 0.8.2 admin also gets from cache, table_info is added later anyway
         // warmup does an update of the cache row (getDB()->cache handles this automatically) so the client never misses out
-        if ($this->resolver->hasInstructions()) {
+        if (true === $this->resolver->hasInstructions()) {
             $element = $this->resolver->getElement();
             $out = $element->getOutputObject();
             unset($element);
@@ -1525,10 +1525,10 @@ class Handler extends BaseLogic
         if (true === ADMIN) {
             $type_name = $element_row->type_name;
             // if you get a search page from cache as admin, check if the original slug also exists to see it (can be offline etc)
-            if ('search' === $type_name
-                && null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug(explode('/', $slug)[0], true))
+            if ('search' === $type_name && 1 === count(($terms = $this->resolver->getTerms()))
+                && null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0], true))
             ) {
-                $this->addMessage(__('Replaced by a search page for visitors.', 'peatcms'), 'warn');
+                $this->addMessage(sprintf(__('%s replaced by a search page for visitors.', 'peatcms'), $slug), 'warn');
                 $type = new Type($row->type_name);
                 $element = $type->getElement();
                 $element->fetchById($row->id);
