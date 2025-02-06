@@ -894,7 +894,7 @@ class Help
         // remove remnants of previous import
         $files = glob("$folder_name$instance_id.*.json");
         foreach ($files as $index => $file) {
-            if (is_file($file)) {
+            if (true === is_file($file)) {
                 unlink($file); // delete file
             }
         }

@@ -10,7 +10,7 @@ namespace Bloembraaden;
  */
 class Template extends BaseLogic
 {
-    private array $json_fresh, $partial_templates, $hints, $doublechecking, $json_by_template_id;
+    private array $json_fresh, $partial_templates, $hints, $doublechecking = array(), $json_by_template_id = array();
     private string $html, $version;
     private int $template_id; // instead of row, preventing slow getting of templates
 
@@ -20,14 +20,11 @@ class Template extends BaseLogic
         parent::__construct();
         $this->version = Setup::$VERSION;
         $this->type_name = 'template';
-        $this->doublechecking = array(); // I don’t want to worry about it being empty
-        $this->json_by_template_id = array(); // I don’t want to worry about it being empty
 
         // a full row may be supplied, when that is available from the originating call
         if ($template instanceof \stdClass) {
             $this->row = $template;
-            $this->template_id = $template_id = $template->template_id;
-            $this->row->json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
+            $this->template_id = $template->template_id;
         } elseif (null !== $template) {
             $this->template_id = (int)$template;
             if (ADMIN) {
@@ -46,7 +43,8 @@ class Template extends BaseLogic
 
     public function checkIfPublished(): bool
     {
-        return (json_encode($this->getFreshJson()) === json_encode($this->row->json_prepared));
+        $json_prepared = Help::getDB()->appCacheGet("templates/$this->template_id");
+        return (json_encode($this->getFreshJson()) === json_encode($json_prepared));
     }
 
     public function getFreshJson(): array
@@ -70,7 +68,6 @@ class Template extends BaseLogic
         }
         // grab the html, prepare into a json object
         $json_prepared = $this->getFreshJson();
-        $this->row->json_prepared = $json_prepared; // for checkIfPublished method
         $template_id = $this->template_id;
         // save it to opcache for this template
         if (false === Help::getDB()->appCacheSet("templates/$template_id", $json_prepared)) {

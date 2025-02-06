@@ -4766,6 +4766,7 @@ class DB extends Base
         return
             false !== file_put_contents($tmp, "<?php \$val = unserialize(base64_decode('$val'));", LOCK_EX)
             && rename($tmp, $prm)
+            && opcache_invalidate($prm, true) // to be clear about it (templates need this)
             && opcache_compile_file($prm);
     }
 
