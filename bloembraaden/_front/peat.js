@@ -326,8 +326,7 @@ Address.prototype.updateSuggestionsList = function (input) {
             if (input === document.activeElement
                 && json.success
                 && json.hasOwnProperty('suggestions')
-                && 0 < json.suggestions.length)
-            {
+                && 0 < json.suggestions.length) {
                 const ul = document.createElement('ul');
                 ul.classList.add('suggestions');
                 for (const i in json.suggestions) {

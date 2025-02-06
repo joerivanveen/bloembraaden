@@ -382,7 +382,14 @@ switch ($interval) {
                 echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
                 // make order with the row
                 $order = new Order($row);
-                // convert order to myparcel json
+                /**
+                 * convert order to myparcel json
+                 * afhalen = package_type 3 (letter)
+                 * MyParcel expects prices in euro cents
+                 */
+                $myparcelAmount = function(string $amount):int {
+                    return (int)(100 * Help::asFloat($amount));
+                };
                 $order_out = $order->getOutput();
                 $shipping_cc = $order_out->shipping_address_country_iso2;
                 $is_pickup = $shipping_cc === 'XX';
@@ -392,17 +399,14 @@ switch ($interval) {
                     $package_type = 3;
                 }
                 $order_lines = array();
-                $highest_vat = 0;
                 foreach ($order_out->__items__ as $index => $line) {
                     $quantity = (int)$line->quantity;
                     if (0 === $quantity) continue;
-                    $vat_percentage = Help::asFloat($line->vat_percentage);
-                    $highest_vat = max($highest_vat, $vat_percentage);
                     $order_lines[] = (object)array(
                         'quantity' => $quantity,
-                        'price' => $line->price_ex_vat,
-                        'vat' => $line->vat_amount,
-                        'price_after_vat' => $line->price,
+                        'price' => $myparcelAmount($line->price_ex_vat),
+                        'vat' => $myparcelAmount($line->vat_amount),
+                        'price_after_vat' => $myparcelAmount($line->price),
                         'product' => (object)array(
                             'sku' => $line->sku,
                             'name' => $line->title
@@ -411,13 +415,11 @@ switch ($interval) {
                         'shippable' => true
                     );
                 }
-                $shipping_costs = (int)(100 * Help::asFloat($order_out->shipping_costs));
-                $shipping_costs_vat = (int)($highest_vat * $shipping_costs / (100.0 + $highest_vat));
                 $order_lines[] = (object)array(
                     'quantity' => 1,
-                    'price' => $shipping_costs - $shipping_costs_vat,
-                    'vat' => $shipping_costs_vat,
-                    'price_after_vat' => $shipping_costs,
+                    'price' => $myparcelAmount($order_out->shipping_costs_ex_vat),
+                    'vat' => $myparcelAmount($order_out->shipping_costs_vat_amount),
+                    'price_after_vat' => $myparcelAmount($order_out->shipping_costs),
                     'product' => (object)array(
                         'sku' => '',
                         'name' => __('Shipping', 'peatcms')
@@ -425,10 +427,6 @@ switch ($interval) {
                     'instructions' => null,
                     'shippable' => false
                 );
-                /**
-                 * afhalen = package_type 3 (letter)
-                 * MyParcel expects prices in euro cents
-                 */
                 $myparcel_shipping_name = mb_substr($order_out->shipping_address_name, -40);
                 /* #TRANSLATORS: default name is the client name on the shipping label when no name is given */
                 if ('' === $myparcel_shipping_name) $myparcel_shipping_name = __('Default name', 'peatcms');
@@ -455,9 +453,9 @@ switch ($interval) {
                     ),
                     'language' => 'NL',
                     'type' => 'consumer',
-                    'price' => (int)(100 * Help::asFloat($order_out->amount_grand_total_ex_vat)),
+                    'price' => $myparcelAmount($order_out->amount_grand_total_ex_vat),
                     //'vat'=>
-                    'price_after_vat' => (int)(100 * Help::asFloat($order_out->amount_grand_total)),
+                    'price_after_vat' => $myparcelAmount($order_out->amount_grand_total),
                     'shipment' => (object)array(
                         'recipient' => (object)array(
                             'cc' => $shipping_cc,

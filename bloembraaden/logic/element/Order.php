@@ -126,7 +126,11 @@ class Order extends BaseElement
         $row->item_count = $item_count;
         // add the shippingcosts and make the grandtotal
         $shipping_costs = Help::asFloat($row->shipping_costs) / 100;
-        if ($shipping_costs !== 0.0) {
+        if ($shipping_costs === 0.0) {
+            $row->shipping_costs = Help::asMoney(0);
+            $row->shipping_costs_ex_vat = Help::asMoney(0);
+            $row->shipping_costs_vat_amount = Help::asMoney(0);
+        } else {
             $highest_vat = 0;
             foreach ($vat as $percentage_index => $amount) {
                 $percentage = Help::asFloat($percentage_index);
@@ -135,11 +139,13 @@ class Order extends BaseElement
             $price_ex_vat = 100 * $shipping_costs / (100 + $highest_vat);
             $vat_amount = $shipping_costs - $price_ex_vat;
             $vat[(string)$highest_vat] += $vat_amount;
+            // format the shippingcosts in the output object
+            $row->shipping_costs = Help::asMoney($shipping_costs);
+            $row->shipping_costs_ex_vat = Help::asMoney($price_ex_vat);
+            $row->shipping_costs_vat_amount = Help::asMoney($vat_amount);
         }
         $amount_grand_total = $amount_row_total + $shipping_costs;
         $row->amount_grand_total = Help::asMoney($amount_grand_total);
-        // format the shippingcosts in the output object
-        $row->shipping_costs = Help::asMoney($shipping_costs);
         // format order number:
         $row->order_number_human = wordwrap($order_number, 4, ' ', true);
         // the real VAT @since 0.9.0
