@@ -321,7 +321,7 @@ class DB extends Base
     {
         if (0 === count($clean_terms)) return array();
         if (false === in_array($type_name, self::TYPES_WITH_CI_AI)) {
-            $this->handleErrorAndStop("$type_name is not a type with ci_ai, cannot find element ids");
+            $this->handleErrorAndStop("$type_name is not a type with ci_ai, cannot find element ids.");
         }
         $special_variant_term = '';
         // get the id's from the _ci_ai table

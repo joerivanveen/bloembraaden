@@ -12,7 +12,7 @@ class Admin extends BaseLogic
     public function __construct(int $admin_id)
     {
         parent::__construct();
-        if ($this->row = Help::getDB()->fetchAdmin($admin_id)) {
+        if (($this->row = Help::getDB()->fetchAdmin($admin_id))) {
             $this->id = $admin_id;
         } else {
             $this->handleErrorAndStop(

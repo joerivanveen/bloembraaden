@@ -1326,7 +1326,6 @@ class Handler extends BaseLogic
                         }
                         // check published for templates
                         if ($posted_table_name === '_template') {
-                            // find the instance this admin is currently working with
                             if (($row = Help::getDB()->selectRow('_template', $posted_id))) {
                                 $out->published = $this->updatePublishedForTemplates($row->instance_id, $posted_id);
                             }

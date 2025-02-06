@@ -1224,11 +1224,11 @@ class Help
         $doc = str_replace(' { ', '{', $doc);
         // write plain css to disk, will be included in template and gzipped along with it
         if (false === file_put_contents($file_location, $doc, LOCK_EX)) {
-            self::addMessage(sprintf(__('Could not write ‘%s’ to disk', 'peatcms'), $file_location), 'warn');
+            self::addMessage(sprintf(__('Could not write ‘%s’ to disk.', 'peatcms'), $file_location), 'warn');
         }
         if ('' === file_get_contents($file_location)) {
             unlink($file_location);
-            self::handleErrorAndStop('Saving css failed', __('Saving css failed', 'peatcms'));
+            self::handleErrorAndStop('Saving css failed.', __('Saving css failed', 'peatcms'));
         }
         // get all templates for this instance_id, loop through them and publish
         $rows = Help::getDB()->getTemplates($instance_id);
@@ -1243,7 +1243,7 @@ class Help
         }
         // clear template default id cache
         self::getDB()->appCacheSet("templates/defaults.$instance_id", array());
-        self::addMessage(__('Publishing done', 'peatcms'));
+        self::addMessage(__('Publishing done.', 'peatcms'));
         unset($rows);
 
         return true;
