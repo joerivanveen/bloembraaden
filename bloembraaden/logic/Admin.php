@@ -18,7 +18,7 @@ class Admin extends BaseLogic
             $this->handleErrorAndStop(
                 sprintf(__('Admin not found with id %s in instance %s','peatcms'),
                     var_export($admin_id, true), Setup::$instance_id),
-                __('Security warning, after multiple warnings your account may be blocked', 'peatcms')
+                __('Security warning, after multiple warnings your account may be blocked.', 'peatcms')
             );
         }
         $this->type_name = 'admin';
@@ -37,7 +37,7 @@ class Admin extends BaseLogic
                 }
             }
         }
-        $this->addMessage(__('Security warning, after multiple warnings your account may be blocked', 'peatcms'), 'warn');
+        $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
 
         return false;
     }

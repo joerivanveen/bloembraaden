@@ -2402,12 +2402,13 @@ class DB extends Base
     public function fetchSession(string $token): ?\stdClass
     {
         // NOTE sessions are by instance_id
-        if (!($row = $this->fetchRow('_session', array(
+        if (null === ($row = $this->fetchRow('_session', array(
             'user_id',
             'admin_id',
             'session_id',
             'ip_address',
             'reverse_dns',
+            'user_agent',
         ), array('token' => $token)))) {
             //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
             return null;
@@ -3236,20 +3237,19 @@ class DB extends Base
         ));
     }
 
-    public function registerSessionAccess(string $token, string $ip_address = null): bool
+    public function registerSessionAccess(string $token, array $columns): void
     {
-        if (null === $ip_address) {
+        if (0 === count($columns)) {
             $statement = $this->conn->prepare('UPDATE _session SET date_accessed = NOW() WHERE token = ?;');
             $statement->execute(array($token));
+            $statement = null;
         } else {
-            $statement = $this->conn->prepare(
-                'UPDATE _session SET date_accessed = NOW(), date_updated = NOW(), ip_address = ?, reverse_dns = NULL WHERE token = ?;');
-            $statement->execute(array($ip_address, $token));
+            $columns['date_accessed'] = $columns['date_updated'] = 'NOW()';
+            $this->updateColumns('_session', $columns, $token);
+//            $statement = $this->conn->prepare(
+//                'UPDATE _session SET date_accessed = NOW(), date_updated = NOW(), ip_address = ?, reverse_dns = NULL WHERE token = ?;');
+//            $statement->execute(array($ip_address, $token));
         }
-        $count = $statement->rowCount();
-        $statement = null;
-
-        return ($count === 1);
     }
 
     /**

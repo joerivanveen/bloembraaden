@@ -8,12 +8,18 @@ class User extends BaseLogic
 {
     private array $addresses, $orders;
 
-    public function __construct($user_id)
+    public function __construct(int $user_id)
     {
-        parent::__construct(Help::getDB()->fetchUser($user_id));
-        $this->id = $user_id;
+        parent::__construct();
+        if (($this->row = Help::getDB()->fetchUser($user_id))) {
+            $this->id = $user_id;
+        } else {
+            $this->addError(
+                sprintf('User not found with id %s in instance %s.',
+                    var_export($user_id, true), Setup::$INSTANCE_DOMAIN)
+            );
+        }
         $this->type_name = 'user';
-
     }
 
     /**
@@ -23,12 +29,26 @@ class User extends BaseLogic
      */
     public function getAddresses(): array
     {
-        return $this->addresses ?? $this->addresses = Help::getDB()->fetchAddressesByUserId($this->getId());
+        if (false === isset($this->addresses)) {
+            if (0 !== ($user_id = $this->getId())) {
+                $this->addresses = Help::getDB()->fetchAddressesByUserId($user_id);
+            } else { // just for security purposes a non-specific user id should not be able to ‘fetch’ anything
+                $this->addresses = array();
+            }
+        }
+        return $this->addresses;
     }
 
     public function getOrders(): array
     {
-        return $this->orders ?? $this->orders = Help::getDB()->fetchOrdersByUserId($this->getId());
+        if (false === isset($this->orders)) {
+            if (0 !== ($user_id = $this->getId())) {
+                $this->orders = Help::getDB()->fetchOrdersByUserId($user_id);
+            } else { // just for security purposes a non-specific user id should not be able to ‘fetch’ anything
+                $this->orders = array();
+            }
+        }
+        return $this->orders;
     }
 
     /**

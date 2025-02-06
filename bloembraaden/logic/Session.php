@@ -6,10 +6,8 @@ namespace Bloembraaden;
 
 class Session extends BaseLogic
 {
-    // TODO the session currently saves user_agent only once, it is never updated, so a long running
-    // TODO session can have an outdated user_agent string.
     private int $session_id;
-    private ?string $token, $user_agent, $ip_address, $reverse_dns = null;
+    private ?string $token, $user_agent, $ip_address;
     private Instance $instance;
     private ?User $user;
     private ?Admin $admin;
@@ -36,7 +34,7 @@ class Session extends BaseLogic
             if ($binary === false) {
                 $this->handleErrorAndStop('Cannot serve pages to people without ip address');
             } else {
-                # Convert back to a normalised string
+                // Convert back to a normalised string
                 $this->ip_address = inet_ntop($binary);
             }
         }
@@ -55,7 +53,7 @@ class Session extends BaseLogic
             // if loading fails, the cookie is wrong apparently, or old maybe, create a new session then
             $this->token = $this->newSession();
             $this->setSessionCookie($this->token);
-            if (false === $this->load(false)) {
+            if (false === $this->load()) {
                 // if that fails, handleErrorAndStop
                 $this->handleErrorAndStop($this->getLastError(), __('Could not start session.', 'peatcms'));
             }
@@ -94,11 +92,16 @@ class Session extends BaseLogic
             if (null === $var) $var = (object)array('delete' => true);
             Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
-        // register reverse dns when not already present TODO this is very slow sometimes, move it back to a job
-//        if (null === $this->reverse_dns) {
-//            $reverse_dns = gethostbyaddr($this->ip_address);
-//            Help::getDB()->updateColumns('_session', array('reverse_dns' => $reverse_dns), $this->token);
-//        }
+        // update own vars (from row) in database
+        $updated_vars = array();
+        if ($this->user_agent !== $this->row->user_agent) {
+            $updated_vars['user_agent'] = $this->user_agent;
+        }
+        if ($this->ip_address !== $this->row->ip_address) {
+            $updated_vars['ip_address'] = $this->ip_address;
+            $updated_vars['reverse_dns'] = null; // to be filled by job
+        }
+        Help::getDB()->registerSessionAccess($this->token, $updated_vars);
     }
 
 
@@ -163,13 +166,13 @@ class Session extends BaseLogic
                 // TODO update csrf token as well here?
             } else {
                 $this->handleErrorAndStop(
-                    sprintf('setCookie returned false after logging in with %s', var_export($columns_to_update, true)),
+                    sprintf('setCookie returned false after logging in with %s.', var_export($columns_to_update, true)),
                     __('Session lost, token could not be set.', 'peatcms')
                 );
             }
         } else {
             $this->handleErrorAndStop(
-                sprintf('updateColumns returned false after logging in with %s', var_export($columns_to_update, true)),
+                sprintf('updateColumns returned false after logging in with %s.', var_export($columns_to_update, true)),
                 __('Session lost, token could not be set.', 'peatcms')
             );
         }
@@ -306,45 +309,32 @@ class Session extends BaseLogic
     }
 
     /**
-     * @param bool $register_access whether you want this action to register as access the session as well
      * @return bool true when successfully loaded, false when failed
      */
-    public function load(bool $register_access = true): bool
+    public function load(): bool
     {
         // get all the stuff from the database
-        if (($session_row = Help::getDB()->fetchSession($this->token))) {
+        if (($this->row = $row = Help::getDB()->fetchSession($this->token))) {
             // get user
-            if ($session_row->user_id > 0) {
-                $this->user = new User($session_row->user_id);
+            if ($row->user_id > 0) {
+                $this->user = new User($row->user_id);
                 // this user is gone:
                 if ($this->user->getId() === 0) {
-                    $this->user = null; // attention this is not auto-updated in the db for this session
+                    return false; // will log out automatically
                 }
             }
             // get admin
-            if ($session_row->admin_id > 0) {
-                $this->admin = new Admin($session_row->admin_id);
-                // if admin no longer exists
-                if ($this->admin->getId() === 0) {
-                    $this->admin = null; // attention this is not auto-updated in the db for this session
-                } elseif (false === $this->admin->isRelatedInstanceId(Setup::$instance_id)) {
-                    $this->admin = null; // attention this is not auto-updated in the db for this session
+            if ($row->admin_id > 0) {
+                $this->admin = new Admin($row->admin_id); // throws error and stops when admin does not exist
+                if (false === $this->admin->isRelatedInstanceId(Setup::$instance_id)) {
+                    return false; // will log out automatically
                 }
             }
             // get vars
-            if (isset($session_row->vars)) {
-                $this->vars = $session_row->vars;
+            if (isset($row->vars)) {
+                $this->vars = $row->vars;
             }
-            $this->session_id = $session_row->session_id; // must always be present, this is NOT the token, just an int for identifying internally
-            if (true === $register_access) {
-                if ($this->ip_address !== $session_row->ip_address) {
-                    Help::getDB()->registerSessionAccess($this->token, $this->ip_address);
-                    $this->reverse_dns = null;
-                } else {
-                    Help::getDB()->registerSessionAccess($this->token);
-                    $this->reverse_dns = $session_row->reverse_dns;
-                }
-            }
+            $this->session_id = $row->session_id; // must always be present, this is NOT the token, just an int for identifying internally
 
             return true;
         } else {

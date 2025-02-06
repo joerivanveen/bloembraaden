@@ -933,7 +933,7 @@ class Handler extends BaseLogic
                                 $this->addMessage(__('Please allow 5 - 10 minutes for the element to disappear completely', 'peatcms'));
                             }
                         } else {
-                            $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
+                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                         }
                         unset($element);
                         $out = array('success' => $success);
@@ -1075,7 +1075,7 @@ class Handler extends BaseLogic
                                     $property_id = $post_data->property_id;
                                     $property = (new Property())->fetchById($property_id);
                                     if (false === $admin->isRelatedElement($property)) {
-                                        $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
+                                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                                         $out = true;
                                     } elseif (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
                                         'title' => $title,
@@ -1111,7 +1111,7 @@ class Handler extends BaseLogic
                                 }
                             }
                         } else {
-                            $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
+                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                             $out = true;
                         }
                     } else {
@@ -1198,7 +1198,7 @@ class Handler extends BaseLogic
                     } elseif ($admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $out = array('success' => Help::publishTemplates($instance_id));
                     } else {
-                        $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
+                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                         $out = true;
                     }
                 } elseif ('admin_countries' === $action) {
@@ -1245,7 +1245,7 @@ class Handler extends BaseLogic
                         }
                     }
                     if (false === $allowed) {
-                        $this->addMessage('Security warning, after multiple warnings your account may be blocked', 'warn');
+                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                     } else {
                         $posted_column_name = $post_data->column_name;
                         $posted_table_name = $post_data->table_name;
@@ -1306,7 +1306,7 @@ class Handler extends BaseLogic
                                     // this always sends true as value, attempt to publish the template
                                     $update_arr = array('published' => $temp->publish());
                                 } else {
-                                    $this->addMessage(__('Security warning, after multiple warnings your account may be blocked', 'peatcms'), 'warn');
+                                    $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
                                 }
                                 unset($temp);
                             }
@@ -1527,7 +1527,7 @@ class Handler extends BaseLogic
             if ('search' === $type_name && 1 === count(($terms = $this->resolver->getTerms()))
                 && null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0], true))
             ) {
-                $this->addMessage(sprintf(__('%s replaced by a search page for visitors.', 'peatcms'), $slug), 'warn');
+                $this->addMessage(sprintf(__('%s is replaced by a search result for visitors.', 'peatcms'), $slug), 'warn');
                 $type = new Type($row->type_name);
                 $element = $type->getElement();
                 $element->fetchById($row->id);
@@ -1915,7 +1915,7 @@ class Handler extends BaseLogic
             // permission check: only admins with instance_id = 0 can insert new instances...
             if ($admin->getOutput()->instance_id !== 0) {
                 $this->addMessage(
-                    __('Security warning, after multiple warnings your account may be blocked',
+                    __('Security warning, after multiple warnings your account may be blocked.',
                         'peatcms'), 'warn');
 
                 return null;
