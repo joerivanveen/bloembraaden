@@ -98,7 +98,7 @@ class Handler extends BaseLogic
             $props = $this->resolver->getProperties();
             if (isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
                 // todo add actual user_id when present
-                $rows = Help::getDB()->fetchHistoryFrom($timestamp, 0, ADMIN);
+                $rows = Help::getDB()->fetchHistoryFrom($timestamp, ADMIN);
             } else {
                 $rows = array();
             }

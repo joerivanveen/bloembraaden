@@ -4544,13 +4544,16 @@ class DB extends Base
         return true;
     }
 
-    public function fetchHistoryFrom(int $timestamp, int $user_id, bool $is_admin): array
+    public function fetchHistoryFrom(int $timestamp, bool $is_admin): array
     {
         $sql_date = date('Y-m-d H:i:s', $timestamp);
         $query = 'SELECT DISTINCT table_name, key FROM _history WHERE date_created >= :date AND instance_id = :instance_id';
         if (true === $is_admin) {
             $statement = $this->conn->prepare("$query;");
-        } else {
+        } else { // get it for current user
+            if (0 === ($user_id = Help::$session->getUser()->getId())) {
+                return array();
+            }
             $statement = $this->conn->prepare("$query AND user_id = :user_id;");
             $statement->bindValue(':user_id', $user_id);
         }
