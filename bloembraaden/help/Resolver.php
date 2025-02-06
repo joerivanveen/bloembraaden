@@ -346,7 +346,9 @@ class Resolver extends BaseLogic
             if (1 === $num_terms) {
                 $this->terms = $element->cleanTerms(explode('-', $terms[0]));
             }
-        } elseif (false === ADMIN && false === $element->isOnline()) { // @since 0.23.1 do not get offline stuff when not admin (also prevents caching of offline items)
+        } elseif ((false === defined('ADMIN') || false === ADMIN)
+            && false === $element->isOnline()
+        ) { // @since 0.23.1 do not get offline stuff when not admin (also prevents caching of offline items)
             $title = $element->row->title;
             $this->addError("{$element->getSlug()} is offline and replaced by a search for visitors");
             $element = new Search();
