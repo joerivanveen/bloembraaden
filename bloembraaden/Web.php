@@ -15,6 +15,7 @@ Help::$session = new Session($I);
 $I = null;
 // setup some constants
 define('ADMIN', Help::$session->isAdmin());
+set_error_handler(function() { /* ignore warnings */ }, E_WARNING);
 // Respond
 $H = new Handler();
 $H->Act();

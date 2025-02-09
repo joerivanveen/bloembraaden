@@ -4779,7 +4779,7 @@ class DB extends Base
      */
     public function appCacheGet(string $key): mixed
     {
-        @include "$this->cache_folder$key.serialized";
+        include "$this->cache_folder$key.serialized"; // may emit warning which can not be suppressed with @
         return $val ?? false;
     }
 }
