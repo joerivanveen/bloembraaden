@@ -317,7 +317,7 @@ class Resolver extends BaseLogic
                     }
             }
         }
-        // resolve
+        resolve:
         $type_name = 'search';
         $element_id = 0;
         $terms = $this->getTerms();
@@ -344,7 +344,12 @@ class Resolver extends BaseLogic
             $element = new Search();
             // convert a single slug to separate terms for searching
             if (1 === $num_terms) {
-                $this->terms = $element->cleanTerms(explode('-', $terms[0]));
+                $term = $terms[0];
+                $this->terms = $element->cleanTerms(explode('-', $term));
+                // if the cleaned term is still one term, but different from the original, retry it
+                if (1 === count($this->terms) && $this->terms[0] !== $term) {
+                   goto resolve;
+                }
             }
         } elseif ((false === defined('ADMIN') || false === ADMIN)
             && false === $element->isOnline()
