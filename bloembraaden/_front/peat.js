@@ -3210,7 +3210,6 @@ PEATCMS.prototype.startUp = function () {
     // record first page in history
     NAV.refresh(); // also Re-renders the page for full use
     // handle messages
-    //this.messages(this.session.messages);
     this.messages(window.PEATCMS_globals['__messages__']);
     // @since 0.7.1 remember scroll position for when the user returns
     window.addEventListener('scroll', function () {
@@ -3241,7 +3240,6 @@ PEATCMS.prototype.setScrolledStatus = function () {
     this.currentY = y;
 }
 /**
- *
  * @param name
  * @returns {null|*}
  */
@@ -3592,9 +3590,9 @@ PEATCMS_navigator.prototype.setState = function () {
                 scrollY: window.scrollY,
                 scrollX: window.scrollX
             }, title, `/${path}`);
-            if (VERBOSE) console.log('State set regarding scroll position');
+            if (VERBOSE) console.log('State set regarding scroll position.');
         } else {
-            console.error('Could not set state, no element found');
+            console.error('Could not set state, no element found.');
             console.log(this);
         }
     }
