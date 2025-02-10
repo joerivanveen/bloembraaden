@@ -596,7 +596,7 @@ class Handler extends BaseLogic
                                 $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
                                 if (false === isset($check['valid']) || false === $check['valid']) {
                                     $valid = false;
-                                    $this->addMessage('Vat number not valid according to VIES', 'warn');
+                                    $this->addMessage(__('Vat number not valid according to VIES.', 'peatcms'), 'warn');
                                 } else {
                                     $post_data->vat_valid = true;
                                     $post_data->vat_history = json_encode($check);
