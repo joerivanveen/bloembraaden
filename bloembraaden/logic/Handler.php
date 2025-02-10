@@ -1705,7 +1705,7 @@ class Handler extends BaseLogic
                 $temp = new Template($template_row);
                 $body = $temp->renderObject($post_data);
             }
-            if (false === isset($body)) {
+            if (false === isset($body) || '' === $body) {
                 $body = \var_export($post_data, true);
             }
             if (true === isset($post_data->to)) {

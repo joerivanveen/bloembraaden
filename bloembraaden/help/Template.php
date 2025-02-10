@@ -320,9 +320,9 @@ class Template extends BaseLogic
         if (ADMIN) {
             $temp = $this->getFreshJson();
         } else { // get the published value
-            $temp = $this->row->json_prepared;
+            $temp = Help::getDB()->appCacheGet("templates/$this->template_id");
         }
-        if (null !== $temp) { // probably null if never published or id's changed in the database
+        if (false !== $temp) { // probably false if never published or id's changed in the database
             return $this->convertTagsRemaining($this->renderOutput($output, $temp));
         }
         $this->addError('Template not published or accessible during ->renderObject');
