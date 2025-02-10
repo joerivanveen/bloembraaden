@@ -5,7 +5,7 @@ namespace Bloembraaden;
 
 require 'Require.php';
 // startup Bloembraaden
-set_error_handler(function() { /* ignore warnings */ }, E_WARNING);
+set_error_handler(function() { /* ignore warnings */ }, E_WARNING + E_NOTICE + E_DEPRECATED);
 // run install / upgrade if requested
 if (true === Setup::$INSTALL) Help::install(new DB());
 // start instance and set the specific constants it contains

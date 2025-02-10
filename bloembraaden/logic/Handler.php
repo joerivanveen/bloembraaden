@@ -1674,7 +1674,7 @@ class Handler extends BaseLogic
                 // TODO when this happens there is no CSP
                 echo $temp->getCleanedHtml();
             } else {
-                ob_clean();
+                ob_get_clean();
                 $response = gzencode($temp->getCleanedHtml(), 6);
                 unset($temp);
                 header($csp, true);
