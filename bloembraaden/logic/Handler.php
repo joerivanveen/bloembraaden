@@ -689,7 +689,7 @@ class Handler extends BaseLogic
                         $temp = new Template($template_row);
                         $body = $temp->renderObject($post_data);
                     }
-                    if (false === isset($body)) {
+                    if (false === isset($body) || '' === $body) {
                         $body = 'Click link or paste in your browser to reset your account password: <' . $post_data->confirm_link . '>';
                     }
                     $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));

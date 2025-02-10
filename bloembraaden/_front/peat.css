@@ -437,3 +437,8 @@ body select::-ms-expand {
 .cf-turnstile {
     height: 72.5px;
 }
+
+.cf-turnstile.invisible {
+    max-height: 0;
+    max-width: 0;
+}
