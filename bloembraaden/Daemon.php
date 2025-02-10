@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Bloembraaden;
 require __DIR__ . '/Require.php';
 set_time_limit(0);
+set_error_handler(function() { /* ignore warnings */ }, E_WARNING);
 //
 new Daemon();
 // NOTE you can force a new daemon from cli by adding force as parameter (current daemon will self-destruct)
