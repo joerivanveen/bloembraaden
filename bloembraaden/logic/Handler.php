@@ -1667,15 +1667,17 @@ class Handler extends BaseLogic
             // set content security policy header (CSP), which can differ between instances
             $cdn_root = Setup::$CDNROOT;
             $frame_ancestors = Setup::$FRAME_ANCESTORS;
+            // TODO make csp flexible using settings for the instance
             $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://plausible.io https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
-            // TODO make it flexible using settings for the instance
-            header($csp, true);
             unset($out);
-            if (ob_get_length()) { // false or 0 when there's no content in it
+            if (true === headers_sent()) { // warnings that slipped through our error handler could be sent, apparently
+                // TODO when this happens there is no CSP
                 echo $temp->getCleanedHtml();
             } else {
+                ob_clean();
                 $response = gzencode($temp->getCleanedHtml(), 6);
                 unset($temp);
+                header($csp, true);
                 header('Content-Type: text/html');
                 header('Content-Encoding: gzip');
                 header('Content-Length: ' . strlen($response));
