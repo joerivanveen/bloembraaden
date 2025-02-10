@@ -31,11 +31,6 @@
     }
   },
   "integrations": {
-    "postcode": {
-      "api_url": "https://api.postcode.eu/nl/v1",
-      "api_key": "your_key",
-      "secret": "your_secret"
-    },
     "pdfmaker": {
       "api_key": "your_api_key",
       "api_url": "https://chrome.browserless.io/pdf"
@@ -50,6 +45,6 @@
   "logfile": "/path/to/writable/logs/bloembraaden_",
   "uploads": "/path/to/writable/uploads/",
   "invoice": "/path/to/writable/invoice/",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "install": false
 }

@@ -3168,3 +3168,8 @@ ALTER TABLE "public"."_shoppinglist_variant"
 
 COMMIT;
 
+-- version 0.23.1
+
+BEGIN;
+COMMIT;
+
