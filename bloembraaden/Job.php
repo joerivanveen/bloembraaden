@@ -8,7 +8,6 @@ namespace Bloembraaden;
  */
 require __DIR__ . '/Require.php';
 $trans = new jobTransaction();
-set_error_handler(function() { /* ignore warnings */ }, E_WARNING);
 // to test from cli / as a cron job, run it as follows:
 // # /path/to/php /path/to/bloembraaden/Job.php interval_value (eg: 5)
 $interval = $_GET['interval'] ?? $argv[1];

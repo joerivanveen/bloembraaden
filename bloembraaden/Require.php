@@ -1,7 +1,12 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
+
+set_error_handler(static function($code) {
+    if (0 === (error_reporting() & $code)) return true; // suppressed with @ sign (php 8+)
+    return false; // let normal error handler handle it
+});
 
 //
 define('CORE', __DIR__ . '/');
