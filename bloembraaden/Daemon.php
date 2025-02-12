@@ -80,12 +80,17 @@ class Daemon
             foreach ($rows as $key => $row) {
                 $stale_slug = (string)$row->slug;
                 if (isset($done[$stale_slug])) continue;
-                // todo make switching instance id a method so you can handle it better
                 $instance_id = $row->instance_id;
                 if (isset($row->in_cache)) { // only warmup rows already in cache
                     $done[$stale_slug] = $instance_id;
-                    $stove->Warmup($stale_slug, $instance_id);
-                    $total_count++;
+                    echo 'Warming up (', $instance_id, ') ', $stale_slug, ': ';
+                    if (true === $stove->Warmup($stale_slug, $instance_id)) {
+                        echo 'OK';
+                        $total_count++;
+                    } else {
+                        echo 'NO';
+                    }
+                    echo "\n";
                 }
                 // delete the slug when we’re done
                 $db->deleteFromStale($stale_slug, $instance_id);
@@ -176,12 +181,14 @@ class Daemon
             $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
             $total_count = 0;
             foreach ($rows as $key => $row) {
-                echo 'Warming up ';
-                echo $row->slug;
-                echo ': ';
-                echo ($stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO';
+                echo 'Warming up (', $row->instance_id, ') ', $row->slug, ': ';
+                if (true === $stove->Warmup($row->slug, $row->instance_id)) {
+                    echo 'OK';
+                    $total_count++;
+                } else {
+                    echo 'NO';
+                }
                 echo "\n";
-                $total_count += 1;
                 if ($this->runningLate()) {
                     break;
                 }
