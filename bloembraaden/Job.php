@@ -614,57 +614,54 @@ switch ($interval) {
                     // todo remember the paths so you dont need to check every time
                     if (false === file_exists("$static_path$save_path")) mkdir("$static_path$save_path");
                     $save_path = $save_path . basename($image_src);
-                    echo "Copy $image_src to $save_path";
+                    echo "Copy $image_src to $save_path\n";
                     if (false === file_exists($save_path)) {
                         $headers = get_headers($image_src, true, $stream_context);
                         if (false === isset($headers[0])) {
-                            echo ' SKIPPED (NO HEADER[0])', "\n";
-                            continue 2; // weird, retry later TODO bug when this happens a lot, the import process clogs
+                            echo "^ SKIPPED (NO HEADER[0]).\n";
+                            continue 2; // can be a timeout, retry later TODO bug when this happens a lot, the import process clogs
                         }
                         $headers_0 = $headers[0];
                         if (str_contains($headers_0, ' 503 ') || str_contains($headers_0, ' 429 ')) {
-                            echo ' HIT RATE LIMIT, paused importing.', "\n";
+                            echo "^ HIT RATE LIMIT, paused importing.\n";
                             break 2;
                         }
                         if (isset($headers['Content-Type']) && str_contains($headers_0, ' 200 OK') && 'image/webp' === $headers['Content-Type']) {
                             if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                                echo ' ERROR', "\n";
+                                echo "^ ERROR\n";
                                 continue 2; // try again later
                             }
                         } else {
-                            echo ' NOT FOUND', "\n", var_export($headers, true), "\n";
-                            continue 2; // try again later
+                            echo "^ NOT FOUND ($row->instance_id) $row->slug\n";
                         }
                     } else {
-                        echo ' ALREADY EXISTS';
+                        echo "^ ALREADY EXISTS\n";
                     }
                     $update_data[$src_path] = $save_path;
-                    echo "\n", 'Copy fallback jpg image:';
+                    echo 'Copy fallback jpg image';
                     $image_src = substr($image_src, 0, -4) . 'jpg';
                     $save_path = substr($save_path, 0, -4) . 'jpg';
                     if (false === file_exists($save_path)) {
                         $headers = get_headers($image_src, true, $stream_context);
                         if (isset($headers[0], $headers['Content-Type']) && str_contains($headers[0], ' 200 OK') && 'image/jpeg' === $headers['Content-Type']) {
                             if (false === copy($image_src, "$static_path$save_path", $stream_context)) {
-                                echo ' ERROR', "\n";
+                                echo " < ERROR\n";
                                 continue 2; // try again later
                             } else {
-                                echo ' SUCCESS';
+                                echo " < SUCCESS\n";
                             }
                         } else {
-                            echo ' NOT FOUND', "\n", var_export($headers, true), "\n";
-                            continue 2; // try again later
+                            echo " < NOT FOUND ($row->instance_id) $row->slug\n";
                         }
                     } else {
-                        echo ' ALREADY EXISTS';
+                        echo " < ALREADY EXISTS\n";
                     }
-                    echo "\n";
                 }
                 $update_data['filename_saved'] = null;
                 $update_data['static_root'] = null;
                 $update_data['date_processed'] = 'NOW()';
                 if (false === $db->updateColumns('cms_image', $update_data, $row->image_id)) {
-                    echo 'ERROR could not update database', "\n";
+                    echo "ERROR could not update database\n";
                 }
             }
             if (microtime(true) - $start_timer > 55) break;
