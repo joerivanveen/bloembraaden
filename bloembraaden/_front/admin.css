@@ -1126,6 +1126,11 @@ body .PEATCMS_admin .peatcms-link:focus {
     min-width: 120px;
 }
 
+.PEATCMS_admin .text-security,
+#PEATCMS_admin_page .text-security {
+    -webkit-text-security: disc;
+}
+
 /*.admin input[type=text].searchable,
 #admin_console input[type=text].searchable,
 #admin_sidebar input[type=text]*/

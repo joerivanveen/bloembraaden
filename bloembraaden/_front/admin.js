@@ -1133,7 +1133,7 @@ PEATCMS_column_updater.prototype.update = function (value) {
             el.remove();
         } else if (typeof (value = data[self.column_name]) !== 'undefined') { // it returns the whole row, just grab the right column
             self.set(value);
-        } else if (el.type.toLowerCase() === 'password') {
+        } else if ('password' === el.dataset.column_name) {
             self.set('');
             //} else { @since 0.7.7 don’t do anything if the value is not returned properly
             //self.set('');
