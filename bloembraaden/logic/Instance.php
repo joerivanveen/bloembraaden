@@ -70,7 +70,7 @@ class Instance extends BaseLogic
         if ($this->getSetting('turnstile_site_key')) {
             $sources[] = 'https://challenges.cloudflare.com';
         }
-        if ($this->getSetting('google_tracking_id') || $this->getSetting('recaptcha_site_key')) {
+        if ($this->getSetting('google_tracking_id')) {
             $sources[] = 'https://www.google.com';
         }
         // get everything from the embeds...

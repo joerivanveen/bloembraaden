@@ -1584,7 +1584,7 @@ function PEATCMS_admin() {
         );
         document.querySelectorAll('[data-peatcms_handle="send_email"]').forEach(
             function (btn) {
-                // TODO integrate recaptcha...
+                // TODO integrate turnstile...
                 btn.onclick = function () {
                     NAV.ajax(
                         '/__action__/sendmail/',

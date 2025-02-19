@@ -590,69 +590,6 @@ class Help
         return true;
     }
 
-    /**
-     * @param Instance $instance
-     * @param \stdClass $post_data
-     * @return bool false if the verification failed, true otherwise (also true if recaptcha is not setup!)
-     * @since 0.5.15
-     */
-    public static function recaptchaVerify(Instance $instance, \stdClass $post_data): bool
-    {
-        if ('' !== $instance->getSetting('turnstile_site_key')) {
-            return self::turnstileVerify($instance, $post_data);
-        }
-        if ($instance->getSetting('recaptcha_site_key') === '') return true;
-        if (($recaptcha_secret_key = $instance->getSetting('recaptcha_secret_key')) === '') {
-            Help::addError(new \Exception('Recaptcha secret key not filled in'));
-            Help::addMessage(__('Recaptcha configuration error.', 'peatcms'), 'error');
-
-            return false;
-        }
-        $recaptcha_pass_score = floatval($instance->getSetting('recaptcha_pass_score'));
-        if ($recaptcha_pass_score === 0.0) {
-            Help::addMessage(__('Recaptcha pass score of 0 will not let anything through.', 'peatcms'), 'warn');
-        }
-        if (isset($post_data->{'g-recaptcha-token'}) and ($g_recaptcha_token = $post_data->{'g-recaptcha-token'})) {
-            $url = 'https://www.google.com/recaptcha/api/siteverify';
-            $fields = [
-                'secret' => $recaptcha_secret_key,
-                'response' => $g_recaptcha_token,
-            ];
-            $fields_string = http_build_query($fields);
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $result = (array)json_decode(curl_exec($ch));
-            curl_close($ch);
-            if (0 === json_last_error()) {
-                if (false === $result['success']) {
-                    $recaptcha_errors = $result['error-codes'];
-                    Help::addError(new \Exception('Recaptcha error: ' . var_export($recaptcha_errors, true)));
-                    Help::addMessage(sprintf(__('Recaptcha error (%s).', 'peatcms'), $recaptcha_errors[0] ?? 'unknown'), 'error');
-
-                    return false;
-                } elseif (floatval($result['score']) < $recaptcha_pass_score) {
-                    Help::addMessage(sprintf(__('%1$s score %2$s too low.', 'peatcms'), 'reCaptcha', $result['score']), 'warn');
-
-                    return false;
-                }
-            } else {
-                Help::addMessage(sprintf(__('Error reading %s response.', 'peatcms'), 'reCaptcha json'), 'warn');
-
-                return false;
-            }
-        } else { // g-recaptcha-token is missing
-            Help::addMessage(__('No recaptcha token received.', 'peatcms'), 'error');
-
-            return false;
-        }
-
-        return true;
-    }
-
     public static function prepareAdminRowForOutput(\stdClass &$row, string $what, ?string $which = null): void
     {
         $row->title = "$what | Bloembraaden";

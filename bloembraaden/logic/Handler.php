@@ -444,7 +444,7 @@ class Handler extends BaseLogic
                 // times keeps track of how many times this var is (being) updated
                 Help::$session->setVar($name, $post_data->value, $post_data->times);
                 $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
-            } elseif ('post_comment' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $valid = true;
                 // validation process
@@ -528,7 +528,7 @@ class Handler extends BaseLogic
                         $this->addMessage(__('Comment not added', 'peatcms'), 'warn');
                     }
                 }
-            } elseif ('sendmail' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('sendmail' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 $out = $this->sendMail($instance, $post_data);
             } elseif ('countries' === $action) {
@@ -561,7 +561,7 @@ class Handler extends BaseLogic
             } elseif ('postcode' === $action) {
                 $this->addError('postcode check is deprecated, use validate_address');
             } elseif ('order' === $action) {
-                if (true === Help::recaptchaVerify($instance, $post_data)) {
+                if (true === Help::turnstileVerify($instance, $post_data)) {
                     $post_data = $this->resolver->escape($post_data);
                     if (false === isset($post_data->shoppinglist)) {
                         $this->addError('Shoppinglist is not set for order action');
@@ -626,10 +626,10 @@ class Handler extends BaseLogic
                     $out = true;
                 }
             } elseif ('account_login' === $action) {
-                // TODO for admin this works without recaptcha, but I want to put a rate limiter etc. on it
+                // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     $as_admin = $this->resolver->hasInstruction('admin');
-                    if (true === $as_admin or true === Help::recaptchaVerify($instance, $post_data)) {
+                    if (true === $as_admin or true === Help::turnstileVerify($instance, $post_data)) {
                         if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                             $this->addMessage(__('Could not login', 'peatcms'), 'warn');
                         } elseif (true === $as_admin) {
@@ -646,7 +646,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ('account_create' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 $out = array('success' => false);
                 if (isset($post_data->email)
                     && isset($post_data->pass)
@@ -674,7 +674,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ('account_password_forgotten' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_password_forgotten' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
                     $post_data->check_string = Help::getDB()->putInLocker(0,
                         (object)array('email_address' => $email_address));
@@ -713,7 +713,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('E-mail is required', 'peatcms'), 'warn');
                 }
-            } elseif ('account_password_update' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 $out = array('success' => false);
                 if (isset($post_data->email) && isset($post_data->pass)) {
                     if (isset($post_data->locker)
@@ -751,7 +751,7 @@ class Handler extends BaseLogic
                 } else {
                     $this->addMessage(__('No e-mail and / or pass received', 'peatcms'), 'warn');
                 }
-            } elseif ('account_update' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('account_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 if (null !== ($user = Help::$session->getUser())) {
                     // check which column is being updated... (multiple is possible)
                     $data = array();
@@ -782,7 +782,7 @@ class Handler extends BaseLogic
             } elseif ('validate_vat' === $action) {
                 $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
             } elseif (('update_address' === $action || 'delete_address' === $action)
-                && (true === Help::recaptchaVerify($instance, $post_data))
+                && (true === Help::turnstileVerify($instance, $post_data))
             ) {
                 //$post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
@@ -814,7 +814,7 @@ class Handler extends BaseLogic
                     $this->addError('address_id is missing');
                 }
                 if (false === isset($out)) $out = array('success' => false);
-            } elseif ('create_address' === $action && (true === Help::recaptchaVerify($instance, $post_data))) {
+            } elseif ('create_address' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                 $post_data = $this->resolver->escape($post_data);
                 if ((null !== ($user = Help::$session->getUser()))) {
                     if (null !== ($address_id = Help::getDB()->insertElement(
@@ -1648,7 +1648,6 @@ class Handler extends BaseLogic
                 'decimal_separator' => Setup::$DECIMAL_SEPARATOR,
                 'radix' => Setup::$RADIX,
                 'google_tracking_id' => $instance->getSetting('google_tracking_id', ''),
-                'recaptcha_site_key' => $instance->getSetting('recaptcha_site_key', ''),
                 'turnstile_site_key' => $instance->getSetting('turnstile_site_key', ''),
                 'root' => $root,
                 'plausible' => $plausible,

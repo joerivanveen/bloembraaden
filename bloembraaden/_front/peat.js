@@ -2293,7 +2293,7 @@ const PEATCMS = function () {
             }
             delete window.PEATCMS_globals.plausible;
         }
-        // load the tracking_id and recaptcha server_values
+        // load the google tracking_id server_values
         if (window.PEATCMS_globals.hasOwnProperty('google_tracking_id')) {
             if ('' !== (self.google_tracking_id = PEATCMS.trim(window.PEATCMS_globals.google_tracking_id))) {
                 if (typeof CMS_admin === 'undefined') {
@@ -2302,13 +2302,6 @@ const PEATCMS = function () {
                 }
             }
             delete window.PEATCMS_globals.google_tracking_id;
-        }
-        if (window.PEATCMS_globals.hasOwnProperty('recaptcha_site_key')) {
-            if ('' !== (self.recaptcha_site_key = PEATCMS.trim(window.PEATCMS_globals.recaptcha_site_key))) {
-                console.warn('Initialize Google recaptcha');
-                self.setup_google_recaptcha(self.recaptcha_site_key);
-            }
-            delete window.PEATCMS_globals.recaptcha_site_key;
         }
     }
 
@@ -2439,7 +2432,7 @@ PEATCMS.prototype.triggerEvent = function (e) {
 PEATCMS.prototype.setup_turnstile = function () {
     const script = document.createElement('script'),
         self = this;
-    if (VERBOSE) console.log('Setting up turnstile with key: ' + self.turnstile_site_key);
+    if (VERBOSE) console.log(`Setting up turnstile with key: ${self.turnstile_site_key}`);
     document.head.appendChild(script);
     script.id = 'cloudflare-turnstile';
     script.setAttribute('nonce', window.PEATCMS_globals.nonce);
@@ -2470,34 +2463,12 @@ PEATCMS.prototype.setup_turnstile = function () {
     document.addEventListener('peatcms.progressive_ready', addTurnstile);
     addTurnstile();
 }
-PEATCMS.prototype.setup_google_recaptcha = function (site_key) {
-    const div = document.createElement('div'),
-        script = document.createElement('script');
-    if (VERBOSE) console.log('Setting up Google recaptcha with key: ' + site_key);
-    div.id = 'recaptcha';
-    div.classList.add('g-recaptcha');
-    div.setAttribute('data-size', 'invisible'); // size: invisible please
-    div.setAttribute('data-sitekey', site_key);
-    div.setAttribute('data-peatcms-keep', 'permanent');
-    document.body.appendChild(div);
-    document.head.appendChild(script);
-    script.id = 'google_recaptcha';
-    script.setAttribute('nonce', window.PEATCMS_globals.nonce);
-    //script.src = 'https://www.google.com/recaptcha/api.js?render=' + site_key; <- this will render itself independently
-    script.src = 'https://www.google.com/recaptcha/api.js'; // <- this renders in the first .g-recaptcha it finds
-}
-/*if (($recaptcha_site_key = $this->instance->getSetting('recaptcha_site_key')) !== '') {
-    $html .= '<div id="recaptcha" class="g-recaptcha" data-size="invisible" data-sitekey="'.
-        $recaptcha_site_key . '" data-peatcms-keep="permanent"></div>';
-    $html .= '<script src="https://www.google.com/recaptcha/api.js" async defer></script>';
-}*/
 
 PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
     // load google tag tracking, if requested
     // regarding pageview tracking and events check this:
     // https://developers.google.com/analytics/devguides/collection/gtagjs/pages
     if (typeof google_tracking_id !== 'string') {
-        // TODO setup pagetracking for multiple tracking ids
         if (null === google_tracking_id) {
             if (VERBOSE) console.log('No Google tracking id');
         } else {
@@ -2506,7 +2477,7 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
         }
     } else {
         if (google_tracking_id.indexOf('GTM-') === 0) {
-            if (VERBOSE) console.log('Setting up Google tag manager with id: ' + google_tracking_id);
+            if (VERBOSE) console.log(`Setting up Google tag manager with id: ${google_tracking_id}`);
             // put the recommended gtm loading function in here, MODIFIED regarding the nonce
             (function (w, d, s, l, i) {
                 w[l] = w[l] || [];
@@ -3640,30 +3611,6 @@ PEATCMS_navigator.prototype.getCurrentElement = function () {
 PEATCMS_navigator.prototype.setCurrentElement = function (el) {
     this.element = el;
 }
-
-PEATCMS_navigator.prototype.addRecaptchaToData = function (data, callback) {
-    // integrate recaptcha, but not for regular shoppinglist actions
-    if (typeof grecaptcha !== 'undefined') {
-        try {
-            // TODO here it says you need to send some grecaptcha id in stead of the site key
-            // https://developers.google.com/recaptcha/docs/faq
-            // this id I have not been able to find, but it works with undefined as well (note: null does NOT work)
-            // pretty weird behaviour, so need to check this and maybe make it ‘correct’ before this stops working
-            grecaptcha.execute(undefined, {action: 'form_submit'}).then(function (token) {
-                // set token in form
-                data['g-recaptcha-token'] = token;
-                callback(data);
-            });
-        } catch (thrown_error) {
-            console.error(thrown_error);
-            PEAT.message('Recaptcha error', 'error');
-            callback(data)
-        }
-    } else {
-        // submit the form through ajax
-        callback(data);
-    }
-}
 /**
  * Use submitData(string slug, object data, function callback)
  */
@@ -3671,21 +3618,11 @@ PEATCMS_navigator.prototype.postData = function () {
     //
 }
 PEATCMS_navigator.prototype.submitData = function (slug, data, callback) {
-    const self = this;
-    self.addRecaptchaToData(data, function (data) {
-        self.ajax(slug, data, callback);
-    });
+    console.log('submitData() is deprecated, use NAV.ajax() directly.');
+    this.ajax(slug, data, callback);
 }
 PEATCMS_navigator.prototype.submitForm = function (form) {
-    const self = this, data = PEATCMS.getFormData(form);
-    // handle recaptcha if we’re not talking shoppinglist
-    if (form.getAttribute('action').slice(0, 17) !== '/__shoppinglist__') {
-        self.addRecaptchaToData(data, function (data) {
-            self.submitFormData(form, data);
-        });
-    } else {
-        self.submitFormData(form, data);
-    }
+    this.submitFormData(form, PEATCMS.getFormData(form));
 }
 PEATCMS_navigator.prototype.submitFormData = function (form, data) {
     // allow cf-turnstile outside of form, with id cf-turnstile

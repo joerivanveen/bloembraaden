@@ -216,7 +216,7 @@ class Resolver extends BaseLogic
         // some fields can never be output:
         unset($out->password_hash);
         if (false === ADMIN) {
-            unset($out->recaptcha_secret_key);
+            unset($out->turnstile_secret_key);
             unset($out->myparcel_api_key);
         }
 

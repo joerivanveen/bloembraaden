@@ -36,8 +36,7 @@ class DB extends Base
     );
     public const REDACTED_COLUMN_NAMES = array(
         'password_hash',
-        'recaptcha_site_key',
-        'recaptcha_secret_key',
+        'turnstile_secret_key',
         'access_token',
     );
 

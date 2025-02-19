@@ -336,12 +336,6 @@ body select::-ms-expand {
     display: none;
 }
 
-/* https://developers.google.com/recaptcha/docs/faq */
-.grecaptcha-badge {
-    visibility: hidden;
-}
-
-
 /**
  * slider https://cheewebdevelopment.com/boilerplate-vanilla-javascript-content-slider/
  */
