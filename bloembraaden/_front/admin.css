@@ -729,6 +729,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin input[type=button],
 .PEATCMS_admin .button,
 .PEATCMS_admin button,
+.PEATCMS_admin input[type="checkbox"] + label, /* pretty checkboxes */
 .PEATCMS_admin ::file-selector-button {
     /* reset a button */
     width: auto;
@@ -737,6 +738,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     border-radius: 0;
     border: 0;
     color: var(--admin-color-accent);
+    font-weight: normal;
     cursor: pointer;
     padding: .1rem .21rem;
     box-shadow: none;
@@ -747,11 +749,9 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin input[type=submit]:hover,
 .PEATCMS_admin input[type=button]:hover,
 .PEATCMS_admin .button:hover,
-.PEATCMS_admin ::file-selector-button:hover,
-.PEATCMS_admin input[type="checkbox"] + label:before:hover, /* pretty checkboxes */
-.PEATCMS_admin button:hover {
-    /*outline: solid 2px var(--admin-color-accent-fierce);
-    outline-offset: -2px;*/
+.PEATCMS_admin button:hover,
+.PEATCMS_admin input[type="checkbox"] + label:hover, /* pretty checkboxes */
+.PEATCMS_admin ::file-selector-button:hover {
     color: var(--admin-color-accent-fierce);
 }
 
