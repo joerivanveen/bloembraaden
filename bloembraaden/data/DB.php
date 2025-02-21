@@ -544,29 +544,29 @@ class DB extends Base
         }
         if (0 === count($rows)) {
             $statement = $this->conn->prepare('
-                SELECT page_id AS id, \'page\' AS type_name FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
+                SELECT page_id AS id, \'page\' AS type_name, deleted FROM cms_page WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
-                SELECT image_id AS id, \'image\' AS type_name FROM cms_image WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT image_id AS id, \'image\' AS type_name, deleted FROM cms_image WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT embed_id AS id, \'embed\' AS type_name FROM cms_embed WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT embed_id AS id, \'embed\' AS type_name, deleted FROM cms_embed WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT file_id AS id, \'file\' AS type_name FROM cms_file WHERE slug = :slug AND instance_id = :instance_id
+                SELECT file_id AS id, \'file\' AS type_name, deleted FROM cms_file WHERE slug = :slug AND instance_id = :instance_id
                 UNION ALL 
-                SELECT menu_id AS id, \'menu\' AS type_name FROM cms_menu WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT menu_id AS id, \'menu\' AS type_name, deleted FROM cms_menu WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT brand_id AS id, \'brand\' AS type_name FROM cms_brand WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT brand_id AS id, \'brand\' AS type_name, deleted FROM cms_brand WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT serie_id AS id, \'serie\' AS type_name FROM cms_serie WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT serie_id AS id, \'serie\' AS type_name, deleted FROM cms_serie WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT product_id AS id, \'product\' AS type_name FROM cms_product WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT product_id AS id, \'product\' AS type_name, deleted FROM cms_product WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT variant_id AS id, \'variant\' AS type_name FROM cms_variant WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT variant_id AS id, \'variant\' AS type_name, deleted FROM cms_variant WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT comment_id AS id, \'comment\' AS type_name FROM cms_comment WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT comment_id AS id, \'comment\' AS type_name, deleted FROM cms_comment WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT property_id AS id, \'property\' AS type_name FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT property_id AS id, \'property\' AS type_name, deleted FROM cms_property WHERE slug = :slug AND instance_id = :instance_id 
                 UNION ALL 
-                SELECT property_value_id AS id, \'property_value\' AS type_name FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 
+                SELECT property_value_id AS id, \'property_value\' AS type_name, deleted FROM cms_property_value WHERE slug = :slug AND instance_id = :instance_id 
                 ;
             ');
             $statement->bindValue(':slug', $slug);
@@ -575,8 +575,8 @@ class DB extends Base
             $rows = $statement->fetchAll(5);
         }
         $statement = null;
-        if (1 === count($rows)) {
-            return $rows[0];
+        if (1 === count($rows) && false === ($row = $rows[0])->deleted) {
+            return $row;
         } else {
             if (count($rows) > 1) {
                 $this->addError(sprintf('DB->fetchElementIdAndTypeBySlug: %1$s returned %2$d rows', $slug, count($rows)));
