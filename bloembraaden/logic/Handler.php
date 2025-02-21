@@ -1585,13 +1585,18 @@ class Handler extends BaseLogic
             $out->__messages__ = Help::getMessages();
             // @since 0.6.1 add any changed session vars for update on client
             $out->__updated_session_vars__ = Help::$session->getUpdatedVars();
-            if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
-            $response = gzencode(json_encode($out), 6);
-            unset($out);
-            header('Content-Type: application/json');
-            header('Content-Encoding: gzip');
-            header('Content-Length: ' . strlen($response));
-            echo $response;
+            if (true === headers_sent()) {
+                echo "#BLOEMBRAADEN_JSON:#\n";
+                echo json_encode($out);
+            } else {
+                if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
+                $response = gzencode(json_encode($out), 6);
+                unset($out);
+                header('Content-Type: application/json');
+                header('Content-Encoding: gzip');
+                header('Content-Length: ' . strlen($response));
+                echo $response;
+            }
         } else { // use template
             if (true === $instance->isParked() && false === ADMIN && false === $this->resolver->hasInstruction('admin')) {
                 $presentation_instance = $instance->getPresentationInstance();
