@@ -372,7 +372,7 @@ class DB extends Base
             $intersected = array_intersect_key($ids, $intersected); // AND
         }
         if (0 === count($intersected)) return array();
-        if (0 === count($properties)) return $intersected;
+        if (0 === count($properties)) return array_values($intersected);
         // filter by properties before returning:
         $sub_queries = $this->queriesProperties($properties, $type_name);
         if (0 !== count($sub_queries)) { // TODO duplicate code
