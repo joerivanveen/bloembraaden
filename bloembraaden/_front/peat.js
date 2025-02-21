@@ -1220,12 +1220,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
     if (typeof for_slug === 'string') { // noinspection JSCheckFunctionSignatures // because it's a string here, phpStorm should shut up
         xhr.setRequestHeader('X-Slug', encodeURIComponent(for_slug));
     }
-    if ('getAsBinary' in file && 'sendAsBinary' in xhr) {
-        // Firefox 3.5
-        xhr.sendAsBinary(file.getAsBinary());
-    } else {
-        xhr.send(file);
-    }
+    xhr.send(file);
 }
 
 PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {

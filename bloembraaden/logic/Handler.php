@@ -1379,7 +1379,7 @@ class Handler extends BaseLogic
                             $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
                             // prepare a default element based on the uploaded file that will be created when a new element is needed
                             $default_type = 'file';
-                            if (substr($post_data['content_type'], 0, 5) === 'image') $default_type = 'image';
+                            if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
                             // process it in cms
                             if (isset($_SERVER['HTTP_X_SLUG'])) {
                                 if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
