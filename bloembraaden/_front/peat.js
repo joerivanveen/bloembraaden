@@ -1212,12 +1212,12 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
     xhr.open('POST', '/__action__/admin_file_upload/', true);
     this.setUpProcess(xhr, callback);
     xhr.setRequestHeader('Content-Type', 'application/octet-stream;'); // has no effect on the server
-    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name)); // maybe .fileName, for older Firefox browsers?
-    if (element.hasAttribute('data-file-action')) {
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+    if (element && element.hasAttribute('data-file-action')) {
         xhr.setRequestHeader('X-File-Action', encodeURIComponent(element.getAttribute('data-file-action')));
     }
     xhr.setRequestHeader('X-Csrf-Token', PEAT.getSessionVar('csrf_token'));
-    if (typeof for_slug === 'string') { // noinspection JSCheckFunctionSignatures // because it's a string here, phpStorm should shut up
+    if ('string' === typeof for_slug) { // noinspection JSCheckFunctionSignatures // because it's a string here, phpStorm should shut up
         xhr.setRequestHeader('X-Slug', encodeURIComponent(for_slug));
     }
     xhr.send(file);
