@@ -2394,10 +2394,9 @@ PEATCMS.prototype.copyToClipboard = async function (str) {
  * @param once Default false, when true the listener will be called when the event triggers and immediately removed
  */
 PEATCMS.prototype.addEventListener = function (type, listener, once) {
-    let id;
     if (true === once) {
         if (peatcms_events.includes(type)) {
-            id = PEATCMS.numericHashFromString(listener.toString());
+            const id = PEATCMS.numericHashFromString(listener.toString());
             if (!this.eventListeners[type]) this.eventListeners[type] = {};
             this.eventListeners[type][id] = listener;
         } else {

@@ -1381,7 +1381,7 @@ class Handler extends BaseLogic
                             $default_type = 'file';
                             if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
                             // process it in cms
-                            if (isset($_SERVER['HTTP_X_SLUG'])) {
+                            if (true === isset($_SERVER['HTTP_X_SLUG'])) {
                                 if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
                                     if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
                                         $el = $this->updateElement($row->type_name, $post_data, $row->id);
