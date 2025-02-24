@@ -536,7 +536,7 @@ class DB extends Base
         $rows = array();
         // @since 0.6.0 check the cache first
         if (false === $no_cache) {
-            $statement = $this->conn->prepare('SELECT id, type_name FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
+            $statement = $this->conn->prepare('SELECT id, type_name, false deleted FROM _cache WHERE slug = :slug AND instance_id = :instance_id LIMIT 1;');
             $statement->bindValue(':slug', $slug);
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->execute(); // error handling necessary?
