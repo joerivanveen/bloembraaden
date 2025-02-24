@@ -123,7 +123,6 @@ class BaseLogic extends Base
                 if (true === $returnOutputObject) return $out;
                 return null;
             } elseif (false === $this->isOnline()) {
-                $this->addError(sprintf('%s is not cached', $out->__ref));
                 // remove from cache if this element (type) is cached, leave it when replaced by a search page
                 $obj = $db->cached($slug);
                 if (null !== $obj && 'search' !== $obj->slugs->{$obj->__ref}->type_name) {
