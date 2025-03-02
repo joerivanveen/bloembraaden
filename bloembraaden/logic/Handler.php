@@ -185,7 +185,12 @@ class Handler extends BaseLogic
             $limit = (int)$this->resolver->getInstruction('limit') ?: 8;
             $terms = $this->resolver->getTerms();
             $src->setProperties($props);
-            $type_name = $post_data->type ?? 'variant';
+            // allow overriding the type
+            if (($type_name = $this->resolver->getInstruction('type'))) {
+                unset($post_data->id); // this is no longer the correct id
+            } else {
+                $type_name = $post_data->type ?? 'variant';
+            }
             if ($this->resolver->hasInstruction('shoppinglist')) { // based on current item(s) in list
                 if (true === ($name = $this->resolver->getInstruction('shoppinglist'))) $name = '';
                 $out = array('__variants__' => $src->getRelatedForShoppinglist($name, $limit));

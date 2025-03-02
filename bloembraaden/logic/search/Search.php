@@ -319,7 +319,7 @@ class Search extends BaseElement
             $not_in[] = $row->page_id;
         }
         $linked_pages = null;
-        $rows = Help::getDB()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, 3);
+        $rows = Help::getDB()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, $quantity);
 
         return $this->outputRows($rows, 'page');
     }
