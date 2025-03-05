@@ -3173,3 +3173,7 @@ COMMIT;
 BEGIN;
 COMMIT;
 
+-- version 0.24.0
+
+BEGIN;
+COMMIT;
