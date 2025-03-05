@@ -963,6 +963,74 @@ class Handler extends BaseLogic
                     } else {
                         $out = true;
                     }
+                } elseif ('admin_publish_element' === $action) { // @since 0.24.0
+                    $element = $this->getElementById($post_data->element, (int)$post_data->id);
+                    if (null === $element) {
+                        $this->addMessage(__('Element not found', 'peatcms'), 'error');
+                        $out = array('success' => false);
+                    } else {
+                        $element_title = $element->row->title;
+                        // if there is a linked element (probably file or image), set its online property to true
+                        // also update the title and slug
+                        foreach ($element->getLinked() as $type_name => $elements) {
+                            foreach ($elements as $key => $out) {
+                                if (false === is_int($key)) continue; // not an element
+                                $id = $GLOBALS['slugs']->{$out->__ref}->{"{$type_name}_id"};
+                                // #TRANSLATORS: %1$s is the type name, %2$s is the element title
+                                $title = sprintf(__('%1$s added to %2$s', 'peatcms'), ucfirst($type_name), $element_title);
+                                //var_dump($key, $id);
+                                Help::getDB()->updateElement(new Type($type_name), array(
+                                    'online' => true,
+                                    'title' => $title,
+                                    'slug' => $title,
+                                ), $id);
+                            }
+                        }
+                        // if you received properties, add them as x_values
+                        foreach ($post_data->properties as $property => $value) {
+                            $property = Help::slugify($property);
+                            $value = Help::slugify($value);
+                            $row = Help::getDB()->fetchElementIdAndTypeBySlug($property);
+                            if (null === $row || 'property' !== $row->type_name) {
+                                $this->addMessage(sprintf(__('Property %s not found.', 'peatcms'), $property), 'error');
+                                continue;
+                            }
+                            $property_id = $row->id;
+                            $row = Help::getDB()->fetchElementIdAndTypeBySlug($value);
+                            if (null === $row || 'property_value' !== $row->type_name) {
+                                $this->addMessage(sprintf(__('Property value %s not found.', 'peatcms'), $value), 'error');
+                                continue;
+                            }
+                            $property_value_id = $row->id;
+                            unset($row);
+                            if (false === $element->linkX($property_id, $property_value_id)) {
+                                $this->addMessage(sprintf(__('Could not link %s %s to element', 'peatcms'), $property, $value), 'error');
+                            }
+                        }
+                        // set this element to true and add template
+                        $update = array('online' => true);
+                        // if you received a css class, add that as well
+                        if (true === isset($post_data->css_class)) {
+                            $update['css_class'] = "$post_data->css_class {$element->row->css_class}";
+                        }
+                        // if you received a template string, set the correct template id, else, set the default id for this type
+                        if (true === isset($post_data->template_name)
+                            && ($row = Help::getDB()->getTemplateByName($post_data->template_name, Setup::$instance_id))
+                        ) {
+                            $update['template_id'] = $row->template_id;
+                        } else {
+                            $update['template_id'] = Help::getDB()->getDefaultTemplateIdFor($post_data->element);
+                        }
+                        if (false === $element->update($update)) {
+                            $this->addMessage(sprintf(__('Could not update %s', 'peatcms'), $element_title), 'error');
+                            $out = array('success' => false);
+                        } else {
+                            $out = array(
+                                'success' => true,
+                                'slug' => $element->getSlug(),
+                            );
+                        }
+                    }
                 } elseif ('admin_uncache' === $action) {
                     if (isset($post_data->path)) {
                         $path = $post_data->path;

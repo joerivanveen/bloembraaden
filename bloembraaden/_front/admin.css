@@ -249,7 +249,7 @@
     color: var(--admin-color-paper);
 }
 
-#quickie-modal [type="submit"].published,
+#quickie-modal [type="submit"][disabled],
 #peatcms_publish.published {
     background-color: var(--admin-color-accent-neutral);
 }
@@ -1041,7 +1041,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 #quickie-modal .image {
     width: 100%;
     aspect-ratio: 1 / 1;
-    background-size: contain;
+    background-size: contain; /* overridden / managed in admin.js quickie->showImage */
     background-position: center center;
     background-repeat: no-repeat;
 }

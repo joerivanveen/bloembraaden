@@ -1416,7 +1416,6 @@ function PEATCMS_quickie(quickie) {
     return true;
 }
 
-// todo how to make sure there is only one slug being updated
 PEATCMS_quickie.prototype.startUp = function () {
     // open a full screen modal
     const modal = document.createElement('div'),
@@ -1446,14 +1445,14 @@ PEATCMS_quickie.prototype.startUp = function () {
         if ('textarea' === field.type) {
             const input = document.createElement('textarea');
             input.addEventListener('change', function () {
-                quickie.save(field.column, this.value);
+                quickie.save(field.column, this);
             });
             wrap.appendChild(input);
         } else {
             const input = document.createElement('input');
             input.type = field.type || 'text';
             input.placeholder = field.placeholder || '';
-            delete field.slug; // you may not specify a slug in the config
+            delete field.state; // you may not specify a state in the config
             input.peatcms_quickie_field = field;
             if ('file' === input.type) {
                 // quick sanity check for file type
@@ -1468,7 +1467,7 @@ PEATCMS_quickie.prototype.startUp = function () {
                 });
             } else {
                 input.addEventListener('change', function () {
-                    quickie.save(field.column, this.value);
+                    quickie.save(field.column, this);
                 });
                 // todo 0.24.0: add an interval / timeout to save regularly, but only if the value is not empty
             }
@@ -1478,12 +1477,52 @@ PEATCMS_quickie.prototype.startUp = function () {
     }
 
     // add submit button, that sends the data to the server including config.properties
-    // to create the element (config.element) with the data from the form, and link
-    // the file (element) to that element if it has its own element, or put the form fields into the
-    // existing file element if it doesn't have its own element or create a new element if there is no file
+    // and links the file if necessary
     button.type = 'submit';
-    button.addEventListener('click', function (event) {
+    button.setAttribute('id', 'quickie-publish');
+    button.setAttribute('disabled', 'disabled'); // until an element is created (quickie has state)
+    button.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.setAttribute('disabled', 'disabled');
+        const type_name = quickie.config.element;
 
+        function publish() {
+            const config = quickie.config;
+            NAV.ajax('/__action__/admin_publish_element', {
+                element: type_name,
+                id: quickie.state[`${type_name}_id`],
+                template_name: config.template || null,
+                css_class: config.css_class || null,
+                properties: config.properties || {}
+            }, function (data) {
+                if (true === data.success) {
+                    NAV.go(data.slug);
+                } else {
+                    PEAT.message('Failed to publish', 'error');
+                }
+            });
+        }
+
+        // link the file if necessary, before publishing
+        if (undefined !== quickie.file.peatcms_quickie_state) {
+            const linkable_link = quickie.file.peatcms_quickie_state;
+            if (VERBOSE) console.log('Linking file');
+            NAV.ajax('/__action__/admin_linkable_link', {
+                element: type_name,
+                id: quickie.state[`${type_name}_id`],
+                sub_element: linkable_link.type_name,
+                sub_id: linkable_link[`${linkable_link.type_name}_id`]
+            }, function (json) {
+                if (false === json.success) {
+                    PEAT.message('Failed to link file', 'error');
+                } else {
+                    publish();
+                }
+            });
+        } else {
+            publish();
+        }
     });
     form.appendChild(button);
     // add to dom
@@ -1497,33 +1536,32 @@ PEATCMS_quickie.prototype.startUp = function () {
     });
 }
 
-PEATCMS_quickie.prototype.save = function (column, value) {
+PEATCMS_quickie.prototype.save = function (column, input) {
     const self = this,
         element_name = this.config.element;
-    // File is saved independently. Make sure to use one slug only for saving. When slug is generated
-    // for the first time, link the file if exists and the properties.
-    if (true === Array.isArray(column)) { // a field can update multiple columns
-        for (const col of column) {
-            self.save(col, value);
-        }
-        return;
-    }
+    // File is saved independently. Make sure to use one slug only for saving.
     if (null === self.state) {
         self.initializeElement(function () {
-            self.save(column, value);
+            input.dispatchEvent(new Event('change'));
         });
+        return;
+    }
+    if (true === Array.isArray(column)) { // a field can update multiple columns
+        for (const col of column) {
+            self.save(col, input);
+        }
         return;
     }
     NAV.ajax('/__action__/update_column', {
         'table_name': `cms_${element_name}`,
         'column_name': column,
-        'value': value,
+        'value': input.value,
         'id': self.state[`${element_name}_id`]
-    }, function (json) {
-        if (json.hasOwnProperty(column)) {
-            self.state = json;
+    }, function (data) {
+        if (data.hasOwnProperty(column)) {
+            self.state = data;
         } else {
-            console.error('Fail', json);
+            console.error('Fail', data);
         }
     });
 }
@@ -1532,34 +1570,60 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
     const file = input.files[0],
         field = input.peatcms_quickie_field,
         self = this;
+    if ('undefined' === typeof file) return; // when canceled
     let slug = null;
     input.setAttribute('disabled', 'disabled');
     if (true === field.hasOwnProperty('element')) {
         slug = field.slug || null;
     } else if (null === self.state) {
         self.initializeElement(function () {
-            self.saveFile(input);
+            input.dispatchEvent(new Event('change'));
         });
         return;
     } else {
         slug = self.state.slug;
     }
-    self.showImage('/_front/logo-anim.gif'); // todo 0.24.0 make a better loading gif
+    self.showImage();
     NAV.fileUpload(function (data) {
         if (data.hasOwnProperty('filename_saved')) {
             PEAT.message('File uploaded successfully');
-            if ('image' === data.type_name) {
-                const level = field.level || 1;
-                NAV.ajax(`/__action__/process_file/level:${level}/slug:${data.slug}`);
-                CMS_admin.subscribe('image', data.id, function (json) {
-                    self.showImage(json.src_large);
-                });
+            function process() {
+                if ('image' === data.type_name) {
+                    const level = field.level || 1;
+                    NAV.ajax(`/__action__/process_file/level:${level}/slug:${data.slug}`);
+
+                    function showImage(json) {
+                        if (!json.hasOwnProperty('src_large')) {
+                            console.error('No src_large in json', json);
+                        } else {
+                            if (true === self.showImage(json.src_large)) {
+                                CMS_admin.unsubscribe('image', json.image_id, showImage);
+                            }
+                        }
+                    }
+
+                    CMS_admin.subscribe('image', data.id, showImage);
+                }
             }
-            // if this is a separate element from config.element, update file slug
+            // if this is a separate element from config.element, update file state
             if (field.hasOwnProperty('element')) {
                 field.slug = data.slug;
+                input.peatcms_quickie_state = data; // remember for linking later
+                // property css_class is allowed on separate file element like on main element
+                // update it before processing so it does not override the automated css classes
+                if (field.hasOwnProperty('css_class')) {
+                    NAV.ajax('/__action__/update_column', {
+                        'table_name': data.table_name,
+                        'column_name': 'css_class',
+                        'value': field.css_class,
+                        'id': data.id
+                    }, process);
+                } else {
+                    process();
+                }
             } else {
                 self.state = data;
+                process();
             }
             input.removeAttribute('disabled');
         } else {
@@ -1571,7 +1635,10 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
 }
 
 PEATCMS_quickie.prototype.showImage = function (src) {
-    if (!this.file) return;
+    if (!this.file) {
+        console.error('Quickie has no file input to show image for.');
+        return false;
+    }
     let img = document.getElementById('quickie-image');
     if (!img) {
         img = document.createElement('div');
@@ -1579,7 +1646,13 @@ PEATCMS_quickie.prototype.showImage = function (src) {
         img.setAttribute('id', 'quickie-image');
         this.file.insertAdjacentElement('beforebegin', img);
     }
-    requestAnimationFrame(function () {
+    return 0 !== requestAnimationFrame(function () {
+        if (!src) {
+            src = '/_front/logo-anim.gif';
+            img.style.backgroundSize = 'auto';
+        } else {
+            img.style.backgroundSize = 'contain';
+        }
         img.style.backgroundImage = `url(${src})`;
     });
 }
@@ -1596,7 +1669,7 @@ PEATCMS_quickie.prototype.isInitializingElement = function () {
 
 PEATCMS_quickie.prototype.initializeElement = function (callback) {
     if (true === this.initializing_element) {
-        console.error('Already initializing element');
+        console.warn('Already initializing element.');
         setTimeout(callback, 309);
         return;
     }
@@ -1609,12 +1682,12 @@ PEATCMS_quickie.prototype.initializeElement = function (callback) {
         console.warn(json);
         if (json.hasOwnProperty('slug')) {
             self.state = json;
+            self.initializing_element = false;
+            if (callback) callback();
+            document.getElementById('quickie-publish').removeAttribute('disabled');
         } else {
-            console.error('Failed to initialize element');
+            console.error('Failed to initialize element.');
         }
-        self.initializing_element = false;
-        if (callback) callback();
-        // TODO 0.24.0 add the file and the properties, beware that the file might not be set, but chosen later
     });
 }
 
