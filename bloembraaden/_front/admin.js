@@ -2173,13 +2173,20 @@ PEATCMS_admin.prototype.pollServer = function () {
 }
 PEATCMS_admin.prototype.subscribe = function (type_name, id, callback) {
     const entry = {type_name: type_name, id: id, callback: callback};
-    if (this.subscriptions.includes(entry)) return entry;
+    if (this.subscriptions.filter(function (entry) {
+        return entry.type_name === type_name && entry.id === id && entry.callback === callback;
+    }).length > 0) {
+        if (VERBOSE) console.log('Already subscribed', entry);
+        return;
+    }
     this.subscriptions.push(entry);
-    return entry;
 }
-PEATCMS_admin.prototype.unsubscribe = function (entry) {
-    delete this.subscriptions[this.subscriptions.indexOf(entry)];
+PEATCMS_admin.prototype.unsubscribe = function (type_name, id, callback) {
+    this.subscriptions = this.subscriptions.filter(function (entry) {
+        return !(entry.type_name === type_name && entry.id === id && entry.callback === callback);
+    });
 }
+
 /**
  * Editor Configuration
  */
