@@ -2114,7 +2114,7 @@ PEATCMS_admin.prototype.pollServer = function () {
             const change = changes[i];
             if ('_order' === change.table_name) {
                 const order_id = change.key;
-                NAV.ajax('__action__/admin_get_element', {
+                NAV.ajax('/__action__/admin_get_element', {
                     element: 'order',
                     id: order_id
                 }, function (json) {
@@ -2155,7 +2155,7 @@ PEATCMS_admin.prototype.pollServer = function () {
                 if ('_' === type_name.substring(0, 1)) type_name = type_name.substring(1);
                 for (const entry of self.subscriptions) {
                     if (type_name === entry.type_name && change.key === entry.id) {
-                        NAV.ajax('__action__/admin_get_element', {
+                        NAV.ajax('/__action__/admin_get_element', {
                             element: type_name,
                             id: change.key
                         }, function (json) {

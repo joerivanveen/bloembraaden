@@ -254,7 +254,7 @@ class Table extends Base
     {
         $this->addError(sprintf('Value %1$s rejected for %2$s', htmlentities(strip_tags($value)), $col_name));
         if (function_exists('__')) {
-            $this->addMessage(sprintf(__('Value rejected for %s.', 'peatcms'), $col_name) . ', ' . $message, 'warn');
+            $this->addMessage(sprintf(__('Value rejected for %s', 'peatcms'), $col_name) . ', ' . $message, 'warn');
         }
     }
 }

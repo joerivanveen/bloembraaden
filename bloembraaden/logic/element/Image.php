@@ -224,7 +224,7 @@ class Image extends BaseElement
                 } else {
                     $css_class = '';
                 }
-                // process orientaiont class
+                // process orientation class
                 if ($newWidth > $newHeight) {
                     $css_class .= ' bloembraaden-landscape';
                 } elseif ($newHeight > $newWidth) {

@@ -1032,7 +1032,7 @@ class Handler extends BaseLogic
                         }
                     }
                 } elseif ('admin_uncache' === $action) {
-                    if (isset($post_data->path)) {
+                    if (true === isset($post_data->path)) {
                         $path = $post_data->path;
                         if (true === Help::getDB()->reCacheWithWarmup($path)) {
                             if (false === isset($post_data->silent) || false === $post_data->silent) {
@@ -1042,19 +1042,19 @@ class Handler extends BaseLogic
                         $out = array('slug' => $path);
                     }
                 } elseif ('admin_clear_cache_for_instance' === $action) {
-                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
                         $this->addMessage(sprintf(__('Cleared %s items from cache', 'peatcms'), $rows_affected));
                     }
                 } elseif ('admin_export_templates_by_name' === $action) {
-                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                         $content = Help::getDB()->getTemplates($instance_id);
                         $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
                         $out = array('download' => array('content' => $content, 'file_name' => $file_name));
                     }
                 } elseif ('admin_import_templates_by_name' === $action) {
-                    if (isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        if (isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
+                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                        if (true === isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
                             $count_done = 0;
                             foreach ($templates as $key => $posted_row) {
                                 if (($template_name = $posted_row->name)) {
@@ -1095,7 +1095,7 @@ class Handler extends BaseLogic
                         } else {
                             $this->addMessage(__('json not recognized', 'peatcms'), 'warn');
                         }
-                        if (isset($post_data->re_render)) {
+                        if (true === isset($post_data->re_render)) {
                             $out = array('re_render' => $post_data->re_render);
                         } else {
                             $out = true;
