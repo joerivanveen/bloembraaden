@@ -733,6 +733,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 
 #quickies {
     text-align: left;
+    margin: 0;
 }
 
 #quickies li {
