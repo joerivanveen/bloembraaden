@@ -1613,13 +1613,22 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
                 // update it before processing so it does not override the automated css classes
                 if (field.hasOwnProperty('css_class')) {
                     NAV.ajax('/__action__/update_column', {
-                        'table_name': data.table_name,
-                        'column_name': 'css_class',
-                        'value': field.css_class,
-                        'id': data.id
+                        table_name: data.table_name,
+                        column_name: 'css_class',
+                        value: field.css_class,
+                        id: data.id
                     }, process);
                 } else {
                     process();
+                }
+                // set online property for this element as desired, offline may be required (e.g. ruigehond)
+                if (false === field.hasOwnProperty('online') || true === field.online) {
+                    NAV.ajax('/__action__/update_column', {
+                        table_name: data.table_name,
+                        column_name: 'online',
+                        value: true,
+                        id: data.id
+                    });
                 }
             } else {
                 self.state = data;

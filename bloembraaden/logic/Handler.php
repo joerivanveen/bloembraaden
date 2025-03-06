@@ -980,7 +980,6 @@ class Handler extends BaseLogic
                                 $title = sprintf(__('%1$s added to %2$s', 'peatcms'), ucfirst($type_name), $element_title);
                                 //var_dump($key, $id);
                                 Help::getDB()->updateElement(new Type($type_name), array(
-                                    'online' => true,
                                     'title' => $title,
                                     'slug' => $title,
                                 ), $id);
