@@ -70,11 +70,12 @@ document.addEventListener('peatcms.form_posted', function (e) {
 // refresh turnstiles when forms are submitted
 function peatRefreshTurnstile(e) {
     if (!e.detail || !e.detail.form || !window.turnstile) return;
-    const form = e.detail.form, turnstile = form.querySelector('[data-turnstile-widget-id]');
+    const turnstile = e.detail.form.querySelector('[data-turnstile-widget-id]')
+        || document.getElementById('cf-turnstile')
+        || null;
     if (turnstile) {
         window.turnstile.reset(turnstile.getAttribute('data-turnstile-widget-id'));
     }
-    // todo: what about turnstile element by id outside of form?
 }
 document.addEventListener('peatcms.form_posted', peatRefreshTurnstile);
 document.addEventListener('peatcms.form_failed', peatRefreshTurnstile);
