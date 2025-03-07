@@ -4550,11 +4550,11 @@ class DB extends Base
         if (true === $is_admin) {
             $statement = $this->conn->prepare("$query;");
         } else { // get it for current user
-            if (0 === ($user_id = Help::$session->getUser()->getId())) {
+            if (null === ($user = Help::$session->getUser())) {
                 return array();
             }
             $statement = $this->conn->prepare("$query AND user_id = :user_id;");
-            $statement->bindValue(':user_id', $user_id);
+            $statement->bindValue(':user_id', $user->getId());
         }
         $statement->bindValue(':date', $sql_date); //$timestamp
         $statement->bindValue(':instance_id', Setup::$instance_id);
