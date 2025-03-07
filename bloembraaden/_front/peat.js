@@ -2462,7 +2462,12 @@ PEATCMS.prototype.setup_turnstile = function () {
                         console.log(`Turnstile Success ${token}`);
                     },
                 });
-                if (widgetId) turnstile.setAttribute('data-turnstile-widget-id', widgetId);
+                if (widgetId) {
+                    turnstile.setAttribute('data-turnstile-widget-id', widgetId);
+                    PEAT.addEventListener('peatcms.navigation_start', function () {
+                        window.turnstile.remove(widgetId);
+                    }, true);
+                }
             }
         }
     }
