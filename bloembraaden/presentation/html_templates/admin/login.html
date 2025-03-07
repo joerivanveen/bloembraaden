@@ -87,9 +87,34 @@
             box-shadow: none;
         }
     </style>
-    <script nonce="{{nonce}}">document.addEventListener('peatcms.initialize', function() { document.forms[0].querySelector('[name="email"]').focus();});</script>
+    <!-- Due to compressing do not use comments in the script, enable / disable the standard css is copied from admin.js! -->
+    <script nonce="{{nonce}}">
+        document.addEventListener('peatcms.initialize', function() {
+            document.forms[0].querySelector('[name="email"]').focus();
+            let el;
+            if ((el = document.getElementById('bloembraaden-css'))) {
+                if (document.getElementById('PEATCMS_admin_page')) {
+                    el.setAttribute('rel', 'alternate');
+                    if ((el = document.getElementById('bloembraaden-default-css'))) {
+                        el.setAttribute('rel', 'stylesheet');
+                    } else {
+                        const style = document.createElement('link');
+                        style.setAttribute('id', 'bloembraaden-default-css');
+                        style.setAttribute('href', '/_front/peat.css?version=' + PEATCMS_globals.version || Math.random());
+                        style.setAttribute('rel', 'stylesheet');
+                        document.head.appendChild(style);
+                    }
+                } else {
+                    el.setAttribute('rel', 'stylesheet');
+                    if ((el = document.getElementById('bloembraaden-default-css'))) {
+                        el.setAttribute('rel', 'alternate');
+                    }
+                }
+            }
+        });
+    </script>
 </head>
-<body class="bloembraaden-login">
+<body class="bloembraaden-login" id="PEATCMS_admin_page">
 
 <div id="login">
     <form name="login" method="post">
