@@ -1423,6 +1423,7 @@ PEATCMS_quickie.prototype.startUp = function () {
         config = this.config,
         button = document.createElement('button'),
         title = document.createElement('h3'),
+        close = document.createElement('div'),
         form = document.createElement('form');
     // fix the body from scrolling
     PEAT.html_node.setAttribute('data-has-modal', '1');
@@ -1430,6 +1431,12 @@ PEATCMS_quickie.prototype.startUp = function () {
     modal.id = 'quickie-modal';
     modal.classList.add('PEATCMS_admin');
     modal.appendChild(form);
+    close.classList.add('close','button');
+    close.innerText = '×';
+    close.addEventListener('click', function () {
+        modal.remove();
+    });
+    modal.appendChild(close);
     title.appendChild(document.createTextNode(config.label || 'Quickie'));
     title.classList.add('divider');
     form.appendChild(title);
