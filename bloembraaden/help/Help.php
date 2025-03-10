@@ -624,6 +624,8 @@ class Help
         $string = str_replace(array('_', '-'), ' ', $string);
         // only keep Unicode Letter (includes space), Number and Marks
         $string = preg_replace('/[^\p{L}\p{N}\p{M}\s]/u', '', $string);
+        // remove control chars
+        $string = preg_replace('/[\p{C}]/u', '', $string);
         // replace spaces with hyphen
         $string = str_replace(' ', '-', $string);
         // lose consecutive hyphens
