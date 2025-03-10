@@ -1137,7 +1137,7 @@ class Handler extends BaseLogic
                                     }
                                     $out = array('success' => $success);
                                 } else {
-                                    $this->addError(sprintf('Slug % not found.', var_export($post_data->slug, true)));
+                                    $this->addError(sprintf('Slug %s not found.', var_export($post_data->slug, true)));
                                     $out = array('success' => false);
                                 }
                             } elseif ('admin_linkable_link' === $action) {
