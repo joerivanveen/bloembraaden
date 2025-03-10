@@ -1136,11 +1136,9 @@ class Handler extends BaseLogic
                                         }
                                     }
                                     $out = array('success' => $success);
-                                    var_dump($out, $linked);
-                                    die();
                                 } else {
                                     $this->addError(sprintf('Slug % not found.', var_export($post_data->slug, true)));
-                                    $out = false;
+                                    $out = array('success' => false);
                                 }
                             } elseif ('admin_linkable_link' === $action) {
                                 $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);
