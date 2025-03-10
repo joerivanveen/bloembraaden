@@ -740,6 +740,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     letter-spacing: .05em;
     margin: .1em .2em .33em .2em;
     cursor: pointer;
+    list-style-type: none;
 }
 
 .PEATCMS_admin .hoverstate {
@@ -776,6 +777,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin input[type="checkbox"] + label:hover, /* pretty checkboxes */
 .PEATCMS_admin ::file-selector-button:hover {
     color: var(--admin-color-accent-fierce);
+    background-color: inherit; /* no change please */
 }
 
 #admin_console_button .hoverstate {
