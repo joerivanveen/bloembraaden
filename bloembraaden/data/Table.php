@@ -165,7 +165,7 @@ class Table extends Base
             }
         }
         if (Setup::$VERBOSE && isset($return_value['discarded']) && count($return_value['discarded']) > 0) {
-            $this->addError('Discarded columns in statement: ' . var_export($return_value['discarded'], true));
+            $this->addError(sprintf('Discarded columns in statement: %s.', var_export($return_value['discarded'], true)));
         }
 
         return $return_value;
@@ -174,7 +174,7 @@ class Table extends Base
     public function getColumnsByName(array $cols): array
     {
         // TODO maybe cache this if it's requested more than once sometimes?
-        $r = ['columns', 'names'];
+        $return = array('columns' => array(), 'names' => array());
         $info = $this->info;
         // add standard columns
         if ($info->hasStandardColumns()) {
@@ -185,12 +185,12 @@ class Table extends Base
         // format
         foreach ($cols as $key => $name) {
             if (($column = $info->getColumnByName($name))) { // skip invalid columns
-                $r['columns'][$key] = $column;
-                $r['names'][] = $name;
+                $return['columns'][$key] = $column;
+                $return['names'][] = $name;
             }
         }
 
-        return $r;
+        return $return;
     }
 
     public function getInfo(): TableInfo
@@ -215,14 +215,14 @@ class Table extends Base
         $col_type = $col->getType();
         $col_name = $col->getName();
         if ($col_type === 'boolean') {
-            if (true !== $value and false !== $value) {
-                $this->addValidationError($col_name, var_export($value, true), __('must be boolean.', 'peatcms'));
+            if (true !== $value && false !== $value) {
+                $this->addValidationError($col_name, var_export($value, true), __('must be boolean', 'peatcms'));
 
                 return false;
             }
         } elseif (in_array($col_type, array('smallint', 'integer', 'bigint'))) {
             if (null === Help::asInteger($value)) {
-                $this->addValidationError($col_name, var_export($value, true), __('must be integer.', 'peatcms'));
+                $this->addValidationError($col_name, var_export($value, true), __('must be integer', 'peatcms'));
 
                 return false;
             }
@@ -252,9 +252,9 @@ class Table extends Base
 
     private function addValidationError(string $col_name, string $value, string $message)
     {
-        $this->addError(sprintf('Value %1$s rejected for %2$s', htmlentities(strip_tags($value)), $col_name));
+        $this->addError(sprintf('Value %1$s rejected for %2$s.', htmlentities(strip_tags($value)), $col_name));
         if (function_exists('__')) {
-            $this->addMessage(sprintf(__('Value rejected for %s', 'peatcms'), $col_name) . ', ' . $message, 'warn');
+            $this->addMessage(sprintf(__('Value rejected for %s', 'peatcms'), $col_name) . ", $message.", 'warn');
         }
     }
 }
