@@ -403,7 +403,7 @@ class BaseElement extends BaseLogic implements Element
 
     public function reCache(): bool
     {
-        if (isset($this->row->slug)) {
+        if (true === isset($this->row->slug)) {
             return Help::getDB()->reCacheWithWarmup($this->row->slug);
         }
 

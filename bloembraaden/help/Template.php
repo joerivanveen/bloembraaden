@@ -779,7 +779,7 @@ class Template extends BaseLogic
             if (($string = $this->getComplexTagString($tag_name, $html))) {
                 $number = count($template[$tag_name]);
                 $template[$tag_name][$number] = $this->prepare($this->getInnerContent($string));
-                // @since 0.24.0 replace only once, for the same exact command can occur multiple times
+                // @since 0.23.0 replace only once, for the same exact command can occur multiple times
                 $pos = strpos($html, $string);
                 $html = substr($html, 0, $pos) . "{{{$tag_name}[$number]}}" . substr($html, $pos + strlen($string));
                 //$html = str_replace($string, "{{{$tag_name}[$number]}}", $html);
@@ -795,7 +795,7 @@ class Template extends BaseLogic
         if (true === str_contains($html, '</head>')) {
             // build css and js link for the head
             ob_start();
-            if (!isset($this->row->element) || 'invoice' !== $this->row->element) {
+            if (false === isset($this->row->element) || 'invoice' !== $this->row->element) {
                 $instance_id = $this->getInstanceId();// ?? Setup::$instance_id;
                 $file_location = Setup::$DBCACHE . "css/$instance_id.css";
                 $css_ok = false;
@@ -806,7 +806,7 @@ class Template extends BaseLogic
                     if (ob_get_length() < 500) {
                         ob_clean();
                         unlink($file_location);
-                        $this->addError(sprintf('%s was empty, removed', $file_location));
+                        $this->addError(sprintf('%s was empty, removed.', $file_location));
                     } else {
                         $css_ok = true;
                     }

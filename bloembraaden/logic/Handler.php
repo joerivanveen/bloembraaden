@@ -70,8 +70,8 @@ class Handler extends BaseLogic
         } elseif ('stylesheet' === $action) {
             // TODO the stylesheet is cached in htdocs/_site now, so this is only for admins
             // @since 0.7.6 get cached version when available for non-admins
-            $file_location = Setup::$DBCACHE . 'css/' . Setup::$instance_id . '-' . $version . '.css.gz';
-            if (false === ADMIN and true === file_exists($file_location)) {
+            $file_location = Setup::$DBCACHE . 'css/' . Setup::$instance_id . "-$version.css.gz";
+            if (false === ADMIN && true === file_exists($file_location)) {
                 $response = file_get_contents($file_location);
                 header('Cache-Control: max-age=31536000'); //1 year (60sec * 60min * 24hours * 365days)
                 header('Content-Type: text/css');
@@ -94,10 +94,9 @@ class Handler extends BaseLogic
             die();
         } elseif ('poll' === $action) {
             Help::$OUTPUT_JSON = true;
-            // get any update since last time, so the admin can fetch it when appropriate
+            // get any update since last time, so the client can fetch it when appropriate
             $props = $this->resolver->getProperties();
-            if (isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
-                // todo add actual user_id when present
+            if (true === isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
                 $rows = Help::getDB()->fetchHistoryFrom($timestamp, ADMIN);
             } else {
                 $rows = array();
@@ -106,9 +105,9 @@ class Handler extends BaseLogic
             $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
         } elseif ('get_template' === $action) {
             // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
-            if (isset($post_data->template_name)) {
+            if (true === isset($post_data->template_name)) {
                 // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
-                if (isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
+                if (true === isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
                     if (ADMIN && ($row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                         $temp = new Template($row);
                         if (false === $temp->checkIfPublished()) {
@@ -129,7 +128,7 @@ class Handler extends BaseLogic
                 }
                 // use Template() by loading html from disk
                 $temp = new Template(null);
-                $admin = ((isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
+                $admin = ((true === isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
                 //$out = array('html' => $temp->load($data->template_name, $admin));
                 if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
                     $out = $temp->getPrepared($html);
