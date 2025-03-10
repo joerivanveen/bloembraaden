@@ -1530,6 +1530,22 @@ PEATCMS_quickie.prototype.startUp = function () {
         } else {
             publish();
         }
+
+        // link to parent element if required
+        if (quickie.config.hasOwnProperty('parent')) {
+            const parent = quickie.config.parent;
+            NAV.ajax('/__action__/admin_linkable_slug', {
+                slug: parent.slug,
+                total: parent.total || null,
+                place: parent.place || null,
+                element: type_name,
+                id: quickie.state[`${type_name}_id`]
+            }, function (json) {
+                if (false === json.success) {
+                    PEAT.message('Failed to link to parent', 'error');
+                }
+            });
+        }
     });
     form.appendChild(button);
     // add to dom

@@ -1101,6 +1101,7 @@ class Handler extends BaseLogic
                     }
                 } elseif (in_array($action, array(
                     'admin_linkable_link',
+                    'admin_linkable_slug',
                     'admin_linkable_order',
                     'admin_x_value_link',
                     'admin_x_value_create',
@@ -1111,7 +1112,37 @@ class Handler extends BaseLogic
                     $element = $peat_type->getElement();
                     if ($element->fetchById((int)$post_data->id)) {
                         if (true === $admin->isRelatedElement($element)) {
-                            if ('admin_linkable_link' === $action) {
+                            if ('admin_linkable_slug' === $action) { // id is the sub, slug is the parent
+                                if (true === isset($post_data->slug) && ($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->slug))) {
+                                    $parent = (new Type($row->type_name))->getElement()->fetchById($row->id);
+                                    $element_type_name = $element->type_name;
+                                    $success = $parent->link($element_type_name, $element->id);
+                                    $linked = $parent->getLinked($element_type_name);
+                                    // verify / change order
+                                    if (true === $success && true === isset($post_data->place)) {
+                                        $place = (int)$post_data->place;
+                                        $slug_in_place = $linked[$place]->__ref;
+                                        if ($element->getSlug() !== $slug_in_place) {
+                                            $linked = $parent->orderLinked($element_type_name, $element->getSlug(), $slug_in_place);
+                                        }
+                                    }
+                                    if (true === $success && true === isset($post_data->total)) {
+                                        $total = (int)$post_data->total;
+                                        if (true === isset($linked[$total])) {
+                                            $id = $GLOBALS['slugs']->{$linked[$total]->__ref}->{"{$element_type_name}_id"};
+                                            if (false === $parent->link($element_type_name, $id, true)) {
+                                                $this->addError("Could not unlink element nr $total");
+                                            }
+                                        }
+                                    }
+                                    $out = array('success' => $success);
+                                    var_dump($out, $linked);
+                                    die();
+                                } else {
+                                    $this->addError(sprintf('Slug % not found.', var_export($post_data->slug, true)));
+                                    $out = false;
+                                }
+                            } elseif ('admin_linkable_link' === $action) {
                                 $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);
                                 if ($element->link($post_data->sub_element, $post_data->sub_id, $unlink)) {
                                     $out = $element->getLinked();
