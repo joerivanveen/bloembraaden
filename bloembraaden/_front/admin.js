@@ -1431,7 +1431,7 @@ PEATCMS_quickie.prototype.startUp = function () {
     modal.id = 'quickie-modal';
     modal.classList.add('PEATCMS_admin');
     modal.appendChild(form);
-    close.classList.add('close','button');
+    close.classList.add('close', 'button');
     close.innerText = '×';
     close.addEventListener('click', function () {
         modal.remove();
@@ -1575,10 +1575,20 @@ PEATCMS_quickie.prototype.save = function (column, input) {
         }
         return;
     }
+    // truncate title to avoid all kinds of failures on the server and it not being saved
+    let value = input.value;
+    if ('title' === column) {
+        value = PEATCMS.replace('\n', ' ', value);
+        if (value.length > 127) {
+            let pos = value.lastIndexOf(' ', 124);
+            if (pos < 0) pos = 124; // just break at the end
+            value = value.substring(0, pos) + '...';
+        }
+    }
     NAV.ajax('/__action__/update_column', {
         'table_name': `cms_${element_name}`,
         'column_name': column,
-        'value': input.value,
+        'value': value,
         'id': self.state[`${element_name}_id`]
     }, function (data) {
         if (data.hasOwnProperty(column)) {
@@ -1610,6 +1620,7 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
     NAV.fileUpload(function (data) {
         if (data.hasOwnProperty('filename_saved')) {
             PEAT.message('File uploaded successfully');
+
             function process() {
                 if ('image' === data.type_name) {
                     const level = field.level || 1;
@@ -1628,6 +1639,7 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
                     CMS_admin.subscribe('image', data.id, showImage);
                 }
             }
+
             // if this is a separate element from config.element, update file state
             if (field.hasOwnProperty('element')) {
                 field.slug = data.slug;

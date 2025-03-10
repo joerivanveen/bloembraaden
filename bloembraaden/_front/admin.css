@@ -727,7 +727,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     border: solid 3px var(--admin-color-accent);
     z-index: 100;
     line-height: 0;
-    text-align: center;
+    text-align: left;
     vertical-align: text-top;
 }
 
@@ -1027,7 +1027,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     width: 100%;
     height: 100%;
     background-color: var(--admin-color-paper);
-    z-index: 101; /* just above Bloembraaden admin flower button */
+    z-index: 100; /* same level as Bloembraaden admin flower button */
     text-align: center;
 }
 

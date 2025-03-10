@@ -625,11 +625,13 @@ class Help
         // only keep Unicode Letter (includes space), Number and Marks
         $string = preg_replace('/[^\p{L}\p{N}\p{M}\s]/u', '', $string);
         // remove control chars
-        $string = preg_replace('/[\p{C}]/u', '', $string);
+        $string = preg_replace('/[\p{C}]/u', ' ', $string);
         // replace spaces with hyphen
         $string = str_replace(' ', '-', $string);
         // lose consecutive hyphens
         $string = preg_replace('|-+|', '-', $string);
+        // cannot be longer than 127 characters
+        $string = substr($string, 0, 127);
         // trim neatly
         $string = trim($string, '-');
         // return lowercase
