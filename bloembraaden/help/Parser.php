@@ -149,7 +149,7 @@ class Parser extends Base
         }
         // don't process any tags within <pre> or <code>
         if ('pre' === ($open_tag = $this->getOpenTag()) || 'code' === $open_tag) {
-            if ('BLANK_LINE' !== $tag and $tag !== $open_tag) {
+            if ('BLANK_LINE' !== $tag && $tag !== $open_tag) {
                 $this->pointer++;
 
                 return '';
@@ -245,7 +245,7 @@ class Parser extends Base
                     $next_EOL = $positions[1];
                     $next_line = trim(substr($text, $next_EOL,
                         ($next_next_EOL = strpos($text, "\n", $next_EOL + 1)) - $next_EOL));
-                    if (($len = strlen($next_line)) > 2 and $next_line[0] === '"' and $next_line[$len - 1] === '"') {
+                    if (($len = strlen($next_line)) > 2 && $next_line[0] === '"' and $next_line[$len - 1] === '"') {
                         $next_EOL = $next_next_EOL;
                     }
                     $this->pointer = $next_EOL;
@@ -388,7 +388,7 @@ class Parser extends Base
         // set pointers
         $this->pointer += strlen($sig);
         // consume spaces as well before header text
-        if (true === $cmd['allow_space'] and $this->pointer < $this->len) { // you only have to check once because the text ends with \n (which is not ' ')
+        if (true === $cmd['allow_space'] && $this->pointer < $this->len) { // you only have to check once because the text ends with \n (which is not ' ')
             while ($text[$this->pointer] === ' ') {
                 $this->pointer++;
             }
@@ -494,7 +494,7 @@ class Parser extends Base
                 } else {
                     $title_pos = $end + 2;
                     $title_end = $this->nextPartOfCommand($text, '"', $title_pos);
-                    if ($title_end !== -1 and $title_end < strpos($text, "\n", $title_pos)) { // titles must be on one line
+                    if ($title_end !== -1 && $title_end < strpos($text, "\n", $title_pos)) { // titles must be on one line
                         $title = htmlspecialchars(substr($text, $title_pos, $title_end - $title_pos));
                     }
                 }
