@@ -1476,7 +1476,7 @@ PEATCMS_quickie.prototype.startUp = function () {
                 input.addEventListener('change', function () {
                     quickie.save(field.column, this);
                 });
-                // todo 0.24.0: add an interval / timeout to save regularly, but only if the value is not empty
+                // todo 0.25.0: add an interval / timeout to save regularly, but only if the value is not empty
             }
             wrap.appendChild(input);
         }

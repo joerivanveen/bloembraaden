@@ -612,10 +612,10 @@ class Help
     }
 
     /**
-     * Creates a safe slug from UTF-8 string, which is NOT lowercase yet
+     * Creates a safe lowercase slug from a UTF-8 string
      *
      * @param string $string The string you want to be converted to a slug
-     * @return string slug-safe UTF-8 string, still contains case
+     * @return string slug-safe UTF-8 string
      */
     public static function slugify(string $string): string
     {
