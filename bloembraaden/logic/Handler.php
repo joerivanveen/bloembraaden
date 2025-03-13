@@ -1736,7 +1736,6 @@ class Handler extends BaseLogic
                 $out->is_account = true;
             }
             // @since 0.8.18
-            $out->dark_mode = $session->getValue('dark_mode'); // DEPRECATED todo 0.24.0 remove
             $out->__session__ = $session->getValues();
             // render in template
             $temp = new Template(null);
