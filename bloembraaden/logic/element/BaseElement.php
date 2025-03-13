@@ -491,7 +491,7 @@ class BaseElement extends BaseLogic implements Element
     public function getOutputFull(): \stdClass
     {
         $out = $this->getOutput();
-        if (isset($out->__ref)) return $GLOBALS['slugs']->{$out->__ref};
+        if (true === isset($out->__ref)) return $GLOBALS['slugs']->{$out->__ref};
 
         return $out;
     }

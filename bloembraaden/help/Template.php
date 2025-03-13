@@ -474,6 +474,12 @@ class Template extends BaseLogic
                         // propagate session to sub-object (todo more standard properties?)
                         if ('__session__' !== $tag_name && true === isset($output->__session__)) $output_object['__session__'] = $output->__session__;
                         $sub_html = $this->renderOutput((object)$output_object, $sub_template);
+//                        // temp debug
+//                        if ('__pages__' === $tag_name) {
+//                            $sub_html = $this->renderOutput((object)$output_object, $sub_template, true);
+//                            var_dump($sub_template,$sub_html, $temp_remember_html);
+//                            die(' RI@$P%O$I#');
+//                        }
                         // remove entirely if no content was added
                         if ($sub_html === $temp_remember_html) {
                             $sub_html = '';
@@ -994,15 +1000,18 @@ $html";
 
             // admins need to get fresh json, and fill the row for other methods
             $json_admin = null;
-            // ADMIN can get any template, for editing, so supply null for instance_id
-            if (isset($this->row) || ($this->row = Help::getDB()->fetchTemplateRow($template_id, null))) {
+            if (true === isset($this->row)
+                || ($this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))
+            ) {
                 if (null === $json_prepared) {
                     $this->row->json_prepared = null;
                 } else {
                     $this->row->json_prepared = $json_prepared;
                 }
                 $json_admin = $this->getFreshJson();
-            } elseif (isset($out->id) && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))) {
+            } elseif (true === isset($out->id)
+                && ($template_id = Help::getDB()->getDefaultTemplateIdFor($type_name))
+            ) {
                 // this can only happen when templates are deleted willy nilly...
                 if (($this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                     $json_admin = $this->getFreshJson();

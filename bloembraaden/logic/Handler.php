@@ -204,14 +204,14 @@ class Handler extends BaseLogic
                     $out = array('__pages__' => $src->suggestPages($terms, $limit));
                 }
             } else {
-                if (isset($post_data->hydrate_until)) {
+                if (true === isset($post_data->hydrate_until)) {
                     $hydrate_until = (int)$post_data->hydrate_until;
-                } elseif (isset($props['hydrate_until'][0])) {
+                } elseif (true === isset($props['hydrate_until'][0])) {
                     $hydrate_until = (int)($props['hydrate_until'][0]);
                 } else {
                     $hydrate_until = -$limit;
                 }
-                if (isset($post_data->only_of_type)) {
+                if (true === isset($post_data->only_of_type)) {
                     $src->findWeighted($terms, $hydrate_until, array($post_data->only_of_type), false);
                 } else {
                     $src->findWeighted($terms, $hydrate_until, (array)($post_data->ignore ?? null));
@@ -1381,19 +1381,18 @@ class Handler extends BaseLogic
                             }
                         } elseif ($posted_column_name === 'domain') {
                             $value = $posted_value;
-                            if ($posted_table_name === '_instance' && ($instance->getDomain() === $value or
-                                    $instance->getId() === (int)$posted_id)) {
+                            if ($posted_table_name === '_instance'
+                                && ($instance->getDomain() === $value || $instance->getId() === (int)$posted_id)
+                            ) {
                                 $this->handleErrorAndStop(
                                     sprintf('Domain %1$s was blocked for instance %2$s', $value, $posted_id),
                                     __('Manipulating this domain is not allowed.', 'peatcms'));
                             } else { // validate the domain here
-                                // test domain utf-8 characters: όνομα.gr
+                                // test domain utf-8 characters: 百度.co (baidu.co)
                                 if (function_exists('idn_to_ascii')) {
                                     $value = idn_to_ascii($value, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
                                 }
-                                if (dns_check_record($value, 'A') || dns_check_record($value, 'AAAA')) {
-                                    $posted_value = $value; // set the possibly to punycode converted value back
-                                } else {
+                                if (false === dns_check_record($value, 'A') && false === dns_check_record($value, 'AAAA')) {
                                     $this->handleErrorAndStop(
                                         sprintf('Domain %1$s was not in DNS for instance %2$s', $value, $posted_id),
                                         __('Domain not found, check your input and try again later.', 'peatcms'));
@@ -1401,7 +1400,7 @@ class Handler extends BaseLogic
                             }
                         } elseif ($posted_table_name === '_template') {
                             if ($posted_column_name === 'published') {
-                                $temp = new Template(Help::getDB()->fetchTemplateRow($posted_id, null));
+                                $temp = new Template($posted_id, null);
                                 if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
                                     // this always sends true as value, attempt to publish the template
                                     $update_arr = array('published' => $temp->publish());

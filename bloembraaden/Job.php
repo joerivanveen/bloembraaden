@@ -100,7 +100,7 @@ switch ($interval) {
                     Help::addError($mailer->getLastError());
                 }
             }
-            if (isset($row->order_number)) {
+            if (true === isset($row->order_number)) {
                 $order_number = $row->order_number;
                 if (false === Help::obtainLock("mailjob.order.$order_number")) continue;
                 $instance_id = $row->instance_id;
@@ -177,7 +177,6 @@ switch ($interval) {
                     }
                     echo "Order confirmation\n";
                     $mailer->clear();
-                    // https://www.trompetters.nl/__action__/pay/order_number:202184610579
                     $order_output_object->payment_link = "https://$row->domain/__action__/pay/order_number:$row->order_number";
                     if (false === $row->confirmation_before_payment) {
                         $out = (object)(array(

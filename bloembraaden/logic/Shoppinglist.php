@@ -40,7 +40,6 @@ class Shoppinglist extends BaseLogic
      */
     public function __shutdown(): void
     {
-        $this->addError(' vowerk, SHUTDOWN MF');
         if (true === $this->hasChanged()) {
             Help::getDB()->upsertShoppingListRows($this->getId(), $this->rows);
         }
@@ -144,7 +143,7 @@ class Shoppinglist extends BaseLogic
         // @since 0.5.9 take into account changed variants as well
         foreach ($list_rows as $index => $list_row) {
             // @since 0.23.0 try to get variant from cache before building the whole thing
-            if (isset($list_row->variant_slug)) {
+            if (true === isset($list_row->variant_slug)) {
                 $variant_out = Help::getDB()->cached($list_row->variant_slug);
                 if (null !== $variant_out) {
                     $variant_out = $variant_out->slugs->{$variant_out->__ref};
