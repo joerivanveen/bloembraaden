@@ -13,6 +13,7 @@ class Template extends BaseLogic
     private array $json_fresh, $partial_templates, $hints, $doublechecking = array(), $json_by_template_id = array();
     private string $html, $version;
     private int $template_id; // instead of row, preventing slow getting of templates
+    private bool $for_admin;
 
     public function __construct(mixed $template, ?int $instance_id = null)
     {
@@ -20,6 +21,7 @@ class Template extends BaseLogic
         parent::__construct();
         $this->version = Setup::$VERSION;
         $this->type_name = 'template';
+        $this->for_admin = true === defined('ADMIN') && true === ADMIN;
 
         // a full row may be supplied, when that is available from the originating call
         if ($template instanceof \stdClass) {
@@ -27,10 +29,7 @@ class Template extends BaseLogic
             $this->template_id = $template->template_id;
         } elseif (null !== $template) {
             $this->template_id = (int)$template;
-            if (ADMIN) {
-                if (-1 === $instance_id) $instance_id = Setup::$instance_id;
-                $this->row = Help::getDB()->fetchTemplateRow((int)$template, $instance_id);
-            }
+            $this->row = Help::getDB()->fetchTemplateRow((int)$template, $instance_id);
         }
     }
 
@@ -122,6 +121,10 @@ class Template extends BaseLogic
         $element_name = strtolower($element_name);
         if (($template_id = Help::getDB()->getDefaultTemplateIdFor($element_name))) {
             $this->row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id);
+            if (null === $this->row) {
+                throw new \Exception("$template_id not found for instance " . Setup::$instance_id);
+            }
+            $this->template_id = $template_id;
         } elseif (null === $this->loadByTemplatePointer($element_name)) { // try to get it from disk, the peatcms defaults, if that fails you have to throw an error
             throw new \Exception(sprintf('Could not load default template for %s', $element_name));
         }
@@ -317,7 +320,7 @@ class Template extends BaseLogic
 
             return '';
         }
-        if (ADMIN) {
+        if ($this->for_admin) {
             $temp = $this->getFreshJson();
         } else { // get the published value
             $temp = Help::getDB()->appCacheGet("templates/$this->template_id");
@@ -451,7 +454,7 @@ class Template extends BaseLogic
                                                 unset($row_output->__ref);
                                             }
                                             // @since 0.7.6 do not render items that are not online
-                                            if (false === ADMIN && isset($row_output->online) && false === $row_output->online) continue;
+                                            if (false === $this->for_admin && isset($row_output->online) && false === $row_output->online) continue;
                                             $obj = $row_output;
                                         }
                                         $obj->__index__ = $row_index;
@@ -989,7 +992,7 @@ $html";
             }
             $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
             // non-admins only need the json, or bust
-            if (!ADMIN) {
+            if (false === $this->for_admin) {
                 if (false === $json_prepared) {
                     $this->addError(sprintf("Template $template_id not published in %s", Setup::$INSTANCE_DOMAIN));
                     return null;
