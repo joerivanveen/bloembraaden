@@ -2757,7 +2757,7 @@ class DB extends Base
                 $placeholders[] = '(?, ?, ?, ?, ?, ?, ?)'; // shoppinglist_id, variant_id, variant_slug, quantity, price, price_from, o
                 $values[] = $shoppinglist_id;
                 $values[] = $row->variant_id;
-                $values[] = $row->variant_slug;
+                $values[] = $row->variant_slug ?? null;
                 $values[] = $row->quantity;
                 $values[] = $row->price;
                 $values[] = $row->price_from;
