@@ -441,12 +441,6 @@ class DB extends Base
                 $intersected = array_intersect_key($term, $intersected);
             }
         }
-        /**
-         * Next line fixes a bug where the original item (not online) in the search results has the exact same
-         * slug as the search results. This slug would be registered in cache as a search, but would point
-         * to the original item (in json). This leads to several problems down the line.
-         */
-        if (1 === count($arr)) unset($intersected[array_key_first($arr)]);
         if (null === $intersected) return array(); // nothing found
         // calculate the weights
         foreach ($intersected as $index => $row) {

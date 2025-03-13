@@ -21,7 +21,6 @@ if (str_starts_with($interval, 'interval=')) {
 // the work starts here
 $start_timer = microtime(true);
 $db = new DB();
-define('ADMIN', true); // todo remove this once we have it properly setup, necessary for order class now
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 switch ($interval) {
