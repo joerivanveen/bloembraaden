@@ -1536,8 +1536,8 @@ PEATCMS_quickie.prototype.startUp = function () {
             const parent = quickie.config.parent;
             NAV.ajax('/__action__/admin_linkable_slug', {
                 slug: parent.slug,
-                total: parent.total || null,
-                place: parent.place || null,
+                total: parent.hasOwnProperty('total') ? parseInt(parent.total) : null,
+                place: parent.hasOwnProperty('place') ? parseInt(parent.place) : null,
                 element: type_name,
                 id: quickie.state[`${type_name}_id`]
             }, function (json) {
@@ -1637,6 +1637,13 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
                     }
 
                     CMS_admin.subscribe('image', data.id, showImage);
+                } else if (data.hasOwnProperty('content_type') && 'application/pdf' === data.content_type) {
+                    // show pdf inside img div
+                    const el = document.getElementById('quickie-image');
+                    if (el && data.hasOwnProperty('slug')) {
+                        el.innerHTML = `<object data="/__action__/download/${data.slug}" type="application/pdf" width="100%" height="100%">Ready: <a href="/__action__/download/${data.slug}">download</a></object>`;
+                        el.style.backgroundImage = 'none';
+                    }
                 }
             }
 

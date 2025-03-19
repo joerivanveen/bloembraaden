@@ -27,26 +27,24 @@ class File extends BaseElement
      * Serves the file if possible, else throws a fatal error
      * In any case execution is halted
      */
-    public function serve()
+    public function serve(): void
     {
-        // make sure nothing has been send
-        if (($c = ob_get_contents())) {
-            echo $this->row->content_type . '<br/>';
-            echo $this->row->filename_saved . '<br/>';
-            die('Already contents in buffer, cannot serve file');
+        // make sure nothing has been sent
+        if (headers_sent()) {
+            $this->handleErrorAndStop("Headers already sent, cannot serve file {$this->row->slug}.", __('File not found on server.', 'peatcms'));
         } else {
             $filename = Setup::$UPLOADS . $this->row->filename_saved; // 'uploads' is base folder of XSendFile extension
-            $savename = $this->row->slug . '.' . $this->row->extension;
             if (file_exists($filename)) {
-                // https://stackoverflow.com/questions/3697748/fastest-way-to-serve-a-file-using-php
-                // TODO unfortunately xsendfile is not part of the repo for centos8, so re-program this when you're on NGINX
-                header('Content-Type: ' . $this->row->content_type);
-                header('Content-Disposition: attachment; filename="' . basename($savename) . '"');
+                //header('Content-Disposition: attachment; filename="' . basename("{$this->row->slug}.{$this->row->extension}") . '"');
+                header("Content-Type: {$this->row->content_type}");
+                // https://dev.to/gbhorwood/nginx-serving-private-files-with-x-accel-redirect-57dl
+                header("X-Accel-Redirect: /private_uploads/{$this->row->filename_saved}");
+                die();
                 header('Content-Length: ' . filesize($filename));
                 readfile($filename);
                 die();
             } else {
-                $this->handleErrorAndStop($filename . ' not found', __('File not found on server.', 'peatcms'));
+                $this->handleErrorAndStop("$filename not found", __('File not found on server.', 'peatcms'));
             }
         }
     }
