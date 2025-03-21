@@ -342,7 +342,7 @@ Address.prototype.updateSuggestionsList = function (input) {
                 && 0 < json.suggestions.length) {
                 const ul = document.createElement('ul');
                 ul.classList.add('suggestions');
-                for (const i in json.suggestions) {
+                for (let i in json.suggestions) {
                     const suggestion = json.suggestions[i],
                         number = suggestion.houseNumber,
                         part_1 = parseInt(number).toString(), // check for true numbers or whether the addition is included

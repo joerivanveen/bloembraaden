@@ -40,6 +40,7 @@ class File extends BaseElement
                 // https://dev.to/gbhorwood/nginx-serving-private-files-with-x-accel-redirect-57dl
                 header("X-Accel-Redirect: /private_uploads/{$this->row->filename_saved}");
                 die();
+                // todo 0.25.0 the php.conf has changed especially because of private_uploads / X-Accel-Redirect
                 header('Content-Length: ' . filesize($filename));
                 readfile($filename);
                 die();

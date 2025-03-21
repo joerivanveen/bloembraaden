@@ -296,13 +296,13 @@ class Handler extends BaseLogic
             // get _all_ the variant id’s for this path, and then all the property_values that are coupled
             // only property and property_value can be filtered thusly, and search as well through its own method
             // in all other cases return an empty array (which should close the filter)
-            if (isset($post_data->path)) {
+            if (true === isset($post_data->path)) {
                 $src = new Search();
                 $out = $src->getRelevantPropertyValuesAndPrices($post_data->path);
             }
         } elseif ('pay' === $action) { // this is a payment link, supply the order number and slug of the payment page
             $properties = $this->resolver->getProperties();
-            if (isset($properties['order_number'])) {
+            if (true === isset($properties['order_number'])) {
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
                 // check a couple of things: if its already paid, do not do this (ie payment_transaction_id has to be NULL)
                 // else remove the tracking id so payment_start can be fresh
@@ -316,7 +316,7 @@ class Handler extends BaseLogic
                             'payment_transaction_id' => NULL,
                         ), $order_row->order_id);
                         Help::$session->setVar('order_number', $order_number);
-                        if (isset($properties['slug'][0])) {
+                        if (true === isset($properties['slug'][0])) {
                             $redirect_uri = Help::slugify($properties['slug'][0]);
                         } else {
                             $redirect_uri = 'payment_link';
@@ -332,7 +332,7 @@ class Handler extends BaseLogic
             if (false === isset($properties['shoppinglist'])) {
                 $this->addError('Shoppinglist is not set for order action');
                 $out = true;
-            } elseif (isset($properties['order_number'])) {
+            } elseif (true === isset($properties['order_number'])) {
                 $shoppinglist_name = $properties['shoppinglist'][0];
                 $shoppinglist = new Shoppinglist($shoppinglist_name);
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
@@ -365,7 +365,7 @@ class Handler extends BaseLogic
         } elseif ('invoice' === $action) {
             if (!Help::$session->getAdmin() instanceof Admin) {
                 $this->addMessage(__('Invoice can only be accessed by admin', 'peatcms'), 'warn');
-            } elseif (isset($this->resolver->getProperties()['order_number'])) {
+            } elseif (true === isset($this->resolver->getProperties()['order_number'])) {
                 $order_number = htmlentities(trim($this->resolver->getProperties()['order_number'][0]));
                 $filename = Help::getInvoiceFileName($order_number);
                 //#TRANSLATORS this is the invoice title, %s is the order number
@@ -442,7 +442,7 @@ class Handler extends BaseLogic
             die(); // after an sse logger you cannot provide any more content, yo
         }
         // following is only valid with csrf
-        if (isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
+        if (true === isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
             if ('set_session_var' === $action) {
                 $name = $post_data->name;
                 // times keeps track of how many times this var is (being) updated
@@ -562,8 +562,6 @@ class Handler extends BaseLogic
                 } else {
                     $out = array('success' => false);
                 }
-            } elseif ('postcode' === $action) {
-                $this->addError('postcode check is deprecated, use validate_address');
             } elseif ('order' === $action) {
                 if (true === Help::turnstileVerify($instance, $post_data)) {
                     $post_data = $this->resolver->escape($post_data);
@@ -847,7 +845,7 @@ class Handler extends BaseLogic
                 }
             } elseif ('payment_start' === $action) {
                 // TODO NOTE the order may not belong to the current user, so do not expose any sensitive data
-                if (isset($post_data->order_number)) {
+                if (true === isset($post_data->order_number)) {
                     if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
                         if (($order = new Order($row))) {
                             $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
