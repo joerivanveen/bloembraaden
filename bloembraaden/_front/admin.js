@@ -20,7 +20,7 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
     this.server_value = PEATCMS_element.getColumnValue(column_name);
     if (typeof this.server_value === 'undefined') PEAT.message('Cache must be refreshed', 'warn');
     if ((this.DOMElement = this.create_DOMElement())) {
-        this.DOMElement.id = 'admin_' + column_name;
+        this.DOMElement.id = `admin_${column_name}`;
         return; // prevent error message from appearing
     }
     if (VERBOSE) console.error(`There is no ${this.column.type} for ${column_name}`);
@@ -69,7 +69,7 @@ PEATCMS_actor.prototype.create_as_checkbox = function (column) {
         self = this;
     el.type = 'checkbox';
     el.checked = this.server_value;
-    el.id = 'checkbox_' + column.name;
+    el.id = `checkbox_${column.name}`;
     el.addEventListener('change', function () {
         self.changedTo(this.checked);
     });
@@ -291,7 +291,7 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
 
 PEATCMS_actor.prototype.setParent = function (id) {
     if (id === this.server_value) {
-        if (VERBOSE) console.log('Same value(' + id + '), does not have to be set');
+        if (VERBOSE) console.log(`Same value(${id}), does not have to be set.`);
         return;
     }
     this.parent_PEATCMS_element.chainParents(this.column.name, id);
@@ -299,7 +299,7 @@ PEATCMS_actor.prototype.setParent = function (id) {
 
 PEATCMS_actor.prototype.prettyParent = function (id) {
     const element_name = this.column.name.replace('_id', ''),
-        list_el = document.getElementById('PEATCMS_suggestions_' + element_name),
+        list_el = document.getElementById(`PEATCMS_suggestions_${element_name}`),
         self = this;
     if (list_el) {
         list_el.remove();
@@ -327,7 +327,7 @@ PEATCMS_actor.prototype.suggestParent = function (element_name) {
         'src': el.value
     }, function (data) {
         let element = data.element,
-            list_el = document.getElementById('PEATCMS_suggestions_' + element),
+            list_el = document.getElementById(`PEATCMS_suggestions_${element}`),
             i, len, div, row, rows;
         if (data.hasOwnProperty('rows')) {
             // remove the current suggestions and add new ones
@@ -335,7 +335,7 @@ PEATCMS_actor.prototype.suggestParent = function (element_name) {
                 list_el.innerHTML = '';
             } else {
                 list_el = document.createElement('div');
-                list_el.id = 'PEATCMS_suggestions_' + element;
+                list_el.id = `PEATCMS_suggestions_${element}`;
                 list_el.classList.add('suggestions', element);
                 el.insertAdjacentElement('afterend', list_el);
             }
@@ -365,7 +365,7 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
     if ('image' === self.parent_PEATCMS_element.state.type_name) {
         process.classList.add('process_area', 'file');
         if (null === (filename_saved = self.parent_PEATCMS_element.state.filename_saved)) {
-            process.innerHTML = 'Upload original to process again';
+            process.innerHTML = 'Upload original to process again.';
             process.classList.add('info');
         } else {
             option = function (value, text) {
@@ -380,10 +380,10 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
                 self.process(this.options[this.selectedIndex].value);
             });
             button.classList.add('button', 'process');
-            button.options.add(option(0, '▦ Re-process this image'));
-            button.options.add(option(1, 'Original quality, optimized filesize'));
-            button.options.add(option(2, 'Better quality, slower loading'));
-            button.options.add(option(3, 'Best quality, slowest loading'));
+            button.options.add(option(0, '▦ Re-process this image.'));
+            button.options.add(option(1, 'Original quality, optimized filesize.'));
+            button.options.add(option(2, 'Better quality, slower loading.'));
+            button.options.add(option(3, 'Best quality, slowest loading.'));
             process.appendChild(button);
         }
     }
@@ -412,7 +412,7 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
     drop.classList.add('drop_area', 'file');
     self.sse_log = function (msg) {
         let el = self.DOMElement.querySelector('.progress') || self.DOMElement.querySelector('.drop_area') || self.DOMElement;
-        el.innerHTML = msg + '<br/>' + el.innerHTML;
+        el.innerHTML = `${msg}<br/>${el.innerHTML}`;
         console.warn(msg);
     }
     self.process = function (level) {
@@ -425,11 +425,11 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
             }
             if (data.hasOwnProperty('close')) {
                 source.close();
-                self.sse_log('Done');
+                self.sse_log('Done.');
                 if ((slug = self.parent_PEATCMS_element.state.slug) && NAV.getCurrentSlug() === slug) {
                     NAV.refresh(); // Gets the updated element from the server as well
                 } else {
-                    PEAT.message('Done processing ' + decodeURI(slug), 'note');
+                    PEAT.message(`Done processing ${decodeURI(slug)}.`, 'note');
                 }
             }
         };
@@ -512,7 +512,7 @@ PEATCMS_actor.prototype.changedTo = function (value) {
 PEATCMS_actor.prototype.update = function (value, callback_method) {
     const self = this;
     if (false === this.hasChanged()) {
-        if (VERBOSE) console.log('Not saving unchanged value for ' + this.column['name']);
+        if (VERBOSE) console.log(`Not saving unchanged value for ${this.column['name']}.`);
         return;
     }
     NAV.invalidateCache(); // throw away the cache now to be on the safe side
@@ -522,7 +522,6 @@ PEATCMS_actor.prototype.update = function (value, callback_method) {
         'column_name': this.column['name'],
         'column_value': value
     }, function (data) {
-        let p, table_info;
         if (typeof callback_method === 'function') {
             callback_method(data);
         } else if (typeof self.parent_PEATCMS_element[callback_method] === 'function') {
@@ -530,14 +529,9 @@ PEATCMS_actor.prototype.update = function (value, callback_method) {
         } else if (typeof self[callback_method] === 'function') {
             self[callback_method](data);
         } else {
-            console.error(callback_method + ' not found (in PEATCMS_actor)');
-            PEAT.message('Update not reflected in DOM', 'warn');
+            console.error(callback_method + ' not found (in PEATCMS_actor).');
+            PEAT.message('Update not reflected in DOM.', 'warn');
         }
-        // only if you are editing the currently displayed element should you update the browser view
-        // p = NAV.getCurrentElement();
-        // if (null !== (table_info = p.getTableInfo()) && data.id === p.getElementId() && data.table_name === table_info.table_name) {
-        //     //NAV.refresh(data.slug); // means el.render + replaceState in history :-) // TODO JOERI
-        // }
     });
 }
 
@@ -556,7 +550,7 @@ PEATCMS_actor.prototype.set = function (data) {
             NAV.go(data.slug);
             return;
         } else {
-            console.warn('A new element was created on the server, state is not consistent');
+            console.warn('A new element was created on the server, state is not consistent.');
             return;
         }
     }
@@ -616,8 +610,7 @@ function PEATCMS_x_value(row, parent_element) { // contains property / property_
     this.parent_element = parent_element;
     //this.property = window.PEATCMS_globals.slugs[row.__property__.__ref];
     el.className = (row.online) ? 'online' : 'offline';
-    el.innerHTML = '<span class="drag_handle">::</span> <a href="/' + row.property_slug + '">' + row.property_title +
-        '</a>: <a href="/' + row.slug + '">' + row.title + '</a>';
+    el.innerHTML = `<span class="drag_handle">::</span> <a href="/${row.property_slug}">${row.property_title}</a>: <a href="/${row.slug}">${row.title}</a>`;
     // add remove button
     btn = document.createElement('span');
     btn.classList.add('remove');
@@ -661,7 +654,7 @@ function PEATCMS_x_value(row, parent_element) { // contains property / property_
         this.parentNode.setAttribute('draggable', 'true');
     });
     input.setAttribute('data-column_name', 'x_value');
-    input.setAttribute('data-table_name', 'cms_' + parent_element.getElementName() + '_x_properties');
+    input.setAttribute('data-table_name', `cms_${parent_element.getElementName()}_x_properties`);
     input.setAttribute('data-peatcms_handle', 'update');
     input.setAttribute('data-peatcms_id', row.x_value_id);
     new PEATCMS_column_updater(input, parent_element);
@@ -860,9 +853,9 @@ const PEATCMS_admin_menu_item = function (row, droppable = false) {
         btn = document.createElement('button');
         btn.addEventListener('click', function () {
             if (this.parentNode.hasOwnProperty('menu_item') && CMS_admin) {
-                CMS_admin.edit('/__admin__/menu_item/' + this.parentNode.menu_item.menu_item_id);
+                CMS_admin.edit(`/__admin__/menu_item/${this.parentNode.menu_item.menu_item_id}`);
             } else {
-                console.error('Could not edit menu item');
+                console.error('Could not edit menu item.');
             }
         });
         btn.innerHTML = 'EDIT';
@@ -921,6 +914,7 @@ const PEATCMS_admin_menu_item = function (row, droppable = false) {
                         try {
                             event.dataTransfer.clearData();
                         } catch (e) {
+                            console.error(e);
                         }
                         // don't drop onto parent menu's as well:
                         event.stopPropagation();
@@ -954,6 +948,7 @@ const PEATCMS_admin_menu_item = function (row, droppable = false) {
                 try {
                     event.dataTransfer.clearData();
                 } catch (e) {
+                    console.error(e);
                 }
                 // don't drop onto parent menu's as well:
                 event.stopPropagation();
@@ -964,6 +959,7 @@ const PEATCMS_admin_menu_item = function (row, droppable = false) {
                 try {
                     document.getElementById('sub_menu_item_drop').remove();
                 } catch (e) {
+                    console.error(e);
                 }
             });
         }
@@ -983,7 +979,7 @@ const PEATCMS_admin_menu = function (menu) {
             el.insertAdjacentElement('beforeend', new PEATCMS_admin_menu_item(items[i], true).DOMElement);
         }
     } else {
-        el.insertAdjacentHTML('afterbegin', 'Well that didn’t work');
+        el.insertAdjacentHTML('afterbegin', 'Well that didn’t work.');
     }
     this.DOMElement = el;
 }
@@ -1062,12 +1058,12 @@ const PEATCMS_column_updater = function (DOMElement, PEATElement) {
                 } else if (handle === 'update_column' && this.hasAttribute('data-column_value')) {
                     this.actor.update(JSON.parse(this.getAttribute('data-column_value')));
                 } else {
-                    console.warn('Did not understand handle ' + handle);
+                    console.warn(`Did not understand handle ${handle}.`);
                 }
             }
         });
     } else {
-        console.error(DOMElement.type + ' not recognized as PEATCMS_column_updater');
+        console.error(DOMElement.type + ' not recognized as PEATCMS_column_updater.');
     }
 }
 
@@ -1163,7 +1159,7 @@ PEATCMS_column_updater.prototype.delete = function () {
             // TODO Joeri this is a shortcut, please remove the row without refreshing the whole page
             NAV.refresh();
         } else {
-            console.error('Delete row failed');
+            console.error('Delete row failed.');
         }
     });
 }
@@ -1220,14 +1216,14 @@ const PEATCMS_panel = function (name, resetStyles) {
     this.name = name; // currently names can be console and sidebar
     // check DOMElement and checkbox TODO you can probably create these yourself as well, when not present
     if (null === (this.DOMCheckbox = document.getElementById(`admin_${name}_checkbox`))) {
-        console.error(`Missing checkbox for panel ${name}`);
+        console.error(`Missing checkbox for panel ${name}.`);
     } else {
         this.DOMCheckbox.checked = false; // firefox
         this.DOMCheckbox.addEventListener('change', resetStyles);
     }
     const DOMPanel = document.getElementById(`admin_${name}`);
     if (null === DOMPanel) {
-        console.error(`Missing area for panel ${name}`);
+        console.error(`Missing area for panel ${name}.`);
         return;
     }
     if (DOMPanel.querySelector('.edit-area')) {
@@ -1271,11 +1267,11 @@ PEATCMS_panel.prototype.getSlug = function () {
         if (el.value) {
             return el.value;
         } else {
-            if (VERBOSE) console.warn('Slug found but no value');
+            if (VERBOSE) console.warn('Slug found but no value.');
         }
         console.error(el);
     } else {
-        if (VERBOSE) console.warn('Could not find slug in the panel');
+        if (VERBOSE) console.warn('Could not find slug in the panel.');
     }
     return null;
 }
@@ -1381,7 +1377,7 @@ PEATCMS_panels.prototype.get = function (panel_name) {
     if (this.panels[panel_name]) {
         return this.panels[panel_name];
     } else {
-        if (VERBOSE) console.warn('Panel ' + panel_name + ' not found');
+        if (VERBOSE) console.warn(`Panel ${panel_name} not found`);
         return null;
     }
 }
@@ -1506,7 +1502,7 @@ PEATCMS_quickie.prototype.startUp = function () {
                 if (true === data.success) {
                     NAV.go(data.slug);
                 } else {
-                    PEAT.message('Failed to publish', 'error');
+                    PEAT.message('Failed to publish.', 'error');
                 }
             });
         }
@@ -1514,7 +1510,7 @@ PEATCMS_quickie.prototype.startUp = function () {
         // link the file if necessary, before publishing
         if (undefined !== quickie.file.peatcms_quickie_state) {
             const linkable_link = quickie.file.peatcms_quickie_state;
-            if (VERBOSE) console.log('Linking file');
+            if (VERBOSE) console.log('Linking file.');
             NAV.ajax('/__action__/admin_linkable_link', {
                 element: type_name,
                 id: quickie.state[`${type_name}_id`],
@@ -1522,7 +1518,7 @@ PEATCMS_quickie.prototype.startUp = function () {
                 sub_id: linkable_link[`${linkable_link.type_name}_id`]
             }, function (json) {
                 if (false === json.success) {
-                    PEAT.message('Failed to link file', 'error');
+                    PEAT.message('Failed to link file.', 'error');
                 } else {
                     publish();
                 }
@@ -1542,7 +1538,7 @@ PEATCMS_quickie.prototype.startUp = function () {
                 id: quickie.state[`${type_name}_id`]
             }, function (json) {
                 if (false === json.success) {
-                    PEAT.message('Failed to link to parent', 'error');
+                    PEAT.message('Failed to link to parent.', 'error');
                 }
             });
         }
@@ -1619,7 +1615,7 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
     self.showImage();
     NAV.fileUpload(function (data) {
         if (data.hasOwnProperty('filename_saved')) {
-            PEAT.message('File uploaded successfully');
+            PEAT.message('File uploaded successfully.');
 
             function process() {
                 if ('image' === data.type_name) {
@@ -1628,7 +1624,7 @@ PEATCMS_quickie.prototype.saveFile = function (input) {
 
                     function showImage(json) {
                         if (!json.hasOwnProperty('src_large')) {
-                            console.error('No src_large in json', json);
+                            console.error('No src_large in json.', json);
                         } else {
                             if (true === self.showImage(json.src_large)) {
                                 CMS_admin.unsubscribe('image', json.image_id, showImage);
@@ -1793,7 +1789,7 @@ function PEATCMS_admin() {
                     }
                 });
             } else {
-                console.error('Failed to get current instance');
+                console.error('Failed to get current instance.');
             }
         });
     /**
@@ -1825,6 +1821,7 @@ function PEATCMS_admin() {
                 try {
                     el.querySelector('header').scrollTo(0, 0);
                 } catch (e) {
+                    console.error(e);
                 }
             }
         );
@@ -1835,7 +1832,7 @@ function PEATCMS_admin() {
     for (i = 0, len = nodes.length; i < len; ++i) {
         node = nodes[i];
         // the cell they're in should be small / hidden, unless you're working in this one
-        cell = node.parentNode; // TODO this is true now, but rework to find '.cell' as a parentNode
+        cell = node.closest('.cell');
         if (node.hasAttribute('data-element_name')
             && hidden_cells.hasOwnProperty(node.getAttribute('data-element_name'))
         ) {
@@ -1846,13 +1843,13 @@ function PEATCMS_admin() {
         cell.addEventListener('mousedown', activate_cell);
         cell.addEventListener('focusin', activate_cell);
         // TODO quick workaround with the id here, but need to rework to proper callback and use of 'this' and stuff
-        node.id = 'PEATCMS_console_search_' + node.getAttribute('data-element_name');
+        node.id = `PEATCMS_console_search_${node.getAttribute('data-element_name')}`;
         node.insertAdjacentElement('beforebegin',
             new PEATCMS_searchable(
                 node.getAttribute('data-element_name'),
                 function (element, rows) {
                     // remove the children, and add the returned rows as children (as links)...
-                    const list_el = document.getElementById('PEATCMS_console_search_' + element);
+                    const list_el = document.getElementById(`PEATCMS_console_search_${element}`);
                     let row_i, row, row_len, el, btn;
                     list_el.innerHTML = '';
                     for (row_i = 0, row_len = rows.length; row_i < row_len; ++row_i) {
@@ -1860,7 +1857,7 @@ function PEATCMS_admin() {
                             row = rows[row_i];
                             el = document.createElement('div');
                             el.classList.add('peatcms-link', row.online ? 'online' : 'offline');
-                            el.setAttribute('data-href', '/' + row.slug);
+                            el.setAttribute('data-href', `/${row.slug}`);
                             el.insertAdjacentText('afterbegin', row.title);
                             el.onclick = function (e) {
                                 e.preventDefault();
@@ -1907,7 +1904,7 @@ function PEATCMS_admin() {
                 } else {
                     style = document.createElement('link');
                     style.setAttribute('id', 'bloembraaden-default-css');
-                    style.setAttribute('href', '/_front/peat.css?version=' + PEATCMS_globals.version || Math.random());
+                    style.setAttribute('href', `/_front/peat.css?version=${PEATCMS_globals.version || Math.random()}`);
                     style.setAttribute('rel', 'stylesheet');
                     document.head.appendChild(style);
                 }
@@ -1967,7 +1964,7 @@ function PEATCMS_admin() {
         inputs.forEach(function (input) {
             input.onkeyup = function (e) {
                 if (e.key === 'Enter') {
-                    NAV.go('/__order__/' + input.value);
+                    NAV.go(`/__order__/${input.value}`);
                 }
             }
         });
@@ -1975,7 +1972,7 @@ function PEATCMS_admin() {
             el.addEventListener('click', function () {
                 const payment_link = NAV.root + PEATCMS.replace(' ', '', this.getAttribute('data-href'));
                 if (PEAT.copyToClipboard(payment_link)) {
-                    PEAT.message('Link copied to clipboard');
+                    PEAT.message('Link copied to clipboard.');
                 }
             });
         }
@@ -1984,7 +1981,7 @@ function PEATCMS_admin() {
             el.setAttribute('data-peatcms_active', '1');
             el.addEventListener('peatcms.form_posted', function (e) {
                 if (e.detail.json.success) {
-                    this.innerHTML = 'Marked for destruction';
+                    this.innerHTML = 'Marked for destruction.';
                 }
             });
         });
@@ -1994,7 +1991,7 @@ function PEATCMS_admin() {
             const form = el.form;
             //const label = el.label;
             if (!form) {
-                console.error('File input element has no form', el);
+                console.error('File input element has no form.', el);
                 return;
             } else if (form.querySelectorAll('[type="file"]').length > 1) {
                 console.error('Form has more than one file input element', form);
@@ -2004,13 +2001,13 @@ function PEATCMS_admin() {
                 if (!file_input) return; // let the form handle itself
                 this.removeAttribute('data-submitting'); // cancel submission and handle file upload first
                 if (!file_input.value) {
-                    PEAT.message('No file selected');
+                    PEAT.message('No file selected.');
                     return;
                 }
                 // NAV.fileupload first
                 NAV.fileUpload(function (data) {
                     if (data.hasOwnProperty('file_saved')) {
-                        PEAT.message('File uploaded successfully');
+                        PEAT.message('File uploaded successfully.');
                         file_input.type = 'button';
                         file_input.value = '...';
                         file_input.onclick = function (e) {
@@ -2050,7 +2047,7 @@ function PEATCMS_admin() {
                 for (i = 0; i < len; ++i) {
                     const dist = Math.min(Math.abs(i - current), Math.abs(i - hovered));
                     nodes[i].setAttribute('data-page-distance', dist.toString());
-                    nodes[i].setAttribute('data-i-h-c', i + ' ' + hovered + ' ' + current);
+                    nodes[i].setAttribute('data-i-h-c', `${i} ${hovered} ${current}`);
                 }
             }
 
@@ -2138,7 +2135,7 @@ function PEATCMS_admin() {
     this.poll_timeout = setTimeout(this.pollServer, this.poll_timeout_ms * 2);
     window.addEventListener('focus', self.pollServer);
     //
-    if (VERBOSE) console.log('... peatcms admin activated');
+    if (VERBOSE) console.log('... peatcms admin activated.');
     // into edit mode if requested TODO use panels.restore() or maybe something the user can set
     //if (PEAT.getSessionVar('editing') === true) self.edit();
     // THIS IS A TEST / PRELIMINARY STUFF for editing things like menus / forms / etc.
@@ -2155,7 +2152,7 @@ PEATCMS_admin.prototype.pollServer = function () {
         let el;
         if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
             el.remove();
-            PEAT.message('Admin was logged out', 'warn');
+            PEAT.message('Admin logged out.', 'warn');
             return;
         }
         self.polled_until = json.until;
@@ -2175,7 +2172,7 @@ PEATCMS_admin.prototype.pollServer = function () {
                             template = PEAT.templates['order_overview_true'] || undefined,
                             row_template = template.template.__orders__[0] || undefined;
                         if (!template || !row_template) {
-                            console.warn('Template order_overview_true or row not present, cannot render');
+                            console.warn('Template order_overview_true or row not present, cannot render.');
                             return;
                         }
                         const row_html = template.renderOutput(json, row_template);
@@ -2227,7 +2224,7 @@ PEATCMS_admin.prototype.subscribe = function (type_name, id, callback) {
     if (this.subscriptions.filter(function (entry) {
         return entry.type_name === type_name && entry.id === id && entry.callback === callback;
     }).length > 0) {
-        if (VERBOSE) console.log('Already subscribed', entry);
+        if (VERBOSE) console.log('Already subscribed.', entry);
         return;
     }
     this.subscriptions.push(entry);
@@ -2284,14 +2281,14 @@ PEATCMS_admin.prototype.loadQuickies = function () {
  */
 PEATCMS_admin.prototype.toggleTools = function (open = null) {
     let display_value = 'none',
-        current_value = (this.stylesheet.getCurrentValue('.' + this.CSSClass, 'display'));
+        current_value = (this.stylesheet.getCurrentValue(`.${this.CSSClass}`, 'display'));
     if (open === true) {
         display_value = 'inherit';
     } else if (open !== false) { // when false display_value should stay 'none'
         if (current_value === 'none') display_value = 'inherit';
     }
     if (current_value !== display_value) {
-        this.stylesheet.upsertRule('.' + this.CSSClass, 'display: ' + display_value);
+        this.stylesheet.upsertRule(`.${this.CSSClass}`, `display: ${display_value}`);
     }
 }
 
@@ -2373,7 +2370,7 @@ PEATCMS_admin.prototype.edit = function (slug) {
     //console.error(slug +' vs. '+ el.state.slug);
     if (!slug) {
         if (null === el || false === el.isEditable()) {
-            if (VERBOSE) console.error('Current element is not editable');
+            if (VERBOSE) console.error('Current element is not editable.');
             return;
         }
         slug = el.state.slug;
@@ -2401,7 +2398,7 @@ PEATCMS_admin.prototype.createElement = function (type) {
                 self.panels.open('sidebar'); // navigation will load edit_area
                 NAV.go(data.slug);
             } else {
-                console.warn('Edit for new item failed');
+                console.warn('Edit for new item failed.');
                 if (VERBOSE) console.log(data);
             }
         });
@@ -2415,7 +2412,7 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
         let findr;
         if (el.hasAttribute('data-peatcms-ajaxified')) return;
         el.setAttribute('data-peatcms-ajaxified', '1');
-        NAV.ajax('/' + NAV.getCurrentSlug(), false, function (json) {
+        NAV.ajax(`/${NAV.getCurrentSlug()}`, false, function (json) {
             // loop through the menu -> item
             if (json.hasOwnProperty('__menu__')) {
                 el.insertAdjacentElement('afterbegin', new PEATCMS_admin_menu(json.__menu__).DOMElement);
@@ -2425,7 +2422,7 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
         });
         // add a toggle area (toggle_menu_item) to delete items or drop the first one if the menu is empty
         div.className = 'toggle drop_area';
-        div.innerText = 'Drop item here to toggle on / off from this menu';
+        div.innerText = 'Drop item here to toggle on / off from this menu.';
         div.addEventListener('drop', function (event) {
             const dropped_menu_item_id = event.dataTransfer.getData('menu_item_id');
             this.classList.remove('dragover');
@@ -2487,10 +2484,10 @@ PEATCMS_admin.prototype.startMenuEditor = function (el) {
             });
             findr.insertAdjacentElement('beforeend', node);
         } else {
-            console.error('Element with id PEATCMS_admin_menu_finder not found');
+            console.error('Element with id PEATCMS_admin_menu_finder not found.');
         }
     } else {
-        console.error('Element with id PEATCMS_admin_menu_editor not found');
+        console.error('Element with id PEATCMS_admin_menu_editor not found.');
     }
 }
 
@@ -2502,10 +2499,10 @@ PEATCMS_admin.prototype.putMenuItem = function (menu_item_data) {
                 div.querySelectorAll('ul')[0].remove(); // remove current menu
                 div.insertAdjacentElement('afterbegin', new PEATCMS_admin_menu(json.__menu__).DOMElement);
             } else {
-                PEAT.message('Menu or edit div not found', 'error');
+                PEAT.message('Menu or edit div not found.', 'error');
             }
         } else {
-            PEAT.message('General menu error', 'error');
+            PEAT.message('General menu error.', 'error');
         }
     });
 }
@@ -2517,7 +2514,7 @@ PEATCMS_admin.prototype.putMenuItem = function (menu_item_data) {
 PEATCMS_admin.prototype.enhanceToggle = function (elements) {
     const self = this;
     if (!self.instance) {
-        console.error('enhanceToggle cannot be called before instance is fetched');
+        console.error('enhanceToggle cannot be called before instance is fetched.');
         return;
     }
     elements.forEach(function (el) {
@@ -2550,10 +2547,10 @@ PEATCMS_admin.prototype.enhanceToggle = function (elements) {
             if (toggler.hasAttribute('data-instance_id_message')) {
                 toggler.innerHTML = toggler.getAttribute('data-instance_id_message');
             } else {
-                toggler.innerHTML = 'Switch to native instance to manage this';
+                toggler.innerHTML = 'Switch to native instance to manage this.';
             }
         } else {
-            if (localStorage.getItem(toggler_hash) === 'open') open(toggler);
+            if (localStorage.getItem(toggler_hash.toString()) === 'open') open(toggler);
             el.onclick = function () { // remove any other onclick handlers that might linger on the button
                 toggle(this.parentNode.parentNode);
             }
@@ -2587,7 +2584,7 @@ function peatcms_admin_setup() {
         for (i = 0, len = peatcms_events.length; i < len; ++i) {
             document.addEventListener(peatcms_events[i], PEATCMS_logevent);
         }
-        console.log('... peatcms admin started');
+        console.log('... peatcms admin started.');
     }
 }
 
