@@ -318,6 +318,19 @@ input[type="submit"] {
     }
 }
 
+.bloembraaden-fade-in {
+    animation: bloembraaden_fade_in .4s forwards ease-in-out;
+}
+
+@keyframes bloembraaden_fade_in {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
 /**
  * Pretty select lists
  */

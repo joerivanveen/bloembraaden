@@ -3327,7 +3327,20 @@ PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
     if (!callback) callback = function () {
         DOMElement.remove()
     };
-    setTimeout(callback, 550);
+    function fiveFifty(el) {
+        el.classList.remove('bloembraaden-fade-out');
+        callback(el);
+    }
+    setTimeout(fiveFifty, 550, DOMElement);
+}
+PEATCMS.prototype.fadeIn = function (DOMElement, callback) {
+    DOMElement.classList.add('bloembraaden-fade-in');
+    if (!callback) callback = function () {};
+    function fourFifty(el) {
+        el.classList.remove('bloembraaden-fade-in');
+        callback(el);
+    }
+    setTimeout(fourFifty, 450, DOMElement);
 }
 PEATCMS.prototype.grabAttention = function (DOMElement, low_key, callback) {
     const class_name = low_key ? 'peatcms_signal_change' : 'peatcms_attention_grabber';
