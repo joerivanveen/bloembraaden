@@ -443,6 +443,7 @@ class Handler extends BaseLogic
         }
         // following is only valid with csrf
         if (true === isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
+            $out = array('success' => false); // default feedback, so you don’t get into the View part later
             if ('set_session_var' === $action) {
                 $name = $post_data->name;
                 // times keeps track of how many times this var is (being) updated
