@@ -3995,57 +3995,6 @@ class DB extends Base
             }
         }
 
-        return null; // bypass history database for now (0.23.0)
-        // TODO remove the following logic except 'return null' when _history is filled
-        // look in the history database, get all tables that contain a slug column
-        // those tables must also have the standard columns (data_updated, etc.)
-        $statement = Setup::getHistoryDatabaseConnection()->prepare("
-            SELECT t . table_name FROM information_schema . tables t
-            INNER JOIN information_schema . columns c ON c . table_name = t . table_name and c . table_schema = :schema
-            WHERE c . column_name = 'slug' and t . table_schema = :schema and t . table_type = 'BASE TABLE'
-        ");
-        $statement->bindValue(':schema', $this->db_schema);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-        // construct a sql statement inner joining all the entries, ordered by date_updated so you only get the most recent entry
-        ob_start(); // will hold sql statement
-        foreach ($rows as $key => $row) {
-            if (false === str_starts_with($row->table_name, 'cms_')) continue; // only handle cms_ tables containing elements
-            if (ob_get_length()) echo 'UNION ALL ';
-            $type_name = substr($row->table_name, 4);//str_replace('cms_', '', $row->table_name);
-            echo "SELECT {$type_name}_id as id, '$type_name' as type_name, date_updated 
-                FROM cms_$type_name WHERE slug = :slug and instance_id = :instance_id and deleted = false ";
-        }
-        echo 'ORDER BY date_updated DESC LIMIT 1;';
-        $statement = Setup::getHistoryDatabaseConnection()->prepare(ob_get_clean());
-        $statement->bindValue(':slug', $slug);
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->execute();
-        if ($rows = $statement->fetchAll(5)) {
-            // take the element and id to select the current slug in the live database
-            $row = $rows[0];
-            if ($obj = $this->fetchRow("cms_{$row->type_name}", array('slug'), array("{$row->type_name}_id" => $row->id))) {
-                // auto-migrate: register this change in the current _history table
-                $statement = $this->conn->prepare('
-                    INSERT INTO _history (admin_name, admin_id, user_name, user_id, instance_id, table_name, table_column, key, value)
-                    VALUES(\'system\', 0, \'-\', 0, :instance_id, :table_name, \'slug\', :key, :value)
-                ');
-                $statement->bindValue(':instance_id', Setup::$instance_id);
-                $statement->bindValue(':table_name', "cms_{$row->type_name}");
-                $statement->bindValue(':key', $row->id);
-                $statement->bindValue(':value', $slug);
-                $statement->execute();
-                if (extension_loaded('newrelic')) {
-                    $migrated = 1 === $statement->rowCount() ? 'migrated' : 'looked up';
-                    newrelic_notice_error("slug $slug $migrated in history for " . Setup::$PRESENTATION_INSTANCE);
-                }
-                //
-                return $obj->slug; // you know it might be offline or deleted, but you handle that after the redirect.
-            }
-        }
-        $statement = null;
-
         return null;
     }
 
@@ -4634,62 +4583,6 @@ class DB extends Base
         }
 
         return $row;
-    }
-
-    /**
-     * Array returned contains named array with column names, with column_name both as key and value
-     *
-     * @param string $table_name the table you want to get the columns from in the history table
-     * @return array|null return an array with the column names or null when the table does not exist
-     */
-    public function historyTableColumns(string $table_name): ?array
-    {
-        // check if the table exists
-        $statement = Setup::getHistoryDatabaseConnection()->prepare('SELECT EXISTS (
-            SELECT 1
-            FROM   information_schema.tables 
-            WHERE table_schema = :schema_name
-            AND table_name = :table_name
-            );'
-        );
-        $statement->bindValue(':schema_name', $this->db_schema);
-        $statement->bindValue(':table_name', $table_name);
-        $statement->execute();
-        // if not exists return null
-        if ($statement->fetchColumn(0) === false) {
-            $statement = null;
-
-            return null;
-        }
-        // else if exists, return columns
-        $statement = Setup::getHistoryDatabaseConnection()->prepare('
-            SELECT column_name FROM information_schema.columns
-            WHERE table_schema = :schema_name AND table_name = :table_name;
-        ');
-        $statement->bindValue(':schema_name', $this->db_schema);
-        $statement->bindValue(':table_name', $table_name);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-        $columns = array();
-        foreach ($rows as $key => $value) {
-            //$columns[$key] = (string)$columns[$key][0];
-            $columns[$value->column_name] = $value->column_name; // so you can use in_array($column_name) as well as unset($column_name) :-D
-        }
-
-        return $columns;
-    }
-
-    /**
-     * This function runs sql unchecked against the history database, used by the upgrade mechanism
-     *
-     * @param string $sql A valid sql statement to run against the history database
-     * @return false|int returns the result of ->exec()
-     */
-    public function historyRun(string $sql)
-    {
-        // TODO check the sql? Can it be injected somewhere?
-        return Setup::getHistoryDatabaseConnection()->exec($sql);
     }
 
     private function getMeaningfulSearchString(\stdClass $out): string

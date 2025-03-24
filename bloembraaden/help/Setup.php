@@ -20,8 +20,8 @@ class Setup
     public static array $translations;
     public static stdClass $MAIL, $PDFMAKER;
     private static int $seconds_delta;
-    private static ?PDO $DB_MAIN_CONN = null, $DB_HIST_CONN = null;
-    private static stdClass $DB_MAIN, $DB_HIST;
+    private static ?PDO $DB_MAIN_CONN = null;
+    private static stdClass $DB_MAIN;
     public const AVAILABLE_TIMEZONES = array(
         'Europe/London',
         'Europe/Amsterdam',
@@ -37,9 +37,8 @@ class Setup
         // setup some cleaning for when execution ends
         register_shutdown_function(
             function () {
-                // leave the connections in a good state when the script ends to be reused by postgres
+                // leave the connection in a good state when the script ends to be reused by postgres
                 self::abandonDatabaseConnection(self::$DB_MAIN_CONN);
-                self::abandonDatabaseConnection(self::$DB_HIST_CONN);
                 // also log any serious errors
                 self::logErrors();
             });
@@ -78,11 +77,6 @@ class Setup
     public static function getMainDatabaseConnection(): PDO
     {
         return self::$DB_MAIN_CONN ?? (self::$DB_MAIN_CONN = self::initializeDatabaseConnection(self::$DB_MAIN));
-    }
-
-    public static function getHistoryDatabaseConnection(): PDO
-    {
-        return self::$DB_HIST_CONN ?? (self::$DB_HIST_CONN = self::initializeDatabaseConnection(self::$DB_HIST));
     }
 
     /**
@@ -124,7 +118,7 @@ class Setup
                     $connection = null;
                 }
             }
-            //$connection = null; // trying out persistent now <- transaction time reduced by 30%
+            //$connection = null; <- use persistent connections, transaction time reduced by 30%
         }
     }
 
@@ -143,7 +137,6 @@ class Setup
         self::$VERBOSE = $config->VERBOSE;
         self::$INSTALL = $config->install;
         self::$DB_MAIN = $config->DB_MAIN;
-        self::$DB_HIST = $config->DB_HISTORY;
         self::$MAIL = $config->MAIL;
         self::$PDFMAKER = $config->integrations->pdfmaker;
         self::$NEWRELIC_RECORDS_BACKEND = $config->newrelic_records_backend ?? false;

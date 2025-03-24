@@ -1252,9 +1252,6 @@ class Help
         // (you can't start with the newly requested version only 'cause maybe you're upgrading multiple versions)
         $sql = substr($sql, $starting_position_of_upgrade_sql);
         //$sql = substr($sql, strpos($sql, '-- version'));
-//        if (\strrpos($sql, '-- wipe history')) {
-//            Help::wipeHistoryDatabase(new DB());
-//        }
         //
         try {
             $db->run($sql);
@@ -1268,9 +1265,6 @@ class Help
             return;
         }
         sleep(3); // give the db time to report back the new states
-        // sync history
-        echo "Sync history database\n";
-        Help::syncHistoryDatabase($db);
         // now set the version
         $db->run(sprintf('update _system set version = \'%s\';', $version));
         // @since 0.7.7 clear data cache
@@ -1284,106 +1278,6 @@ class Help
         if (function_exists('opcache_reset')) opcache_reset();
         // done, feedback to user
         echo(sprintf('Successfully upgraded to version %s', $version));
-    }
-
-    public static function wipeHistoryDatabase(DB $db)
-    {
-        try {
-            // disconnect all users from the history database
-            $sql = 'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = \'peatcms_history\';';
-            $db->run($sql);
-            // drop it
-            $sql = 'DROP DATABASE IF EXISTS peatcms_history;';
-            $db->run($sql);
-            $sql = 'CREATE DATABASE peatcms_history;';
-            $db->run($sql);
-            echo 'This update wiped the history database' . "\n";
-        } catch (\Exception $e) {
-            echo $e->getMessage();
-            echo "\n";
-        }
-    }
-
-    public static function syncHistoryDatabase(DB $db)
-    {
-        // for each table in regular db, check history: if not present, create it from regular db, if present, check the columns and update those
-        $tables = $db->getAllTables();
-        $db_schema = 'public';
-        foreach ($tables as $table_index => $table) {
-            if (in_array($table->table_name, $db::TABLES_WITHOUT_HISTORY)) continue; // tables without history
-            $table_name = $table->table_name;
-            $info = $db->getTableInfo($table_name);
-            $history_columns = $db->historyTableColumns($table_name);
-            if ($history_columns === null) { // create based on table info
-                // create table (defaults and unique constraints do not apply in the history table)
-                $sql = 'CREATE TABLE "' . $db_schema . '"."' . $table_name . '"
-                    (' . "\n";
-                //"history_id" Serial PRIMARY KEY, <- we're not using this anymore @since 0.5.4
-                foreach ($info->getColumnNames() as $column_index => $column_name) {
-                    $sql .= '"' . $column_name . '" ';
-                    $col = $info->getColumnByName($column_name);
-                    $sql .= match ($col_type = $col->getType()) {
-                        'character' => 'Character Varying(' . $col->getLength() . ') ',
-                        'timestamp' => 'Timestamp With Time Zone ',
-                        'double' => 'float ',
-                        default => "$col_type ",
-                    };
-                    //if (!is_null($col->getDefault())) { // default not necessary in a new table, and specifically, 'serial' leads to an error
-                    //    $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
-                    //}
-                    if ($col->isNullable() === false) $sql .= 'NOT NULL';
-                    $sql .= ',';
-                }
-                $sql = substr($sql, 0, -1) . ');'; // remove last comma and close the statement
-                //$sql .= 'CONSTRAINT "unique_' . $table_name . '_history_id" UNIQUE ("history_id") );';
-                echo $sql, "\n";
-                $db->historyRun($sql);
-            } else { // compare the columns and add new ones (currently changing of info for columns is not supported...)
-                foreach ($info->getColumnNames() as $column_index => $column_name) {
-                    if (in_array($column_name, $history_columns)) {
-                        // temporary fix for 0.16.0 TODO remove this
-                        if ('css_class' === $column_name) {
-                            $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" ALTER COLUMN "' . $column_name . '" TYPE Character Varying(255);';
-                            $db->historyRun($sql);
-                        }
-                        unset($history_columns[$column_name]); // remove this to indicate it's been checked
-                        continue;
-                    }
-                    $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" ADD COLUMN "' . $column_name . '" ';
-                    $col = $info->getColumnByName($column_name);
-                    $sql .= match ($col_type = $col->getType()) {
-                        'character' => 'Character Varying(' . $col->getLength() . ') ',
-                        'timestamp' => 'Timestamp With Time Zone ',
-                        'double' => 'Double precision ',
-                        default => "$col_type ",
-                    };
-                    if (!is_null($col->getDefault())) {
-                        $sql .= 'DEFAULT ' . $col->getDefault() . ' ';
-                    }
-                    if ($col->isNullable() === false) $sql .= 'NOT NULL ';
-                    $sql .= ';';
-                    echo $sql, "\n";
-                    $db->historyRun($sql);
-                }
-                // drop any remaining columns from history
-                foreach ($history_columns as $column_name => $idem) {
-                    $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" DROP COLUMN if exists "' . $column_name . '";';
-                    echo $sql . "\n";
-                    $db->historyRun($sql);
-                    // maybe a constraint was associated with this column, drop it as well
-                    $sql = 'ALTER TABLE "' . $db_schema . '"."' . $table_name . '" DROP CONSTRAINT if exists "unique_' . $table_name . '_' . $column_name . '";';
-                    echo $sql . "\n";
-                    $db->historyRun($sql);
-                }
-            }
-            // @since 0.7.5 this also creates / reindexes the indexes on slug columns
-            if (substr($table_name, 0, 4) === 'cms_' and $info->getColumnByName('slug')) {
-                $index_name = 'index_slug_' . $table_name;
-                echo 'Handling index ' . $index_name . "\n";
-                $db->historyRun('CREATE INDEX if not exists "' . $index_name . '" ON "' . $db_schema . '"."' . $table_name . '" USING btree ("slug" Asc NULLS Last)');
-                $db->historyRun('REINDEX INDEX ' . $index_name);
-            }
-        }
     }
 
     public static function install(DB $db)
@@ -1562,9 +1456,6 @@ class Help
                 var_dump(Help::getErrors());
                 die('<h1>Install error</h1>');
             }
-            // sync history
-            echo 'Sync history database<br/>' . "\n";
-            Help::syncHistoryDatabase($db);
             /**
              * register current version
              */

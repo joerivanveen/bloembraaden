@@ -158,12 +158,10 @@ Both static and the Bloembraaden site / vhost must use ssl. Bloembraaden does no
 When you add sites in the Bloembraaden admin, currently you need to configure their ssl separately on the server.
 
 ## Database
-Use a postgres database, preferably with pgbouncer. You need to create two databases: ‘main’ for the cms itself, and ‘history’ for the history (obviously).
-You can name them how you want and just put the connection parameters in the config.
+Use a postgres database, preferably with pgbouncer. Create your main database and put the connection parameters in the config.
 
 The connection string is optimized for pgbouncer and reuse of connections.
 
-The ‘history’ database grows larger but is seldom used, only for ‘undo’ operations and to check for old slugs that are accessed.
 Bloembraaden manages the indexes on the databases for optimum performance.
 At this point there are still some queries that do not use an index, we are working on identifying them and optimizing further.
 
