@@ -1302,6 +1302,10 @@ body .PEATCMS_admin span.template_status {
     display: table-row;
 }
 
+body .PEATCMS_admin .order-table a:hover {
+    background-color: transparent;
+}
+
 .payment-table .header,
 .order-table .header {
     display: table-row;
@@ -1334,16 +1338,16 @@ body .PEATCMS_admin span.template_status {
     background-color: var(--admin-color-ok-bg);
 }
 
-.order-table .row[data-myparcel_exported] .status:after {
+.order-table .row[data-myparcel_exported] .myparcel:after {
 
 }
 
-.order-table .row .status {
+.order-table .row .myparcel {
     width: 8px;
     color: var(--admin-color-no);
 }
 
-.order-table .row[data-myparcel_exported_success] .status {
+.order-table .row[data-myparcel_exported_success] .myparcel {
     background-repeat: no-repeat;
     background-size: contain;
     background-position: center;
