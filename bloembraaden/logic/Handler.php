@@ -441,1079 +441,1081 @@ class Handler extends BaseLogic
             }
             die(); // after an sse logger you cannot provide any more content, yo
         }
-        // following is only valid with csrf
-        if (true === isset($post_data->csrf_token) && $post_data->csrf_token === Help::$session->getValue('csrf_token')) {
-            $out = array('success' => false); // default feedback, so you don’t get into the View part later
-            if ('set_session_var' === $action) {
-                $name = $post_data->name;
-                // times keeps track of how many times this var is (being) updated
-                Help::$session->setVar($name, $post_data->value, $post_data->times);
-                $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
-            } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                $post_data = $this->resolver->escape($post_data);
-                $valid = true;
-                // validation process
-                if (isset($post_data->email)) {
-                    if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
-                        $this->addMessage(sprintf(__('%s is not recognized as a valid email address.', 'peatcms'), $post_data->email), 'warn');
-                        $valid = false;
-                    }
-                } else {
-                    $post_data->email = 'N/A';
-                }
-                if (isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
-                    $post_data->referer = end($url_parts);
-                    if (null === ($element_row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->referer))) {
-                        $this->addError(sprintf('Commented with unknown referer %s.', $post_data->referer));
-                        $this->addMessage(__('This page does not accept comments.', 'peatcms'), 'warn');
-                        $valid = false;
-                    }
-                } else {
-                    $this->addError('No referer when posting a comment.');
-                    $this->addMessage(__('To post a comment your browser must also send a referer.', 'peatcms'), 'error');
-                    $valid = false;
-                }
-                if (true === $valid) {
-                    // check the other mandatory fields
-                    foreach (array('nickname', 'content',) as $index => $field_name) {
-                        if (false === isset($post_data->{$field_name}) || '' === trim((string)$post_data->{$field_name})) {
-                            $this->addMessage(sprintf(__('Mandatory field %s not found in post data.', 'peatcms'), $field_name), 'warn');
-                            $valid = false;
-                        }
-                    }
-                }
-                if (true === $valid) {
-                    $session =& Help::$session; // point to this session
-                    $peat_type = new Type('comment');
-                    $title = Help::summarize(127, $post_data->title ?? '');
-                    if ('' === $title) $title = Help::summarize(127, $post_data->content);
-                    $referer = $post_data->referer;
-                    $slug = Help::slugify("$referer $title");
-                    $reply_to_id = $post_data->reply_to_id ?? null;
-                    $reply_after = $post_data->reply_after ?? $reply_to_id;
-                    if (null !== ($comment_id = Help::getDB()->insertElement($peat_type, array(
-                            'referer' => $referer,
-                            'slug' => $slug,
-                            'email' => $post_data->email,
-                            'nickname' => $post_data->nickname,
-                            'title' => $title,
-                            'content' => $post_data->content,
-                            'rating' => $post_data->rating ?? null, // todo normalize for 0 - 1
-                            'reply_to_id' => $reply_to_id,
-                            'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
-                            'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
-                            'ip_address' => $session->getIpAddress(),
-                            'user_agent' => $session->getUserAgent(),
-                            'online' => false,
-                        )))) {
-                        $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
-                        // note: link the comment to the element (not the other way around) to get the correct order
-                        $element_type = new Type($element_row->type_name);
-                        $element_id = $element_row->id;
-                        $element = ($element_type)->getElement()->fetchById($element_id);
-                        if (true === $element->link('comment', $comment_id)) {
-                            if (null !== $reply_after) {
-                                if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_after)) {
-                                    $this->addMessage(__('Comment added to end.', 'peatcms'), 'warn');
-                                }
-                            }
-                            $out = $comment->getOutput();
-                            $out->success = true;
-                            // TODO it should be a setting and new comments must also be visible / obvious in the admin panels
-                            if (!isset($post_data->from_email)) $post_data->from_email = $instance->getSetting('mail_verified_sender');
-                            $post_data->slug = $slug;
-                            $post_data->title = $title;
-                            $this->sendMail($instance, $post_data);
-                        } else {
-                            $this->addError(sprintf('Comment could not be linked to %s as %s.', $post_data->referer, var_export($element_row, true)));
-                            $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
-                        }
-                    } else {
-                        $this->addError(sprintf('Comment not added with data %s.', var_export($post_data, true)));
-                        $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
-                    }
-                }
-            } elseif ('sendmail' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                $post_data = $this->resolver->escape($post_data);
-                $out = $this->sendMail($instance, $post_data);
-            } elseif ('countries' === $action) {
-                $out = array('__rows__' => Help::getDB()->getCountries());
-                $out['slug'] = 'countries';
-            } elseif ('suggest_address' === $action) {
-                $country_code = $post_data->address_country_iso2;
-                $query = htmlspecialchars($post_data->query, ENT_QUOTES);
-                $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
-                $suggestions = $addresses->suggest($country_code, $query);
-                $out = array('success' => true, 'suggestions' => $suggestions);
-            } elseif ('validate_address' === $action) {
-                if (isset($post_data->address_country_iso2,
-                    $post_data->address_postal_code,
-                    $post_data->address_street,
-                    $post_data->address_number,
-                    $post_data->address_city)
-                ) {
-                    $country_code = $post_data->address_country_iso2;
-                    $postal_code = $post_data->address_postal_code;
-                    $street = $post_data->address_street;
-                    $number = $post_data->address_number;
-                    $city = $post_data->address_city;
-                    $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
-                    $valid = $addresses->validate($country_code, $postal_code, $number, $street, $city);
-                    $out = array('success' => true, 'valid' => $valid);
-                } else {
-                    $out = array('success' => false);
-                }
-            } elseif ('order' === $action) {
-                if (true === Help::turnstileVerify($instance, $post_data)) {
+        // don’t bother if you already processed out, or without csrf
+        if (null === $out && true === isset($post_data->csrf_token)) {
+            if ($post_data->csrf_token === Help::$session->getValue('csrf_token')) {
+                $out = array('success' => false); // default feedback, so you don’t get into the View part later
+                if ('set_session_var' === $action) {
+                    $name = $post_data->name;
+                    // times keeps track of how many times this var is (being) updated
+                    Help::$session->setVar($name, $post_data->value, $post_data->times);
+                    $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
+                } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                     $post_data = $this->resolver->escape($post_data);
-                    if (false === isset($post_data->shoppinglist)) {
-                        $this->addError('Shoppinglist is not set for order action.');
-                        $out = true;
-                    } elseif (isset($post_data->email) && isset($post_data->shipping_country_id)) {
-                        $valid = true;
-                        // validation process
+                    $valid = true;
+                    // validation process
+                    if (isset($post_data->email)) {
                         if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
                             $this->addMessage(sprintf(__('%s is not recognized as a valid email address.', 'peatcms'), $post_data->email), 'warn');
                             $valid = false;
-                        } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
-                            $this->addMessage(sprintf(__('%s is not recognized as a country id.', 'peatcms'), $post_data->shipping_country_id), 'warn');
+                        }
+                    } else {
+                        $post_data->email = 'N/A';
+                    }
+                    if (isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
+                        $post_data->referer = end($url_parts);
+                        if (null === ($element_row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->referer))) {
+                            $this->addError(sprintf('Commented with unknown referer %s.', $post_data->referer));
+                            $this->addMessage(__('This page does not accept comments.', 'peatcms'), 'warn');
                             $valid = false;
                         }
-                        if (true === $valid) {
-                            // check the other mandatory fields
-                            foreach (array(
-                                         'shipping_address_postal_code',
-                                         'shipping_address_number',
-                                         'shipping_address_street',
-                                         'shipping_address_city',
-                                     ) as $index => $field_name) {
-                                if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
-                                    $this->addMessage(sprintf(__('Mandatory field %s not found in post data.', 'peatcms'), $field_name), 'warn');
-                                    $valid = false;
-                                }
+                    } else {
+                        $this->addError('No referer when posting a comment.');
+                        $this->addMessage(__('To post a comment your browser must also send a referer.', 'peatcms'), 'error');
+                        $valid = false;
+                    }
+                    if (true === $valid) {
+                        // check the other mandatory fields
+                        foreach (array('nickname', 'content',) as $index => $field_name) {
+                            if (false === isset($post_data->{$field_name}) || '' === trim((string)$post_data->{$field_name})) {
+                                $this->addMessage(sprintf(__('Mandatory field %s not found in post data.', 'peatcms'), $field_name), 'warn');
+                                $valid = false;
                             }
                         }
-                        if (true === $valid) {
-                            // check vat, if supplied
-                            if (isset($post_data->vat_number, $post_data->vat_country_iso2)) {
-                                $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
-                                if (false === isset($check['valid']) || false === $check['valid']) {
-                                    $valid = false;
-                                    $this->addMessage(__('Vat number not valid according to VIES.', 'peatcms'), 'warn');
-                                } else {
-                                    $post_data->vat_valid = true;
-                                    $post_data->vat_history = json_encode($check);
+                    }
+                    if (true === $valid) {
+                        $session =& Help::$session; // point to this session
+                        $peat_type = new Type('comment');
+                        $title = Help::summarize(127, $post_data->title ?? '');
+                        if ('' === $title) $title = Help::summarize(127, $post_data->content);
+                        $referer = $post_data->referer;
+                        $slug = Help::slugify("$referer $title");
+                        $reply_to_id = $post_data->reply_to_id ?? null;
+                        $reply_after = $post_data->reply_after ?? $reply_to_id;
+                        if (null !== ($comment_id = Help::getDB()->insertElement($peat_type, array(
+                                'referer' => $referer,
+                                'slug' => $slug,
+                                'email' => $post_data->email,
+                                'nickname' => $post_data->nickname,
+                                'title' => $title,
+                                'content' => $post_data->content,
+                                'rating' => $post_data->rating ?? null, // todo normalize for 0 - 1
+                                'reply_to_id' => $reply_to_id,
+                                'user_id' => ($user = $session->getUser()) ? $user->getId() : 0,
+                                'admin_id' => ($admin = $session->getAdmin()) ? $admin->getId() : 0,
+                                'ip_address' => $session->getIpAddress(),
+                                'user_agent' => $session->getUserAgent(),
+                                'online' => false,
+                            )))) {
+                            $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
+                            // note: link the comment to the element (not the other way around) to get the correct order
+                            $element_type = new Type($element_row->type_name);
+                            $element_id = $element_row->id;
+                            $element = ($element_type)->getElement()->fetchById($element_id);
+                            if (true === $element->link('comment', $comment_id)) {
+                                if (null !== $reply_after) {
+                                    if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_after)) {
+                                        $this->addMessage(__('Comment added to end.', 'peatcms'), 'warn');
+                                    }
                                 }
-                            }
-                        }
-                        if (true === $valid) {
-                            $session =& Help::$session; // point to this session
-                            $shoppinglist = new Shoppinglist($post_data->shoppinglist);
-                            if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
-                                $session->setVar('order_number', $order_number);
-                                // out object
-                                $out = array('success' => true, 'order_number' => $order_number);
-                                // leave everything be, so the next page (the forms action) will be loaded
+                                $out = $comment->getOutput();
+                                $out->success = true;
+                                // TODO it should be a setting and new comments must also be visible / obvious in the admin panels
+                                if (!isset($post_data->from_email)) $post_data->from_email = $instance->getSetting('mail_verified_sender');
+                                $post_data->slug = $slug;
+                                $post_data->title = $title;
+                                $this->sendMail($instance, $post_data);
                             } else {
-                                $this->addError('DB->placeOrder() failed.');
-                                $this->addMessage(__('Order process failed.', 'peatcms'), 'error');
+                                $this->addError(sprintf('Comment could not be linked to %s as %s.', $post_data->referer, var_export($element_row, true)));
+                                $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
+                            }
+                        } else {
+                            $this->addError(sprintf('Comment not added with data %s.', var_export($post_data, true)));
+                            $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
+                        }
+                    }
+                } elseif ('sendmail' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    $post_data = $this->resolver->escape($post_data);
+                    $out = $this->sendMail($instance, $post_data);
+                } elseif ('countries' === $action) {
+                    $out = array('__rows__' => Help::getDB()->getCountries());
+                    $out['slug'] = 'countries';
+                } elseif ('suggest_address' === $action) {
+                    $country_code = $post_data->address_country_iso2;
+                    $query = htmlspecialchars($post_data->query, ENT_QUOTES);
+                    $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
+                    $suggestions = $addresses->suggest($country_code, $query);
+                    $out = array('success' => true, 'suggestions' => $suggestions);
+                } elseif ('validate_address' === $action) {
+                    if (isset($post_data->address_country_iso2,
+                        $post_data->address_postal_code,
+                        $post_data->address_street,
+                        $post_data->address_number,
+                        $post_data->address_city)
+                    ) {
+                        $country_code = $post_data->address_country_iso2;
+                        $postal_code = $post_data->address_postal_code;
+                        $street = $post_data->address_street;
+                        $number = $post_data->address_number;
+                        $city = $post_data->address_city;
+                        $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
+                        $valid = $addresses->validate($country_code, $postal_code, $number, $street, $city);
+                        $out = array('success' => true, 'valid' => $valid);
+                    } else {
+                        $out = array('success' => false);
+                    }
+                } elseif ('order' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        $post_data = $this->resolver->escape($post_data);
+                        if (false === isset($post_data->shoppinglist)) {
+                            $this->addError('Shoppinglist is not set for order action.');
+                            $out = true;
+                        } elseif (isset($post_data->email) && isset($post_data->shipping_country_id)) {
+                            $valid = true;
+                            // validation process
+                            if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
+                                $this->addMessage(sprintf(__('%s is not recognized as a valid email address.', 'peatcms'), $post_data->email), 'warn');
+                                $valid = false;
+                            } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
+                                $this->addMessage(sprintf(__('%s is not recognized as a country id.', 'peatcms'), $post_data->shipping_country_id), 'warn');
+                                $valid = false;
+                            }
+                            if (true === $valid) {
+                                // check the other mandatory fields
+                                foreach (array(
+                                             'shipping_address_postal_code',
+                                             'shipping_address_number',
+                                             'shipping_address_street',
+                                             'shipping_address_city',
+                                         ) as $index => $field_name) {
+                                    if (false === isset($post_data->{$field_name}) || '' === trim($post_data->{$field_name})) {
+                                        $this->addMessage(sprintf(__('Mandatory field %s not found in post data.', 'peatcms'), $field_name), 'warn');
+                                        $valid = false;
+                                    }
+                                }
+                            }
+                            if (true === $valid) {
+                                // check vat, if supplied
+                                if (isset($post_data->vat_number, $post_data->vat_country_iso2)) {
+                                    $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
+                                    if (false === isset($check['valid']) || false === $check['valid']) {
+                                        $valid = false;
+                                        $this->addMessage(__('Vat number not valid according to VIES.', 'peatcms'), 'warn');
+                                    } else {
+                                        $post_data->vat_valid = true;
+                                        $post_data->vat_history = json_encode($check);
+                                    }
+                                }
+                            }
+                            if (true === $valid) {
+                                $session =& Help::$session; // point to this session
+                                $shoppinglist = new Shoppinglist($post_data->shoppinglist);
+                                if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
+                                    $session->setVar('order_number', $order_number);
+                                    // out object
+                                    $out = array('success' => true, 'order_number' => $order_number);
+                                    // leave everything be, so the next page (the forms action) will be loaded
+                                } else {
+                                    $this->addError('DB->placeOrder() failed.');
+                                    $this->addMessage(__('Order process failed.', 'peatcms'), 'error');
+                                    $out = true;
+                                }
+                            }
+                        } else {
+                            $this->addMessage(__('Please provide a valid emailaddress and choose a shipping country.', 'peatcms'), 'warn');
+                            $this->addError('Posting of inputs named email and shipping_country_id is mandatory.');
+                            $out = true;
+                        }
+                    } else {
+                        $out = true;
+                    }
+                } elseif ('account_login' === $action) {
+                    // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
+                    if (isset($post_data->email) && isset($post_data->pass)) {
+                        $as_admin = $this->resolver->hasInstruction('admin');
+                        if (true === $as_admin or true === Help::turnstileVerify($instance, $post_data)) {
+                            if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
+                                $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
+                            } elseif (true === $as_admin) {
+                                $out = array('redirect_uri' => '/'); // @since 0.7.8 reload to get all the admin css and js
+                            } else {
+                                $this->addMessage(__('Login successful.', 'peatcms'), 'log');
+                                $out = array(
+                                    'success' => true,
+                                    'is_account' => true,
+                                    '__user__' => Help::$session->getUser()->getOutput()
+                                );
+                            }
+                        }
+                    } else {
+                        $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
+                    }
+                } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    $out = array('success' => false);
+                    if (isset($post_data->email)
+                        && isset($post_data->pass)
+                        && strpos(($email_address = $post_data->email), '@')
+                    ) {
+                        if (null !== ($user_id = Help::getDB()->insertUserAccount(
+                                $email_address,
+                                Help::passwordHash((string)$post_data->pass)))
+                        ) {
+                            $this->addMessage(__('Account created.', 'peatcms'), 'note');
+                            // auto login
+                            if (false === Help::$session->login($email_address, (string)$post_data->pass, false)) {
+                                $this->addMessage(__('Could not login.', 'peatcms'), 'error');
+                            } else {
+                                $this->addMessage(__('Login successful.', 'peatcms'), 'log');
+                                $out = array(
+                                    'success' => true,
+                                    'is_account' => true,
+                                    '__user__' => Help::$session->getUser()->getOutput()
+                                );
+                            }
+                        } else {
+                            $this->addMessage(__('Account could not be created.', 'peatcms'), 'error');
+                        }
+                    } else {
+                        $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
+                    }
+                } elseif ('account_password_forgotten' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
+                        $post_data->check_string = Help::getDB()->putInLocker(0,
+                            (object)array('email_address' => $email_address));
+                        // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
+                        $post_data->confirm_link = sprintf('%s/%s/locker:%s',
+                            $instance->getDomain(true),
+                            ((isset($post_data->slug)) ? $post_data->slug : 'account'),
+                            $post_data->check_string);
+                        $post_data->instance_name = $instance->getName();
+                        /* this largely duplicate code must be in a helper function or something... */
+                        if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                            $temp = new Template($template_row);
+                            $body = $temp->renderObject($post_data);
+                        }
+                        if (false === isset($body) || '' === $body) {
+                            $body = 'Click link or paste in your browser to reset your account password: <' . $post_data->confirm_link . '>';
+                        }
+                        $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
+                        $mail->set(array(
+                            'to' => $email_address,
+                            'from' => $instance->getSetting('mail_verified_sender'),
+                            'subject' => isset($post_data->subject) ? $post_data->subject : 'Mailed by ' . $instance->getDomain(),
+                            'text' => Help::html_to_text($body),
+                            'html' => $body,
+                        ));
+                        $out = $mail->send();
+                        if (false === $out->success) {
+                            if (isset($post_data->failure_message)) {
+                                $this->addMessage($post_data->failure_message, 'error');
+                            } else {
+                                $this->addMessage(__('Failed to send mail.', 'peatcms'), 'error');
+                            }
+                        } elseif (isset($post_data->success_message)) {
+                            $this->addMessage($post_data->success_message);
+                        }
+                    } else {
+                        $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
+                    }
+                } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    $out = array('success' => false);
+                    if (isset($post_data->email) && isset($post_data->pass)) {
+                        if (isset($post_data->locker)
+                            && $row = Help::getDB()->emptyLocker($post_data->locker)
+                        ) {
+                            if (isset($row->information)
+                                && isset($row->information->email_address)
+                                && ($email_address = $row->information->email_address) === $post_data->email
+                            ) {
+                                $password = (string)$post_data->pass;
+                                // if it’s indeed an account, update the password
+                                // (since the code proves the emailaddress is read by the owner)
+                                if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
+                                    // create an account then...
+                                    $this->action = 'account_create';
+                                    $this->Act();
+                                } else {
+                                    $this->addMessage(__('Password updated.', 'peatcms'), 'note');
+                                    $out['success'] = true;
+                                    if (true === Help::$session->login($email_address, $password, false)) {
+                                        $this->addMessage(__('Login successful.', 'peatcms'), 'log');
+                                        $out = array(
+                                            'success' => true,
+                                            'is_account' => true,
+                                            '__user__' => Help::$session->getUser()->getOutput()
+                                        );
+                                    }
+                                }
+                            } else {
+                                $this->addMessage(__('E-mail address did not match.', 'peatcms'), 'warn');
+                            }
+                        } else {
+                            $this->addMessage(__('Link is invalid or expired.', 'peatcms'), 'warn');
+                        }
+                    } else {
+                        $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
+                    }
+                } elseif ('account_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    if (null !== ($user = Help::$session->getUser())) {
+                        // check which column is being updated... (multiple is possible)
+                        $data = array();
+                        if (isset($post_data->phone)) $data['phone'] = $post_data->phone;
+                        if (isset($post_data->gender)) $data['gender'] = $post_data->gender;
+                        if (isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
+                        if (count($data) > 0) {
+                            $out = array(
+                                'success' => $user->updateRow($data),
+                            );
+                        }
+                        if (true === isset($post_data->email)) {
+                            // updating email address is a process, you need to authenticate again
+                            $this->addMessage('Currently updating emailaddress is not possible.', 'note');
+                        }
+                        if (true === isset($out)) {
+                            $out['__user__'] = $user->getOutput(); // get a new user
+                        }
+                    }
+                } elseif ('account_delete_sessions' === $action) {
+                    if ((null !== ($user = Help::$session->getUser()))) {
+                        $out['success'] = 0 < Help::getDB()->deleteSessionsForUser(
+                                $user->getId(),
+                                Help::$session->getId()
+                            );
+                        $out['__user__'] = Help::$session->getUser()->getOutput();
+                    }
+                } elseif ('validate_vat' === $action) {
+                    $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
+                } elseif (('update_address' === $action || 'delete_address' === $action)
+                    && (true === Help::turnstileVerify($instance, $post_data))
+                ) {
+                    //$post_data = $this->resolver->escape($post_data);
+                    if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
+                        $address_id = (int)$post_data->address_id;
+                        if ('delete_address' === $action) $post_data->deleted = true;
+                        // clean posted data before updating
+                        unset($post_data->json);
+                        unset($post_data->timestamp);
+                        unset($post_data->csrf_token);
+                        if (1 === Help::getDB()->updateColumnsWhere(
+                                '_address',
+                                (array)$post_data,
+                                array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
+                            )) {
+                            $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
+                            if ('delete_address' === $action) {
+                                $out = array('success' => true);
+                            } elseif (null === $out) {
+                                $this->addMessage(__('Error retrieving updated address.', 'peatcms'), 'error');
+                            } else {
+                                $out->success = true;
+                            }
+                        } else {
+                            $this->addMessage(__('Address could not be updated.', 'peatcms'), 'warn');
+                        }
+                    } elseif (isset($post_data->address_id)) {
+                        $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
+                    } else {
+                        $this->addError('address_id is missing.');
+                    }
+                    if (false === isset($out)) $out = array('success' => false);
+                } elseif ('create_address' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
+                    $post_data = $this->resolver->escape($post_data);
+                    if ((null !== ($user = Help::$session->getUser()))) {
+                        if (null !== ($address_id = Help::getDB()->insertElement(
+                                new Type('address'),
+                                array('user_id' => $user->getId())))
+                        ) {
+                            $out = array('success' => true);
+                        }
+                    } else {
+                        $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
+                    }
+                    if (false === isset($out)) $out = array('success' => false);
+                } elseif ('detail' === $action && $this->resolver->hasInstruction('order')) {
+                    // session values can be manipulated, so you need to check if this order belongs to the session
+                    $order_number = Help::$session->getValue('order_number');
+                    if (null === $order_number) {
+                        $out = array('slug' => '__order__');
+                    } elseif (
+                        ($row = Help::getDB()->getOrderByNumber($order_number))
+                        && $row->session_id === Help::$session->getId()
+                    ) {
+                        $out = (new Order($row))->getOutput();
+                    } else {
+                        $this->addError("Order $order_number not found for this session.");
+                        $out = array('slug' => "__order__/$order_number");
+                    }
+                } elseif ('payment_start' === $action) {
+                    // TODO NOTE the order may not belong to the current user, so do not expose any sensitive data
+                    if (true === isset($post_data->order_number)) {
+                        if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
+                            if (($order = new Order($row))) {
+                                $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
+                                if ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
+                                    $out = array('success' => false);
+                                    $this->addMessage(__('Payment has expired, please make a new order.', 'peatcms'), 'note');
+                                } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
+                                    $live_flag = $row->payment_live_flag ?? false;
+                                    $out = array('tracking_id' => $payment_tracking_id, 'live_flag' => $live_flag, 'success' => true);
+                                } elseif (($psp = $instance->getPaymentServiceProvider())) {
+                                    if (false === $psp->hasError()) {
+                                        $live_flag = $psp->isLive();
+                                        if (($tracking_id = $psp->beginTransaction($order, $instance))) {
+                                            // update order with the payment transaction id
+                                            if (Help::getDB()->updateElement(new Type('order'), array(
+                                                'payment_tracking_id' => $tracking_id,
+                                                'payment_live_flag' => $live_flag,
+                                            ), $order->getId()))
+                                                $out = array('tracking_id' => $tracking_id, 'live_flag' => $live_flag, 'success' => true);
+                                        } else {
+                                            $out = array('live_flag' => $live_flag, 'success' => false);
+                                        }
+                                    } else {
+                                        $this->addError(sprintf('Payment Service Provider error %s.', $psp->getLastError()));
+                                    }
+                                } else {
+                                    $this->addError(__('No default Payment Service Provider found.', 'peatcms'));
+                                }
+                            } else {
+                                $this->addError(sprintf('Could not get order for %s.', htmlentities($post_data->order_number)));
+                            }
+                        } else {
+                            $this->addMessage(__('Order not found, please refresh the page.', 'peatcms'), 'warn');
+                            $this->addError(sprintf('DB returned null for %s', htmlentities($post_data->order_number)));
+                        }
+                    } else {
+                        $this->addError('Order number must be posted in order to start a payment.');
+                    }
+                    if (false === isset($out)) {
+                        $out = true;
+                        $this->addMessage(__('Payment Service Provider error.', 'peatcms'), 'error');
+                    }
+                } elseif (in_array($action, array('add_to_list', 'remove_from_list', 'update_quantity_in_list'))) {
+                    $out = array('success' => $this->updateList($action, $post_data));
+                } elseif (($admin = Help::$session->getAdmin()) instanceof Admin) {
+                    /**
+                     * Admin actions, permission needs to be checked every time
+                     */
+                    if ('update_element' === $action) {
+                        if (($element = $this->getElementById($post_data->element, $post_data->id))) {
+                            if (true === $admin->isRelatedElement($element)) {
+                                // @since 0.8.19 check the prices
+                                if (in_array($post_data->column_name, array('price', 'price_from'))) {
+                                    $value = Help::asFloat($post_data->column_value);
+                                    $value = Help::asMoney($value);
+                                    if ('' === $value && $value !== $post_data->column_value) {
+                                        $this->addMessage(sprintf(
+                                            __('%s not recognized as money.', 'peatcms'),
+                                            $post_data->column_value), 'warn');
+                                    }
+                                    $post_data->column_value = $value;
+                                }
+                                //
+                                if (false === $element->update(array($post_data->column_name => $post_data->column_value))) {
+                                    $this->addMessage(sprintf(__('Update of element %s failed.', 'peatcms'), $post_data->element), 'error');
+                                }
+                                $out = $element->row;
+                            }
+                        }
+                    } elseif ('create_element' === $action) {
+                        if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
+                            $out = $element->row;
+                        } else {
+                            $this->handleErrorAndStop("Create element $post_data->element failed.");
+                        }
+                    } elseif ('delete_element' === $action) {
+                        if (isset($post_data->element_name) && isset($post_data->id)) {
+                            $success = false;
+                            $type = new Type($post_data->element_name);
+                            $element = $type->getElement()->fetchById((int)$post_data->id);
+                            if (null === $element) {
+                                $this->addMessage(__('Element not found', 'peatcms'), 'warn');
+                            } elseif ($admin->isRelatedElement($element)) {
+                                $path = $element->getSlug();
+                                if (true === ($success = $element->delete())) {
+                                    Help::getDB()->reCacheWithWarmup($path);
+                                    $this->addMessage(__('Please allow 5 - 10 minutes for the element to disappear completely.', 'peatcms'));
+                                }
+                            } else {
+                                $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
+                            }
+                            unset($element);
+                            $out = array('success' => $success);
+                        }
+                    } elseif ('admin_get_elements' === $action) {
+                        $out = array('rows' => $this->getElements($post_data->element));
+                    } elseif ('admin_get_element_suggestions' === $action) {
+                        $out = $this->getElementSuggestions($post_data->element, $post_data->src);
+                    } elseif ('admin_get_element' === $action) {
+                        $peat_type = new Type($post_data->element);
+                        $element = $peat_type->getElement();
+                        if ($element->fetchById((int)$post_data->id)) {
+                            if (true === $admin->isRelatedElement($element)) {
+                                // elements must be enhanced, but prevent getting all the linked items (for eg serie or brand) by supplying 2
+                                // todo make it configurable in the request
+                                $out = $element->getOutput(2);
+                            } else {
+                                $this->addMessage(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), $post_data->element, $post_data->id), 'error');
+                                $out = true;
+                            }
+                            unset($element);
+                        } else {
+                            $out = true;
+                        }
+                    } elseif ('admin_publish_element' === $action) { // @since 0.24.0 // todo permissions
+                        $element = $this->getElementById($post_data->element, (int)$post_data->id);
+                        if (null === $element) {
+                            $this->addMessage(__('Element not found.', 'peatcms'), 'error');
+                            $out = array('success' => false);
+                        } else {
+                            $element_title = $element->row->title;
+                            // if there is a linked element (probably file or image), set its online property to true
+                            // also update the title and slug
+                            foreach ($element->getLinked() as $type_name => $elements) {
+                                foreach ($elements as $key => $out) {
+                                    if (false === is_int($key)) continue; // not an element
+                                    $id = $GLOBALS['slugs']->{$out->__ref}->{"{$type_name}_id"};
+                                    // #TRANSLATORS: %1$s is the type name, %2$s is the element title
+                                    $title = sprintf(__('%1$s added to %2$s.', 'peatcms'), ucfirst($type_name), $element_title);
+                                    //var_dump($key, $id);
+                                    Help::getDB()->updateElement(new Type($type_name), array(
+                                        'title' => $title,
+                                        'slug' => $title,
+                                    ), $id);
+                                }
+                            }
+                            // if you received properties, add them as x_values
+                            foreach ($post_data->properties as $property => $value) {
+                                $property = Help::slugify($property);
+                                $value = Help::slugify($value);
+                                $row = Help::getDB()->fetchElementIdAndTypeBySlug($property);
+                                if (null === $row || 'property' !== $row->type_name) {
+                                    $this->addMessage(sprintf(__('Property %s not found.', 'peatcms'), $property), 'error');
+                                    continue;
+                                }
+                                $property_id = $row->id;
+                                $row = Help::getDB()->fetchElementIdAndTypeBySlug($value);
+                                if (null === $row || 'property_value' !== $row->type_name) {
+                                    $this->addMessage(sprintf(__('Property value %s not found.', 'peatcms'), $value), 'error');
+                                    continue;
+                                }
+                                $property_value_id = $row->id;
+                                unset($row);
+                                if (false === $element->linkX($property_id, $property_value_id)) {
+                                    // TRANSLATORS: %1$s is the property, %2$s is the value
+                                    $this->addMessage(sprintf(__('Could not link %1$s %2$s to element.', 'peatcms'), $property, $value), 'error');
+                                }
+                            }
+                            // set this element to true and add template
+                            $update = array('online' => true);
+                            // if you received a css class, add that as well
+                            if (true === isset($post_data->css_class)) {
+                                $update['css_class'] = "$post_data->css_class {$element->row->css_class}";
+                            }
+                            // if you received a template string, set the correct template id, else, set the default id for this type
+                            if (true === isset($post_data->template_name)
+                                && ($row = Help::getDB()->getTemplateByName($post_data->template_name, Setup::$instance_id))
+                            ) {
+                                $update['template_id'] = $row->template_id;
+                            } else {
+                                $update['template_id'] = Help::getDB()->getDefaultTemplateIdFor($post_data->element);
+                            }
+                            if (false === $element->update($update)) {
+                                $this->addMessage(sprintf(__('Could not update %s.', 'peatcms'), $element_title), 'error');
+                                $out = array('success' => false);
+                            } else {
+                                $out = array(
+                                    'success' => true,
+                                    'slug' => $element->getSlug(),
+                                );
+                            }
+                        }
+                    } elseif ('admin_uncache' === $action) {
+                        if (true === isset($post_data->path)) {
+                            $path = $post_data->path;
+                            if (true === Help::getDB()->reCacheWithWarmup($path)) {
+                                if (false === isset($post_data->silent) || false === $post_data->silent) {
+                                    $this->addMessage(sprintf(__('%s refreshed in cache.', 'peatcms'), $path), 'log');
+                                }
+                            }
+                            $out = array('slug' => $path);
+                        }
+                    } elseif ('admin_clear_cache_for_instance' === $action) {
+                        if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                            $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
+                            $this->addMessage(sprintf(__('Cleared %s items from cache.', 'peatcms'), $rows_affected));
+                        }
+                    } elseif ('admin_export_templates_by_name' === $action) {
+                        if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                            $content = Help::getDB()->getTemplates($instance_id);
+                            $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
+                            $out = array('download' => array('content' => $content, 'file_name' => $file_name));
+                        }
+                    } elseif ('admin_import_templates_by_name' === $action) {
+                        if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                            if (true === isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
+                                $count_done = 0;
+                                foreach ($templates as $key => $posted_row) {
+                                    if (($template_name = $posted_row->name)) {
+                                        if (($db_row = Help::getDB()->getTemplateByName($template_name, $instance_id))) {
+                                            $template_id = $db_row->template_id;
+                                        } else {
+                                            // insert
+                                            if (!($template_id = Help::getDB()->insertTemplate($template_name, $instance_id))) {
+                                                $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
+                                                continue;
+                                            }
+                                            $this->addMessage(sprintf(__('Created new template %s’.', 'peatcms'), $template_name), 'note');
+                                        }
+                                        // update
+                                        if (true === Help::getDB()->updateColumns('_template', array(
+                                                'element' => $posted_row->element,
+                                                'html' => $posted_row->html,
+                                                'instance_id' => $instance_id,
+                                                'name' => $template_name,
+                                                'nested_max' => $posted_row->nested_max,
+                                                'nested_show_first_only' => $posted_row->nested_show_first_only,
+                                                'variant_page_size' => $posted_row->variant_page_size,
+                                                'deleted' => $posted_row->deleted,
+                                                'published' => false,
+                                            ), $template_id)) {
+                                            $this->addMessage(sprintf(__('Template %s updated.', 'peatcms'), $template_name));
+                                            $count_done++;
+                                        } else {
+                                            $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
+                                        }
+                                    }
+                                }
+                                if (0 === $count_done) {
+                                    $this->addMessage(__('No templates found in json.', 'peatcms'), 'warn');
+                                } else {
+                                    $this->updatePublishedForTemplates($instance_id);
+                                }
+                            } else {
+                                $this->addMessage(__('json not recognized.', 'peatcms'), 'warn');
+                            }
+                            if (true === isset($post_data->re_render)) {
+                                $out = array('re_render' => $post_data->re_render);
+                            } else {
                                 $out = true;
                             }
                         }
-                    } else {
-                        $this->addMessage(__('Please provide a valid emailaddress and choose a shipping country.', 'peatcms'), 'warn');
-                        $this->addError('Posting of inputs named email and shipping_country_id is mandatory.');
-                        $out = true;
-                    }
-                } else {
-                    $out = true;
-                }
-            } elseif ('account_login' === $action) {
-                // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
-                if (isset($post_data->email) && isset($post_data->pass)) {
-                    $as_admin = $this->resolver->hasInstruction('admin');
-                    if (true === $as_admin or true === Help::turnstileVerify($instance, $post_data)) {
-                        if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
-                            $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
-                        } elseif (true === $as_admin) {
-                            $out = array('redirect_uri' => '/'); // @since 0.7.8 reload to get all the admin css and js
-                        } else {
-                            $this->addMessage(__('Login successful.', 'peatcms'), 'log');
-                            $out = array(
-                                'success' => true,
-                                'is_account' => true,
-                                '__user__' => Help::$session->getUser()->getOutput()
-                            );
-                        }
-                    }
-                } else {
-                    $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
-                }
-            } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                $out = array('success' => false);
-                if (isset($post_data->email)
-                    && isset($post_data->pass)
-                    && strpos(($email_address = $post_data->email), '@')
-                ) {
-                    if (null !== ($user_id = Help::getDB()->insertUserAccount(
-                            $email_address,
-                            Help::passwordHash((string)$post_data->pass)))
-                    ) {
-                        $this->addMessage(__('Account created.', 'peatcms'), 'note');
-                        // auto login
-                        if (false === Help::$session->login($email_address, (string)$post_data->pass, false)) {
-                            $this->addMessage(__('Could not login.', 'peatcms'), 'error');
-                        } else {
-                            $this->addMessage(__('Login successful.', 'peatcms'), 'log');
-                            $out = array(
-                                'success' => true,
-                                'is_account' => true,
-                                '__user__' => Help::$session->getUser()->getOutput()
-                            );
-                        }
-                    } else {
-                        $this->addMessage(__('Account could not be created.', 'peatcms'), 'error');
-                    }
-                } else {
-                    $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
-                }
-            } elseif ('account_password_forgotten' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
-                    $post_data->check_string = Help::getDB()->putInLocker(0,
-                        (object)array('email_address' => $email_address));
-                    // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
-                    $post_data->confirm_link = sprintf('%s/%s/locker:%s',
-                        $instance->getDomain(true),
-                        ((isset($post_data->slug)) ? $post_data->slug : 'account'),
-                        $post_data->check_string);
-                    $post_data->instance_name = $instance->getName();
-                    /* this largely duplicate code must be in a helper function or something... */
-                    if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
-                        $temp = new Template($template_row);
-                        $body = $temp->renderObject($post_data);
-                    }
-                    if (false === isset($body) || '' === $body) {
-                        $body = 'Click link or paste in your browser to reset your account password: <' . $post_data->confirm_link . '>';
-                    }
-                    $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
-                    $mail->set(array(
-                        'to' => $email_address,
-                        'from' => $instance->getSetting('mail_verified_sender'),
-                        'subject' => isset($post_data->subject) ? $post_data->subject : 'Mailed by ' . $instance->getDomain(),
-                        'text' => Help::html_to_text($body),
-                        'html' => $body,
-                    ));
-                    $out = $mail->send();
-                    if (false === $out->success) {
-                        if (isset($post_data->failure_message)) {
-                            $this->addMessage($post_data->failure_message, 'error');
-                        } else {
-                            $this->addMessage(__('Failed to send mail.', 'peatcms'), 'error');
-                        }
-                    } elseif (isset($post_data->success_message)) {
-                        $this->addMessage($post_data->success_message);
-                    }
-                } else {
-                    $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
-                }
-            } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                $out = array('success' => false);
-                if (isset($post_data->email) && isset($post_data->pass)) {
-                    if (isset($post_data->locker)
-                        && $row = Help::getDB()->emptyLocker($post_data->locker)
-                    ) {
-                        if (isset($row->information)
-                            && isset($row->information->email_address)
-                            && ($email_address = $row->information->email_address) === $post_data->email
-                        ) {
-                            $password = (string)$post_data->pass;
-                            // if it’s indeed an account, update the password
-                            // (since the code proves the emailaddress is read by the owner)
-                            if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
-                                // create an account then...
-                                $this->action = 'account_create';
-                                $this->Act();
-                            } else {
-                                $this->addMessage(__('Password updated.', 'peatcms'), 'note');
-                                $out['success'] = true;
-                                if (true === Help::$session->login($email_address, $password, false)) {
-                                    $this->addMessage(__('Login successful.', 'peatcms'), 'log');
-                                    $out = array(
-                                        'success' => true,
-                                        'is_account' => true,
-                                        '__user__' => Help::$session->getUser()->getOutput()
-                                    );
-                                }
-                            }
-                        } else {
-                            $this->addMessage(__('E-mail address did not match.', 'peatcms'), 'warn');
-                        }
-                    } else {
-                        $this->addMessage(__('Link is invalid or expired.', 'peatcms'), 'warn');
-                    }
-                } else {
-                    $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
-                }
-            } elseif ('account_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                if (null !== ($user = Help::$session->getUser())) {
-                    // check which column is being updated... (multiple is possible)
-                    $data = array();
-                    if (isset($post_data->phone)) $data['phone'] = $post_data->phone;
-                    if (isset($post_data->gender)) $data['gender'] = $post_data->gender;
-                    if (isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
-                    if (count($data) > 0) {
-                        $out = array(
-                            'success' => $user->updateRow($data),
-                        );
-                    }
-                    if (true === isset($post_data->email)) {
-                        // updating email address is a process, you need to authenticate again
-                        $this->addMessage('Currently updating emailaddress is not possible.', 'note');
-                    }
-                    if (true === isset($out)) {
-                        $out['__user__'] = $user->getOutput(); // get a new user
-                    }
-                }
-            } elseif ('account_delete_sessions' === $action) {
-                if ((null !== ($user = Help::$session->getUser()))) {
-                    $out['success'] = 0 < Help::getDB()->deleteSessionsForUser(
-                            $user->getId(),
-                            Help::$session->getId()
-                        );
-                    $out['__user__'] = Help::$session->getUser()->getOutput();
-                }
-            } elseif ('validate_vat' === $action) {
-                $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
-            } elseif (('update_address' === $action || 'delete_address' === $action)
-                && (true === Help::turnstileVerify($instance, $post_data))
-            ) {
-                //$post_data = $this->resolver->escape($post_data);
-                if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
-                    $address_id = (int)$post_data->address_id;
-                    if ('delete_address' === $action) $post_data->deleted = true;
-                    // clean posted data before updating
-                    unset($post_data->json);
-                    unset($post_data->timestamp);
-                    unset($post_data->csrf_token);
-                    if (1 === Help::getDB()->updateColumnsWhere(
-                            '_address',
-                            (array)$post_data,
-                            array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
-                        )) {
-                        $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
-                        if ('delete_address' === $action) {
-                            $out = array('success' => true);
-                        } elseif (null === $out) {
-                            $this->addMessage(__('Error retrieving updated address.', 'peatcms'), 'error');
-                        } else {
-                            $out->success = true;
-                        }
-                    } else {
-                        $this->addMessage(__('Address could not be updated.', 'peatcms'), 'warn');
-                    }
-                } elseif (isset($post_data->address_id)) {
-                    $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
-                } else {
-                    $this->addError('address_id is missing.');
-                }
-                if (false === isset($out)) $out = array('success' => false);
-            } elseif ('create_address' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                $post_data = $this->resolver->escape($post_data);
-                if ((null !== ($user = Help::$session->getUser()))) {
-                    if (null !== ($address_id = Help::getDB()->insertElement(
-                            new Type('address'),
-                            array('user_id' => $user->getId())))
-                    ) {
-                        $out = array('success' => true);
-                    }
-                } else {
-                    $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
-                }
-                if (false === isset($out)) $out = array('success' => false);
-            } elseif ('detail' === $action && $this->resolver->hasInstruction('order')) {
-                // session values can be manipulated, so you need to check if this order belongs to the session
-                $order_number = Help::$session->getValue('order_number');
-                if (null === $order_number) {
-                    $out = array('slug' => '__order__');
-                } elseif (
-                    ($row = Help::getDB()->getOrderByNumber($order_number))
-                    && $row->session_id === Help::$session->getId()
-                ) {
-                    $out = (new Order($row))->getOutput();
-                } else {
-                    $this->addError("Order $order_number not found for this session.");
-                    $out = array('slug' => "__order__/$order_number");
-                }
-            } elseif ('payment_start' === $action) {
-                // TODO NOTE the order may not belong to the current user, so do not expose any sensitive data
-                if (true === isset($post_data->order_number)) {
-                    if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
-                        if (($order = new Order($row))) {
-                            $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
-                            if ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
-                                $out = array('success' => false);
-                                $this->addMessage(__('Payment has expired, please make a new order.', 'peatcms'), 'note');
-                            } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
-                                $live_flag = $row->payment_live_flag ?? false;
-                                $out = array('tracking_id' => $payment_tracking_id, 'live_flag' => $live_flag, 'success' => true);
-                            } elseif (($psp = $instance->getPaymentServiceProvider())) {
-                                if (false === $psp->hasError()) {
-                                    $live_flag = $psp->isLive();
-                                    if (($tracking_id = $psp->beginTransaction($order, $instance))) {
-                                        // update order with the payment transaction id
-                                        if (Help::getDB()->updateElement(new Type('order'), array(
-                                            'payment_tracking_id' => $tracking_id,
-                                            'payment_live_flag' => $live_flag,
-                                        ), $order->getId()))
-                                            $out = array('tracking_id' => $tracking_id, 'live_flag' => $live_flag, 'success' => true);
-                                    } else {
-                                        $out = array('live_flag' => $live_flag, 'success' => false);
-                                    }
-                                } else {
-                                    $this->addError(sprintf('Payment Service Provider error %s.', $psp->getLastError()));
-                                }
-                            } else {
-                                $this->addError(__('No default Payment Service Provider found.', 'peatcms'));
-                            }
-                        } else {
-                            $this->addError(sprintf('Could not get order for %s.', htmlentities($post_data->order_number)));
-                        }
-                    } else {
-                        $this->addMessage(__('Order not found, please refresh the page.', 'peatcms'), 'warn');
-                        $this->addError(sprintf('DB returned null for %s', htmlentities($post_data->order_number)));
-                    }
-                } else {
-                    $this->addError('Order number must be posted in order to start a payment.');
-                }
-                if (false === isset($out)) {
-                    $out = true;
-                    $this->addMessage(__('Payment Service Provider error.', 'peatcms'), 'error');
-                }
-            } elseif (in_array($action, array('add_to_list', 'remove_from_list', 'update_quantity_in_list'))) {
-                $out = array('success' => $this->updateList($action, $post_data));
-            } elseif (($admin = Help::$session->getAdmin()) instanceof Admin) {
-                /**
-                 * Admin actions, permission needs to be checked every time
-                 */
-                if ('update_element' === $action) {
-                    if (($element = $this->getElementById($post_data->element, $post_data->id))) {
-                        if (true === $admin->isRelatedElement($element)) {
-                            // @since 0.8.19 check the prices
-                            if (in_array($post_data->column_name, array('price', 'price_from'))) {
-                                $value = Help::asFloat($post_data->column_value);
-                                $value = Help::asMoney($value);
-                                if ('' === $value && $value !== $post_data->column_value) {
-                                    $this->addMessage(sprintf(
-                                        __('%s not recognized as money.', 'peatcms'),
-                                        $post_data->column_value), 'warn');
-                                }
-                                $post_data->column_value = $value;
-                            }
-                            //
-                            if (false === $element->update(array($post_data->column_name => $post_data->column_value))) {
-                                $this->addMessage(sprintf(__('Update of element %s failed.', 'peatcms'), $post_data->element), 'error');
-                            }
-                            $out = $element->row;
-                        }
-                    }
-                } elseif ('create_element' === $action) {
-                    if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
-                        $out = $element->row;
-                    } else {
-                        $this->handleErrorAndStop("Create element $post_data->element failed.");
-                    }
-                } elseif ('delete_element' === $action) {
-                    if (isset($post_data->element_name) && isset($post_data->id)) {
-                        $success = false;
-                        $type = new Type($post_data->element_name);
-                        $element = $type->getElement()->fetchById((int)$post_data->id);
-                        if (null === $element) {
-                            $this->addMessage(__('Element not found', 'peatcms'), 'warn');
-                        } elseif ($admin->isRelatedElement($element)) {
-                            $path = $element->getSlug();
-                            if (true === ($success = $element->delete())) {
-                                Help::getDB()->reCacheWithWarmup($path);
-                                $this->addMessage(__('Please allow 5 - 10 minutes for the element to disappear completely.', 'peatcms'));
-                            }
-                        } else {
-                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
-                        }
-                        unset($element);
-                        $out = array('success' => $success);
-                    }
-                } elseif ('admin_get_elements' === $action) {
-                    $out = array('rows' => $this->getElements($post_data->element));
-                } elseif ('admin_get_element_suggestions' === $action) {
-                    $out = $this->getElementSuggestions($post_data->element, $post_data->src);
-                } elseif ('admin_get_element' === $action) {
-                    $peat_type = new Type($post_data->element);
-                    $element = $peat_type->getElement();
-                    if ($element->fetchById((int)$post_data->id)) {
-                        if (true === $admin->isRelatedElement($element)) {
-                            // elements must be enhanced, but prevent getting all the linked items (for eg serie or brand) by supplying 2
-                            // todo make it configurable in the request
-                            $out = $element->getOutput(2);
-                        } else {
-                            $this->addMessage(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), $post_data->element, $post_data->id), 'error');
-                            $out = true;
-                        }
-                        unset($element);
-                    } else {
-                        $out = true;
-                    }
-                } elseif ('admin_publish_element' === $action) { // @since 0.24.0 // todo permissions
-                    $element = $this->getElementById($post_data->element, (int)$post_data->id);
-                    if (null === $element) {
-                        $this->addMessage(__('Element not found.', 'peatcms'), 'error');
-                        $out = array('success' => false);
-                    } else {
-                        $element_title = $element->row->title;
-                        // if there is a linked element (probably file or image), set its online property to true
-                        // also update the title and slug
-                        foreach ($element->getLinked() as $type_name => $elements) {
-                            foreach ($elements as $key => $out) {
-                                if (false === is_int($key)) continue; // not an element
-                                $id = $GLOBALS['slugs']->{$out->__ref}->{"{$type_name}_id"};
-                                // #TRANSLATORS: %1$s is the type name, %2$s is the element title
-                                $title = sprintf(__('%1$s added to %2$s.', 'peatcms'), ucfirst($type_name), $element_title);
-                                //var_dump($key, $id);
-                                Help::getDB()->updateElement(new Type($type_name), array(
-                                    'title' => $title,
-                                    'slug' => $title,
-                                ), $id);
-                            }
-                        }
-                        // if you received properties, add them as x_values
-                        foreach ($post_data->properties as $property => $value) {
-                            $property = Help::slugify($property);
-                            $value = Help::slugify($value);
-                            $row = Help::getDB()->fetchElementIdAndTypeBySlug($property);
-                            if (null === $row || 'property' !== $row->type_name) {
-                                $this->addMessage(sprintf(__('Property %s not found.', 'peatcms'), $property), 'error');
-                                continue;
-                            }
-                            $property_id = $row->id;
-                            $row = Help::getDB()->fetchElementIdAndTypeBySlug($value);
-                            if (null === $row || 'property_value' !== $row->type_name) {
-                                $this->addMessage(sprintf(__('Property value %s not found.', 'peatcms'), $value), 'error');
-                                continue;
-                            }
-                            $property_value_id = $row->id;
-                            unset($row);
-                            if (false === $element->linkX($property_id, $property_value_id)) {
-                                // TRANSLATORS: %1$s is the property, %2$s is the value
-                                $this->addMessage(sprintf(__('Could not link %1$s %2$s to element.', 'peatcms'), $property, $value), 'error');
-                            }
-                        }
-                        // set this element to true and add template
-                        $update = array('online' => true);
-                        // if you received a css class, add that as well
-                        if (true === isset($post_data->css_class)) {
-                            $update['css_class'] = "$post_data->css_class {$element->row->css_class}";
-                        }
-                        // if you received a template string, set the correct template id, else, set the default id for this type
-                        if (true === isset($post_data->template_name)
-                            && ($row = Help::getDB()->getTemplateByName($post_data->template_name, Setup::$instance_id))
-                        ) {
-                            $update['template_id'] = $row->template_id;
-                        } else {
-                            $update['template_id'] = Help::getDB()->getDefaultTemplateIdFor($post_data->element);
-                        }
-                        if (false === $element->update($update)) {
-                            $this->addMessage(sprintf(__('Could not update %s.', 'peatcms'), $element_title), 'error');
-                            $out = array('success' => false);
-                        } else {
-                            $out = array(
-                                'success' => true,
-                                'slug' => $element->getSlug(),
-                            );
-                        }
-                    }
-                } elseif ('admin_uncache' === $action) {
-                    if (true === isset($post_data->path)) {
-                        $path = $post_data->path;
-                        if (true === Help::getDB()->reCacheWithWarmup($path)) {
-                            if (false === isset($post_data->silent) || false === $post_data->silent) {
-                                $this->addMessage(sprintf(__('%s refreshed in cache.', 'peatcms'), $path), 'log');
-                            }
-                        }
-                        $out = array('slug' => $path);
-                    }
-                } elseif ('admin_clear_cache_for_instance' === $action) {
-                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
-                        $this->addMessage(sprintf(__('Cleared %s items from cache.', 'peatcms'), $rows_affected));
-                    }
-                } elseif ('admin_export_templates_by_name' === $action) {
-                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        $content = Help::getDB()->getTemplates($instance_id);
-                        $file_name = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
-                        $out = array('download' => array('content' => $content, 'file_name' => $file_name));
-                    }
-                } elseif ('admin_import_templates_by_name' === $action) {
-                    if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        if (true === isset($post_data->template_json) && ($templates = json_decode($post_data->template_json))) {
-                            $count_done = 0;
-                            foreach ($templates as $key => $posted_row) {
-                                if (($template_name = $posted_row->name)) {
-                                    if (($db_row = Help::getDB()->getTemplateByName($template_name, $instance_id))) {
-                                        $template_id = $db_row->template_id;
-                                    } else {
-                                        // insert
-                                        if (!($template_id = Help::getDB()->insertTemplate($template_name, $instance_id))) {
-                                            $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
-                                            continue;
-                                        }
-                                        $this->addMessage(sprintf(__('Created new template %s’.', 'peatcms'), $template_name), 'note');
-                                    }
-                                    // update
-                                    if (true === Help::getDB()->updateColumns('_template', array(
-                                            'element' => $posted_row->element,
-                                            'html' => $posted_row->html,
-                                            'instance_id' => $instance_id,
-                                            'name' => $template_name,
-                                            'nested_max' => $posted_row->nested_max,
-                                            'nested_show_first_only' => $posted_row->nested_show_first_only,
-                                            'variant_page_size' => $posted_row->variant_page_size,
-                                            'deleted' => $posted_row->deleted,
-                                            'published' => false,
-                                        ), $template_id)) {
-                                        $this->addMessage(sprintf(__('Template %s updated.', 'peatcms'), $template_name));
-                                        $count_done++;
-                                    } else {
-                                        $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
-                                    }
-                                }
-                            }
-                            if (0 === $count_done) {
-                                $this->addMessage(__('No templates found in json.', 'peatcms'), 'warn');
-                            } else {
-                                $this->updatePublishedForTemplates($instance_id);
-                            }
-                        } else {
-                            $this->addMessage(__('json not recognized.', 'peatcms'), 'warn');
-                        }
-                        if (true === isset($post_data->re_render)) {
-                            $out = array('re_render' => $post_data->re_render);
-                        } else {
-                            $out = true;
-                        }
-                    }
-                } elseif (in_array($action, array(
-                    'admin_linkable_link',
-                    'admin_linkable_slug',
-                    'admin_linkable_order',
-                    'admin_x_value_link',
-                    'admin_x_value_create',
-                    'admin_x_value_order',
-                    'admin_x_value_remove'
-                ))) {
-                    $peat_type = new Type($post_data->element);
-                    $element = $peat_type->getElement();
-                    if ($element->fetchById((int)$post_data->id)) {
-                        if (true === $admin->isRelatedElement($element)) {
-                            if ('admin_linkable_slug' === $action) { // id is the sub, slug is the parent
-                                if (true === isset($post_data->slug) && ($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->slug))) {
-                                    $parent = (new Type($row->type_name))->getElement()->fetchById($row->id);
-                                    $element_type_name = $element->type_name;
-                                    $success = $parent->link($element_type_name, $element->id);
-                                    $linked = $parent->getLinked($element_type_name);
-                                    // verify / change order
-                                    if (true === $success && true === isset($post_data->place)) {
-                                        $place = (int)$post_data->place;
-                                        $slug_in_place = $linked[$place]->__ref;
-                                        if ($element->getSlug() !== $slug_in_place) {
-                                            $linked = $parent->orderLinked($element_type_name, $element->getSlug(), $slug_in_place);
-                                        }
-                                    }
-                                    if (true === $success && true === isset($post_data->total)) {
-                                        $total = (int)$post_data->total;
-                                        if (true === isset($linked[$total])) {
-                                            $id = $GLOBALS['slugs']->{$linked[$total]->__ref}->{"{$element_type_name}_id"};
-                                            if (false === $parent->link($element_type_name, $id, true)) {
-                                                $this->addError("Could not unlink element nr $total.");
+                    } elseif (in_array($action, array(
+                        'admin_linkable_link',
+                        'admin_linkable_slug',
+                        'admin_linkable_order',
+                        'admin_x_value_link',
+                        'admin_x_value_create',
+                        'admin_x_value_order',
+                        'admin_x_value_remove'
+                    ))) {
+                        $peat_type = new Type($post_data->element);
+                        $element = $peat_type->getElement();
+                        if ($element->fetchById((int)$post_data->id)) {
+                            if (true === $admin->isRelatedElement($element)) {
+                                if ('admin_linkable_slug' === $action) { // id is the sub, slug is the parent
+                                    if (true === isset($post_data->slug) && ($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->slug))) {
+                                        $parent = (new Type($row->type_name))->getElement()->fetchById($row->id);
+                                        $element_type_name = $element->type_name;
+                                        $success = $parent->link($element_type_name, $element->id);
+                                        $linked = $parent->getLinked($element_type_name);
+                                        // verify / change order
+                                        if (true === $success && true === isset($post_data->place)) {
+                                            $place = (int)$post_data->place;
+                                            $slug_in_place = $linked[$place]->__ref;
+                                            if ($element->getSlug() !== $slug_in_place) {
+                                                $linked = $parent->orderLinked($element_type_name, $element->getSlug(), $slug_in_place);
                                             }
                                         }
+                                        if (true === $success && true === isset($post_data->total)) {
+                                            $total = (int)$post_data->total;
+                                            if (true === isset($linked[$total])) {
+                                                $id = $GLOBALS['slugs']->{$linked[$total]->__ref}->{"{$element_type_name}_id"};
+                                                if (false === $parent->link($element_type_name, $id, true)) {
+                                                    $this->addError("Could not unlink element nr $total.");
+                                                }
+                                            }
+                                        }
+                                        $out = array('success' => $success);
+                                    } else {
+                                        $this->addError(sprintf('Slug %s not found.', var_export($post_data->slug, true)));
+                                        $out = array('success' => false);
                                     }
-                                    $out = array('success' => $success);
-                                } else {
-                                    $this->addError(sprintf('Slug %s not found.', var_export($post_data->slug, true)));
-                                    $out = array('success' => false);
-                                }
-                            } elseif ('admin_linkable_link' === $action) {
-                                $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);
-                                if ($element->link($post_data->sub_element, $post_data->sub_id, $unlink)) {
-                                    $out = $element->getLinked();
-                                } else {
-                                    $this->addError('Could not link that.');
-                                    $out = true;
-                                }
-                            } elseif ('admin_linkable_order' === $action) {
-                                $full_feedback = (false !== $post_data->full_feedback);
-                                $out = $element->orderLinked($post_data->linkable_type, $post_data->slug, $post_data->before_slug, $full_feedback);
-                            } elseif ('admin_x_value_link' === $action) {
-                                // make the entry in x_value table :-)
-                                if ($element->linkX((int)$post_data->property_id, (int)$post_data->property_value_id)) {
-                                    $out = $element->getLinked('x_value');
-                                } else {
-                                    $this->addError('Property link error.');
-                                    $out = true;
-                                }
-                            } elseif ('admin_x_value_order' === $action) {
-                                $out = $element->orderXValue($post_data->x_value_id, $post_data->before_x_value_id);
-                            } elseif ('admin_x_value_remove' === $action) {
-                                if (isset($post_data->x_value_id) and $x_value_id = (int)$post_data->x_value_id) {
-                                    // todo move this to a method in baseelement
-                                    Help::getDB()->deleteXValueLink($peat_type, $element->getId(), $x_value_id);
-                                    $element->reCache();
-                                    $out = $element->getLinked('x_value');
-                                }
-                            } elseif ('admin_x_value_create' === $action) {
-                                // todo move this to a method in baseelement
-                                if (isset($post_data->property_value_title) && isset($post_data->property_id)) {
-                                    $title = $post_data->property_value_title;
-                                    $property_id = $post_data->property_id;
-                                    $property = (new Property())->fetchById($property_id);
-                                    if (false === $admin->isRelatedElement($property)) {
-                                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
+                                } elseif ('admin_linkable_link' === $action) {
+                                    $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);
+                                    if ($element->link($post_data->sub_element, $post_data->sub_id, $unlink)) {
+                                        $out = $element->getLinked();
+                                    } else {
+                                        $this->addError('Could not link that.');
                                         $out = true;
-                                    } elseif (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
-                                        'title' => $title,
-                                        'slug' => Help::slugify($title),
-                                        'content' => __('Auto generated property value.', 'peatcms'),
-                                        'excerpt' => '',
-                                        'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
-                                        'online' => true // for here the default is true, or else we can’t add simply from edit screen
-                                    )))) { // create a property value
-                                        // link to the supplied property
-                                        if (true === $property->link('property_value', $property_value_id)) {
-                                            // create x_value entry
-                                            if (!Help::getDB()->insertRowAndReturnKey(
-                                                $peat_type->tableName() . '_x_properties',
-                                                array(
-                                                    $peat_type->idColumn() => $element->getId(),
-                                                    'property_id' => $property_id,
-                                                    'property_value_id' => $property_value_id,
-                                                    'online' => true
-                                                )
-                                            )) {
-                                                $this->addMessage(sprintf(__('Could not link property value to %s.', 'peatcms'), $element->getTypeName()), 'error');
-                                            }
-                                            $element->reCache();
-                                        } else {
-                                            $this->addMessage(sprintf(__('Could not link property value to %s.', 'peatcms'), 'property'), 'error');
-                                        }
-                                        // return the x_value entries (linked)
+                                    }
+                                } elseif ('admin_linkable_order' === $action) {
+                                    $full_feedback = (false !== $post_data->full_feedback);
+                                    $out = $element->orderLinked($post_data->linkable_type, $post_data->slug, $post_data->before_slug, $full_feedback);
+                                } elseif ('admin_x_value_link' === $action) {
+                                    // make the entry in x_value table :-)
+                                    if ($element->linkX((int)$post_data->property_id, (int)$post_data->property_value_id)) {
                                         $out = $element->getLinked('x_value');
                                     } else {
-                                        $this->addMessage(__('Could not create new property value.', 'peatcms'), 'error');
+                                        $this->addError('Property link error.');
+                                        $out = true;
+                                    }
+                                } elseif ('admin_x_value_order' === $action) {
+                                    $out = $element->orderXValue($post_data->x_value_id, $post_data->before_x_value_id);
+                                } elseif ('admin_x_value_remove' === $action) {
+                                    if (isset($post_data->x_value_id) and $x_value_id = (int)$post_data->x_value_id) {
+                                        // todo move this to a method in baseelement
+                                        Help::getDB()->deleteXValueLink($peat_type, $element->getId(), $x_value_id);
+                                        $element->reCache();
+                                        $out = $element->getLinked('x_value');
+                                    }
+                                } elseif ('admin_x_value_create' === $action) {
+                                    // todo move this to a method in baseelement
+                                    if (isset($post_data->property_value_title) && isset($post_data->property_id)) {
+                                        $title = $post_data->property_value_title;
+                                        $property_id = $post_data->property_id;
+                                        $property = (new Property())->fetchById($property_id);
+                                        if (false === $admin->isRelatedElement($property)) {
+                                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
+                                            $out = true;
+                                        } elseif (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
+                                            'title' => $title,
+                                            'slug' => Help::slugify($title),
+                                            'content' => __('Auto generated property value.', 'peatcms'),
+                                            'excerpt' => '',
+                                            'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
+                                            'online' => true // for here the default is true, or else we can’t add simply from edit screen
+                                        )))) { // create a property value
+                                            // link to the supplied property
+                                            if (true === $property->link('property_value', $property_value_id)) {
+                                                // create x_value entry
+                                                if (!Help::getDB()->insertRowAndReturnKey(
+                                                    $peat_type->tableName() . '_x_properties',
+                                                    array(
+                                                        $peat_type->idColumn() => $element->getId(),
+                                                        'property_id' => $property_id,
+                                                        'property_value_id' => $property_value_id,
+                                                        'online' => true
+                                                    )
+                                                )) {
+                                                    $this->addMessage(sprintf(__('Could not link property value to %s.', 'peatcms'), $element->getTypeName()), 'error');
+                                                }
+                                                $element->reCache();
+                                            } else {
+                                                $this->addMessage(sprintf(__('Could not link property value to %s.', 'peatcms'), 'property'), 'error');
+                                            }
+                                            // return the x_value entries (linked)
+                                            $out = $element->getLinked('x_value');
+                                        } else {
+                                            $this->addMessage(__('Could not create new property value.', 'peatcms'), 'error');
+                                        }
                                     }
                                 }
+                            } else {
+                                $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
+                                $out = true;
                             }
+                        } else {
+                            // error message element not found
+                            $this->addMessage(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), $post_data->element, $post_data->id), 'error');
+                        }
+                        unset($element);
+                    } elseif ('admin_put_menu_item' === $action) {
+                        if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
+                            $type = new Type('menu');
+                            $menu = $type->getElement();
+                            if ($menu->fetchById($row->id) instanceof Menu) {
+                                if ($admin->isRelatedElement($menu)) {
+                                    // further sanitize / check data is not necessary, menu->putItem() takes care of that
+                                    /** @noinspection PhpPossiblePolymorphicInvocationInspection */ /* we just checked it's a menu */
+                                    if (true === $menu->putItem($post_data->dropped_menu_item_id, $post_data->menu_item_id, $post_data->command)) {
+                                        $out = $menu->getOutput();
+                                        if (false === Help::getDB()->reCacheWithWarmup($menu->getPath())) {
+                                            Help::addMessage('Cache update of the menu failed.', 'warn');
+                                        }
+                                    } else {
+                                        $this->addError('Could not put item in menu.');
+                                        $out = true;
+                                    }
+                                }
+                                unset($menu);
+                            } else {
+                                $this->handleErrorAndStop(sprintf('admin_put_menu_item could not get menu with id %s.', $row->id), 'Invalid menu id');
+                            }
+                        } else {
+                            $this->handleErrorAndStop('admin_put_menu_item did not receive a valid menu slug.', 'Invalid slug');
+                        }
+                    } elseif ('admin_get_templates' === $action) { // called when an element is edited to fill the select list
+                        $instance_id = (isset($post_data->type) && 'instance' === $post_data->type) ? $post_data->id : Setup::$instance_id;
+                        $for = $post_data->for ?? $this->resolver->getTerms()[0] ?? null;
+                        if (isset($for)) {
+                            if ($admin->isRelatedInstanceId($instance_id)) {
+                                $out = Help::getDB()->getTemplates($instance_id, $for);
+                                if (count($out) === 0) {
+                                    $this->addMessage(sprintf(__('No templates found for %s.', 'peatcms'), $for), 'warn');
+                                }
+                                if (isset($this->resolver->getTerms()[0])) $out['__row__'] = $out; // TODO bugfix until template engine is fixed
+                                $out['slug'] = 'admin_get_templates';
+                            }
+                        } else {
+                            $this->addError('Variable for is missing, don’t know what templates you need.');
+                            $out = true;
+                        }
+                    } elseif ('admin_get_vat_categories' === $action) {
+                        $instance_id = $post_data->instance_id ?? Setup::$instance_id;
+                        if ($admin->isRelatedInstanceId($instance_id)) {
+                            $out = Help::getDB()->getVatCategories($instance_id);
+                            if (count($out) === 0) {
+                                $this->addMessage(__('No vat categories found', 'peatcms'), 'warn');
+                            }
+                        }
+                    } elseif ('search_log' === $action) {
+                        // only shows log of the current instance
+                        $rows = Help::getDB()->fetchSearchLog();
+                        $out = array('__rows__' => $rows, 'item_count' => count($rows));
+                    } elseif ('admin_redirect' === $action) {
+                        if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
+                            if ($admin->isRelatedInstanceId($instance_id)) {
+                                $out = array(
+                                    '__row__' => Help::getDB()->getRedirects($instance_id),
+                                    'slug' => 'admin_redirect',
+                                );
+                            }
+                        }
+                    } elseif ('templates' === $action) {
+                        if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
+                            if ($admin->isRelatedInstanceId($instance_id)) {
+                                $out = array(
+                                    '__row__' => Help::getDB()->getTemplates($instance_id),
+                                    'content' => __('Available templates.', 'peatcms'),
+                                    'slug' => 'templates',
+                                );
+                            }
+                        }
+                    } elseif ('admin_publish_templates' === $action) {
+                        if (false === isset($post_data->instance_id)) {
+                            $this->addMessage('Please supply an instance_id.', 'warn');
+                            $out = true;
+                        } elseif ($admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
+                            $out = array('success' => Help::publishTemplates($instance_id));
                         } else {
                             $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                             $out = true;
                         }
-                    } else {
-                        // error message element not found
-                        $this->addMessage(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), $post_data->element, $post_data->id), 'error');
-                    }
-                    unset($element);
-                } elseif ('admin_put_menu_item' === $action) {
-                    if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
-                        $type = new Type('menu');
-                        $menu = $type->getElement();
-                        if ($menu->fetchById($row->id) instanceof Menu) {
-                            if ($admin->isRelatedElement($menu)) {
-                                // further sanitize / check data is not necessary, menu->putItem() takes care of that
-                                /** @noinspection PhpPossiblePolymorphicInvocationInspection */ /* we just checked it's a menu */
-                                if (true === $menu->putItem($post_data->dropped_menu_item_id, $post_data->menu_item_id, $post_data->command)) {
-                                    $out = $menu->getOutput();
-                                    if (false === Help::getDB()->reCacheWithWarmup($menu->getPath())) {
-                                        Help::addMessage('Cache update of the menu failed.', 'warn');
-                                    }
-                                } else {
-                                    $this->addError('Could not put item in menu.');
-                                    $out = true;
+                    } elseif ('admin_countries' === $action) {
+                        if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
+                            if ($admin->isRelatedInstanceId($instance_id)) {
+                                $out = array('__rows__' => Help::getDB()->getCountries($instance_id));
+                                $out['slug'] = 'admin_countries';
+                            }
+                        }
+                    } elseif ('admin_payment_service_providers' === $action) {
+                        if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
+                            if ($admin->isRelatedInstanceId($instance_id)) {
+                                $out = array('__rows__' => Help::getDB()->getPaymentServiceProviders($instance_id));
+                                $out['slug'] = 'admin_payment_service_providers';
+                            }
+                        }
+                    } elseif ('admin_payment_capture' === $action) {
+                        if (isset($post_data->order_id)) {
+                            if (($psp = $instance->getPaymentServiceProvider())) {
+                                if (false === $psp->capturePayment((int)$post_data->order_id)) {
+                                    $this->handleErrorAndStop(sprintf(
+                                        '%s->capturePayment was false for order_id %s.',
+                                        $post_data->order_id,
+                                        $psp->getFieldValue('given_name')
+                                    ));
                                 }
-                            }
-                            unset($menu);
-                        } else {
-                            $this->handleErrorAndStop(sprintf('admin_put_menu_item could not get menu with id %s.', $row->id), 'Invalid menu id');
-                        }
-                    } else {
-                        $this->handleErrorAndStop('admin_put_menu_item did not receive a valid menu slug.', 'Invalid slug');
-                    }
-                } elseif ('admin_get_templates' === $action) { // called when an element is edited to fill the select list
-                    $instance_id = (isset($post_data->type) && 'instance' === $post_data->type) ? $post_data->id : Setup::$instance_id;
-                    $for = $post_data->for ?? $this->resolver->getTerms()[0] ?? null;
-                    if (isset($for)) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = Help::getDB()->getTemplates($instance_id, $for);
-                            if (count($out) === 0) {
-                                $this->addMessage(sprintf(__('No templates found for %s.', 'peatcms'), $for), 'warn');
-                            }
-                            if (isset($this->resolver->getTerms()[0])) $out['__row__'] = $out; // TODO bugfix until template engine is fixed
-                            $out['slug'] = 'admin_get_templates';
-                        }
-                    } else {
-                        $this->addError('Variable for is missing, don’t know what templates you need.');
-                        $out = true;
-                    }
-                } elseif ('admin_get_vat_categories' === $action) {
-                    $instance_id = $post_data->instance_id ?? Setup::$instance_id;
-                    if ($admin->isRelatedInstanceId($instance_id)) {
-                        $out = Help::getDB()->getVatCategories($instance_id);
-                        if (count($out) === 0) {
-                            $this->addMessage(__('No vat categories found', 'peatcms'), 'warn');
-                        }
-                    }
-                } elseif ('search_log' === $action) {
-                    // only shows log of the current instance
-                    $rows = Help::getDB()->fetchSearchLog();
-                    $out = array('__rows__' => $rows, 'item_count' => count($rows));
-                } elseif ('admin_redirect' === $action) {
-                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array(
-                                '__row__' => Help::getDB()->getRedirects($instance_id),
-                                'slug' => 'admin_redirect',
-                            );
-                        }
-                    }
-                } elseif ('templates' === $action) {
-                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array(
-                                '__row__' => Help::getDB()->getTemplates($instance_id),
-                                'content' => __('Available templates.', 'peatcms'),
-                                'slug' => 'templates',
-                            );
-                        }
-                    }
-                } elseif ('admin_publish_templates' === $action) {
-                    if (false === isset($post_data->instance_id)) {
-                        $this->addMessage('Please supply an instance_id.', 'warn');
-                        $out = true;
-                    } elseif ($admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                        $out = array('success' => Help::publishTemplates($instance_id));
-                    } else {
-                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
-                        $out = true;
-                    }
-                } elseif ('admin_countries' === $action) {
-                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array('__rows__' => Help::getDB()->getCountries($instance_id));
-                            $out['slug'] = 'admin_countries';
-                        }
-                    }
-                } elseif ('admin_payment_service_providers' === $action) {
-                    if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
-                        if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = array('__rows__' => Help::getDB()->getPaymentServiceProviders($instance_id));
-                            $out['slug'] = 'admin_payment_service_providers';
-                        }
-                    }
-                } elseif ('admin_payment_capture' === $action) {
-                    if (isset($post_data->order_id)) {
-                        if (($psp = $instance->getPaymentServiceProvider())) {
-                            if (false === $psp->capturePayment((int)$post_data->order_id)) {
-                                $this->handleErrorAndStop(sprintf(
-                                    '%s->capturePayment was false for order_id %s.',
-                                    $post_data->order_id,
-                                    $psp->getFieldValue('given_name')
-                                ));
-                            }
 
-                            return;
-                        }
-                    }
-                } elseif ('admin_get_payment_status_updates' === $action) {
-                    // you only get them for the current instance
-                    $out = array();
-                    $out['slug'] = 'admin_get_payment_status_updates';
-                    $out['__rows__'] = Help::getDB()->fetchPaymentStatuses();
-                } elseif ('update_column' === $action) {
-                    // security check
-                    $allowed = false;
-                    if ($row = Help::getDB()->selectRow($post_data->table_name, $post_data->id)) {
-                        if (isset($row->instance_id)) {
-                            $allowed = $admin->isRelatedInstanceId($row->instance_id);
-                        } elseif (isset($row->property_id)) {
-                            $allowed = $admin->isRelatedElement((new Property())->fetchById($row->property_id));
-                        }
-                    }
-                    if (false === $allowed) {
-                        $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
-                    } else {
-                        $posted_column_name = $post_data->column_name;
-                        $posted_table_name = $post_data->table_name;
-                        $posted_value = $post_data->value;
-                        $posted_id = $post_data->id;
-                        // default update array
-                        $update_arr = array($posted_column_name => $posted_value);
-                        /**
-                         * Some exceptions in the columns are handled first
-                         */
-                        if ($posted_column_name === 'password' && $posted_value !== '') {
-                            $update_arr = array('password_hash' => Help::passwordHash($posted_value));
-                        }
-                        // for admin and user, any change must invalidate all sessions
-                        if ('_admin' === $posted_table_name) {
-                            $admin_id = (int)$posted_id;
-                            $rows = Help::getDB()->fetchAdminSessions($admin_id);
-                            foreach ($rows as $key => $row) {
-                                Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                                return;
                             }
-                        } elseif ('_user' === $posted_table_name) {
-                            $user_id = (int)$posted_id;
-                            Help::getDB()->deleteSessionsForUser($user_id, 0);
                         }
-                        //
-                        if ($posted_table_name === '_admin'
-                            && $posted_column_name === 'deleted'
-                            && $posted_value === true
-                        ) {
-                            if ((int)$posted_id === Help::$session->getAdmin()->getId()) {
-                                $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself.', $posted_id),
-                                    __('You can’t delete yourself.', 'peatcms'));
+                    } elseif ('admin_get_payment_status_updates' === $action) {
+                        // you only get them for the current instance
+                        $out = array();
+                        $out['slug'] = 'admin_get_payment_status_updates';
+                        $out['__rows__'] = Help::getDB()->fetchPaymentStatuses();
+                    } elseif ('update_column' === $action) {
+                        // security check
+                        $allowed = false;
+                        if ($row = Help::getDB()->selectRow($post_data->table_name, $post_data->id)) {
+                            if (isset($row->instance_id)) {
+                                $allowed = $admin->isRelatedInstanceId($row->instance_id);
+                            } elseif (isset($row->property_id)) {
+                                $allowed = $admin->isRelatedElement((new Property())->fetchById($row->property_id));
                             }
-                        } elseif ($posted_column_name === 'domain') {
-                            $value = $posted_value;
-                            if ($posted_table_name === '_instance'
-                                && ($instance->getDomain() === $value || $instance->getId() === (int)$posted_id)
+                        }
+                        if (false === $allowed) {
+                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
+                        } else {
+                            $posted_column_name = $post_data->column_name;
+                            $posted_table_name = $post_data->table_name;
+                            $posted_value = $post_data->value;
+                            $posted_id = $post_data->id;
+                            // default update array
+                            $update_arr = array($posted_column_name => $posted_value);
+                            /**
+                             * Some exceptions in the columns are handled first
+                             */
+                            if ($posted_column_name === 'password' && $posted_value !== '') {
+                                $update_arr = array('password_hash' => Help::passwordHash($posted_value));
+                            }
+                            // for admin and user, any change must invalidate all sessions
+                            if ('_admin' === $posted_table_name) {
+                                $admin_id = (int)$posted_id;
+                                $rows = Help::getDB()->fetchAdminSessions($admin_id);
+                                foreach ($rows as $key => $row) {
+                                    Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                                }
+                            } elseif ('_user' === $posted_table_name) {
+                                $user_id = (int)$posted_id;
+                                Help::getDB()->deleteSessionsForUser($user_id, 0);
+                            }
+                            //
+                            if ($posted_table_name === '_admin'
+                                && $posted_column_name === 'deleted'
+                                && $posted_value === true
                             ) {
-                                $this->handleErrorAndStop(
-                                    sprintf('Domain %1$s was blocked for instance %2$s.', $value, $posted_id),
-                                    __('Manipulating this domain is not allowed.', 'peatcms'));
-                            } else { // validate the domain here
-                                // test domain utf-8 characters: 百度.co (baidu.co)
-                                if (function_exists('idn_to_ascii')) {
-                                    $value = idn_to_ascii($value, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
+                                if ((int)$posted_id === Help::$session->getAdmin()->getId()) {
+                                    $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself.', $posted_id),
+                                        __('You can’t delete yourself.', 'peatcms'));
                                 }
-                                if (false === dns_check_record($value, 'A') && false === dns_check_record($value, 'AAAA')) {
+                            } elseif ($posted_column_name === 'domain') {
+                                $value = $posted_value;
+                                if ($posted_table_name === '_instance'
+                                    && ($instance->getDomain() === $value || $instance->getId() === (int)$posted_id)
+                                ) {
                                     $this->handleErrorAndStop(
-                                        sprintf('Domain %1$s was not in DNS for instance %2$s.', $value, $posted_id),
-                                        __('Domain not found, check your input and try again later.', 'peatcms'));
-                                }
-                            }
-                        } elseif ($posted_table_name === '_template') {
-                            if ($posted_column_name === 'published') {
-                                $temp = new Template($posted_id, null);
-                                if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
-                                    // this always sends true as value, attempt to publish the template
-                                    $update_arr = array('published' => $temp->publish());
-                                } else {
-                                    $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
-                                }
-                                unset($temp);
-                            }
-                        } elseif ($posted_column_name === 'to_slug') {
-                            // you don’t have to check if the slug is valid, because this is duplicate by design
-                            // but the value must be in the form of a slug or it is useless anyway
-                            $update_arr = array('to_slug' => Help::slugify($posted_value));
-                        }
-                        /**
-                         * Generic column update statement
-                         */
-                        if (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
-                            $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
-                        } else {
-                            $this->addError(Help::getDB()->getLastError()->getMessage());
-                            $this->addMessage(__('Update column failed.', 'peatcms'), 'error');
-                        }
-                        // check published for templates
-                        if ($posted_table_name === '_template') {
-                            if (($row = Help::getDB()->selectRow('_template', $posted_id))) {
-                                $out->published = $this->updatePublishedForTemplates($row->instance_id, $posted_id);
-                            }
-                        }
-                    }
-                } elseif ('insert_row' === $action) {
-                    $out = $this->insertRow($admin, $post_data);
-                } elseif ('admin_popvote' === $action) {
-                    $pop_vote = -1;
-                    $element_name = $post_data->element_name;
-                    $id = $post_data->id;
-                    if (isset($post_data->direction)) {
-                        if (($direction = $post_data->direction) === 'up') {
-                            $pop_vote = Help::getDB()->updatePopVote($element_name, $id);
-                        } elseif ($direction === 'down') {
-                            $how_much = max(1, (int)($post_data->places ?? 1));
-                            $pop_vote = Help::getDB()->updatePopVote($element_name, $id, $how_much);
-                        } else { // return the relative position always
-                            $pop_vote = Help::getDB()->getPopVote($element_name, $id);
-                        }
-                    }
-                    $out = array('pop_vote' => $pop_vote);
-                } elseif ('admin_set_homepage' === $action) {
-                    if (isset($post_data->slug)) {
-                        if (!$out = Help::getDB()->setHomepage(Setup::$instance_id, $post_data->slug)) {
-                            $this->addError(sprintf(
-                                '->getDB()->setHomepage failed with slug %1$s for instanceid %2$s.',
-                                var_export($post_data->slug, true), Setup::$instance_id));
-                            $out = $instance->row;
-                        }
-                    }
-                } elseif ('admin_file_upload' === $action) {
-                    if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
-                        Help::$OUTPUT_JSON = true;
-                        $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
-                        // save the file temporarily
-                        $temp_file = tempnam(sys_get_temp_dir(), $instance->getPresentationInstance() . '_');
-                        $handle1 = fopen('php://input', 'r');
-                        $handle2 = fopen($temp_file, 'w');
-                        stream_copy_to_stream($handle1, $handle2);
-                        fclose($handle1);
-                        fclose($handle2);
-                        if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import_instance' === $_SERVER['HTTP_X_FILE_ACTION']) {
-                            Help::$session->setVar('import_file_name', $temp_file);
-                            $out = array('file_saved' => file_exists($temp_file));
-                        } else {
-                            $el = null;
-                            $file_info = finfo_open(FILEINFO_MIME_TYPE);
-                            $post_data = array();
-                            $post_data['content_type'] = finfo_file($file_info, $temp_file);
-                            $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
-                            // prepare a default element based on the uploaded file that will be created when a new element is needed
-                            $default_type = 'file';
-                            if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
-                            // process it in cms
-                            if (true === isset($_SERVER['HTTP_X_SLUG'])) {
-                                if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
-                                    if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
-                                        $el = $this->updateElement($row->type_name, $post_data, $row->id);
-                                    } else { // make a new element and link it to this posted element (if possible)
-                                        $el = $this->createElement($default_type);
-                                        $el->update($post_data);
-                                        $el->link($row->type_name, $row->id);
+                                        sprintf('Domain %1$s was blocked for instance %2$s.', $value, $posted_id),
+                                        __('Manipulating this domain is not allowed.', 'peatcms'));
+                                } else { // validate the domain here
+                                    // test domain utf-8 characters: 百度.co (baidu.co)
+                                    if (function_exists('idn_to_ascii')) {
+                                        $value = idn_to_ascii($value, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
+                                    }
+                                    if (false === dns_check_record($value, 'A') && false === dns_check_record($value, 'AAAA')) {
+                                        $this->handleErrorAndStop(
+                                            sprintf('Domain %1$s was not in DNS for instance %2$s.', $value, $posted_id),
+                                            __('Domain not found, check your input and try again later.', 'peatcms'));
                                     }
                                 }
+                            } elseif ($posted_table_name === '_template') {
+                                if ($posted_column_name === 'published') {
+                                    $temp = new Template($posted_id, null);
+                                    if (true === $admin->isRelatedInstanceId($temp->row->instance_id)) {
+                                        // this always sends true as value, attempt to publish the template
+                                        $update_arr = array('published' => $temp->publish());
+                                    } else {
+                                        $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
+                                    }
+                                    unset($temp);
+                                }
+                            } elseif ($posted_column_name === 'to_slug') {
+                                // you don’t have to check if the slug is valid, because this is duplicate by design
+                                // but the value must be in the form of a slug or it is useless anyway
+                                $update_arr = array('to_slug' => Help::slugify($posted_value));
                             }
-                            if (null === $el) { // if no slug or an invalid slug was provided, just create a new file
-                                $el = $this->createElement($default_type);
-                                $el->update($post_data);
+                            /**
+                             * Generic column update statement
+                             */
+                            if (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
+                                $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
+                            } else {
+                                $this->addError(Help::getDB()->getLastError()->getMessage());
+                                $this->addMessage(__('Update column failed.', 'peatcms'), 'error');
                             }
-                            if (false === $el->saveFile($temp_file)) {
-                                $this->addError(__('File could not be processed at this time.', 'peatcms'));
+                            // check published for templates
+                            if ($posted_table_name === '_template') {
+                                if (($row = Help::getDB()->selectRow('_template', $posted_id))) {
+                                    $out->published = $this->updatePublishedForTemplates($row->instance_id, $posted_id);
+                                }
                             }
-                            $out = $el->getOutput();
                         }
-                    } else {
-                        $this->addError(__('You need to be admin and provide X-File-Name header.', 'peatcms'));
+                    } elseif ('insert_row' === $action) {
+                        $out = $this->insertRow($admin, $post_data);
+                    } elseif ('admin_popvote' === $action) {
+                        $pop_vote = -1;
+                        $element_name = $post_data->element_name;
+                        $id = $post_data->id;
+                        if (isset($post_data->direction)) {
+                            if (($direction = $post_data->direction) === 'up') {
+                                $pop_vote = Help::getDB()->updatePopVote($element_name, $id);
+                            } elseif ($direction === 'down') {
+                                $how_much = max(1, (int)($post_data->places ?? 1));
+                                $pop_vote = Help::getDB()->updatePopVote($element_name, $id, $how_much);
+                            } else { // return the relative position always
+                                $pop_vote = Help::getDB()->getPopVote($element_name, $id);
+                            }
+                        }
+                        $out = array('pop_vote' => $pop_vote);
+                    } elseif ('admin_set_homepage' === $action) {
+                        if (isset($post_data->slug)) {
+                            if (!$out = Help::getDB()->setHomepage(Setup::$instance_id, $post_data->slug)) {
+                                $this->addError(sprintf(
+                                    '->getDB()->setHomepage failed with slug %1$s for instanceid %2$s.',
+                                    var_export($post_data->slug, true), Setup::$instance_id));
+                                $out = $instance->row;
+                            }
+                        }
+                    } elseif ('admin_file_upload' === $action) {
+                        if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
+                            Help::$OUTPUT_JSON = true;
+                            $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
+                            // save the file temporarily
+                            $temp_file = tempnam(sys_get_temp_dir(), $instance->getPresentationInstance() . '_');
+                            $handle1 = fopen('php://input', 'r');
+                            $handle2 = fopen($temp_file, 'w');
+                            stream_copy_to_stream($handle1, $handle2);
+                            fclose($handle1);
+                            fclose($handle2);
+                            if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import_instance' === $_SERVER['HTTP_X_FILE_ACTION']) {
+                                Help::$session->setVar('import_file_name', $temp_file);
+                                $out = array('file_saved' => file_exists($temp_file));
+                            } else {
+                                $el = null;
+                                $file_info = finfo_open(FILEINFO_MIME_TYPE);
+                                $post_data = array();
+                                $post_data['content_type'] = finfo_file($file_info, $temp_file);
+                                $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
+                                // prepare a default element based on the uploaded file that will be created when a new element is needed
+                                $default_type = 'file';
+                                if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
+                                // process it in cms
+                                if (true === isset($_SERVER['HTTP_X_SLUG'])) {
+                                    if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
+                                        if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
+                                            $el = $this->updateElement($row->type_name, $post_data, $row->id);
+                                        } else { // make a new element and link it to this posted element (if possible)
+                                            $el = $this->createElement($default_type);
+                                            $el->update($post_data);
+                                            $el->link($row->type_name, $row->id);
+                                        }
+                                    }
+                                }
+                                if (null === $el) { // if no slug or an invalid slug was provided, just create a new file
+                                    $el = $this->createElement($default_type);
+                                    $el->update($post_data);
+                                }
+                                if (false === $el->saveFile($temp_file)) {
+                                    $this->addError(__('File could not be processed at this time.', 'peatcms'));
+                                }
+                                $out = $el->getOutput();
+                            }
+                        } else {
+                            $this->addError(__('You need to be admin and provide X-File-Name header.', 'peatcms'));
+                        }
+                    } elseif ('admin_database_report' === $action) {
+                        $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
+                        $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
+                        $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
+                        $out['slug'] = 'admin_database_report';
                     }
-                } elseif ('admin_database_report' === $action) {
-                    $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
-                    $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
-                    $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
-                    $out['slug'] = 'admin_database_report';
+                } elseif ('reflect' === $action) {
+                    $out = $post_data;
                 }
-            } elseif ('reflect' === $action) {
-                $out = $post_data;
+            } else {
+                $this->addMessage(sprintf(__('%s check failed, please refresh browser.', 'peatcms'), 'CSRF'), 'warn');
             }
-        } elseif (isset($post_data->csrf_token)) { // only add the error if you're not just asking for json
-            $this->addMessage(sprintf(__('%s check failed, please refresh browser.', 'peatcms'), 'CSRF'), 'warn');
         }
         if ($out !== null) {
             $out = (object)$out;
