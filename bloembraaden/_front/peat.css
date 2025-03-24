@@ -1,3 +1,12 @@
+:root {
+    --bloembraaden-default-paper-color: #fff;
+    --bloembraaden-default-key-color: #000;
+}
+.dark-mode {
+    --bloembraaden-default-paper-color: #000;
+    --bloembraaden-default-key-color: #fff;
+}
+
 /**
  * Reset
  */
@@ -19,13 +28,13 @@ table, caption, tbody, tfoot, thead, tr, th, td {
     outline: 0;
     padding: 0;
     vertical-align: baseline;
-    color: #000;
+    color: var(--bloembraaden-default-key-color);
 }
 
 html, body {
     font-family: Arial, Helvetica, sans-serif;
     line-height: 1.6em;
-    background-color: #fff;
+    background-color: var(--bloembraaden-default-paper-color);
 }
 
 fieldset, legend {
@@ -198,7 +207,7 @@ html, body {
     margin: 5px;
     padding: 5px;
     border-radius: 5px;
-    background-color: #fff;
+    background-color: var(--bloembraaden-default-paper-color);
     box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .28);
 }
 
@@ -228,7 +237,7 @@ html, body {
     right: 0;
     top: 0;
     padding: 5px;
-    color: #fff;
+    color: var(--bloembraaden-default-paper-color);
     border-radius: 5px; /* same as message */
     background-color: rgb(90, 90, 90);
     font-weight: bold;
@@ -381,7 +390,7 @@ body select::-ms-expand {
     z-index: 2;
     cursor: pointer;
     color: #333;
-    background-color: #fff;
+    background-color: var(--bloembraaden-default-paper-color);
     font-size: 25px;
 }
 

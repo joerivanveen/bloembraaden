@@ -955,11 +955,10 @@ const PEATCMS_admin_menu_item = function (row, droppable = false) {
             });
             // or forget about the dropping and remove the stuff
             el.addEventListener('mouseout', function () {
-                this.classList.remove('dragover');
-                try {
-                    document.getElementById('sub_menu_item_drop').remove();
-                } catch (e) {
-                    console.error(e);
+                const el = document.getElementById('sub_menu_item_drop');
+                if (el) {
+                    this.classList.remove('dragover');
+                    el.remove();
                 }
             });
         }
@@ -2081,6 +2080,8 @@ function PEATCMS_admin() {
                 el.appendChild(li);
             }
         }
+        // setup menu editor
+        if ((el = document.getElementById('PEATCMS_admin_menu_editor'))) self.startMenuEditor(el);
     }
 
     document.addEventListener('peatcms.document_ready', activate);
@@ -2138,11 +2139,6 @@ function PEATCMS_admin() {
     if (VERBOSE) console.log('... peatcms admin activated.');
     // into edit mode if requested TODO use panels.restore() or maybe something the user can set
     //if (PEAT.getSessionVar('editing') === true) self.edit();
-    // THIS IS A TEST / PRELIMINARY STUFF for editing things like menus / forms / etc.
-    document.addEventListener('peatcms.document_ready', function (e) {
-        const el = document.getElementById('PEATCMS_admin_menu_editor');
-        if (el) self.startMenuEditor(el);
-    });
 }
 
 PEATCMS_admin.prototype.pollServer = function () {

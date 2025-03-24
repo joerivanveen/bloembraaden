@@ -353,8 +353,10 @@
 
 /*#PEATCMS_admin_menu_editor .toggle,
 .PEATCMS_admin.menu_editor ul li*/
-.menu_editor ul li {
+#PEATCMS_admin_menu_finder ul li,
+#PEATCMS_admin_menu_editor ul li {
     background-color: var(--admin-color-paper);
+    color: var(--admin-color-key);
     box-shadow: 0 2px 4px var(--admin-color-accent-neutral);
     padding: 0 6px;
     margin: 0 0 3px 0;
