@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -16,7 +16,7 @@ class Admin extends BaseLogic
             $this->id = $admin_id;
         } else {
             $this->handleErrorAndStop(
-                sprintf(__('Admin not found with id %s in instance %s','peatcms'),
+                sprintf(__('Admin not found with id %s in instance %s', 'peatcms'),
                     var_export($admin_id, true), Setup::$instance_id),
                 __('Security warning, after multiple warnings your account may be blocked.', 'peatcms')
             );
@@ -45,6 +45,19 @@ class Admin extends BaseLogic
     public function isRelatedElement(BaseElement $element): bool
     {
         return ($this->isRelatedInstanceId($element->getInstanceId()));
+    }
+
+    public function canDo(string $action, $table_name, $id): bool
+    {
+        $allowed = false;
+        if ($row = Help::getDB()->selectRow($table_name, $id)) {
+            if (isset($row->instance_id)) {
+                $allowed = $this->isRelatedInstanceId($row->instance_id);
+            } elseif (isset($row->property_id)) {
+                $allowed = $this->isRelatedElement((new Property())->fetchById($row->property_id));
+            }
+        }
+        return $allowed;
     }
 
     public function getClient(): Client

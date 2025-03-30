@@ -284,6 +284,52 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
             self.changedTo(this.options[this.selectedIndex].value);
         });
         return el;
+    } else if ('quantity_in_stock' === column_name) {
+        const value = this.server_value,
+            self = this;
+        el = document.createElement('div');
+        el.setAttribute('data-quantity', value);
+        el.innerHTML = `Quantity: <span class="quantity">${value}</span>`;
+
+        // update quantity on server
+        function updateQuantity(quantity) {
+            NAV.ajax('/__action__/admin_update_quantity_in_stock', {
+                'variant_id': self.parent_PEATCMS_element.getElementId(),
+                'quantity': quantity
+            }, function (data) {
+                self.parent_PEATCMS_element.set(data)
+            });
+        }
+
+        // quantity management button
+        function createQuantityButton(type, icon, label) {
+            const button = document.createElement('button');
+            button.classList.add(type);
+            button.innerText = icon;
+            button.addEventListener('click', function () {
+                if ('remove' === type) {
+                    if (confirm('Remove stock management from this variant?')) {
+                        updateQuantity(null);
+                    }
+                    return;
+                }
+                const quantity = parseInt(prompt(label));
+                if (isNaN(quantity)) return;
+                if ('add' === type) {
+                    updateQuantity(quantity);
+                } else {
+                    updateQuantity(-quantity);
+                }
+            });
+            return button;
+        }
+
+        // add the buttons
+        el.appendChild(createQuantityButton('add', '+', 'Add to stock'));
+        el.appendChild(createQuantityButton('subtract', '-', 'Subtract from stock'));
+        el.appendChild(createQuantityButton('remove', '×', 'Remove stock management'));
+
+        return el;
     } else { // regular numeric field
         return this.create_as_input(column);
     }
@@ -561,12 +607,20 @@ PEATCMS_actor.prototype.set = function (data) {
         return;
     }
     if (true === this.hasChanged()) {
-        this.DOMElement.value = column_value;
+        if ('quantity_in_stock' === column_name) {
+            this.DOMElement.setAttribute('data-quantity', column_value);
+            this.DOMElement.querySelector('.quantity').innerText = (null === column_value) ? 'null' : column_value;
+        } else if (this.DOMElement.classList.contains('checkbox')) {
+            const checkbox = this.DOMElement.querySelector('input');
+            checkbox.checked = column_value;
+            checkbox.dispatchEvent(new Event('change'));
+        } else {
+            this.DOMElement.value = column_value;
+        }
         PEAT.grabAttention(this.DOMElement, true);
     }
     el.state[column_name] = column_value; // set the editable element to the new values
-    this.DOMElement.classList.remove('unsaved'); // reflectchanged is integrated for now
-    //this.reflectChanged();
+    this.DOMElement.classList.remove('unsaved');
 }
 
 PEATCMS_actor.prototype.hasChanged = function () {

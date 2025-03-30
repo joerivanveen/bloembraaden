@@ -1021,6 +1021,11 @@ body .PEATCMS_admin .peatcms-link:focus {
     transform: rotate(180deg);
 }
 
+.PEATCMS_admin .edit-area [data-quantity="null"] .subtract,
+.PEATCMS_admin .edit-area [data-quantity="null"] .remove {
+    display: none;
+}
+
 /* quickie is also a screen */
 #quickie-modal {
     position: fixed;

@@ -1337,17 +1337,7 @@ class Handler extends BaseLogic
                         $out['__rows__'] = Help::getDB()->fetchPaymentStatuses();
                     } elseif ('update_column' === $action) {
                         // security check
-                        $allowed = false;
-                        if ($row = Help::getDB()->selectRow($post_data->table_name, $post_data->id)) {
-                            if (isset($row->instance_id)) {
-                                $allowed = $admin->isRelatedInstanceId($row->instance_id);
-                            } elseif (isset($row->property_id)) {
-                                $allowed = $admin->isRelatedElement((new Property())->fetchById($row->property_id));
-                            }
-                        }
-                        if (false === $allowed) {
-                            $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
-                        } else {
+                        if (true === $admin->canDo($action, $post_data->table_name, $post_data->id)) {
                             $posted_column_name = $post_data->column_name;
                             $posted_table_name = $post_data->table_name;
                             $posted_value = $post_data->value;
@@ -1433,11 +1423,21 @@ class Handler extends BaseLogic
                         }
                     } elseif ('insert_row' === $action) {
                         $out = $this->insertRow($admin, $post_data);
+                    } elseif ('admin_update_quantity_in_stock' === $action) {
+                        if (true === isset($post_data->variant_id)
+                            && true === $admin->canDo($action, 'cms_variant', $post_data->variant_id)
+                        ) {
+                            if (true === Help::getDB()->updateVariantQuantityInStock($post_data->variant_id, $post_data->quantity)) {
+                                $out = Help::getDB()->selectRow('cms_variant', $post_data->variant_id);
+                            }
+                        }
                     } elseif ('admin_popvote' === $action) {
                         $pop_vote = -1;
                         $element_name = $post_data->element_name;
                         $id = $post_data->id;
-                        if (isset($post_data->direction)) {
+                        if (true === isset($post_data->direction)
+                            && true === $admin->canDo($action, "cms_$element_name", $id)
+                        ) {
                             if (($direction = $post_data->direction) === 'up') {
                                 $pop_vote = Help::getDB()->updatePopVote($element_name, $id);
                             } elseif ($direction === 'down') {

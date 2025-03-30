@@ -1345,6 +1345,38 @@ class DB extends Base
     }
 
     /**
+     * @param int $variant_id
+     * @param int|null $quantity
+     * @return bool success
+     */
+    public function updateVariantQuantityInStock(int $variant_id, ?int $quantity): bool
+    {
+        if (null === $quantity) {
+            $statement = $this->conn->prepare('UPDATE cms_variant SET quantity_in_stock = NULL WHERE variant_id = :variant_id RETURNING quantity_in_stock;');
+        } else {
+            $statement = $this->conn->prepare('UPDATE cms_variant SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + :quantity WHERE variant_id = :variant_id RETURNING quantity_in_stock;');
+            $statement->bindValue(':quantity', $quantity);
+        }
+        $statement->bindValue(':variant_id', $variant_id);
+        $statement->execute();
+        if (1 === $statement->rowCount()) {
+            $quantity = $statement->fetchColumn();
+            $statement = null;
+            // when going out of stock, the in_stock switch must be set to off
+            if (1 > $quantity) {
+                $this->updateRowAndReturnSuccess('cms_variant', array('in_stock' => false), $variant_id);
+            }
+            $success = $this->reCacheWithWarmup($this->fetchElementRow(new Type('variant'), $variant_id)->slug);
+        } else {
+            $this->addError("updateQuantityInStock error for id $variant_id");
+            $success = false;
+            $statement = null;
+        }
+
+        return $success;
+    }
+
+    /**
      * Inserts a country with a specific name
      * @param string $name
      * @param int $instance_id defaults to current instance
@@ -2396,13 +2428,13 @@ class DB extends Base
     {
         // NOTE sessions are by instance_id
         if (null === ($row = $this->fetchRow('_session', array(
-            'user_id',
-            'admin_id',
-            'session_id',
-            'ip_address',
-            'reverse_dns',
-            'user_agent',
-        ), array('token' => $token)))) {
+                'user_id',
+                'admin_id',
+                'session_id',
+                'ip_address',
+                'reverse_dns',
+                'user_agent',
+            ), array('token' => $token)))) {
             //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
             return null;
         }
