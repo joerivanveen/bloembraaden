@@ -1588,34 +1588,35 @@ class DB extends Base
                 'order_number' => $order_number,
             );
             // loop through the other fields we are going to insert
-            foreach (array(
-                         'billing_address_name',
-                         'billing_address_company',
-                         'billing_address_postal_code',
-                         'billing_address_number',
-                         'billing_address_number_addition',
-                         'billing_address_street',
-                         'billing_address_street_addition',
-                         'billing_address_city',
-                         'billing_address_country_name',
-                         'billing_address_country_iso2',
-                         'billing_address_country_iso3',
-                         'shipping_address_name',
-                         'shipping_address_company',
-                         'shipping_address_postal_code',
-                         'shipping_address_number',
-                         'shipping_address_number_addition',
-                         'shipping_address_street',
-                         'shipping_address_street_addition',
-                         'shipping_address_city',
-                         'newsletter_subscribe',
-                         'preferred_delivery_day',
-                         'remarks_user',
-                         'vat_number',
-                         'vat_country_iso2',
-                         'vat_valid',
-                         'vat_history',
-                     ) as $index => $key) {
+            foreach (
+                array(
+                    'billing_address_name',
+                    'billing_address_company',
+                    'billing_address_postal_code',
+                    'billing_address_number',
+                    'billing_address_number_addition',
+                    'billing_address_street',
+                    'billing_address_street_addition',
+                    'billing_address_city',
+                    'billing_address_country_name',
+                    'billing_address_country_iso2',
+                    'billing_address_country_iso3',
+                    'shipping_address_name',
+                    'shipping_address_company',
+                    'shipping_address_postal_code',
+                    'shipping_address_number',
+                    'shipping_address_number_addition',
+                    'shipping_address_street',
+                    'shipping_address_street_addition',
+                    'shipping_address_city',
+                    'newsletter_subscribe',
+                    'preferred_delivery_day',
+                    'remarks_user',
+                    'vat_number',
+                    'vat_country_iso2',
+                    'vat_valid',
+                    'vat_history',
+                ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
                     case 'vat_history':
@@ -1660,6 +1661,22 @@ class DB extends Base
                 $this->conn->commit();
             } catch (\Exception $e) {
                 $this->handleErrorAndStop($e, __('Order process failure', 'peatcms'));
+            }
+            // update quantity in stock when necessary
+            try {
+                $statement = $this->conn->prepare('SELECT quantity_in_stock FROM cms_variant WHERE variant_id = ?;');
+                foreach ($order_rows as $index => $row) {
+                    $variant_id = $row->variant_id;
+                    $statement->execute(array($variant_id));
+                    $quantity = $statement->fetchColumn();
+                    if (null !== $quantity) {
+                        if (false === $this->updateVariantQuantityInStock($variant_id, -$quantity)) {
+                            $this->addError("Could not update quantity in stock for $variant_id");
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->addError("{$e->getMessage()} updating stock for $order_number");
             }
             // clear the shoppinglist (orphaned rows will be deleted by daily job)
             if (false === $this->deleteRowAndReturnSuccess('_shoppinglist', $shoppinglist->getId())) {
