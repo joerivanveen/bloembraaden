@@ -651,7 +651,6 @@ class Handler extends BaseLogic
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                     }
                 } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    $out = array('success' => false);
                     if (isset($post_data->email)
                         && isset($post_data->pass)
                         && strpos(($email_address = $post_data->email), '@')
@@ -718,7 +717,6 @@ class Handler extends BaseLogic
                         $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
                     }
                 } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    $out = array('success' => false);
                     if (isset($post_data->email) && isset($post_data->pass)) {
                         if (isset($post_data->locker)
                             && $row = Help::getDB()->emptyLocker($post_data->locker)
@@ -763,9 +761,7 @@ class Handler extends BaseLogic
                         if (isset($post_data->gender)) $data['gender'] = $post_data->gender;
                         if (isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
                         if (count($data) > 0) {
-                            $out = array(
-                                'success' => $user->updateRow($data),
-                            );
+                            $out = array('success' => $user->updateRow($data));
                         }
                         if (true === isset($post_data->email)) {
                             // updating email address is a process, you need to authenticate again
@@ -851,8 +847,9 @@ class Handler extends BaseLogic
                         if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
                             if (($order = new Order($row))) {
                                 $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
-                                if ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
-                                    $out = array('success' => false);
+                                if (true === $row->cancelled) { // you can’t pay for a cancelled order
+                                    $this->addMessage(__('Order is cancelled.', 'peatcms'), 'warn');
+                                } elseif ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
                                     $this->addMessage(__('Payment has expired, please make a new order.', 'peatcms'), 'note');
                                 } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
                                     $live_flag = $row->payment_live_flag ?? false;
@@ -1321,9 +1318,9 @@ class Handler extends BaseLogic
                             if (($psp = $instance->getPaymentServiceProvider())) {
                                 if (false === $psp->capturePayment((int)$post_data->order_id)) {
                                     $this->handleErrorAndStop(sprintf(
-                                        '%s->capturePayment was false for order_id %s.',
-                                        $post_data->order_id,
-                                        $psp->getFieldValue('given_name')
+                                        '%1$s->capturePayment was false for order_id %2$s.',
+                                        $psp->getFieldValue('given_name'),
+                                        $post_data->order_id
                                     ));
                                 }
 
@@ -1335,6 +1332,12 @@ class Handler extends BaseLogic
                         $out = array();
                         $out['slug'] = 'admin_get_payment_status_updates';
                         $out['__rows__'] = Help::getDB()->fetchPaymentStatuses();
+                    } elseif ('cancel_order' === $action) {
+                        if (true === isset($post_data->order_id) && ($order_id = $post_data->order_id)
+                            && true === $admin->canDo($action, '_order', $order_id)
+                        ) {
+                            $out = array('success' => Help::getDB()->cancelOrder($order_id));
+                        }
                     } elseif ('update_column' === $action) {
                         // security check
                         if (true === $admin->canDo($action, $post_data->table_name, $post_data->id)) {

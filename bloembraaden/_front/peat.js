@@ -2952,7 +2952,7 @@ PEATCMS.prototype.ajaxMailto = function () {
 }
 
 PEATCMS.prototype.ajaxSubmit = function (e) {
-    var submit_button, submit_msg; // the form
+    let submit_button, submit_msg; // the form
     e.preventDefault();
     e.stopPropagation();
     if (this.hasAttribute('data-submitting')) {

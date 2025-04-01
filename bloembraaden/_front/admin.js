@@ -2005,10 +2005,39 @@ function PEATCMS_admin() {
                             function (json) {
                                 console.log(json);
                             }
-                        )
+                        );
                     };
                 } else {
                     console.error('admin_payment_capture button needs data-order_id to function');
+                }
+            }
+        );
+        document.querySelectorAll('[data-peatcms_handle="cancel_order"]').forEach(
+            function (btn) {
+                if (btn.hasAttribute('data-order_id')) {
+                    btn.onclick = function () {
+                        let submit_msg;
+                        if (this.getAttribute('data-confirm') &&
+                            null !== (submit_msg = this.getAttribute('data-confirm'))
+                        ) {
+                            if (false === confirm(submit_msg)) {
+                                return false;
+                            }
+                        }
+                        NAV.ajax(
+                            '/__action__/cancel_order',
+                            {order_id: parseInt(this.getAttribute('data-order_id'))},
+                            function (json) {
+                                if (json.hasOwnProperty('success') && true === json.success) {
+                                    PEAT.message('Order canceled.');
+                                } else {
+                                    console.error(json);
+                                }
+                            }
+                        );
+                    };
+                } else {
+                    console.error('cancel_order button needs data-order_id to function');
                 }
             }
         );

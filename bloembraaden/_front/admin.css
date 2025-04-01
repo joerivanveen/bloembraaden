@@ -1347,6 +1347,10 @@ body .PEATCMS_admin .order-table a:hover {
 
 }
 
+.order-table .row[data-cancelled] {
+    background-color: var(--admin-color-no-bg);
+}
+
 .order-table .row .myparcel {
     width: 8px;
     color: var(--admin-color-no);

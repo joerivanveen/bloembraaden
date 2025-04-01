@@ -1663,21 +1663,7 @@ class DB extends Base
                 $this->handleErrorAndStop($e, __('Order process failure', 'peatcms'));
             }
             // update quantity in stock when necessary
-            try {
-                $statement = $this->conn->prepare('SELECT quantity_in_stock FROM cms_variant WHERE variant_id = ?;');
-                foreach ($order_rows as $index => $row) {
-                    $variant_id = $row->variant_id;
-                    $statement->execute(array($variant_id));
-                    $quantity = $statement->fetchColumn();
-                    if (null !== $quantity) {
-                        if (false === $this->updateVariantQuantityInStock($variant_id, -$quantity)) {
-                            $this->addError("Could not update quantity in stock for $variant_id");
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                $this->addError("{$e->getMessage()} updating stock for $order_number");
-            }
+            $this->updateStock($order_rows, -1, $order_number);
             // clear the shoppinglist (orphaned rows will be deleted by daily job)
             if (false === $this->deleteRowAndReturnSuccess('_shoppinglist', $shoppinglist->getId())) {
                 $this->addMessage(__('Order placed, shoppinglist could not be cleared', 'peatcms'), 'warn');
@@ -1689,6 +1675,57 @@ class DB extends Base
             $this->addError("No rows in shoppinglist {$shoppinglist->getId()}");
 
             return null;
+        }
+    }
+
+    public function cancelOrder(int $order_id): bool
+    {
+        $order = $this->fetchRow('_order', array('order_number'), array('order_id' => $order_id));
+        if (null === $order) {
+            $this->addError("Could not find order $order_id.");
+
+            return false;
+        }
+        $order_number = $order->order_number;
+
+        $this->conn->beginTransaction();
+        if (false === $this->updateRowAndReturnSuccess('_order', array('cancelled' => true), $order_id)) {
+            $this->conn->rollBack();
+            $this->addError("Could not cancel order $order_number.");
+
+            return false;
+        }
+        // get the rows of this order, to update the stock
+        $statement = $this->conn->prepare('SELECT variant_id, quantity FROM _order_variant WHERE order_id = ?;');
+        $statement->execute(array($order_id));
+        $rows = $statement->fetchAll(5);
+        $this->updateStock($rows, 1, $order_number);
+        $this->conn->commit();
+
+        return true;
+    }
+
+    /**
+     * @param array $rows containing row objects with at least variant_id and quantity
+     * @param int $multiplier default -1 for subtracting, use 1 for (re-)adding
+     * @param string $reference may appear in error message
+     * @return void
+     */
+    private function updateStock(array $rows, int $multiplier = -1, string $reference = ''): void
+    {
+        try {
+            $statement = $this->conn->prepare('SELECT quantity_in_stock FROM cms_variant WHERE variant_id = ?;');
+            foreach ($rows as $index => $row) {
+                $variant_id = $row->variant_id;
+                $statement->execute(array($variant_id));
+                if (null !== $statement->fetchColumn()) { // only update when stock management is on
+                    if (false === $this->updateVariantQuantityInStock($variant_id, $multiplier * $row->quantity)) {
+                        $this->addError("Could not update quantity in stock for $variant_id");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $this->addError("{$e->getMessage()} updating stock for $reference");
         }
     }
 
