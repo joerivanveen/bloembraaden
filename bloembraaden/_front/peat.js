@@ -43,7 +43,7 @@ document.addEventListener('peatcms.form_posted', function (e) {
                 }
                 // load email, phone and shipping and billing addresses into session
                 if (true === is_account) {
-                    user = json.__user__;
+                    user = PEATCMS.cloneStructured(json.__user__);
                     PEAT.setSessionVar('gender', user.gender);
                     PEAT.setSessionVar('email', user.email);
                     PEAT.setSessionVar('phone', user.phone);
@@ -126,7 +126,7 @@ PeatStickyColumns.prototype.doTheMargins = function (tall, short, difference, ta
 
 function Address_getAllUserAddresses() {
     const user = PEATCMS_globals.__user__;
-    if (user && user.hasOwnProperty('__addresses__')) return user.__addresses__;
+    if (user && user.hasOwnProperty('__addresses__')) return PEATCMS.cloneStructured(user.__addresses__);
     return {};
 }
 
@@ -488,7 +488,7 @@ Address.prototype.getUserAddress = function (fields) {
     let i, len, user = PEATCMS_globals.__user__, user_addresses, user_address = {}, address_id;
     if (null === fields) return {};
     if (fields.hasOwnProperty('address_id') && (address_id = fields.address_id)) {
-        if (user.hasOwnProperty('__addresses__') && (user_addresses = user.__addresses__)) {
+        if (user.hasOwnProperty('__addresses__') && (user_addresses = PEATCMS.cloneStructured(user.__addresses__))) {
             for (i = 0, len = user_addresses.length; i < len; ++i) {
                 if ((user_address = user_addresses[i]).hasOwnProperty('address_id')
                     && user_address['address_id'] === address_id
@@ -1336,7 +1336,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                 if (false === json.hasOwnProperty('__html__')) {
                     // @since 0.7.9 when a __user__ object is sent, also update it in the globals! (not for templates)
                     if (true === json.hasOwnProperty('__user__')) {
-                        window.PEATCMS_globals.__user__ = json.__user__;
+                        window.PEATCMS_globals.__user__ = PEATCMS.cloneStructured(json.__user__);
                     }
                     // handle messages
                     if (true === json.hasOwnProperty('__messages__')) {
