@@ -112,12 +112,6 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         return null;
     }
 
-    public function capturePayment(int $order_id): bool
-    {
-        // TODO: Implement capturePayment() method.
-        return false;
-    }
-
     public function getPaymentByPaymentId(string $payment_id): ?\stdClass
     {
         $curl = curl_init();

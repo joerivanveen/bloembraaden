@@ -1313,20 +1313,6 @@ class Handler extends BaseLogic
                                 $out['slug'] = 'admin_payment_service_providers';
                             }
                         }
-                    } elseif ('admin_payment_capture' === $action) {
-                        if (isset($post_data->order_id)) {
-                            if (($psp = $instance->getPaymentServiceProvider())) {
-                                if (false === $psp->capturePayment((int)$post_data->order_id)) {
-                                    $this->handleErrorAndStop(sprintf(
-                                        '%1$s->capturePayment was false for order_id %2$s.',
-                                        $psp->getFieldValue('given_name'),
-                                        $post_data->order_id
-                                    ));
-                                }
-
-                                return;
-                            }
-                        }
                     } elseif ('admin_get_payment_status_updates' === $action) {
                         // you only get them for the current instance
                         $out = array();

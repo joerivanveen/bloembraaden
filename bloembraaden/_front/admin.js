@@ -1995,23 +1995,6 @@ function PEATCMS_admin() {
                 };
             }
         );
-        document.querySelectorAll('[data-peatcms_handle="admin_payment_capture"]').forEach(
-            function (btn) {
-                if (btn.hasAttribute('data-order_id')) {
-                    btn.onclick = function () {
-                        NAV.ajax(
-                            '/__action__/admin_payment_capture',
-                            {order_id: this.getAttribute('data-order_id')},
-                            function (json) {
-                                console.log(json);
-                            }
-                        );
-                    };
-                } else {
-                    console.error('admin_payment_capture button needs data-order_id to function');
-                }
-            }
-        );
         document.querySelectorAll('[data-peatcms_handle="cancel_order"]').forEach(
             function (btn) {
                 if (btn.hasAttribute('data-order_id')) {

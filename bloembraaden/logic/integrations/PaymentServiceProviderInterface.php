@@ -40,13 +40,6 @@ interface PaymentServiceProviderInterface
     public function beginTransaction(Order $order, Instance $instance): ?string;
 
     /**
-     * for a delayed payment, execute it (entirely) for this order
-     * @param int $order_id
-     * @return bool success
-     */
-    public function capturePayment(int $order_id): bool;
-
-    /**
      * updates the status based on raw return value of psp, returns success
      * @param \stdClass $payload
      * @return bool
