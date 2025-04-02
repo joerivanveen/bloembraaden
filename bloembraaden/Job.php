@@ -562,6 +562,22 @@ switch ($interval) {
             }
             //return; // JOERI TEMP
         }
+        $rows = $db->jobGetOrdersToCancel();
+        if (0 < count($rows)) {
+            $trans->start('Cancel orders');
+            $instance_id = 0;
+            foreach ($rows as $index => $row) {
+                if ($row->instance_id !== $instance_id) {
+                    $instance_id = $row->instance_id;
+                    Setup::loadInstanceSettingsFor($instance_id);
+                }
+                if (true === $db->cancelOrder($row->order_id)) {
+                    echo "Order $row->order_number for $row->domain.\n";
+                } else {
+                    echo "ERROR for $row->order_number ($row->domain).\n";
+                }
+            }
+        }
         $trans->start('Create missing search index records');
         $limit = 250;
         foreach ($db::TYPES_WITH_CI_AI as $index => $type_name) {

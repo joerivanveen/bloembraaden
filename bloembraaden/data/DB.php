@@ -1718,7 +1718,8 @@ class DB extends Base
             foreach ($rows as $index => $row) {
                 $variant_id = $row->variant_id;
                 $statement->execute(array($variant_id));
-                if (null !== $statement->fetchColumn()) { // only update when stock management is on
+                $quantity_in_stock = $statement->fetchColumn(); // false means the variant_id is no longer present
+                if (null !== $quantity_in_stock && false !== $quantity_in_stock) { // only update when stock management is on
                     if (false === $this->updateVariantQuantityInStock($variant_id, $multiplier * $row->quantity)) {
                         $this->addError("Could not update quantity in stock for $variant_id");
                     }
@@ -1875,7 +1876,7 @@ class DB extends Base
             FROM _order o INNER JOIN _instance i ON i.instance_id = o.instance_id
             WHERE o.emailed_order_confirmation = FALSE
                OR (o.emailed_payment_confirmation = FALSE AND o.payment_confirmed_bool = TRUE)
-            ORDER BY mailgun_custom_domain;'
+            ORDER BY i.instance_id;'
         );
         $statement->execute();
         $rows = $statement->fetchAll(5);
@@ -1892,6 +1893,24 @@ class DB extends Base
             INNER JOIN _order o ON o.instance_id = i.instance_id
             WHERE o.myparcel_exported = FALSE AND o.payment_confirmed_bool = TRUE
             ORDER BY i.instance_id, o.payment_confirmed_date DESC;'
+        );
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        return $rows;
+    }
+
+    public function jobGetOrdersToCancel(): array
+    {
+        // get orders that are not paid for, not cancelled, and are placed longer than $hours ago
+        $statement = $this->conn->prepare(
+            "SELECT i.instance_id, i.domain, o.order_id, o.order_number
+            FROM _instance i
+            INNER JOIN _order o ON o.instance_id = i.instance_id
+            WHERE o.payment_confirmed_bool = FALSE AND o.cancelled = FALSE
+            AND o.date_created < NOW() - i.payment_link_valid_hours * interval '1 hours'
+            ORDER BY instance_id;" // order by instance_id to minimise loading instance settings
         );
         $statement->execute();
         $rows = $statement->fetchAll(5);
