@@ -325,7 +325,7 @@ class Image extends BaseElement
     {
         $slug = $this->getSlug();
         // if the slug has been used previously, we add a random number to it and check it again
-        while (false === Help::getDB()->imageSlugRegister($slug)) {
+        while (false === Help::getDB()->imageSlugRegister($slug, $this->getInstanceId())) {
             $slug = mt_rand(1000, 9999) . "-$slug";
         }
 

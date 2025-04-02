@@ -3200,14 +3200,14 @@ ALTER TABLE "public"."cms_variant"
 
 CREATE TABLE _image_slug_history
 (
-    slug varchar(127) PRIMARY KEY,
+    slug varchar(255) PRIMARY KEY,
     since timestamp with time zone DEFAULT now() NOT NULL
 );
 -- insert the processed image urls into the history table
-INSERT INTO _image_slug_history (slug) SELECT DISTINCT((REGEXP_MATCHES(src_small, '[^/]+(?=\.webp$)'))[1]) FROM cms_image;
+INSERT INTO _image_slug_history (slug) SELECT DISTINCT(CONCAT(instance_id, '/', (REGEXP_MATCHES(src_small, '[^/]+(?=\.webp$)'))[1])) FROM cms_image;
 -- for good measure insert the regular slugs as well
 INSERT INTO _image_slug_history (slug)
-SELECT slug FROM cms_image
+SELECT CONCAT(instance_id, '/', slug) FROM cms_image
 ON CONFLICT (slug) DO NOTHING;
 
 COMMIT;

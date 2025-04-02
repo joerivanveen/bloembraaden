@@ -2014,11 +2014,11 @@ class DB extends Base
         return $rows;
     }
 
-    public function imageSlugRegister(string $slug): bool
+    public function imageSlugRegister(string $slug, int $instance_id): bool
     {
         try {
             $statement = $this->conn->prepare('INSERT INTO _image_slug_history (slug) VALUES (:slug);');
-            $statement->bindValue(':slug', $slug);
+            $statement->bindValue(':slug', "$instance_id/$slug");
             $statement->execute();
             $success = (1 === $statement->rowCount());
             $statement = null;
