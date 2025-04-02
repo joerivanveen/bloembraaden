@@ -2254,7 +2254,7 @@ PEATCMS_admin.prototype.pollServer = function () {
                             console.warn('Template order_overview_true or row not present, cannot render.');
                             return;
                         }
-                        const row_html = template.renderOutput(json, row_template);
+                        const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
                         //console.warn('koekkoek', template, row_html, json);
                         if (el) { // if the order is on the page, update it
                             el.insertAdjacentHTML('afterend', row_html);

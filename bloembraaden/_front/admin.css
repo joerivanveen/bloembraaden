@@ -1289,6 +1289,17 @@ body .PEATCMS_admin span.template_status {
     max-width: 180px;
 }
 
+#PEATCMS_admin_page .cancel-status[data-cancelled] {
+    background-color: var(--admin-color-no-bg);
+    padding: 4px 8px;
+    border-radius: 3px;
+    color: var(--admin-color-paper);
+}
+
+#PEATCMS_admin_page .cancel-status > button {
+    color: var(--admin-color-no);
+}
+
 .admin_order_search.right {
     position: absolute;
     right: 17px;
