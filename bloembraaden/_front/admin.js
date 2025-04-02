@@ -2238,7 +2238,7 @@ PEATCMS_admin.prototype.pollServer = function () {
         // get info
         const changes = json.changes || [], len = changes.length;
         if (len > 10) {
-            PEAT.message('Refresh the page to see changes from the server.', 'note');
+            console.warn('Too many changes to fetch automatically.'); // todo handle nicely
         } else {
             for (let i = 0; i < len; ++i) {
                 const change = changes[i];
