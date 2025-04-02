@@ -2000,6 +2000,8 @@ class DB extends Base
 
     public function jobFetchImagesForProcessing(int $how_many = 15): array
     {
+        // images that are not processed (WHERE)
+        // and images that are saved under a different name than their slug (OR)
         $statement = $this->conn->prepare("SELECT * FROM cms_image 
             WHERE filename_saved IS NOT NULL
             AND (date_processed IS NULL
@@ -2010,6 +2012,25 @@ class DB extends Base
         $statement = null;
 
         return $rows;
+    }
+
+    public function imageSlugRegister(string $slug): bool
+    {
+        try {
+            $statement = $this->conn->prepare('INSERT INTO _image_slug_history (slug) VALUES (:slug);');
+            $statement->bindValue(':slug', $slug);
+            $statement->execute();
+            $success = (1 === $statement->rowCount());
+            $statement = null;
+        } catch (\Exception $e) {
+            if ($e instanceof \PDOException && '23505' === $e->getCode()) {
+                return false; // duplicate key means we could not register the slug, safe to retry with a new one
+            }
+
+            $this->handleErrorAndStop($e);
+        }
+
+        return $success;
     }
 
     /**

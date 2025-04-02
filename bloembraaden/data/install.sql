@@ -3198,4 +3198,16 @@ ALTER TABLE "public"."_order"
 ALTER TABLE "public"."cms_variant"
     ADD COLUMN if not exists "quantity_in_stock" INTEGER;
 
+CREATE TABLE _image_slug_history
+(
+    slug varchar(127) PRIMARY KEY,
+    since timestamp with time zone DEFAULT now() NOT NULL
+);
+-- insert the processed image urls into the history table
+INSERT INTO _image_slug_history (slug) SELECT DISTINCT((REGEXP_MATCHES(src_small, '[^/]+(?=\.webp$)'))[1]) FROM cms_image;
+-- for good measure insert the regular slugs as well
+INSERT INTO _image_slug_history (slug)
+SELECT slug FROM cms_image
+ON CONFLICT (slug) DO NOTHING;
+
 COMMIT;

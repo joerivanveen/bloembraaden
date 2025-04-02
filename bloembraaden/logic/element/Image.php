@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Bloembraaden;
 class Image extends BaseElement
 {
-    public const SIZES =array(
+    public const SIZES = array(
         'huge' => 4000,
         'large' => 1600,
         'medium' => 800,
@@ -66,7 +66,8 @@ class Image extends BaseElement
         }
         if (false === in_array(($type = exif_imagetype($path)),
                 array(IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP, IMAGETYPE_WEBP)
-            )) {
+            )
+        ) {
             $logger->log('Exif image type not recognized');
             // because the file is not recognizable for processing, we have to lose it
             if (false === $this->forgetOriginalFile()) {
@@ -85,13 +86,13 @@ class Image extends BaseElement
         if (-1 === $memory_limit) {
             $logger->log('Memory is unlimited, probably not intentionally');
         } elseif ($memory_needed > $memory_limit) {
-            $memory_needed_M = Help::getMemorySize((string)$memory_needed,'M');
+            $memory_needed_M = Help::getMemorySize((string)$memory_needed, 'M');
             if ($memory_needed <= Setup::$MAX_MEMORY_LIMIT) {
                 $logger->log("Increasing memory to $memory_needed_M (standard is $memory_limit)");
                 ini_set('memory_limit', $memory_needed_M);
             } else {
                 $logger->log("Image too large for memory, needs $memory_needed_M");
-                $logger->log('Current limit: ' . Help::getMemorySize((string)$memory_limit,'M'));
+                $logger->log('Current limit: ' . Help::getMemorySize((string)$memory_limit, 'M'));
             }
         }
         switch (true) {
@@ -148,7 +149,7 @@ class Image extends BaseElement
             // ignore it when exif cannot be read
         }
         // define necessary paths
-        $src = $this->getSlug() . '.webp'; // we save as webp by default with jpg fallback
+        $src = $this->getFreshSlug() . '.webp'; // we save as webp by default with jpg fallback
         $my_path = Setup::$CDNPATH . $this->getInstanceId() . '/';
         // make sure the folders exist
         if (false === file_exists($my_path)) {
@@ -176,12 +177,12 @@ class Image extends BaseElement
                     $newHeight = (int)floor($pixels * $height / $width);
                 }
             } elseif ($height < $pixels) {
-                    $newHeight = $height;
-                    $newWidth = $width;
-                } else {
-                    $newHeight = $pixels;
-                    $newWidth = (int)floor($pixels * $width / $height);
-                }
+                $newHeight = $height;
+                $newWidth = $width;
+            } else {
+                $newHeight = $pixels;
+                $newWidth = (int)floor($pixels * $width / $height);
+            }
             // create resized image
             $logger->log('Preparing new image');
             $newImage = imagecreatetruecolor($newWidth, $newHeight);
@@ -194,12 +195,6 @@ class Image extends BaseElement
             imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
             // save the img
             $newPath = $subdir . $src; // webp path
-            // never overwrite images
-            $index = 1;
-            while (file_exists($newPath)) {
-                $index++;
-                $newPath = "$subdir$index-$src";
-            }
             $logger->log("Saving to $newPath");
             // save as jpg and as webp only @since 0.5.9
             $success = imagewebp($newImage, $newPath, $quality);
@@ -319,6 +314,22 @@ class Image extends BaseElement
         imagedestroy($img);
 
         return ($totalBrightness / ($width * $height)) / 2.55;
+    }
+
+    /**
+     * Since images are cached in the browser for a long time, we need to make sure the slug is unique
+     * for any image ‘ever’ uploaded and not re-use slugs like can be done with elements.
+     * @return string a slug that has not been used before
+     */
+    private function getFreshSlug(): string
+    {
+        $slug = $this->getSlug();
+        // if the slug has been used previously, we add a random number to it and check it again
+        while (false === Help::getDB()->imageSlugRegister($slug)) {
+            $slug = mt_rand(1000, 9999) . "-$slug";
+        }
+
+        return $slug;
     }
 
     public function completeRowForOutput(): void // override from base element class
