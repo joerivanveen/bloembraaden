@@ -2237,61 +2237,65 @@ PEATCMS_admin.prototype.pollServer = function () {
         self.polled_until = json.until;
         // get info
         const changes = json.changes || [], len = changes.length;
-        for (let i = 0; i < len; ++i) {
-            const change = changes[i];
-            if ('_order' === change.table_name) {
-                const order_id = change.key;
-                NAV.ajax('/__action__/admin_get_element', {
-                    element: 'order',
-                    id: order_id
-                }, function (json) {
-                    const current_state = NAV.getCurrentElement().state;
-                    if (current_state.hasOwnProperty('__orders__')) {
-                        const el = document.getElementById(`order-${order_id}`),
-                            template = PEAT.templates['order_overview_true'] || undefined,
-                            row_template = template.template.__orders__[0] || undefined;
-                        if (!template || !row_template) {
-                            console.warn('Template order_overview_true or row not present, cannot render.');
-                            return;
-                        }
-                        const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
-                        //console.warn('koekkoek', template, row_html, json);
-                        if (el) { // if the order is on the page, update it
-                            el.insertAdjacentHTML('afterend', row_html);
-                            el.remove();
-                        } else { // if not, just add it at the top of the list below the header, as a service
-                            try {
-                                document.querySelector('.order-table').querySelector('.header').insertAdjacentHTML('afterend', row_html);
-                            } catch (e) {
-                                console.error(e);
+        if (len > 10) {
+            PEAT.message('Refresh the page to see changes from the server.', 'note');
+        } else {
+            for (let i = 0; i < len; ++i) {
+                const change = changes[i];
+                if ('_order' === change.table_name) {
+                    const order_id = change.key;
+                    NAV.ajax('/__action__/admin_get_element', {
+                        element: 'order',
+                        id: order_id
+                    }, function (json) {
+                        const current_state = NAV.getCurrentElement().state;
+                        if (current_state.hasOwnProperty('__orders__')) {
+                            const el = document.getElementById(`order-${order_id}`),
+                                template = PEAT.templates['order_overview_true'] || undefined,
+                                row_template = template.template.__orders__[0] || undefined;
+                            if (!template || !row_template) {
+                                console.warn('Template order_overview_true or row not present, cannot render.');
+                                return;
                             }
+                            const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
+                            //console.warn('koekkoek', template, row_html, json);
+                            if (el) { // if the order is on the page, update it
+                                el.insertAdjacentHTML('afterend', row_html);
+                                el.remove();
+                            } else { // if not, just add it at the top of the list below the header, as a service
+                                try {
+                                    document.querySelector('.order-table').querySelector('.header').insertAdjacentHTML('afterend', row_html);
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+                        } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
+                            // update the detail view
+                            NAV.refresh();
+                        } else {
+                            // TODO
+                            console.log(`Order status update for ${json.order_number_human}`);
                         }
-                    } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
-                        // update the detail view
-                        NAV.refresh();
-                    } else {
-                        // TODO
-                        console.log(`Order status update for ${json.order_number_human}`);
-                    }
-                });
-            } else {
-                // TODO
-                console.log(`Update for ${change.table_name} (${change.key})`);
-                let type_name = change.table_name;
-                if ('cms_' === type_name.substring(0, 4)) type_name = type_name.substring(4);
-                if ('_' === type_name.substring(0, 1)) type_name = type_name.substring(1);
-                for (const entry of self.subscriptions) {
-                    if (type_name === entry.type_name && change.key === entry.id) {
-                        NAV.ajax('/__action__/admin_get_element', {
-                            element: type_name,
-                            id: change.key
-                        }, function (json) {
-                            entry.callback(json);
-                        });
+                    });
+                } else {
+                    // TODO
+                    console.log(`Update for ${change.table_name} (${change.key})`);
+                    let type_name = change.table_name;
+                    if ('cms_' === type_name.substring(0, 4)) type_name = type_name.substring(4);
+                    if ('_' === type_name.substring(0, 1)) type_name = type_name.substring(1);
+                    for (const entry of self.subscriptions) {
+                        if (type_name === entry.type_name && change.key === entry.id) {
+                            NAV.ajax('/__action__/admin_get_element', {
+                                element: type_name,
+                                id: change.key
+                            }, function (json) {
+                                entry.callback(json);
+                            });
+                        }
                     }
                 }
+                //if (NAV.getCurrentElement())
             }
-            //if (NAV.getCurrentElement())
         }
         // repeat...
         clearTimeout(self.poll_timeout);
