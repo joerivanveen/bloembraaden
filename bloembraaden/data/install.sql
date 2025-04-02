@@ -3187,3 +3187,15 @@ COMMIT;
 
 BEGIN;
 COMMIT;
+
+-- version 0.25.0
+
+BEGIN;
+
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "cancelled" BOOLEAN default FALSE NOT NULL;
+
+ALTER TABLE "public"."cms_variant"
+    ADD COLUMN if not exists "quantity_in_stock" INTEGER;
+
+COMMIT;
