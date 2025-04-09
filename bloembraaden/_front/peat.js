@@ -3058,9 +3058,8 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         if (a.hasAttribute('data-peatcms_ajaxified')) continue;
         a.setAttribute('data-peatcms_ajaxified', '1');
         a.innerHTML = PEATCMS.replace('-dot-', '.', PEATCMS.replace('-at-', '@', a.innerHTML));
-        a.classList.add('peatcms-link'); // todo remove when impact is none
-        a.classList.add('link'); // todo remove when impact is none
-        a.setAttribute('tabindex', '1');
+        a.classList.add('peatcms-link','link'); // todo remove when impact is none
+        a.setAttribute('tabindex', '0');
         a.setAttribute('role', 'link');
     }
     if (typeof CMS_admin !== 'undefined') {
