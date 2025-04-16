@@ -187,7 +187,7 @@ class Shoppinglist extends BaseLogic
                         $this->name), 'note'
                     );
                 }
-            } elseif (null !== $variant_out->quantity_in_stock && $list_row->quantity > $variant_out->quantity_in_stock) {
+            } elseif (true === isset($variant_out->quantity_in_stock) && $list_row->quantity > $variant_out->quantity_in_stock) {
                 $list_row->quantity = $variant_out->quantity_in_stock;
                 $this->addMessage(sprintf(
                     __('The quantity of an item in %s has been adjusted to the available stock.', 'peatcms'),
