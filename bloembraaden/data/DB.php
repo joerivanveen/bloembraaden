@@ -3490,7 +3490,7 @@ class DB extends Base
                 SELECT t.table_name FROM information_schema.tables t
                 INNER JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = :schema
                 WHERE c.column_name = 'slug' AND t.table_schema = :schema AND t.table_type = 'BASE TABLE'
-                AND t.table_name <> '_cache' AND t.table_name <> '_stale' AND t.table_name <> '_ci_ai'
+                AND t.table_name <> '_cache' AND t.table_name <> '_stale' AND t.table_name <> '_ci_ai' AND t.table_name <> '_image_slug_history'
             ");
             $statement->bindValue(':schema', $this->db_schema);
             $statement->execute();
