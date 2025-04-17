@@ -14,7 +14,7 @@ class Warmup extends BaseLogic
 
     public function Warmup(string $slug, int $instance_id): bool
     {
-        if (isset($this->slugs[$slug]) && $instance_id === $this->slugs[$slug]) return false; // no need to warmup more than once
+        if (true === isset($this->slugs[$slug]) && $instance_id === $this->slugs[$slug]) return false; // no need to warmup more than once
         $this->slugs[$slug] = $instance_id;
         // the slug for cache may contain spaces and other non-slug elements, so slugify is out of the question
         //$slug = implode('/', array_map('rawurlencode', explode('/', $slug)));

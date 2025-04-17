@@ -3643,7 +3643,7 @@ PEATCMS_navigator.prototype.postData = function () {
     //
 }
 PEATCMS_navigator.prototype.submitData = function (slug, data, callback) {
-    console.log('submitData() is deprecated, use NAV.ajax() directly.');
+    console.warn('submitData() is deprecated, use NAV.ajax() directly.');
     this.ajax(slug, data, callback);
 }
 PEATCMS_navigator.prototype.submitForm = function (form) {
@@ -3661,10 +3661,10 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
             event_data = { // nice data for the event after the form is posted
                 bubbles: true,
                 detail: {
-                    'slug': slug, // superfluous, also in form
-                    'data': data, // superfluous, also in form
-                    'form': form,
-                    'json': json,
+                    slug: slug, // superfluous, also in form
+                    data: data, // superfluous, also in form
+                    form: form,
+                    json: json,
                 },
             };
         form.removeAttribute('data-submitting');

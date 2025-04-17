@@ -2221,7 +2221,7 @@ PEATCMS_admin.prototype.pollServer = function () {
         // get info
         const changes = json.changes || [], len = changes.length;
         if (len > 10) {
-            console.warn('Too many changes to fetch automatically.'); // todo handle nicely
+            console.warn('Too many changes to fetch automatically.', changes); // todo handle nicely
         } else {
             for (let i = 0; i < len; ++i) {
                 const change = changes[i];
