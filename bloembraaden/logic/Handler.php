@@ -224,10 +224,16 @@ class Handler extends BaseLogic
             }
             //$out = array('__variants__' => $variants, 'slug' => 'suggest');
         } elseif ('download' === $action) {
-            if (($el = Help::getDB()->fetchElementIdAndTypeBySlug($this->resolver->getTerms()[0] ?? ''))) {
-                if ('file' === $el->type_name) {
+            if (($slug = $this->resolver->getTerms()[0] ?? null)) {
+                if (null === ($el = Help::getDB()->fetchElementIdAndTypeBySlug($slug))) {
+                    $el = Help::getDB()->fetchElementIdAndTypeByAncientSlug($slug);
+                }
+                if ($el && 'file' === $el->type_name) {
                     $file = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
                     $file->serve();
+                } else {
+                    $this->addError(sprintf('Download: no file found with slug %s.', $slug));
+                    $this->addMessage(__('File not found.', 'peatcms'), 'warn');
                 }
             }
         } elseif ('account_delete_session' === $action) {
@@ -1544,7 +1550,8 @@ class Handler extends BaseLogic
         unset($post_data);
     }
 
-    public function View()
+    public
+    function View()
     {
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();
@@ -1790,7 +1797,8 @@ class Handler extends BaseLogic
          */
     }
 
-    private function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
+    private
+    function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
     {
         $out = null;
         if (true === isset($post_data->from_email)
@@ -1850,7 +1858,8 @@ class Handler extends BaseLogic
      * @return bool success
      * @since 0.5.1
      */
-    private function updateList(string $action, \stdClass $data): bool
+    private
+    function updateList(string $action, \stdClass $data): bool
     {
         // validate
         if (false === isset($data->shoppinglist)) {
@@ -1909,7 +1918,8 @@ class Handler extends BaseLogic
         return false;
     }
 
-    public function getSession()
+    public
+    function getSession()
     {
         return Help::$session;
     }
@@ -1920,7 +1930,8 @@ class Handler extends BaseLogic
      * @param int $id The id of the element
      * @return BaseElement|null Returns the updated element when succeeded, null when update failed
      */
-    private function updateElement(string $type_name, array $data, int $id): ?BaseElement
+    private
+    function updateElement(string $type_name, array $data, int $id): ?BaseElement
     {
         // TODO access control permissions based on admin etc. -> is the admin from a client that can handle this instance? And do they have that role?
         if ($type_name !== 'search') {
@@ -1935,7 +1946,8 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private function getElementSuggestions(string $type_name, string $term = ''): ?object
+    private
+    function getElementSuggestions(string $type_name, string $term = ''): ?object
     {
         if ('x_value' === $type_name) {
             return Help::getDB()->fetchPropertiesRowSuggestions($term);
@@ -1957,19 +1969,22 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private function getElements(string $type_name): array
+    private
+    function getElements(string $type_name): array
     {
         return Help::getDB()->fetchElementRowsWhere(new Type($type_name), array());
     }
 
-    private function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
+    private
+    function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
     {
         if ('search' === $peat_type->typeName()) return null;
 
         return Help::getDB()->fetchElementRow($peat_type, $id);
     }
 
-    private function getElementById(string $type_name, int $id): ?BaseElement
+    private
+    function getElementById(string $type_name, int $id): ?BaseElement
     {
         if ($peat_type = new Type($type_name)) {
             if ($row = Help::getDB()->fetchElementRow($peat_type, $id)) {
@@ -1982,7 +1997,8 @@ class Handler extends BaseLogic
         }
     }
 
-    private function createElement(string $type_name, ?bool $online = false): ?BaseElement
+    private
+    function createElement(string $type_name, ?bool $online = false): ?BaseElement
     {
         // TODO access control permissions
         if (false === Help::$session->isAdmin()) return null;
@@ -2004,7 +2020,8 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private function insertRow(Admin $admin, \stdClass $post_data): ?object
+    private
+    function insertRow(Admin $admin, \stdClass $post_data): ?object
     {
         if ($post_data->table_name === '_instance') {
             // permission check: only admins with instance_id = 0 can insert new instances...
@@ -2133,7 +2150,8 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private function updatePublishedForTemplates(int $instance_id, int $return_for_template_id = 0): ?bool
+    private
+    function updatePublishedForTemplates(int $instance_id, int $return_for_template_id = 0): ?bool
     {
         $published_for_template_id = null;
         // run through all the templates for this instance to set their published value correctly
@@ -2158,7 +2176,8 @@ class Handler extends BaseLogic
      * @param Type $peat_type
      * @return \stdClass|null information about the database table (of an element), or null if there isn’t
      */
-    public function getTableInfoForOutput(Type $peat_type): ?\stdClass
+    public
+    function getTableInfoForOutput(Type $peat_type): ?\stdClass
     {
         $arr = (array)Help::getDB()->getTableInfo($peat_type->tableName());
         $info = new \stdClass();

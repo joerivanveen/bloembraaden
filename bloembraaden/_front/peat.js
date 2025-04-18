@@ -3438,9 +3438,9 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
     return true;
 }
 PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
-    let slug = path.replace(this.getRoot(true), '');
     this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
     this.nav_timestamp = Date.now();
+    let slug = path.replace(this.getRoot(true), '');
     if (0 === slug.indexOf('/')) slug = slug.slice(1);
     document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
         bubbles: false,
@@ -3458,14 +3458,22 @@ PEATCMS_navigator.prototype.go = function (path, local) {
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.setState();
-        if (path.indexOf(this.getRoot()) === 0 || 0 !== path.indexOf('http')) { // this is a local link
+        if (0 === path.indexOf(this.getRoot()) || 0 !== path.indexOf('http')) { // this is a local link
             slug = this.signalStartNavigating(path);
+            function end() {
+                self.is_navigating = false;
+                document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
+            }
+            if (0 === slug.indexOf('__action__/download/')) {
+                window.open(this.getRoot(true) + slug, '_blank');
+                end();
+                return;
+            }
             new PEATCMS_element(slug, function (el) {
                 let title, path;
                 if (false === el) {
                     console.warn(`The slug ${slug} is not an element`);
-                    document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
-                    self.is_navigating = false;
+                    end();
                 } else {
                     try {
                         if (el.state.hasOwnProperty('slug')) {
@@ -3483,12 +3491,10 @@ PEATCMS_navigator.prototype.go = function (path, local) {
                         }
                         PEAT.render(el, function (el) {
                             if (VERBOSE) console.log(`Finished rendering ${title}`);
-                            self.is_navigating = false;
-                            document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
+                            end();
                         });
                     } catch (e) {
-                        self.is_navigating = false;
-                        document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
+                        end();
                     }
                 }
             });
@@ -3595,7 +3601,7 @@ PEATCMS_navigator.prototype.setState = function () {
 }
 
 PEATCMS_navigator.prototype.getRoot = function (trailingSlash) {
-    if (trailingSlash) return `${this.root}/`;
+    if (true === trailingSlash) return `${this.root}/`;
     return this.root;
 }
 
