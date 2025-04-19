@@ -286,16 +286,17 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
         return el;
     } else if ('quantity_in_stock' === column_name) {
         const value = this.server_value,
+            display = (null === value) ? '∞' : value,
             self = this;
         el = document.createElement('div');
         el.setAttribute('data-quantity', value);
-        el.innerHTML = `Quantity: <span class="quantity">${value}</span>`;
+        el.innerHTML = `Quantity: <span class="quantity">${display}</span>`;
 
         // update quantity on server
         function updateQuantity(quantity) {
             NAV.ajax('/__action__/admin_update_quantity_in_stock', {
-                'variant_id': self.parent_PEATCMS_element.getElementId(),
-                'quantity': quantity
+                variant_id: self.parent_PEATCMS_element.getElementId(),
+                quantity: quantity
             }, function (data) {
                 self.parent_PEATCMS_element.set(data)
             });
@@ -609,7 +610,7 @@ PEATCMS_actor.prototype.set = function (data) {
     if (true === this.hasChanged()) {
         if ('quantity_in_stock' === column_name) {
             this.DOMElement.setAttribute('data-quantity', column_value);
-            this.DOMElement.querySelector('.quantity').innerText = (null === column_value) ? 'null' : column_value;
+            this.DOMElement.querySelector('.quantity').innerText = (null === column_value) ? '∞' : column_value;
         } else if (this.DOMElement.classList.contains('checkbox')) {
             const checkbox = this.DOMElement.querySelector('input');
             checkbox.checked = column_value;
