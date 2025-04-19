@@ -325,8 +325,6 @@ class Resolver extends BaseLogic
         $num_terms = count($terms);
         if (0 === $num_terms) { // homepage is requested
             $type_name = 'page';
-            // todo 0.25.0 joeri temporary error reporting
-            $this->addError('Homepage request uri fail ' . $this->request_uri);
             $element_id = Help::$session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             $term = $terms[0];
