@@ -5,8 +5,6 @@ namespace Bloembraaden;
 
 class Instance extends BaseLogic
 {
-    private array $menus;
-
     public function __construct(\stdClass $row = null)
     {
         parent::__construct();
