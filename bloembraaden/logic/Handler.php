@@ -1512,46 +1512,47 @@ class Handler extends BaseLogic
                 $this->addMessage(sprintf(__('%s check failed, please refresh browser.', 'peatcms'), 'CSRF'), 'warn');
             }
         }
-        if ($out !== null) {
-            $out = (object)$out;
-            $out->slugs = $GLOBALS['slugs']; //<- *RECURSION* ?? when, why
-            $out = $this->resolver->cleanOutboundProperties($out);
-            if (headers_sent()) {
-                echo "#BLOEMBRAADEN_JSON:#\n";
-                echo json_encode($out);
-                die();
-            }
-            if (true === Help::$OUTPUT_JSON) {
-                // add messages and errors
-                $out->__messages__ = Help::getMessages();
-                if (Help::$session->isAdmin()) $out->__adminerrors__ = Help::getErrorMessages();
-                // pass timestamp when available
-                if (isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
-                // @since 0.6.1 add any changed session vars for update on client
-                $out->__updated_session_vars__ = Help::$session->getUpdatedVars();
-                if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
-                $response = gzencode(json_encode($out), 6);
-                // todo, log json error when present?
-                unset($out);
-                header('Content-Type: application/json');
-                header('Content-Encoding: gzip');
-                header('Content-Length: ' . strlen($response));
-                echo $response;
-                die();
-            } elseif (isset($out->redirect_uri)) {
-                header("Location: $out->redirect_uri", true, 302);
-                die();
-            } else {
-                $this->addMessage(__('Fallen through action.', 'peatcms'));
-                //\header('Location: /' . $this->resolver->getPath(), true, 307); <- doesn’t work
-                //die();
-            }
+        if (null === $out) {
+            $out = array('success' => false);
+            $this->addError('Action failure: ' . var_export($post_data, true));
+        }
+        $out = (object)$out;
+        $out->slugs = $GLOBALS['slugs']; //<- *RECURSION* ?? when, why
+        $out = $this->resolver->cleanOutboundProperties($out);
+        if (headers_sent()) {
+            echo "#BLOEMBRAADEN_JSON:#\n";
+            echo json_encode($out);
+            die();
+        }
+        if (true === Help::$OUTPUT_JSON) {
+            // add messages and errors
+            $out->__messages__ = Help::getMessages();
+            if (Help::$session->isAdmin()) $out->__adminerrors__ = Help::getErrorMessages();
+            // pass timestamp when available
+            if (true === isset($post_data->timestamp)) $out->timestamp = $post_data->timestamp;
+            // @since 0.6.1 add any changed session vars for update on client
+            $out->__updated_session_vars__ = Help::$session->getUpdatedVars();
+            if (ob_get_length()) ob_clean(); // throw everything out the buffer means we can send a clean gzipped response
+            $response = gzencode(json_encode($out), 6);
+            // todo, log json error when present?
+            unset($out);
+            header('Content-Type: application/json');
+            header('Content-Encoding: gzip');
+            header('Content-Length: ' . strlen($response));
+            echo $response;
+            die();
+        } elseif (true === isset($out->redirect_uri)) {
+            header("Location: $out->redirect_uri", true, 302);
+            die();
+        } else {
+            $this->addError('Fallen through action: ' . var_export($post_data, true));
+            //\header('Location: /' . $this->resolver->getPath(), true, 307); <- doesn’t work
+            //die();
         }
         unset($post_data);
     }
 
-    public
-    function View()
+    public function View()
     {
         $slug = $this->resolver->getPath();
         $variant_page = $this->resolver->getVariantPage();

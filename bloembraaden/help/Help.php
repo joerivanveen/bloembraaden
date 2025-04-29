@@ -988,7 +988,7 @@ class Help
                                                     self::handleErrorAndStop("No ids found for column $col_name translated to $col_trans");
                                                 }
                                             }
-                                            if (is_array(($ids_for_col = $ids[$col_trans]))) {
+                                            if (true === is_array(($ids_for_col = $ids[$col_trans]))) {
                                                 // 0 is possible as a default value for id's
                                                 if (0 === $col_value) {
                                                     $row[$col_name] = 0;

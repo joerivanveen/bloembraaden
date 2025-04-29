@@ -14,13 +14,12 @@ class Resolver extends BaseLogic
 {
     private ?\stdClass $post_data;
     private array $terms, $properties, $instructions = array();
-    private string $path, $request_uri;
+    private string $path;
     private int $variant_page;
 
     public function __construct(string $request_uri, int $instance_id)
     {
         parent::__construct();
-        $this->request_uri = $request_uri; //todo
         if (Setup::$instance_id !== $instance_id) {
             $row = Help::getDB()->fetchInstanceById($instance_id);
             //Setup::$instance_id = $instance_id;
@@ -325,6 +324,8 @@ class Resolver extends BaseLogic
         $num_terms = count($terms);
         if (0 === $num_terms) { // homepage is requested
             $type_name = 'page';
+            // todo 0.26.0 joeri temporary error reporting
+            $this->addError('Homepage request uri fail ' . var_export($this->getPostData(), true));
             $element_id = Help::$session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             $term = $terms[0];
