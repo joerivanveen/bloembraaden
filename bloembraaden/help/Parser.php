@@ -31,6 +31,9 @@ class Parser extends Base
         '___' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-underscores'),
         '```' => array('new_line' => false, 'allow_space' => true, 'tag' => 'pre'), // also when indented by four spaces..., except when in a list
         '    ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'TAB'),
+        ' | ' => array('new_line' => false, 'allow_space' => true, 'tag' => 'td'),
+        ' |' => array('new_line' => false, 'allow_space' => true, 'tag' => 'td'),
+        '| ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'tr'),
         '– ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
         '- ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
         '+ ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'pluses bloembraaden-pluses'),
@@ -338,6 +341,17 @@ class Parser extends Base
                         ), 'warn');
                     }
                 }
+            } elseif ('td' === $tag) {
+                if (' |' !== $sig) { // do not bother if this is the last on the row
+                    if ('td' === $this->getOpenTag()) {
+                        echo $this->closeTag();
+                        echo $this->openTag('td');
+                    }
+                    if ('th' === $this->getOpenTag()) {
+                        echo $this->closeTag();
+                        echo $this->openTag('th');
+                    }
+                }
             } elseif ($tag === $this->getOpenTag()) { // close the current tag
                 echo $this->closeTag();
             } else {
@@ -346,7 +360,7 @@ class Parser extends Base
             }
         } else { // these are tags that follow a newline character
             $this->holding_eol = false; // the last enter is part of the command, not of the contents
-            // h#, hr, pre, TAB, ol, ul, blockquote
+            // h#, hr, pre, TAB, ol, ul, tr, blockquote
             if (in_array($tag, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
                 echo $this->flush();
                 echo $this->closeTags();
@@ -361,7 +375,32 @@ class Parser extends Base
                     echo $this->closeTag();
                 }
                 echo $this->openTag('li');
-            } elseif ($tag === 'hr') {
+            } elseif ('tr' === $tag) {
+                echo $this->flush();
+                if (false === $this->hasOpenTag('table')) {
+                    echo $this->closeTags();
+                    echo $this->openTag('table');
+                } elseif (in_array($this->getOpenTag(), array('td', 'th'))) { // from the previous line
+                    echo $this->closeTag();
+                }
+                if ('tr' === $this->getOpenTag()) {
+                    echo $this->closeTag();
+                }
+                $next_EOL = strpos($text, "\n", $this->pointer);
+                // if this is the '| --- row do nothing
+                if (strpos($text, '| ---', $this->pointer) === $this->pointer) {
+                    $this->pointer = $next_EOL + 1;
+                    $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
+                } else {
+                    echo $this->openTag('tr');
+                    // check if | --- is the next row, then we need a table header
+                    if (false !== $next_EOL && strpos($text, '| ---', $this->pointer) === $next_EOL + 1) {
+                        echo $this->openTag('th');
+                    } else {
+                        echo $this->openTag('td');
+                    }
+                }
+            } elseif ('hr' === $tag) {
                 echo $this->flush();
                 echo $this->closeTags();
                 echo '<hr';
@@ -389,7 +428,9 @@ class Parser extends Base
         $this->pointer += strlen($sig);
         // consume spaces as well before header text
         if (true === $cmd['allow_space'] && $this->pointer < $this->len) { // you only have to check once because the text ends with \n (which is not ' ')
-            while ($text[$this->pointer] === ' ') {
+            while (' ' === $text[$this->pointer]
+                && '|' !== $text[$this->pointer + 1] // exception for ` | ` where the leading space is part of the tag
+            ) {
                 $this->pointer++;
             }
         }
@@ -530,6 +571,11 @@ class Parser extends Base
         } else {
             return null;
         }
+    }
+
+    private function hasOpenTag(string $tag): bool
+    {
+        return in_array($tag, $this->open_tags);
     }
 
     /**
