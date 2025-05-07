@@ -1262,7 +1262,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
     const self = this;
     let json = {}, i, len, arr, obj;
     xhr.withCredentials = true; // send the cookies to cross-sub domain (secure)
-    if (typeof on_done === 'function') {
+    if ('function' === typeof on_done) {
         // default was to track progress, so only if you receive a config with track_progress other than true, don’t
         if (!config || false === config.hasOwnProperty('track_progress') || true === config.track_progress) {
             // keep a list of outstanding ajax calls
@@ -1282,7 +1282,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
             let slug, str;
             if (true === xhr.peatcms_track_progress) self.trackProgress(xhr);
             if (xhr.readyState === 4) {
-                if (VERBOSE) if (200 !== xhr.status) console.warn('Received status: ' + xhr.status);
+                if (VERBOSE) if (200 !== xhr.status) console.warn(`Received status: ${xhr.status}`);
                 const response_text = xhr.responseText;
                 try {
                     json = JSON.parse(response_text);
@@ -1312,11 +1312,11 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                 if (true === json.hasOwnProperty('download')) {
                     obj = json.download;
                     if (true === obj.hasOwnProperty('content')) {
-                        str = json.download.content;
-                        if (typeof (str) !== 'string') str = JSON.stringify(str);
+                        str = obj.content;
+                        if ('string' !== typeof (str)) str = JSON.stringify(str);
                         if (PEAT.copyToClipboard(str)) {
                             str = (obj.hasOwnProperty('file_name')) ? obj.file_name : 'content';
-                            PEAT.message(str + ' copied to clipboard!', 'note');
+                            PEAT.message(`${str} copied to clipboard!`, 'note');
                         } else {
                             console.log(str);
                             PEAT.message('Could not be copied to clipboard. Data in console.', 'warn');
@@ -3667,19 +3667,14 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
             event_data = { // nice data for the event after the form is posted
                 bubbles: true,
                 detail: {
-                    slug: slug, // superfluous, also in form
-                    data: data, // superfluous, also in form
-                    form: form,
+                    slug: slug,
+                    form: form, // you should set the eventlistener on the form but it is supplied if you didn’t
                     json: json,
                 },
             };
         form.removeAttribute('data-submitting');
         if (json.hasOwnProperty('success') && true === json.success) {
-            // reload the slug always
-            // TODO too much rendering going on
-            if (NAV.getCurrentPath() === slug) {
-                NAV.refresh();
-            } else {
+            if (NAV.getCurrentPath() !== slug) {
                 PEAT.renderProgressive(slug);
             }
             // emit events the designer can respond to

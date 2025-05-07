@@ -685,6 +685,39 @@ class Help
         return ob_get_clean();
     }
 
+    /**
+     * @param string $url
+     * @return string|null returns the $url when it is deemed safe, null otherwise
+     */
+    public static function safeUrl(string $url): ?string
+    {
+        $absolute = true;
+        if (true === str_starts_with($url, 'https://')) {
+            $url = substr($url, 8);
+        } elseif (true === str_starts_with($url, 'http://')) {
+            $url = substr($url, 7);
+        } elseif (true === str_starts_with($url, '//')) {
+            $url = substr($url, 2);
+        } else {
+            $absolute = false;
+        }
+        $parts = explode('/', $url);
+        // sanitize
+        foreach ($parts as $index => $part) {
+            if (0 === $index && true === $absolute) {
+                if ($part === Setup::$INSTANCE_DOMAIN) continue;
+                if (1 !== preg_match('/^[a-z0-9\-.:]+$/', $part)) {
+                    return null;
+                }
+            }
+            if ($part !== Help::slugify($part)) {
+                return null;
+            }
+        }
+
+        return $url;
+    }
+
     public static function unpackKeyValueRows(array $rows): array
     {
         $unpacked = array();

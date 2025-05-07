@@ -113,10 +113,10 @@ class Mailer extends Base
         return false;
     }
 
-    public function send(): ?\stdClass
+    public function send(): \stdClass
     {
         // validate / check if we have all the parameters we need and enrich them if possible
-        foreach (['from', 'to', 'subject', 'text'] as $index => $field_name) {
+        foreach (array('from', 'to', 'subject', 'text') as $index => $field_name) {
             if (false === isset($this->fields[$field_name])) {
                 $this->addError(sprintf('Mailer->send(): field %s is missing', $field_name));
 
@@ -174,7 +174,7 @@ class Mailer extends Base
             $post_data->from = (object)array('email' => $this->fields['from']);
             $post_data->subject = $this->fields['subject'];
             $post_data->content = array((object)array('type' => 'text/plain', 'value' => $this->fields['text']));
-            if (isset($this->fields['html'])) {
+            if (true === isset($this->fields['html'])) {
                 $post_data->content[] = (object)array('type' => 'text/html', 'value' => $this->fields['html']);
             }
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($post_data));
@@ -184,9 +184,9 @@ class Mailer extends Base
         //
         $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE); //get status code
         $return_value = is_string($result) ? json_decode($result) : $result;
-        if (json_last_error() === 0) {
+        if (0 === json_last_error()) {
             // mailchimp / mandrill sends the object in an array...
-            if ($this->active_provider === 'mailchimp') {
+            if ('mailchimp' === $this->active_provider) {
                 if (is_array($return_value) && count($return_value) > 0) {
                     $return_value = (object)$return_value[0];
                 } else {

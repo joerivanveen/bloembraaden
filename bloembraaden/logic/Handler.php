@@ -468,7 +468,7 @@ class Handler extends BaseLogic
                     } else {
                         $post_data->email = 'N/A';
                     }
-                    if (isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
+                    if (true === isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
                         $post_data->referer = end($url_parts);
                         if (null === ($element_row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->referer))) {
                             $this->addError(sprintf('Commented with unknown referer %s.', $post_data->referer));
@@ -684,17 +684,17 @@ class Handler extends BaseLogic
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                     }
                 } elseif ('account_password_forgotten' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
+                    if (true === isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
                         $post_data->check_string = Help::getDB()->putInLocker(0,
                             (object)array('email_address' => $email_address));
                         // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
                         $post_data->confirm_link = sprintf('%s/%s/locker:%s',
                             $instance->getDomain(true),
-                            ((isset($post_data->slug)) ? $post_data->slug : 'account'),
+                            ($post_data->slug ?? 'account'),
                             $post_data->check_string);
                         $post_data->instance_name = $instance->getName();
                         /* this largely duplicate code must be in a helper function or something... */
-                        if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                        if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
                             $temp = new Template($template_row);
                             $body = $temp->renderObject($post_data);
                         }
@@ -705,30 +705,21 @@ class Handler extends BaseLogic
                         $mail->set(array(
                             'to' => $email_address,
                             'from' => $instance->getSetting('mail_verified_sender'),
-                            'subject' => isset($post_data->subject) ? $post_data->subject : 'Mailed by ' . $instance->getDomain(),
+                            'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
                             'text' => Help::html_to_text($body),
                             'html' => $body,
                         ));
                         $out = $mail->send();
-                        if (false === $out->success) {
-                            if (isset($post_data->failure_message)) {
-                                $this->addMessage($post_data->failure_message, 'error');
-                            } else {
-                                $this->addMessage(__('Failed to send mail.', 'peatcms'), 'error');
-                            }
-                        } elseif (isset($post_data->success_message)) {
-                            $this->addMessage($post_data->success_message);
-                        }
+                        $out = $this->after_posting($out, $post_data);
                     } else {
                         $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
                     }
                 } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (isset($post_data->email) && isset($post_data->pass)) {
-                        if (isset($post_data->locker)
+                    if (true === isset($post_data->email, $post_data->pass)) {
+                        if (true === isset($post_data->locker)
                             && $row = Help::getDB()->emptyLocker($post_data->locker)
                         ) {
-                            if (isset($row->information)
-                                && isset($row->information->email_address)
+                            if (true === isset($row->information, $row->information->email_address)
                                 && ($email_address = $row->information->email_address) === $post_data->email
                             ) {
                                 $password = (string)$post_data->pass;
@@ -763,9 +754,9 @@ class Handler extends BaseLogic
                     if (null !== ($user = Help::$session->getUser())) {
                         // check which column is being updated... (multiple is possible)
                         $data = array();
-                        if (isset($post_data->phone)) $data['phone'] = $post_data->phone;
-                        if (isset($post_data->gender)) $data['gender'] = $post_data->gender;
-                        if (isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
+                        if (true === isset($post_data->phone)) $data['phone'] = $post_data->phone;
+                        if (true === isset($post_data->gender)) $data['gender'] = $post_data->gender;
+                        if (true === isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
                         if (count($data) > 0) {
                             $out = array('success' => $user->updateRow($data));
                         }
@@ -1798,19 +1789,18 @@ class Handler extends BaseLogic
          */
     }
 
-    private
-    function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
+    private function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
     {
         $out = null;
         if (true === isset($post_data->from_email)
             && strpos(($from_email = $post_data->from_email), '@')
         ) {
-            if (isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+            if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
                 $temp = new Template($template_row);
                 $body = $temp->renderObject($post_data);
             }
             if (false === isset($body) || '' === $body) {
-                $body = \var_export($post_data, true);
+                $body = var_export($post_data, true);
             }
             if (true === isset($post_data->to)) {
                 $to = $post_data->to;
@@ -1832,25 +1822,11 @@ class Handler extends BaseLogic
                 'html' => str_replace("\n", '<br/>', $body),
             ));
             $out = $mail->send();
-            if (false === $out->success) {
-                if (isset($post_data->failure_message)) {
-                    $this->addMessage($post_data->failure_message, 'error');
-                } else {
-                    $this->addMessage(__('Failed to send mail.', 'peatcms'), 'error');
-                }
-            } elseif (isset($post_data->success_message)) {
-                $this->addMessage($post_data->success_message);
-            }
         } else {
-            $this->addError('from_email is missing or not an e-mailaddress.');
-            if (isset($post_data->failure_message)) {
-                $this->addMessage($post_data->failure_message, 'error');
-            } else {
-                $this->addMessage(__('Failed to send mail.', 'peatcms'), 'error');
-            }
+            $out = array('success' => false);
         }
 
-        return $out;
+        return $this->after_posting($out, $post_data);
     }
 
     /**
@@ -1859,8 +1835,7 @@ class Handler extends BaseLogic
      * @return bool success
      * @since 0.5.1
      */
-    private
-    function updateList(string $action, \stdClass $data): bool
+    private function updateList(string $action, \stdClass $data): bool
     {
         // validate
         if (false === isset($data->shoppinglist)) {
@@ -1919,8 +1894,7 @@ class Handler extends BaseLogic
         return false;
     }
 
-    public
-    function getSession()
+    public function getSession()
     {
         return Help::$session;
     }
@@ -1931,8 +1905,7 @@ class Handler extends BaseLogic
      * @param int $id The id of the element
      * @return BaseElement|null Returns the updated element when succeeded, null when update failed
      */
-    private
-    function updateElement(string $type_name, array $data, int $id): ?BaseElement
+    private function updateElement(string $type_name, array $data, int $id): ?BaseElement
     {
         // TODO access control permissions based on admin etc. -> is the admin from a client that can handle this instance? And do they have that role?
         if ($type_name !== 'search') {
@@ -1947,8 +1920,7 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private
-    function getElementSuggestions(string $type_name, string $term = ''): ?object
+    private function getElementSuggestions(string $type_name, string $term = ''): ?object
     {
         if ('x_value' === $type_name) {
             return Help::getDB()->fetchPropertiesRowSuggestions($term);
@@ -1970,22 +1942,19 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private
-    function getElements(string $type_name): array
+    private function getElements(string $type_name): array
     {
         return Help::getDB()->fetchElementRowsWhere(new Type($type_name), array());
     }
 
-    private
-    function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
+    private function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
     {
         if ('search' === $peat_type->typeName()) return null;
 
         return Help::getDB()->fetchElementRow($peat_type, $id);
     }
 
-    private
-    function getElementById(string $type_name, int $id): ?BaseElement
+    private function getElementById(string $type_name, int $id): ?BaseElement
     {
         if ($peat_type = new Type($type_name)) {
             if ($row = Help::getDB()->fetchElementRow($peat_type, $id)) {
@@ -1998,8 +1967,7 @@ class Handler extends BaseLogic
         }
     }
 
-    private
-    function createElement(string $type_name, ?bool $online = false): ?BaseElement
+    private function createElement(string $type_name, ?bool $online = false): ?BaseElement
     {
         // TODO access control permissions
         if (false === Help::$session->isAdmin()) return null;
@@ -2021,8 +1989,7 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private
-    function insertRow(Admin $admin, \stdClass $post_data): ?object
+    private function insertRow(Admin $admin, \stdClass $post_data): ?object
     {
         if ($post_data->table_name === '_instance') {
             // permission check: only admins with instance_id = 0 can insert new instances...
@@ -2151,8 +2118,7 @@ class Handler extends BaseLogic
         return null;
     }
 
-    private
-    function updatePublishedForTemplates(int $instance_id, int $return_for_template_id = 0): ?bool
+    private function updatePublishedForTemplates(int $instance_id, int $return_for_template_id = 0): ?bool
     {
         $published_for_template_id = null;
         // run through all the templates for this instance to set their published value correctly
@@ -2177,8 +2143,7 @@ class Handler extends BaseLogic
      * @param Type $peat_type
      * @return \stdClass|null information about the database table (of an element), or null if there isn’t
      */
-    public
-    function getTableInfoForOutput(Type $peat_type): ?\stdClass
+    public function getTableInfoForOutput(Type $peat_type): ?\stdClass
     {
         $arr = (array)Help::getDB()->getTableInfo($peat_type->tableName());
         $info = new \stdClass();
@@ -2205,5 +2170,37 @@ class Handler extends BaseLogic
         $info->link_tables = Help::getDB()->getLinkTables($peat_type);
 
         return $info;
+    }
+
+    /**
+     * @param \stdClass $out
+     * @param \stdClass $post_data
+     * @return \stdClass $out with added property ‘redirect_uri’ if necessary
+     */
+    public function after_posting(\stdClass $out, \stdClass $post_data): \stdClass
+    {
+        if (false === $out->success) {
+            if (true === isset($post_data->failure_url)
+                && null !== ($url = Help::safeUrl($post_data->failure_url))
+            ) {
+                $out->redirect_uri = $url;
+            } elseif (true === isset($post_data->failure_message)) {
+                $this->addMessage($post_data->failure_message, 'error');
+            } else {
+                $this->addMessage(__('Form posting failed.', 'peatcms'), 'error');
+            }
+
+            return $out;
+        }
+
+        if (true === isset($post_data->success_url)
+            && null !== ($url = Help::safeUrl($post_data->success_url))
+        ) {
+            $out->redirect_uri = $url;
+        } elseif (true === isset($post_data->success_message)) {
+            $this->addMessage($post_data->success_message);
+        }
+
+        return $out;
     }
 }
