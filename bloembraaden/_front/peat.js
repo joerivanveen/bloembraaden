@@ -1374,7 +1374,7 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
                 // @since 0.6.11 redirect user when you receive a redirect_uri
                 // @since 0.7.2 also external websites are allowed, placed redirect after the callback
                 if (json.hasOwnProperty('redirect_uri')) {
-                    NAV.go(json.redirect_uri, (json.redirect_uri.indexOf('http') !== 0));
+                    NAV.go(json.redirect_uri);
                 }
                 // @since 0.8.16 re-render something
                 if (json.hasOwnProperty('re_render')) {
@@ -3451,10 +3451,9 @@ PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
 
     return slug;
 }
-PEATCMS_navigator.prototype.go = function (path, local) {
+PEATCMS_navigator.prototype.go = function (path) {
     const self = this;
     let slug;
-    if (local) console.warn('Supplying `local` to NAV.go is deprecated');
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.setState();
