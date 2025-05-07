@@ -3688,7 +3688,7 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
 /**
  * Stylesheet manipulator
  */
-var PEAT_style = function (CSSStyleSheet) {
+function PEAT_style(CSSStyleSheet) {
     // make sure you get the actual sheet, not the style thing itself
     if (CSSStyleSheet.sheet) CSSStyleSheet = CSSStyleSheet.sheet;
     this.CSSStyleSheet = CSSStyleSheet;
@@ -3704,27 +3704,6 @@ PEAT_style.prototype.getCurrentValue = function (selector, property) {
         }
     }
     return null;
-}
-
-PEAT_style.prototype.updateSelector = function (selector, html_id) {
-    if (selector.indexOf('html') > -1) {
-        selector = PEATCMS.replace('html', '', selector);
-    }
-    var str_rule = 'html#' + html_id + ' ';
-    return str_rule + PEATCMS.replace(',', ',' + str_rule, selector);
-}
-
-PEAT_style.prototype.upsertCSSRule = function (cssRule, html_id) {
-    var str_rule = cssRule.cssText,
-        str_i = str_rule.indexOf('{'),
-        selector, rule;
-    // split into denominator and rule
-    selector = str_rule.substring(0, str_i).trim();
-    rule = str_rule.substring(str_i + 1).replace('}', '').trim();
-    if (html_id) { // make all rules more specific to override the attached instance stylesheet
-        return this.upsertRule(this.updateSelector(selector, html_id), rule); // returns the cssText
-    }
-    return this.upsertRule(selector, rule); // returns the cssText
 }
 
 PEAT_style.prototype.upsertRule = function (selector, rule) {
@@ -3749,90 +3728,12 @@ PEAT_style.prototype.upsertRule = function (selector, rule) {
     return '';
 }
 
-PEAT_style.prototype.upsertRules = function (rules, html_id) {
-    var rule, len;
-    if (Array.isArray(rules)) { // CSSStyleRule array
-        for (rule = 0, len = rules.length; rule < len; ++rule) {
-            this.upsertCSSRule(rules[rule], html_id);
-        }
-    } else { // assume home built object
-        for (rule in rules) {
-            if (!rules.hasOwnProperty(rule)) continue;
-            if (html_id) {
-                this.upsertRule(this.updateSelector(rule, html_id), rules[rule]);
-            } else {
-                this.upsertRule(rule, rules[rule]);
-            }
-        }
-    }
-    return this; // enable chaining
-}
-
 PEAT_style.prototype.clearRules = function () {
     var i, index = this.rules.length - 1;
     for (i = index; i >= 0; i--) {
         this.CSSStyleSheet.deleteRule(i);
     }
     return this; // enable chaining
-}
-
-PEAT_style.prototype.removeRules = function (rules, entirelyBySelector) {
-    if (!entirelyBySelector) {
-        console.error('Currently rules cannot be removed in part');
-        return;
-    }
-    var i, selector_text, index = this.rules.length - 1;
-    for (i = index; i >= 0; i--) {
-        selector_text = this.rules[i].selectorText;
-        if (rules.hasOwnProperty(selector_text)) {
-            this.CSSStyleSheet.deleteRule(i);
-            //delete rules[selector_text]; // <- TODO check if this speeds up the matching, but might interfere with caching
-        }
-    }
-    return this; // enable chaining
-}
-
-PEAT_style.prototype.convertRulesByUnit = function (unit, unit_to, multiplier, rules) {
-    // returns all the rules that have this unit defined, as an object (named array) selectorText: cssText
-    var converted_rules = {},
-        i, len, current_style, css_index, css_colon_index, css_text, selector_text, css_value;
-    if (unit.indexOf(';') === -1) unit += ';';
-    if (!['vw;'].includes(unit)) {
-        console.error('PEAT_style.convertRulesByUnit does not currently support ' + unit);
-        return {};
-    }
-    if (!rules) rules = this.rules;
-    for (i = 0, len = rules.length; i < len; ++i) {
-        if (!rules.hasOwnProperty(i)) continue;
-        current_style = rules[i];
-        if ((css_index = (css_text = current_style.cssText).indexOf(unit)) > -1) {
-            if ((selector_text = current_style.selectorText)) {
-                css_colon_index = css_text.lastIndexOf(':', css_index);
-                css_value = parseInt(css_text.substring(css_colon_index + 1, css_index));
-                var index_from = Math.max(
-                    css_text.lastIndexOf('{', css_colon_index),
-                    css_text.lastIndexOf(';', css_colon_index)
-                );
-                var property_name = css_text.substring(index_from + 1, css_colon_index).trim();
-                converted_rules[selector_text] = property_name + ':' + PEATCMS.cleanUpNumber(multiplier * css_value) + unit_to;
-            } else {
-                console.error(current_style.conditionText);
-            }
-        }
-    }
-    console.log(converted_rules);
-    return converted_rules;
-}
-
-PEAT_style.prototype.convert = function (unit, lostpixels) {
-    if (unit === 'vw;') {
-        var ojee = selector_text.split('-width'), css_index, css_value, selector_text;
-        for (css_index in ojee) {
-            css_value = parseInt(ojee[css_index].replace(':', '')) + lostpixels;
-            if (!isNaN(css_value)) ojee[css_index] = css_value + 'px'
-        }
-        selector_text = ojee.join('-width:');
-    }
 }
 
 /**
