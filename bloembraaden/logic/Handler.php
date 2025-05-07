@@ -237,7 +237,7 @@ class Handler extends BaseLogic
                 }
             }
         } elseif ('account_delete_session' === $action) {
-            if (!isset(($terms = $this->resolver->getTerms())[0])) {
+            if (false === isset(($terms = $this->resolver->getTerms())[0])) {
                 Help::$session->delete();
                 $this->addMessage(__('Session has been deleted.', 'peatcms'), 'log');
                 $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
@@ -260,7 +260,7 @@ class Handler extends BaseLogic
                 }
             }
         } elseif ('payment_status_update' === $action) {
-            //header('Access-Control-Allow-Origin: https://apirequest.io'); //TODO this is temp for testing, not necessary for curl
+            //header('Access-Control-Allow-Origin: https://apirequest.io'); // This is temp for testing, not necessary for curl
             Help::$OUTPUT_JSON = true;
             if (($psp = $instance->getPaymentServiceProvider())) {
                 if (true === $psp->updatePaymentStatus($post_data)) {

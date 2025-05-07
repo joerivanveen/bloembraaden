@@ -26,23 +26,22 @@ const peatcms_events = [
  * @since 0.7.9
  */
 document.addEventListener('peatcms.form_posted', function (e) {
-    let form, json, arr, i, len, is_account, user, action;
+    let form, json, arr, i, len, is_account, user, action, value;
     if (e.detail && (form = e.detail.form) && form.hasAttribute('action')) {
-        if ((form.action.indexOf && (action = form.action).indexOf('/__action__/account_') !== -1)
-            || (form.action.value && (action = form.action.value).indexOf('/__action__/account_') !== -1)
+        if (((action = form.action).indexOf && action.indexOf('/__action__/account_') !== -1) // form action
+            || ((value = action.value) && value.indexOf('/__action__/account_') !== -1) // hidden element ‘action’
         ) {
             // ‘/__action__/account_’ are all the account handling functions
             if ((json = e.detail.json) && json.hasOwnProperty('is_account')) {
-                is_account = json.is_account;
+                window.PEATCMS_globals.is_account = is_account = json.is_account;
                 if (VERBOSE) console.log('Account status changed');
-                window.PEATCMS_globals.is_account = is_account;
                 // by default we also change the status for data-is_account elements, for more you should handle the event
                 arr = document.body.querySelectorAll('[data-is_account]');
-                for (i = 0, len = arr.length; i < len; ++i) {
-                    arr[i].setAttribute('data-is_account', (is_account) ? 'true' : 'false');
-                }
-                // load email, phone and shipping and billing addresses into session
                 if (true === is_account) {
+                    for (i = 0, len = arr.length; i < len; ++i) {
+                        arr[i].setAttribute('data-is_account', 'true');
+                    }
+                    // load email, phone and shipping and billing addresses into session
                     user = PEATCMS.cloneStructured(json.__user__);
                     PEAT.setSessionVar('gender', user.gender);
                     PEAT.setSessionVar('email', user.email);
@@ -54,6 +53,9 @@ document.addEventListener('peatcms.form_posted', function (e) {
                     }
                 } else {
                     PEAT.session = {}; // todo this is a terrible shortcut, we assume current user logged out
+                    for (i = 0, len = arr.length; i < len; ++i) {
+                        arr[i].setAttribute('data-is_account', 'false');
+                    }
                 }
                 // produce an event with relevant details to catch
                 form.dispatchEvent(new CustomEvent('peatcms.account_status_changed', {
