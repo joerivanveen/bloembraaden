@@ -123,7 +123,7 @@ class Image extends BaseElement
         $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
         // rotate and flip if necessary @since 0.11.0
         try {
-            $exif = exif_read_data($path);
+            $exif = @exif_read_data($path);
             if ($exif && isset($exif['Orientation'])) {
                 $orientation = $exif['Orientation'];
                 $angle = 0;
@@ -145,7 +145,7 @@ class Image extends BaseElement
                     $logger->log('Image flipped as well');
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // ignore it when exif cannot be read
         }
         // define necessary paths
