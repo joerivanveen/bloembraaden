@@ -1036,16 +1036,15 @@ body .PEATCMS_admin .peatcms-link:focus {
     background-color: var(--admin-color-paper);
     z-index: 100; /* same level as Bloembraaden admin flower button */
     text-align: center;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 #quickie-modal form {
     text-align: left;
     margin: 0 auto;
     padding: 1rem;
-    height: calc(100% - 2rem);
     max-width: 440px;
-    overflow-x: hidden;
-    overflow-y: auto;
 }
 
 #quickie-modal .image {
