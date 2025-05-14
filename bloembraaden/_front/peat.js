@@ -79,6 +79,7 @@ function peatRefreshTurnstile(e) {
         window.turnstile.reset(turnstile.getAttribute('data-turnstile-widget-id'));
     }
 }
+
 document.addEventListener('peatcms.form_posted', peatRefreshTurnstile);
 document.addEventListener('peatcms.form_failed', peatRefreshTurnstile);
 
@@ -153,7 +154,12 @@ function Address(wrapper) {
         myparcel = wrapper.querySelector('[name="myparcel-suggest"]');
     this.wrapper = wrapper;
     this.inputs = inputs;
-    this.myparcel = null !== myparcel;
+    if (myparcel) { // set the name to something random to prevent autofill breaking the functionality
+        myparcel.setAttribute('name', 'myparcel-' + Math.random());
+        this.myparcel = myparcel;
+    } else {
+        this.myparcel = null;
+    }
     for (i = 0, len = inputs.length; i < len; ++i) {
         this.enhanceInput(inputs[i]);
     }
@@ -236,7 +242,7 @@ Address.prototype.getCountryCode = function () {
 Address.prototype.enhanceInput = function (input) {
     input.Address = this; // TODO remove once petit clos uses peatcms_address
     input.peatcms_address = this;
-    if (this.myparcel && 'myparcel-suggest' === input.getAttribute('name')) {
+    if (this.myparcel && input === this.myparcel) {
         const hipster = input.closest('.hipster-input');
         // manage suggestions list visibility
         input.addEventListener('focus', function () {
@@ -358,7 +364,7 @@ Address.prototype.updateSuggestionsList = function (input) {
                         li = document.createElement('li');
                     adapted.address_street = PEATCMS.replace("'", '’', adapted.address_street);
                     if (part_1 !== number) {
-                        const part_2 = number.substring(part_1.length);
+                        const part_2 = PEATCMS.trim(number.substring(part_1.length), '-\/|');
                         adapted.address_number = part_1;
                         adapted.address_number_addition = (`${part_2} ${adapted.address_number_addition}`).trim();
                     }
@@ -3120,8 +3126,6 @@ PEATCMS.prototype.startUp = function () {
         this.setSessionVar('dark_mode', true);
     }
     if (this.getSessionVar('dark_mode') === true) this.html_node.classList.add('dark-mode');
-    // add js flag to html
-    this.html_node.classList.add('js');
     // handle no hover flag for body
     document.body.addEventListener('touchstart', function () { // remove hover state
         this.classList.add('no-hover');
