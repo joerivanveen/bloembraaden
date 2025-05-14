@@ -248,7 +248,7 @@ Address.prototype.enhanceInput = function (input) {
         document.addEventListener('click', function (e) {
             const coords = {x: e.clientX, y: e.clientY};
             // if the click is not inside this element, remove suggestions
-            if (false === pc_coords_in_rect(coords, hipster.getBoundingClientRect())) {
+            if (false === PEATCMS.coordsInRectangle(coords, hipster.getBoundingClientRect())) {
                 hipster.classList.add('done-suggesting');
             }
         });
@@ -3060,7 +3060,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         if (a.hasAttribute('data-peatcms_ajaxified')) continue;
         a.setAttribute('data-peatcms_ajaxified', '1');
         a.innerHTML = PEATCMS.replace('-dot-', '.', PEATCMS.replace('-at-', '@', a.innerHTML));
-        a.classList.add('peatcms-link','link'); // todo remove when impact is none
+        a.classList.add('peatcms-link', 'link'); // todo remove when impact is none
         a.setAttribute('tabindex', '0');
         a.setAttribute('role', 'link');
     }
@@ -3328,19 +3328,24 @@ PEATCMS.prototype.fadeOut = function (DOMElement, callback) {
     if (!callback) callback = function () {
         DOMElement.remove()
     };
+
     function fiveFifty(el) {
         el.classList.remove('bloembraaden-fade-out');
         callback(el);
     }
+
     setTimeout(fiveFifty, 550, DOMElement);
 }
 PEATCMS.prototype.fadeIn = function (DOMElement, callback) {
     DOMElement.classList.add('bloembraaden-fade-in');
-    if (!callback) callback = function () {};
+    if (!callback) callback = function () {
+    };
+
     function fourFifty(el) {
         el.classList.remove('bloembraaden-fade-in');
         callback(el);
     }
+
     setTimeout(fourFifty, 450, DOMElement);
 }
 PEATCMS.prototype.grabAttention = function (DOMElement, low_key, callback) {
@@ -3461,10 +3466,12 @@ PEATCMS_navigator.prototype.go = function (path) {
         this.setState();
         if (0 === path.indexOf(this.getRoot()) || 0 !== path.indexOf('http')) { // this is a local link
             slug = this.signalStartNavigating(path);
+
             function end() {
                 self.is_navigating = false;
                 document.dispatchEvent(new CustomEvent('peatcms.navigation_end'));
             }
+
             if (0 === slug.indexOf('__action__/download/')) {
                 window.open(this.getRoot(true) + slug, '_blank');
                 end();
@@ -3866,6 +3873,25 @@ PEATCMS.trim = function (str, chars) {
 function trim(str, chars) {
     console.warn('trim() is deprecated, use PEATCMS.trim()');
     return PEATCMS.trim(str, chars);
+}
+
+/**
+ * @param coords must contain properties x and y as the coordinates
+ * @param rect must contain properties left, right, top and bottom, like getBoundingClientRect()
+ * @returns {boolean}
+ */
+PEATCMS.coordsInRectangle = function (coords, rect) {
+    try {
+        const x = coords.x, y = coords.y;
+        if (x > rect.left && x < rect.right) {
+            if (y > rect.top && y < rect.bottom) {
+                return true;
+            }
+        }
+    } catch (e) {
+        console.error('coordsInRectangle() failed', e);
+    }
+    return false;
 }
 
 PEATCMS.getFormData = function (form) {

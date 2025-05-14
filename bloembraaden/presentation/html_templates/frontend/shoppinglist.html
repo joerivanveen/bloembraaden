@@ -56,7 +56,7 @@
                     <input type="hidden" name="action" value="update_quantity_in_list"/>
                     <input type="hidden" name="variant_id" value="{{variant_id}}"/>
                     <input type="text" name="quantity" value="{{quantity}}" placeholder="{{quantity}}"
-                           onblur="if (!isInt(this.value)){ this.value = this.placeholder; }"/>
+                           onblur="if (!PEATCMS.isInt(this.value)){ this.value = this.placeholder; }"/>
                     <input type="submit" value="↻"/>
                     <span class="nowrap">= € {{total}}</span>
                 </form>
