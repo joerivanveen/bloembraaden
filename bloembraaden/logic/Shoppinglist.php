@@ -41,7 +41,13 @@ class Shoppinglist extends BaseLogic
     public function __shutdown(): void
     {
         if (true === $this->hasChanged()) {
-            Help::getDB()->upsertShoppingListRows($this->getId(), $this->rows);
+            $shoppinglist_id = $this->getId();
+            Help::getDB()->upsertShoppingListRows($shoppinglist_id, $this->rows);
+            Help::getDB()->updateColumns(
+                '_shoppinglist',
+                array('date_updated' => 'NOW()'),
+                $shoppinglist_id,
+            );
         }
     }
 
@@ -62,8 +68,8 @@ class Shoppinglist extends BaseLogic
             if ($row->variant_id === $variant_id) {
                 $row->quantity += $quantity;
                 // prices should always be updated
-                $row->price = $variant->getPrice();
-                $row->price_from = $variant->getPriceFrom();
+                $row->price = Help::asMoney($variant->getPrice());
+                $row->price_from = Help::asMoney($variant->getPriceFrom());
 
                 return true;
             }
@@ -72,8 +78,8 @@ class Shoppinglist extends BaseLogic
             'variant_id' => $variant_id,
             'variant_slug' => $variant->getSlug(),
             'quantity' => $quantity,
-            'price_from' => $variant->getPriceFrom(),
-            'price' => $variant->getPrice(),
+            'price_from' => Help::asMoney($variant->getPriceFrom()),
+            'price' => Help::asMoney($variant->getPrice()),
             'o' => count($this->rows) + 1,
             'deleted' => false,
         );
@@ -270,8 +276,12 @@ class Shoppinglist extends BaseLogic
 
     private function getStateCurrent(): ?string
     {
-        if (isset($this->rows)) {
-            return md5(var_export($this->rows, true));
+        if (true === isset($this->rows)) {
+            $data = array_reduce($this->rows, function ($carry, $row) {
+                return "$carry $row->variant_id $row->quantity $row->price";
+            }, '');
+
+            return md5($data);
         } else {
             return null;
         }
