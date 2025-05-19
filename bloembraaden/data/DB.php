@@ -11,10 +11,10 @@ class DB extends Base
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
         '_ci_ai',
-        '_session',
+        //'_session', @since 0.26.0 session itself is in history
         '_sessionvars',
         '_system',
-        '_shoppinglist',
+        //'_shoppinglist', @since 0.26.0 shoppinglist itself is in history
         '_shoppinglist_variant',
         '_payment_status_update',
         '_cache',
@@ -3762,17 +3762,17 @@ class DB extends Base
         $table = new Table($table_info);
         $key_column_name = $table_info->getPrimaryKeyColumn()->getName();
         // reCacheWithWarmup the old slug, clear this slug and reCacheWithWarmup the new slug as well (as it may be used for a search page)
-        if (isset($col_val['slug'])) {
+        if (true === isset($col_val['slug'])) {
             //$data['slug'] = $this->clearSlug($data['slug']); // (INSERT) needs to be unique for any entry
             $new_slug = $this->clearSlug($col_val['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
             $col_val['slug'] = $new_slug;
         }
-        if (isset($col_val['date_updated'])) unset($col_val['date_updated']);
+        //if (true === isset($col_val['date_updated'])) unset($col_val['date_updated']);
         $data = $table->formatColumnsAndData($col_val, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
-        if (true === in_array('slug', $data['discarded'])) unset($new_slug);
+        if (true === in_array('slug', $data['discarded'])) unset($col_val['slug']);
         // check if there are any columns going to be updated, else return already
-        if (count($data['parameterized']) === 0) {
+        if (0 === count($data['parameterized'])) {
             $this->addError('No columns to update');
 
             return false;
@@ -3781,9 +3781,11 @@ class DB extends Base
         $old_row = $this->addToHistory($table, $key, $col_val); // returns the copied (now old) row, can be null
         // update entry
         $columns_list = implode(', ', $data['parameterized']);
-        $columns_date = ($table_info->hasStandardColumns() ? ', date_updated = NOW()' : '');
+        if (true === $table_info->hasStandardColumns() && false === isset($col_val['date_updated'])) {
+            $columns_list .= ', date_updated = NOW()';
+        }
         $statement = $this->conn->prepare(
-            "UPDATE $table_name SET $columns_list $columns_date WHERE $key_column_name = ?;"
+            "UPDATE $table_name SET $columns_list WHERE $key_column_name = ?;"
         );
         $data['values'][] = $key; // key must be added as last value for the where clause
         try {
@@ -3797,13 +3799,13 @@ class DB extends Base
         if (1 === $row_count) {
             // TODO this can be more solid, but test it thoroughly...
             // reCacheWithWarmup the new slug (as it may already be used for a search page)
-            if (isset($new_slug)) {
+            if (true === isset($new_slug)) {
                 $this->reCacheWithWarmup($new_slug);
             }
             // reCacheWithWarmup the current slug always for any change, if history did not return a row, get it from main
             if (null === $old_row) $old_row = $this->fetchRow($table_name, array('slug'), array($key_column_name => $key));
-            if (null !== $old_row and isset($old_row->slug)) {
-                if (isset($new_slug)) {
+            if (null !== $old_row && true === isset($old_row->slug)) {
+                if (true === isset($new_slug)) {
                     $this->deleteFromCache($old_row->slug);
                     $this->markStaleTheParents($old_row->slug);
                 } else {
@@ -4527,8 +4529,8 @@ class DB extends Base
                 VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :date_created);
             ');
             $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->bindValue(':admin_id', 0);
-            $statement->bindValue(':admin_name', 'IMPORT');
+            $statement->bindValue(':admin_id', $row->admin_id ?? 0);
+            $statement->bindValue(':admin_name', $row->admin_name ?? 'IMPORT');
             $statement->bindValue(':user_id', $row->user_id);
             $statement->bindValue(':user_name', $row->user_name);
             $statement->bindValue(':table_name', $row->table_name);
@@ -4615,7 +4617,7 @@ class DB extends Base
     public function fetchHistoryFrom(int $timestamp, bool $is_admin): array
     {
         $sql_date = date('Y-m-d H:i:s', $timestamp);
-        $query = 'SELECT DISTINCT table_name, key FROM _history WHERE date_created >= :date AND instance_id = :instance_id';
+        $query = 'SELECT DISTINCT table_name, key FROM _history WHERE date_created >= :date AND instance_id = :instance_id LIMIT 100;';
         if (true === $is_admin) {
             $statement = $this->conn->prepare("$query;");
         } else { // get it for current user
@@ -4633,6 +4635,22 @@ class DB extends Base
         $statement = null;
 
         return $rows;
+    }
+
+    public function fetchHistoryTimestamp(array $where)
+    {
+        $query = 'SELECT MAX(date_created) FROM _history WHERE instance_id = ?';
+        $values = array(Setup::$instance_id);
+        foreach ($where as $column => $value) {
+            $query .= " AND $column = ?";
+            $values[] = $value;
+        }
+        $statement = $this->conn->prepare($query);
+        $statement->execute($values);
+        $timestamp = $statement->fetchColumn(0);
+        $statement = null;
+
+        return Help::strtotime_ms($timestamp);
     }
 
     /**
@@ -4654,20 +4672,43 @@ class DB extends Base
             $row = null;
         } else {
             $row = $this->fetchRow($table_name, array('*'), array(
-                'deleted' => null, // null means either value is good
+                'deleted' => null, // null means any value is accepted
                 'instance_id' => null, // will be overwritten by next line if the $key column is actually instance_id
                 $table_info->getPrimaryKeyColumn()->getName() => $key,
             ));
         }
         // @since 0.17.0 use _history
         $now = Setup::getNow(); // use the same timestamp for all columns in this update
+        // settle on who did it
+        $admin_id = 0;
+        $admin_email = '-';
+        $user_id = 0;
+        $user_email = '-';
+        if (true === isset(Help::$session)) {
+            $session = Help::$session;
+            if (($admin = $session->getAdmin()) instanceof Admin) {
+                $admin_id = $admin->getId();
+                $admin_email = $admin->getRow()->email;
+            }
+            if (($user = $session->getUser()) instanceof User) {
+                $user_id = $user->getId();
+                $user_email = $user->getRow()->email;
+            }
+        }
+        if (true === isset($row->user_id) && $row->user_id !== $user_id) {
+            if (0 < $user_id) {
+                $this->addError("User $user_id is not the same as the one in the row $row->user_id.");
+                $user_email = 'N/A';
+            }
+            $user_id = $row->user_id;
+        }
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
             if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
             // booleans get butchered in $statement->execute(), interestingly, NULL values don't
-            if (is_bool($value)) {
+            if (true === is_bool($value)) {
                 $value = ($value ? '1' : '0');
-            } elseif (in_array($column_name, $this::REDACTED_COLUMN_NAMES)) {
+            } elseif (true === in_array($column_name, $this::REDACTED_COLUMN_NAMES)) {
                 $value = 'REDACTED';
             } else {
                 $value = (string)$value;
@@ -4675,36 +4716,44 @@ class DB extends Base
                     $value = date('Y-m-d H:i:s', $now);
                 }
             }
-            $admin_id = 0;
-            $admin_email = '-';
-            $user_id = 0;
-            $user_email = '-';
-            if (isset(Help::$session)) {
-                if (($admin = Help::$session->getAdmin())) {
-                    $admin_id = $admin->getId();
-                    $admin_email = $admin->getRow()->email;
-                }
-                if (($user = Help::$session->getUser())) {
-                    $user_id = $user->getId();
-                    $user_email = $user->getRow()->email;
-                }
-            }
-            $statement = $this->conn->prepare('
-                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value) 
-                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value);
-            ');
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-            $statement->bindValue(':admin_id', $admin_id);
-            $statement->bindValue(':admin_name', $admin_email);
-            $statement->bindValue(':user_id', $user_id);
-            $statement->bindValue(':user_name', $user_email);
-            $statement->bindValue(':table_name', $table_name);
-            $statement->bindValue(':table_column', $column_name);
-            $statement->bindValue(':key', (int)$key);
-            $statement->bindValue(':value', $value);
-            if (false === $statement->execute()) {
+            $insert = (object)array(
+                'instance_id' => Setup::$instance_id,
+                'admin_id' => $admin_id,
+                'admin_name' => $admin_email,
+                'user_id' => $user_id,
+                'user_name' => $user_email,
+                'table_name' => $table_name,
+                'table_column' => $column_name,
+                'key' => (int)$key,
+                'value' => $value,
+                'date_created' => 'NOW()',
+            );
+//            $statement = $this->conn->prepare('
+//                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value)
+//                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value);
+//            ');
+//            $statement->bindValue(':instance_id', Setup::$instance_id);
+//            $statement->bindValue(':admin_id', $admin_id);
+//            $statement->bindValue(':admin_name', $admin_email);
+//            $statement->bindValue(':user_id', $user_id);
+//            $statement->bindValue(':user_name', $user_email);
+//            $statement->bindValue(':table_name', $table_name);
+//            $statement->bindValue(':table_column', $column_name);
+//            $statement->bindValue(':key', (int)$key);
+//            $statement->bindValue(':value', $value);
+            if (false === $this->insertHistoryEntry($insert)) {
                 $this->addError(sprintf('addToHistory could not insert into _history for %1$s with %2$s = %3$s',
                     $table_name, $column_name, $value));
+            }
+        }
+
+        if (true === isset($insert) && true === isset($row->session_id) && 0 < $row->session_id) { // this session is (retroactively) updated
+            $insert->table_name = '_session';
+            $insert->table_column = 'date_updated';
+            $insert->key = (int)$row->session_id;
+            $insert->value = 'NOW()'; // data_updated is always NOW() doesn’t matter what you say here
+            if (false === $this->insertHistoryEntry($insert)) {
+                $this->addError('addToHistory could not add the session change.');
             }
         }
 

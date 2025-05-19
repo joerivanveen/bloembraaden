@@ -107,6 +107,12 @@ class Help
         return number_format((float)Help::floatForHumans($var), Setup::$DECIMAL_DIGITS, Setup::$DECIMAL_SEPARATOR, Setup::$RADIX);
     }
 
+    public static function strtotime_ms(string $date): int
+    {
+        $ms = (int)substr(explode('.', $date)[1], 0, 3);
+        return 1000 * strtotime($date) + $ms;
+    }
+
     /**
      * Floating point numbers have errors that make them ugly and unusable that are not simply fixed by round()ing them
      * Use floatForHumans to return the intended decimal as a string (floatVal it if you want to perform calculations)

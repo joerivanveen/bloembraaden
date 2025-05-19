@@ -87,21 +87,25 @@ class Session extends BaseLogic
         }
         // update session vars in database
         $updated_vars = $this->getUpdatedVars();
+        $own_variables = array();
+        if (0 < count($updated_vars)) {
+            $own_variables['date_updated'] = 'NOW()';
+        }
         $session_id = $this->getId();
         foreach ($updated_vars as $name => $var) {
             if (null === $var) $var = (object)array('delete' => true);
             Help::getDB()->updateSessionVar($session_id, $name, $var);
         }
+        $updated_vars = null; // free memory
         // update own vars (from row) in database
-        $updated_vars = array();
         if ($this->user_agent !== $this->row->user_agent) {
-            $updated_vars['user_agent'] = $this->user_agent;
+            $own_variables['user_agent'] = $this->user_agent;
         }
         if ($this->ip_address !== $this->row->ip_address) {
-            $updated_vars['ip_address'] = $this->ip_address;
-            $updated_vars['reverse_dns'] = null; // to be filled by job
+            $own_variables['ip_address'] = $this->ip_address;
+            $own_variables['reverse_dns'] = null; // to be filled by job
         }
-        Help::getDB()->registerSessionAccess($this->token, $updated_vars);
+        Help::getDB()->registerSessionAccess($this->token, $own_variables);
     }
 
 
@@ -306,6 +310,11 @@ class Session extends BaseLogic
     public function getId(): int
     {
         return $this->session_id;
+    }
+
+    public function getUpdatedTimestamp()
+    {
+        return Help::strtotime_ms($this->row->date_updated);
     }
 
     /**

@@ -18,7 +18,8 @@ const peatcms_events = [
     'peatcms.form_posting',
     'peatcms.form_posted',
     'peatcms.form_failed',
-    'peatcms.account_status_changed'
+    'peatcms.account_status_changed',
+    'peatcms.session_changed',
 ];
 
 /**
@@ -3118,6 +3119,7 @@ PEATCMS.prototype.startUp = function () {
     let i, len, self = this;
     this.currentY = 0;
     this.html_node = document.getElementsByTagName('html')[0];
+    this.poll_session_timeout_ms = 1599;
     // console.error('startUp short circuited for now');
     // return;
     // initialize dark mode
@@ -3209,6 +3211,52 @@ PEATCMS.prototype.startUp = function () {
         }, 392);
         self.setScrolledStatus();
     });
+}
+
+/**
+ * Call this function to be able to react to session and user changes on the server.
+ * This will poll the server and emit a 'peatcms.session_changed' event when the session or user changes.
+ * Add poll time in ms as argument, default is 15000ms.
+ * @since 0.26.0
+ * @param session_timeout_ms
+ */
+PEATCMS.prototype.pollSession = function (session_timeout_ms) {
+    const self = this;
+    self.poll_session_timeout_ms = session_timeout_ms || 15000;
+    const first_timeout_ms = Math.max(self.poll_session_timeout_ms, 3000);
+    self.poll_timeout = setTimeout(self.pollSessionAct, first_timeout_ms);
+    window.removeEventListener('focus', self.pollSessionAct);
+    window.addEventListener('focus', self.pollSessionAct);
+}
+
+/* internal */
+PEATCMS.prototype.pollSessionAct = function () {
+    if (false === document.hasFocus()) {
+        return;
+    }
+    const self = PEAT;
+    clearTimeout(self.poll_timeout);
+    NAV.ajax(`/__action__/session`, {peatcms_ajax_config: {track_progress: false}}, function (json) {
+        const timestamp = self.polled_until || NAV.nav_timestamp,
+            detail = {};
+        //console.warn(timestamp, json.session, json.user);
+        self.polled_until = timestamp;
+        if (timestamp < json.session) {
+            // can be shoppinglist (not when there is a user) or any session var
+            detail['session_changed'] = true;
+            self.polled_until = detail['since'] = Math.max(self.polled_until, json.session);
+        }
+        if (timestamp < json.user) {
+            // can be shoppinglist, user, addresses and order <- just reload any one that is present?
+            detail['user_changed'] = true;
+            self.polled_until = detail['since'] = Math.max(self.polled_until, json.user);
+        }
+        if (detail.hasOwnProperty('since')) {
+            document.dispatchEvent(new CustomEvent('peatcms.session_changed', {detail: detail}));
+        }
+        // repeat...
+        self.poll_timeout = setTimeout(self.pollSessionAct, self.poll_session_timeout_ms);
+    }, 'GET');
 }
 
 /* help styles with scrolling and stuff */
@@ -3421,7 +3469,8 @@ let PEATCMS_navigator = function (root) {
     this.element = false; // will load currently displayed element
     this.last_navigate = null; // remember if we went somewhere
     this.is_navigating = false;
-    this.nav_timestamp = Date.now();
+    // grab the last navigate timestamp from the server, should be available
+    this.nav_timestamp = window.PEATCMS_globals.timestamp || Date.now();
     this.tags_in_cache = []; // setup tags cache
     this.tags_to_cache = ['__action__/countries'];
 }
@@ -3450,7 +3499,7 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
 }
 PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
     this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
-    this.nav_timestamp = Date.now();
+    this.nav_timestamp = Date.now(); // slightly premature, but better than waiting for the server
     let slug = path.replace(this.getRoot(true), '');
     if (0 === slug.indexOf('/')) slug = slug.slice(1);
     document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {

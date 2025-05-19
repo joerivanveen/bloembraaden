@@ -19,7 +19,7 @@ class Setup
     public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $HOMEPAGE_SLUG, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
     public static array $translations;
     public static stdClass $MAIL, $PDFMAKER;
-    private static int $seconds_delta;
+    private static int $ms_delta;
     private static ?PDO $DB_MAIN_CONN = null;
     private static stdClass $DB_MAIN;
     public const AVAILABLE_TIMEZONES = array(
@@ -67,11 +67,22 @@ class Setup
      */
     public static function getNow(): int
     {
-        if (false === isset(self::$seconds_delta)) {
-            self::$seconds_delta = time() - strtotime(self::getMainDatabaseConnection()->query('SELECT NOW();')->fetchColumn(0));
+        // duplicate below todo save ms_delta application wide and update daily?
+        if (false === isset(self::$ms_delta)) {
+            self::$ms_delta = (int)floor(microtime(true) * 1000) - (int)(self::getMainDatabaseConnection()->query('SELECT 1000 * EXTRACT(EPOCH FROM NOW());')->fetchColumn(0));
         }
 
-        return time() + self::$seconds_delta;
+        return time() + (int)(self::$ms_delta / 1000);
+    }
+
+    public static function getNowFrom(int $timestamp_ms = 0): int
+    {
+        // duplicate from above
+        if (false === isset(self::$ms_delta)) {
+            self::$ms_delta = (int)floor(microtime(true) * 1000) - (int)(self::getMainDatabaseConnection()->query('SELECT 1000 * EXTRACT(EPOCH FROM NOW());')->fetchColumn(0));
+        }
+
+        return $timestamp_ms + self::$ms_delta;
     }
 
     public static function getMainDatabaseConnection(): PDO

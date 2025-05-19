@@ -2220,7 +2220,7 @@ function PEATCMS_admin() {
 
 PEATCMS_admin.prototype.pollServer = function () {
     if (false === document.hasFocus()) return;
-    const self = CMS_admin, timestamp = CMS_admin.polled_until || NAV.nav_timestamp;
+    const self = CMS_admin, timestamp = self.polled_until || Math.floor(NAV.nav_timestamp / 1000);
     NAV.ajax(`/__action__/poll/from:${timestamp}`, {peatcms_ajax_config: {track_progress: false}}, function (json) {
         let el;
         if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
@@ -2271,7 +2271,7 @@ PEATCMS_admin.prototype.pollServer = function () {
                             console.log(`Order status update for ${json.order_number_human}`);
                         }
                     });
-                } else {
+                } else { // handle the subscriptions
                     // TODO
                     console.log(`Update for ${change.table_name} (${change.key})`);
                     let type_name = change.table_name;

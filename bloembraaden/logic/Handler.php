@@ -96,13 +96,22 @@ class Handler extends BaseLogic
             Help::$OUTPUT_JSON = true;
             // get any update since last time, so the client can fetch it when appropriate
             $props = $this->resolver->getProperties();
+            $until = Setup::getNow();
             if (true === isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
                 $rows = Help::getDB()->fetchHistoryFrom($timestamp, ADMIN);
             } else {
                 $rows = array();
             }
             // this is a get request, without csrf or admin, so don’t give any specific information
-            $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => Setup::getNow());
+            $out = array('changes' => $rows, 'is_admin' => ADMIN, 'until' => $until);
+        } elseif ('session' === $action) {
+            Help::$OUTPUT_JSON = true;
+            // get timestamps for session and user
+            $user = Help::$session->getUser();
+            $out = array('session' => Help::$session->getUpdatedTimestamp());
+            if ($user) {
+                $out['user'] = Help::getDB()->fetchHistoryTimestamp(array('user_id' => $user->getId()));
+            }
         } elseif ('get_template' === $action) {
             // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
             if (true === isset($post_data->template_name)) {
@@ -1755,6 +1764,7 @@ class Handler extends BaseLogic
                 'slug' => $out,
                 'slugs' => $GLOBALS['slugs'],
                 'is_account' => $out->is_account,
+                'timestamp' => Setup::getNowFrom((int)(1000 * (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? 0))),
                 '__user__' => $user_output,
                 '__messages__' => Help::getMessages(),
             ));

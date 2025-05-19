@@ -3211,3 +3211,12 @@ SELECT CONCAT(instance_id, '/', slug) FROM cms_image
 ON CONFLICT (slug) DO NOTHING;
 
 COMMIT;
+
+-- version 0.26.0
+
+BEGIN;
+
+/* improve retrieving history per user for ‘poll’ request */
+CREATE INDEX if not exists "index_history_user_id" ON "public"."_history" USING btree ("instance_id", "user_id" Desc NULLS Last);
+
+COMMIT
