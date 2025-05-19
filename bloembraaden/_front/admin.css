@@ -663,7 +663,7 @@ body .PEATCMS_admin * {
 /**
  * Neutralize some specific colors
  */
-/*body #admin_console_button label,*/
+body #admin_console_button *,
 body .PEATCMS_admin .linkable a:not(.button),
 body .PEATCMS_admin label,
 body .PEATCMS_admin h1,
