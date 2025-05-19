@@ -1627,10 +1627,10 @@ class DB extends Base
                         $value = (bool)$value;
                         break;
                     case 'billing_address_country_iso2':
-                        $value = substr($value, 0, 2);
+                        $value = substr("{$value}NL", 0, 2);
                         break;
                     case 'billing_address_country_iso3':
-                        $value = substr($value, 0, 3);
+                        $value = substr("{$value}NLD", 0, 3);
                         break;
                     default:
                         $value = mb_substr(trim($value), 0, 127);
