@@ -1500,37 +1500,41 @@ PEATCMS_quickie.prototype.startUp = function () {
         label.appendChild(document.createTextNode(field.label || ''));
         wrap.classList.add('wrap');
         wrap.appendChild(label);
+        let input;
         if ('textarea' === field.type) {
-            const input = document.createElement('textarea');
+            input = document.createElement('textarea');
+        } else {
+            input = document.createElement('input');
+            input.type = field.type || 'text';
+        }
+        input.placeholder = field.placeholder || '';
+        delete field.state; // you may not specify a state in the config
+        input.peatcms_quickie_field = field;
+        if ('file' === input.type) {
+            // quick sanity check for file type
+            const type_name = field.element || quickie.config.element;
+            if (false === ['image', 'file'].includes(type_name)) {
+                return quickie.configError('Quickie element must be file or image when a file input is supplied.');
+            }
+            // ok
+            quickie.file = input;
+            input.addEventListener('change', function () {
+                quickie.saveFile(this);
+            });
+        } else {
             input.addEventListener('change', function () {
                 quickie.save(field.column, this);
             });
-            wrap.appendChild(input);
-        } else {
-            const input = document.createElement('input');
-            input.type = field.type || 'text';
-            input.placeholder = field.placeholder || '';
-            delete field.state; // you may not specify a state in the config
-            input.peatcms_quickie_field = field;
-            if ('file' === input.type) {
-                // quick sanity check for file type
-                const type_name = field.element || quickie.config.element;
-                if (false === ['image', 'file'].includes(type_name)) {
-                    return quickie.configError('Quickie element must be file or image when a file input is supplied.');
+            // @since 0.26.0 keep saving at regular intervals
+            const peatcms_quickie_interval = setInterval(function (input) {
+                if (false === document.body.contains(input)) {
+                    clearInterval(peatcms_quickie_interval);
+                    return;
                 }
-                // ok
-                quickie.file = input;
-                input.addEventListener('change', function () {
-                    quickie.saveFile(this);
-                });
-            } else {
-                input.addEventListener('change', function () {
-                    quickie.save(field.column, this);
-                });
-                // todo 0.26.0: add an interval / timeout to save regularly, but only if the value is not empty
-            }
-            wrap.appendChild(input);
+                quickie.save(field.column, input);
+            }, 5001, input);
         }
+        wrap.appendChild(input);
         form.appendChild(wrap);
     }
 
@@ -1610,9 +1614,13 @@ PEATCMS_quickie.prototype.startUp = function () {
     });
 }
 
-PEATCMS_quickie.prototype.save = function (column, input) {
+PEATCMS_quickie.prototype.save = function (column, input, force) {
     const self = this,
+        data_value = input.getAttribute('data-value') || '',
         element_name = this.config.element;
+    let value = PEATCMS.trim(input.value);
+    // don’t save if nothing happened (yet)
+    if (true !== force && value === data_value) return;
     // File is saved independently. Make sure to use one slug only for saving.
     if (null === self.state) {
         self.initializeElement(function () {
@@ -1620,14 +1628,15 @@ PEATCMS_quickie.prototype.save = function (column, input) {
         });
         return;
     }
+    input.setAttribute('data-value', value);
+    if (VERBOSE) console.log('Auto save', column);
     if (true === Array.isArray(column)) { // a field can update multiple columns
         for (const col of column) {
-            self.save(col, input);
+            self.save(col, input, true);
         }
         return;
     }
     // truncate title to avoid all kinds of failures on the server and it not being saved
-    let value = input.value;
     if ('title' === column) {
         value = PEATCMS.replace('\n', ' ', value);
         if (value.length > 127) {
