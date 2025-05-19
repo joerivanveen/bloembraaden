@@ -114,11 +114,12 @@ class Help
     }
 
     /**
-     * Floating point numbers have errors that make them ugly and unusable that are not simply fixed by round()ing them
-     * Use floatForHumans to return the intended decimal as a string (floatVal it if you want to perform calculations)
-     * Decimal separator is a . as is standard, use numberformatting/ str_replace etc. if you want something else
+     * Floating point numbers have errors that make them ugly and unusable that are not simply fixed by round()ing them.
+     * Use floatForHumans to return the intended decimal as a string.
+     * Decimal separator is a . as is standard, use numberformatting/ str_replace etc. if you want something else.
+     * @see https://stackoverflow.com/questions/4921466/php-rounding-error
      *
-     * @param float|null $float $float a float that will be formatted to be human-readable
+     * @param float|null $float a float that will be formatted to be human-readable
      *
      * @return string the number is returned as a correctly formatted string
      *
@@ -127,33 +128,14 @@ class Help
     public static function floatForHumans(?float $float): string
     {
         if (null === $float) return '';
-        return (string)$float;
-        // floating point not accurate... https://stackoverflow.com/questions/4921466/php-rounding-error
-        if (null === $float || '' === ($sunk = (string)$float)) return '';
-        // whenever there is a series of 0's or 9's, format the number for humans that don't care about computer issues
-        if (($index = strpos($sunk, '00000'))) {
-            $sunk = substr($sunk, 0, $index);
-            if (true === str_ends_with($sunk, '.')) {
-                $sunk = substr($sunk, 0, -1);
-            }
-        }
-        if (($index = strpos($sunk, '99999'))) {
-            $sunk = substr($sunk, 0, $index);
-            if (true === str_ends_with($sunk, '.')) {
-                $sunk = (string)((int)$sunk + 1);
-            } else {
-                $n = (int)(substr($sunk, -1)); // this can never be nine, so you can add 1 safely
-                $sunk = substr($sunk, 0, -1) . ($n + 1);
-            }
-        }
 
-        return $sunk;
+        return (string)$float; // this conversion eliminates rounding problems like .99999 and .00001
     }
 
-    public static function truncate(string $string, int $characters)
+    public static function truncate(string $string, int $length)
     {
-        if (strlen($string) <= $characters) return $string;
-        return substr($string, 0, $characters - 3) . '...';
+        if (strlen($string) <= $length) return $string;
+        return substr($string, 0, $length - 3) . '...';
     }
 
     public static function removeAccents(string $string): string

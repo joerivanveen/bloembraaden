@@ -1644,8 +1644,8 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     el.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
                         bubbles: true,
                         detail: {
-                            placeholder_element: el, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
-                            parent_element: parent_node, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
+                            placeholder_element: el, // todo 0.27.0 remove when petit clos uses e.target
+                            parent_element: parent_node, // todo 0.27.0 remove when petit clos uses e.target
                             slug: slug
                         }
                     }));
@@ -2896,43 +2896,6 @@ PEATCMS.prototype.findDataStasherInDOM = function (DOMElement, table_name) {
     }
     return el;
 }
-// TODO this is not a cool way, but part of the slideshow functionality, can this be improved please
-PEATCMS.prototype.swipifyDOMElement = function (el, on_swipe_left, on_swipe_right) {
-// Detect swipe events for touch devices, credit to Kirupa @ https://www.kirupa.com/html5/detecting_touch_swipe_gestures.htm
-    var initialX = null;
-    var initialY = null;
-
-    var startTouch = function (e) {
-        initialX = e.touches[0].clientX;
-        initialY = e.touches[0].clientY;
-    }
-
-    var moveTouch = function (e) {
-        if (initialX === null) {
-            return;
-        }
-        if (initialY === null) {
-            return;
-        }
-        var diffX = initialX - e.touches[0].clientX;
-        var diffY = initialY - e.touches[0].clientY;
-        if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
-            if (diffX > 0) {// swiped left
-                on_swipe_left(e);
-            } else {// swiped right
-                on_swipe_right(e);
-            }
-        } else {
-            window.scrollBy(0, diffY);
-        }
-        initialX = null;
-        initialY = null;
-        //e.preventDefault(); // <- doesn't work with passive...
-    }
-
-    el.addEventListener('touchstart', startTouch, {passive: true});
-    el.addEventListener('touchmove', moveTouch, {passive: true});
-}
 
 PEATCMS.prototype.ajaxNavigate = function (e) {
     if (e.ctrlKey || e.metaKey) { // opening in new tab / window should still be possible
@@ -3438,7 +3401,7 @@ PEATCMS.prototype.scrollTo = function (x, y, element) {
 }
 
 window.onpopstate = function (e) {
-    var pos, path;
+    let pos;
     if (e.state === null || !NAV) {
         if (!NAV) {
             console.error('Navigator not loaded on *pop*.');
@@ -3447,7 +3410,7 @@ window.onpopstate = function (e) {
         }
         //document.location.reload(); // this keeps reloading on safari / iphone
     } else { // e.state holds max 640k so you can't put an element in it, for now it's just the slug and scrolling position
-        path = e.state.path;
+        const path = e.state.path;
         NAV.signalStartNavigating(path);
         if (VERBOSE) console.log(e);
         // @since 0.7.1 restore scrolling position from history (after rendering)

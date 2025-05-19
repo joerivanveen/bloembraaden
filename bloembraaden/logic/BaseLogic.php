@@ -25,7 +25,7 @@ class BaseLogic extends Base
             $this->row = null;
         } else {
             $this->row = $row;
-            if (isset($row->type_name)) $this->type_name = (string)$row->type_name;
+            if (true === isset($row->type_name)) $this->type_name = (string)$row->type_name;
         }
     }
 
@@ -242,7 +242,7 @@ class BaseLogic extends Base
     {
         if (true === isset($this->id)) return $this->id;
         $id_column = $this->getType()->idColumn();
-        if (isset($this->row->{$id_column})) {
+        if (true === isset($this->row->{$id_column})) {
             $this->id = $this->row->{$id_column};
         } else { // we don't know
             if ($id_column !== 'search_settings_id') $this->addError("Failed to get id: $id_column");

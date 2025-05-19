@@ -264,9 +264,7 @@ class Template extends BaseLogic
         ob_start();
         echo '<div id="peatcms_globals"';
         foreach ($client_globals as $var_name => $value) {
-            echo ' data-';
-            echo $var_name;
-            echo '=\'';
+            echo ' data-', $var_name, '=\'';
             echo htmlspecialchars(json_encode($value), ENT_QUOTES);
             //echo str_replace('"', '&quot;', json_encode($value));
             echo '\'';

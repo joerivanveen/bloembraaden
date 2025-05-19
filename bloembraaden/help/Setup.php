@@ -90,9 +90,6 @@ class Setup
         return self::$DB_MAIN_CONN ?? (self::$DB_MAIN_CONN = self::initializeDatabaseConnection(self::$DB_MAIN));
     }
 
-    /**
-     * @noinspection PhpInconsistentReturnPointsInspection we know we don’t have to return after handleErrorAndStop...
-     */
     private static function initializeDatabaseConnection(stdClass $db_properties, int $tries = 0): PDO
     {
         try {

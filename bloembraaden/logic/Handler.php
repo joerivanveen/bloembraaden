@@ -347,8 +347,8 @@ class Handler extends BaseLogic
             if (false === isset($properties['shoppinglist'])) {
                 $this->addError('Shoppinglist is not set for order action.');
                 $out = true;
-            } elseif (null === ($user  = Help::$session->getUser())) {
-                $this->addMessage(__('You must be logged in to re-order.', 'peatcms'), 'warn');
+            } elseif (null === ($user = Help::$session->getUser())) {
+                $this->addMessage(__('You must be logged in to reorder.', 'peatcms'), 'warn');
                 $out = true;
             } elseif (true === isset($properties['order_number'])) {
                 $shoppinglist_name = $properties['shoppinglist'][0];
