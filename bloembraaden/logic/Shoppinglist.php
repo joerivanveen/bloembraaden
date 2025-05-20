@@ -184,21 +184,23 @@ class Shoppinglist extends BaseLogic
                     $this->name), 'note'
                 );
                 continue;
-            } elseif (false === Setup::$NOT_IN_STOCK_CAN_BE_ORDERED && false === $variant_out->in_stock) {
-                // @since 0.7.6 items that are out of stock will be set to 0, a message can be shown using {{in_stock::not:MESSAGE}}
-                if ($list_row->quantity > 0) {
-                    $list_row->quantity = 0;
+            } elseif (false === Setup::$NOT_IN_STOCK_CAN_BE_ORDERED) {
+                if (false === $variant_out->in_stock) {
+                    // @since 0.7.6 items that are out of stock will be set to 0, a message can be shown using {{in_stock::not:MESSAGE}}
+                    if ($list_row->quantity > 0) {
+                        $list_row->quantity = 0;
+                        $this->addMessage(sprintf(
+                            __('An item in %s is out of stock.', 'peatcms'),
+                            $this->name), 'note'
+                        );
+                    }
+                } elseif (true === isset($variant_out->quantity_in_stock) && $list_row->quantity > $variant_out->quantity_in_stock) {
+                    $list_row->quantity = $variant_out->quantity_in_stock;
                     $this->addMessage(sprintf(
-                        __('An item in %s is out of stock.', 'peatcms'),
+                        __('The quantity of an item in %s has been adjusted to the available stock.', 'peatcms'),
                         $this->name), 'note'
                     );
                 }
-            } elseif (true === isset($variant_out->quantity_in_stock) && $list_row->quantity > $variant_out->quantity_in_stock) {
-                $list_row->quantity = $variant_out->quantity_in_stock;
-                $this->addMessage(sprintf(
-                    __('The quantity of an item in %s has been adjusted to the available stock.', 'peatcms'),
-                    $this->name), 'note'
-                );
             }
             $list_row->__variants__ = array($variant_out);
             $row_price = Help::asFloat($list_row->price);
