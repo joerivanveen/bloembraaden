@@ -1585,7 +1585,7 @@ class Handler extends BaseLogic
         } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page))) {
             // check if it’s a paging error
             if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1);
-            if (null === $out && ($element = $this->resolver->getElement($from_history)) instanceof BaseElement) {
+            if (null === $out && ($element = $this->resolver->getElement()) instanceof BaseElement) {
                 // construct the new path for this old slug
                 if (($properties = $this->resolver->getProperties())) {
                     $path = Help::turnIntoPath(explode('/', $element->getSlug()), $properties);
@@ -1593,9 +1593,7 @@ class Handler extends BaseLogic
                     $path = $element->getSlug();
                 }
                 // try the cache one more time with the new slug, else cache it
-                if (true === $from_history
-                    && null !== ($out = Help::getDB()->cached($path))
-                ) {
+                if (null !== ($out = Help::getDB()->cached($path))) {
                     if (extension_loaded('newrelic')) {
                         $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
                         newrelic_name_transaction("$transaction_name from history");
