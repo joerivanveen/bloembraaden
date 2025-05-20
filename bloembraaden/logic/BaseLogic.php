@@ -270,6 +270,11 @@ class BaseLogic extends Base
         return true;
     }
 
+    public function canBeFound(): bool
+    {
+        return $this->isOnline() && ($this->row->can_be_found ?? true);
+    }
+
     /**
      * @param array $row
      * @return bool

@@ -335,7 +335,7 @@ class DB extends Base
             // unfortunately special cases for variant...
             if ('variant' === $type_name) {
                 $rows = array();
-                if (in_array($term, array('price_from', 'not_online'))) {
+                if (true === in_array($term, array('price_from', 'not_online'))) {
                     $rows = Help::getDB()->findSpecialVariantResults($term);
                 } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))) {
                     $rows = Help::getDB()->findSpecialVariantResults($row->type_name, $row->id);
@@ -1939,10 +1939,10 @@ class DB extends Base
         // @since 0.18.0 delete immediately to not pollute search results
         $row = $element->getRow();
         if (true === $row->deleted) {
-            $statement = $this->conn->prepare("
+            $statement = $this->conn->prepare('
                 DELETE FROM _ci_ai 
                 WHERE instance_id = :instance_id AND type_name = :type_name AND _ci_ai.id = :id;
-            ");
+            ');
             $statement->bindValue(':instance_id', $element->getInstanceId()); // to use index
             $statement->bindValue(':type_name', $element->getTypeName());
             $statement->bindValue(':id', $row->id);
@@ -1964,7 +1964,7 @@ class DB extends Base
         $statement->bindValue(':slug', $out->slug);
         $statement->bindValue(':type_name', $element->getTypeName());
         $statement->bindValue(':id', $out->id);
-        $statement->bindValue(':online', (true === $element->isOnline()) ? 1 : 0);
+        $statement->bindValue(':online', (true === $element->canBeFound()) ? 1 : 0);
         $statement->execute();
         $success = (1 === $statement->rowCount());
         $statement = null;
@@ -4021,7 +4021,7 @@ class DB extends Base
         ob_start();
         foreach ($this->getTablesWithSlugs() as $index => $row) {
             if (true === in_array(str_replace('cms_', '', $row->table_name), $skip)) continue;
-            echo "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND instance_id = :instance_id\n";
+            echo "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND can_be_found = TRUE AND instance_id = :instance_id\n";
             echo "UNION ALL\n";
         }
         echo "SELECT slug, since AS date_updated FROM _cache WHERE slug LIKE '%/%' AND instance_id = :instance_id";

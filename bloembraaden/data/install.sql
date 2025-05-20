@@ -3219,4 +3219,26 @@ BEGIN;
 /* improve retrieving history per user for ‘poll’ request */
 CREATE INDEX if not exists "index_history_user_id" ON "public"."_history" USING btree ("instance_id", "user_id" Desc NULLS Last);
 
+/* make items hide from search and sitemap and so on */
+ALTER TABLE "public"."cms_brand"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_embed"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_file"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_image"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_page"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_product"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_property"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_property_value"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_serie"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+ALTER TABLE "public"."cms_variant"
+    ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+
 COMMIT

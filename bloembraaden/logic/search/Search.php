@@ -35,7 +35,7 @@ class Search extends BaseElement
         $properties = $this->getProperties();
         $this->row->item_count = 0;
         $this->row->content = 'Bloembraaden searched for these terms: `' . var_export($terms, true) .
-            "\n" . '` and these properties: `' . var_export($properties, true) . '`';
+            "\n` and these properties: `" . var_export($properties, true) . '`';
         // set template_id to default search template, if necessary (and if it exists)
         if (false === isset($this->row->template_id)) {
             $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('search');
