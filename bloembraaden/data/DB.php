@@ -4749,13 +4749,13 @@ class DB extends Base
             }
         }
 
-        if (true === isset($insert) && true === isset($row->session_id) && 0 < $row->session_id) { // this session is (retroactively) updated
-            $insert->table_name = '_session';
-            $insert->table_column = 'date_updated';
-            $insert->key = (int)$row->session_id;
-            $insert->value = 'NOW()'; // data_updated is always NOW() doesn’t matter what you say here
-            if (false === $this->insertHistoryEntry($insert)) {
-                $this->addError('addToHistory could not add the session change.');
+        if (true === isset($insert) && true === isset($row->session_id) && 0 < $row->session_id) {
+            // this session is (retroactively) updated, do it directly because e.g. ->updateColumns will not work for several reasons
+            $statement = $this->conn->prepare('
+                UPDATE _session SET date_updated = NOW() WHERE session_id = :session_id;');
+            $statement->bindValue(':session_id', $row->session_id);
+            if (false === $statement->execute()) {
+                $this->addError('addToHistory could not update _session.');
             }
         }
 
