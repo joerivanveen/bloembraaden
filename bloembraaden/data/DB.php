@@ -11,7 +11,7 @@ class DB extends Base
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
         '_ci_ai',
-        //'_session', @since 0.26.0 session itself is in history
+        '_session',
         '_sessionvars',
         '_system',
         //'_shoppinglist', @since 0.26.0 shoppinglist itself is in history
@@ -3767,7 +3767,7 @@ class DB extends Base
             $new_slug = $this->clearSlug($col_val['slug'], $table->getType(), (int)$key); // (UPDATE) needs to be unique to this entry
             $col_val['slug'] = $new_slug;
         }
-        //if (true === isset($col_val['date_updated'])) unset($col_val['date_updated']);
+        if (true === isset($col_val['date_updated'])) unset($col_val['date_updated']);
         $data = $table->formatColumnsAndData($col_val, true);
         // maybe (though unlikely) the slug was provided in the $data but not actually in the table
         if (true === in_array('slug', $data['discarded'])) unset($col_val['slug']);
@@ -3781,7 +3781,7 @@ class DB extends Base
         $old_row = $this->addToHistory($table, $key, $col_val); // returns the copied (now old) row, can be null
         // update entry
         $columns_list = implode(', ', $data['parameterized']);
-        if (true === $table_info->hasStandardColumns() && false === isset($col_val['date_updated'])) {
+        if (true === $table_info->hasStandardColumns()) {
             $columns_list .= ', date_updated = NOW()';
         }
         $statement = $this->conn->prepare(
