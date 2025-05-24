@@ -163,7 +163,9 @@ class Session extends BaseLogic
         if (true === Help::getDB()->updateColumns('_session', $columns_to_update, $this->token)) {
             if (true === $this->setSessionCookie($new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
-                if (isset($columns_to_update['user_id']) && ($user_id = \intval($columns_to_update['user_id'])) > 0) {
+                if (true === isset($columns_to_update['user_id'])
+                    && 0 < ($user_id = (int) $columns_to_update['user_id'])
+                ) {
                     $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
                 }
                 $this->token = $new_token;

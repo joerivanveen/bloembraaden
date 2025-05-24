@@ -171,7 +171,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
 
     public function updatePaymentStatus(\stdClass $payload): bool
     {
-        if (isset($payload->id)) {
+        if (true === isset($payload->id)) {
             $payment_id = $payload->id;
             // get the status of this payment id from mollie https://docs.mollie.com/reference/v2/payments-api/get-payment
             if (($result = $this->getPaymentByPaymentId($payment_id))) {

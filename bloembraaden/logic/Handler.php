@@ -656,7 +656,7 @@ class Handler extends BaseLogic
                     // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
                     if (isset($post_data->email) && isset($post_data->pass)) {
                         $as_admin = $this->resolver->hasInstruction('admin');
-                        if (true === $as_admin or true === Help::turnstileVerify($instance, $post_data)) {
+                        if (true === $as_admin || true === Help::turnstileVerify($instance, $post_data)) {
                             if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
                             } elseif (true === $as_admin) {

@@ -386,7 +386,7 @@ switch ($interval) {
                  * afhalen = package_type 3 (letter)
                  * MyParcel expects prices in euro cents
                  */
-                $myparcelAmount = function(string $amount):int {
+                $myparcelAmount = function (string $amount): int {
                     return (int)(100 * Help::asFloat($amount));
                 };
                 $order_out = $order->getOutput();
