@@ -139,42 +139,17 @@ switch ($interval) {
                 // 1) mail order confirmation
                 if (false === $row->emailed_order_confirmation) {
                     if (0 !== $row->user_id) {
-                        // todo 0.26.0 this must be done also when the account is created after ordering!
                         echo "Check address for account\n";
                         // todo have configurable shop addresses appear in the hashes, to not add the ‘collect’ address to the account
-                        $by_hash = array(md5('1402abhuizerweg22nl') => 'Collect');
+                        $by_key = array('1402abhuizerweg22nl' => 'Collect');
                         // get all addresses for this user_id, md5 them
                         $addresses = $db->fetchAddressesByUserId($row->user_id);
                         foreach ($addresses as $index => $address) {
-                            $hash = md5(strtolower(str_replace(' ', '', "$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2")));
-                            $by_hash[$hash] = $address;
+                            $key = strtolower(str_replace(' ', '', "$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2"));
+                            $by_key[$key] = $address;
                         }
                         $addresses = null;
-                        // get shipping / billing address -> md5, if not in the addresses md5, add it
-                        foreach (array('billing', 'shipping') as $index => $address_type) {
-                            $hash = md5(strtolower(str_replace(' ', '', $row->{"{$address_type}_address_postal_code"} . $row->{"{$address_type}_address_street"} . $row->{"{$address_type}_address_number"} . $row->{"{$address_type}_address_number_addition"} . $row->{"{$address_type}_address_country_iso2"})));
-                            if (false === isset($by_hash[$hash])) {
-                                $address = array(
-                                    'user_id' => $row->user_id,
-                                    'instance_id' => $instance_id,
-                                    'address_name' => $row->{"{$address_type}_address_name"},
-                                    'address_company' => $row->{"{$address_type}_address_company"},
-                                    'address_postal_code' => $row->{"{$address_type}_address_postal_code"},
-                                    'address_number' => $row->{"{$address_type}_address_number"},
-                                    'address_number_addition' => $row->{"{$address_type}_address_number_addition"},
-                                    'address_street' => $row->{"{$address_type}_address_street"},
-                                    'address_street_addition' => $row->{"{$address_type}_address_street_addition"},
-                                    'address_city' => $row->{"{$address_type}_address_city"},
-                                    'address_country_name' => $row->{"{$address_type}_address_country_name"},
-                                    'address_country_iso2' => $row->{"{$address_type}_address_country_iso2"},
-                                    'address_country_iso3' => $row->{"{$address_type}_address_country_iso3"},
-                                );
-                                if ($db->insertRowAndReturnKey('_address', $address)) {
-                                    $by_hash[$hash] = $address;
-                                    echo 'Added ', $row->{"{$address_type}_address_street"}, ' ', $row->{"{$address_type}_address_number"}, ' ', $row->{"{$address_type}_address_number_addition"}, "\n";
-                                }
-                            }
-                        }
+                        Help::supplementAddresses(array($row), $by_key);
                     }
                     echo "Order confirmation\n";
                     $mailer->clear();

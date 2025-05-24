@@ -686,11 +686,16 @@ class Handler extends BaseLogic
                                 Help::passwordHash($password))
                         )) { // todo what if the e-mail address already is an account? Now it just errors.
                             $this->addMessage(__('Account created.', 'peatcms'), 'note');
-                            // @since 0.26.0 add current order and address to the account already, by session id?
+                            // @since 0.26.0 add current order and address to the account already, by session id
                             Help::getDB()->updateColumnsWhere('_order',
                                 array('user_id' => $user_id),
                                 array('session_id' => Help::$session->getId()) // could be slow, no index
                             );
+                            // todo have configurable shop addresses appear in the hashes, to not add the ‘collect’ address to the account
+                            $by_key = array('1402abhuizerweg22nl' => 'Collect');
+                            // get the orders for this user to supplement the addresses to the account
+                            $rows = Help::getDB()->fetchOrdersByUserId($user_id);
+                            Help::supplementAddresses($rows, $by_key);
                             // auto login
                             if (false === Help::$session->login($email_address, $password, false)) {
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'error');
