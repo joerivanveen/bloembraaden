@@ -261,15 +261,10 @@ class Resolver extends BaseLogic
                     }
                     break;
                 case 'user':
-                    if (null === ($user = $session->getUser())) {
-                        return new BaseElement((object)array(
-                            'title' => __('User', 'peatcms'),
-                            'type_name' => 'user',
-                            'slug' => '__user__',
-                        ));
-                    } else {
+                    if (null !== ($user = $session->getUser())) {
                         return $user;
                     }
+                    break;
                 case 'instances':
                     return new Instance();
                 case 'order':
