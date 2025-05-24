@@ -674,17 +674,25 @@ class Handler extends BaseLogic
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                     }
                 } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (isset($post_data->email)
-                        && isset($post_data->pass)
+                    if (true === isset($post_data->email)
+                        && true === isset($post_data->pass)
                         && strpos(($email_address = $post_data->email), '@')
                     ) {
-                        if (null !== ($user_id = Help::getDB()->insertUserAccount(
+                        $password = (string)$post_data->pass;
+                        if (8 > strlen($password)) {
+                            $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                        } elseif (null !== ($user_id = Help::getDB()->insertUserAccount(
                                 $email_address,
-                                Help::passwordHash((string)$post_data->pass)))
-                        ) {
+                                Help::passwordHash($password))
+                        )) { // todo what if the e-mail address already is an account? Now it just errors.
                             $this->addMessage(__('Account created.', 'peatcms'), 'note');
+                            // @since 0.26.0 add current order and address to the account already, by session id?
+                            Help::getDB()->updateColumnsWhere('_order',
+                                array('user_id' => $user_id),
+                                array('session_id' => Help::$session->getId()) // could be slow, no index
+                            );
                             // auto login
-                            if (false === Help::$session->login($email_address, (string)$post_data->pass, false)) {
+                            if (false === Help::$session->login($email_address, $password, false)) {
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'error');
                             } else {
                                 $this->addMessage(__('Login successful.', 'peatcms'), 'log');
@@ -733,13 +741,15 @@ class Handler extends BaseLogic
                     }
                 } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                     if (true === isset($post_data->email, $post_data->pass)) {
-                        if (true === isset($post_data->locker)
+                        $password = (string)$post_data->pass;
+                        if (8 > strlen($password)) {
+                            $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                        } elseif (true === isset($post_data->locker)
                             && $row = Help::getDB()->emptyLocker($post_data->locker)
                         ) {
                             if (true === isset($row->information, $row->information->email_address)
                                 && ($email_address = $row->information->email_address) === $post_data->email
                             ) {
-                                $password = (string)$post_data->pass;
                                 // if it’s indeed an account, update the password
                                 // (since the code proves the emailaddress is read by the owner)
                                 if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
