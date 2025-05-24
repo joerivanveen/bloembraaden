@@ -214,6 +214,7 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
     if (this.pretty_id_column_names.includes(column_name)) {
         el = document.createElement('input');
         el.setAttribute('autocomplete', 'off');
+        el.setAttribute('type', 'text');
         element_name = column_name.replace('_id', '');
         column_names = this.parent_PEATCMS_element.getColumnNames();
         el.classList.add('peatcms_loading', 'pretty_parent', element_name);
@@ -240,7 +241,6 @@ PEATCMS_actor.prototype.create_as_numeric = function (column) {
             }, 1000);*/
         });
         el.addEventListener('keyup', function (e) {
-            // todo when you type Escape restore value and loose suggestions
             if (e.key === 'Escape') {
                 self.prettyParent(self.server_value);
             } else {

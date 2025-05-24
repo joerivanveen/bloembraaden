@@ -2,10 +2,6 @@
     --bloembraaden-default-paper-color: #fff;
     --bloembraaden-default-key-color: #000;
 }
-.dark-mode {
-    --bloembraaden-default-paper-color: #000;
-    --bloembraaden-default-key-color: #fff;
-}
 
 /**
  * Reset
