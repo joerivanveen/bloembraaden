@@ -4650,6 +4650,8 @@ class DB extends Base
         $timestamp = $statement->fetchColumn(0);
         $statement = null;
 
+        if (null === $timestamp) return 0; // no history
+
         return Help::strtotime_ms($timestamp);
     }
 
