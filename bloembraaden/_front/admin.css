@@ -974,14 +974,18 @@ body .PEATCMS_admin .peatcms-link:focus {
     position: absolute;
     top: 5px;
     right: 5px;
-    border: solid 5px var(--admin-color-accent); /* fill color is currently in javascript indicating the relative position */
     border-radius: 20px;
+}
+
+.edit-area #admin_date_popvote .inner {
+    background: var(--admin-color-paper);
+    border-radius: 20px;
+    margin: 5px;
 }
 
 .edit-area #admin_date_popvote input,
 .edit-area #admin_date_popvote button {
-    color: var(--admin-color-paper);
-    text-shadow: 0 0 1px var(--admin-color-key);
+    color: var(--admin-color-key);
 }
 
 .edit-area #admin_date_popvote input {

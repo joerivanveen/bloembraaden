@@ -115,6 +115,7 @@ PEATCMS_actor.prototype.create_as_select = function (column) {
 PEATCMS_actor.prototype.create_as_date = function (column) {
     if (column.name === 'date_popvote') { // the ‘date_upvoted’ gets a special interface at the top of the edit bar
         const self = this,
+            border = document.createElement('div'),
             el = document.createElement('div'),
             up = document.createElement('button'),
             places = document.createElement('input'),
@@ -155,7 +156,10 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
         }, function (json) {
             self.showPopVote(json);
         });
-        return el;
+        el.classList.add('inner');
+        border.classList.add('border');
+        border.appendChild(el);
+        return border;
     } else { // make a date thingie
         const el = this.create_as_input(column);
         if (el.value === '') {
@@ -166,8 +170,9 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
 }
 PEATCMS_actor.prototype.showPopVote = function (json) {
     if (json.hasOwnProperty('pop_vote')) { // pop_vote is a float between 0 (most popular) and 1 (least...)
-        const vote = json.pop_vote;
-        this.DOMElement.style.backgroundColor = 'rgba(48,63,123,' + (1 - vote) + ')';
+        const vote = json.pop_vote,
+        deg = 360 * vote;
+        this.DOMElement.style.backgroundImage = `conic-gradient(from 270deg, var(--admin-color-accent-light) 0deg, var(--admin-color-accent-light) ${deg}deg, var(--admin-color-accent) ${deg}deg)`;
         this.DOMElement.title = vote;
     }
 }
