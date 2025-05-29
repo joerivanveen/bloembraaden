@@ -23,6 +23,7 @@ $start_timer = microtime(true);
 $db = new DB();
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
+
 switch ($interval) {
     case '1': // interval should be '1'
         $trans->start('Mail order confirmations');

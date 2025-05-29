@@ -40,7 +40,7 @@ class BaseLogic extends Base
      */
     public function getInstanceId(): ?int
     {
-        if (isset($this->row->instance_id)) return (int)$this->row->instance_id;
+        if (true === isset($this->row->instance_id)) return (int)$this->row->instance_id;
 
         return null;
     }

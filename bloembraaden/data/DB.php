@@ -4513,7 +4513,7 @@ class DB extends Base
         $info = $this->getTableInfo($table_name);
         if (false === $info->hasColumn('instance_id')) return 0;
 
-        $statement = $this->conn->prepare("DELETE FROM $table_name WHERE instance_id = ?");
+        $statement = $this->conn->prepare("DELETE FROM $table_name WHERE instance_id = ?;");
         $statement->execute(array($instance_id));
         $row_count = $statement->rowCount();
         $statement = null;

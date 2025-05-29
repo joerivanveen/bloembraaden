@@ -457,7 +457,7 @@ class Handler extends BaseLogic
                 $sse->log(sprintf(__('Cleared %s items from cache.', 'peatcms'), $rows_affected));
                 // publish templates
                 if (true === Help::publishTemplates(Setup::$instance_id)) {
-                    $sse->log('Publishing the templates for you');
+                    $sse->log('Publishing the templates for you.');
                 }
             } else {
                 $sse->log(__('Nothing to do.', 'peatcms'));
@@ -1164,7 +1164,6 @@ class Handler extends BaseLogic
                                         $out = array('success' => $success);
                                     } else {
                                         $this->addError(sprintf('Slug %s not found.', var_export($post_data->slug, true)));
-                                        $out = array('success' => false);
                                     }
                                 } elseif ('admin_linkable_link' === $action) {
                                     $unlink = (true === isset($post_data->unlink) && true === $post_data->unlink);

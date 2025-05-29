@@ -806,7 +806,7 @@ class Template extends BaseLogic
                 $instance_id = $this->getInstanceId();// ?? Setup::$instance_id;
                 $file_location = Setup::$DBCACHE . "css/$instance_id.css";
                 $css_ok = false;
-                if (false === Setup::$VERBOSE && file_exists($file_location)) {
+                if (false === Setup::$VERBOSE && true === file_exists($file_location)) {
                     echo '<style id="bloembraaden-css">';
                     echo file_get_contents($file_location);
                     echo '</style>';
@@ -888,7 +888,7 @@ $html";
         // all the tags with indexes may be progressive loading tags, they must be replaced with an option tag
         for ($index = 0; $index < 100; ++$index) {
             $search = "[$index]}}";
-            if (false === strpos($html, $search)) break; // don't loop any further if the indexes became too high
+            if (false === str_contains($html, $search)) break; // don't loop any further if the indexes became too high
             // grab all the tags to replace
             $arr = explode($search, $html);
             foreach ($arr as $key => $html_part) {
