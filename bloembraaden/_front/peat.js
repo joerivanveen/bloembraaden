@@ -3154,8 +3154,8 @@ PEATCMS.prototype.startUp = function () {
         const loading_bar = document.getElementById('bloembraaden-loading-bar') || document.getElementById('peatcms_loading_bar');
         if (loading_bar) {
             loading_bar.style.width = '0';
-            loading_bar.setAttribute('aria-valuemin', '0');
-            loading_bar.setAttribute('aria-valuemax', '100');
+            // loading_bar.setAttribute('aria-valuemin', '0'); // default 0 need not be set
+            // loading_bar.setAttribute('aria-valuemax', '100'); // default 100 need not be set
         }
     });
     // send one-time peatcms event peatcms.initialize

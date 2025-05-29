@@ -63,6 +63,7 @@
     height: auto;
 }
 
+#PEATCMS_admin_page pre,
 #PEATCMS_admin_page td {
     color: var(--admin-color-key);
 }
