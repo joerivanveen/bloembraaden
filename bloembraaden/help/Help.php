@@ -1025,6 +1025,8 @@ class Help
                                             $row['instance_id'] = $instance_id; // we are now this instance id
                                         } elseif ('client_id' === $col_name) {
                                             $row['client_id'] = Help::$session->getInstance()->getClientId();
+                                        } elseif (str_starts_with($col_name, 'date_') && '' === $col_value) {
+                                            $row[$col_name] = 'NOW()';
                                         }
                                     }
                                     if ('_instance' === $table_name) {
