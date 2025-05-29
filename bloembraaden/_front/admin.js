@@ -172,7 +172,7 @@ PEATCMS_actor.prototype.showPopVote = function (json) {
     if (json.hasOwnProperty('pop_vote')) { // pop_vote is a float between 0 (most popular) and 1 (least...)
         const vote = json.pop_vote,
         deg = 360 * vote;
-        this.DOMElement.style.backgroundImage = `conic-gradient(from 270deg, var(--admin-color-accent-light) 0deg, var(--admin-color-accent-light) ${deg}deg, var(--admin-color-accent) ${deg}deg)`;
+        this.DOMElement.style.backgroundImage = `conic-gradient(from 270deg, var(--admin-color-accent-transparent) 0deg, var(--admin-color-accent-transparent) ${deg}deg, var(--admin-color-accent) ${deg}deg)`;
         this.DOMElement.title = vote;
     }
 }
