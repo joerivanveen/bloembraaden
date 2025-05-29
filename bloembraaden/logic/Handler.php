@@ -1211,6 +1211,10 @@ class Handler extends BaseLogic
                                             'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
                                             'online' => true // for here the default is true, or else we can’t add simply from edit screen
                                         )))) { // create a property value
+                                            // index immediately
+                                            if (false === Help::getDB()->updateSearchIndex((new PropertyValue())->fetchById($property_value_id))) {
+                                                $this->addMessage(__('Please wait a few minutes for the property value to become available.', 'peatcms'), 'warn');
+                                            }
                                             // link to the supplied property
                                             if (true === $property->link('property_value', $property_value_id)) {
                                                 // create x_value entry
