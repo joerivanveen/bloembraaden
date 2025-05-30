@@ -1432,6 +1432,17 @@ class DB extends Base
         ));
     }
 
+    public function insertAddressShop(string $name, int $instance_id = -1): ?int
+    {
+        if ($instance_id === -1) $instance_id = Setup::$instance_id;
+
+        return $this->insertRowAndReturnLastId('_address_shop', array(
+            'address_name' => $name,
+            'instance_id' => $instance_id,
+            'o' => 0, // so it will turn up at the top of the list most likely
+        ));
+    }
+
     /**
      * Updates the sequential number for this instance with 1 and returns the new value
      * @param int $instance_id
@@ -2685,6 +2696,13 @@ class DB extends Base
     public function fetchInstanceVatCategories(int $instance_id): array
     {
         return $this->fetchRows('_vat_category', array('vat_category_id', 'title', 'percentage', 'o'), array(
+            'instance_id' => $instance_id,
+        ));
+    }
+
+    public function fetchInstanceAddresses(int $instance_id): array
+    {
+        return $this->fetchRows('_address_shop', array('*'), array(
             'instance_id' => $instance_id,
         ));
     }

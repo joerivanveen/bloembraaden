@@ -193,6 +193,75 @@
     <section class="toggle">
         <header>
             <button class="toggle_button" title="Open / close"></button>
+            Addresses
+        </header>
+        {%__addresses__%}
+        <div class="address">
+            <span class="PEATCMS_data_stasher" data-peatcms_id="{{address_shop_id}}" data-table_name="_address_shop"></span>
+            <div>
+                <label>Address</label>
+                <input type="text" class="PEATCMS_editable" data-column_name="address_name"
+                       data-table_name="_address_shop" placeholder="Name for this address"
+                       value="{{address_name}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="o"
+                       data-table_name="_address_shop" title="Order of the address in lists"
+                       value="{{o}}" data-peatcms_handle="update_column"/>
+                <input type="button" class="PEATCMS_editable delete" data-table_name="_address_shop"
+                       data-peatcms_handle="delete_row" value="🗑"/>
+            </div>
+            <div>
+                <label>Country</label>
+                <input type="text" class="PEATCMS_editable" data-column_name="address_country_name"
+                       data-table_name="_address_shop" placeholder="Name of the country"
+                       value="{{address_country_name}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="address_country_iso2"
+                       data-table_name="_address_shop" placeholder="ISO2"
+                       value="{{address_country_iso2}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="address_country_iso3"
+                       data-table_name="_address_shop" placeholder="ISO3"
+                       value="{{address_country_iso3}}" data-peatcms_handle="update_column"/>
+            </div>
+            <div>
+                <label>Street</label>
+                <input type="text" class="PEATCMS_editable" data-column_name="address_street"
+                       data-table_name="_address_shop" placeholder="Street" title="Street"
+                       value="{{address_street}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="address_number"
+                       data-table_name="_address_shop" placeholder="Number" title="Number"
+                       value="{{address_number}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable small" data-column_name="address_number_addition"
+                       data-table_name="_address_shop" placeholder="Addition" title="Addition"
+                       value="{{address_number_addition}}" data-peatcms_handle="update_column"/>
+            </div>
+            <div>
+                <label>Postal code / city</label>
+                <input type="text" class="PEATCMS_editable medium" data-column_name="address_postal_code"
+                       data-table_name="_address_shop" placeholder="Postal code" title="Postal code"
+                       value="{{address_postal_code}}" data-peatcms_handle="update_column"/>
+                <input type="text" class="PEATCMS_editable medium" data-column_name="address_city"
+                       data-table_name="_address_shop" placeholder="City" title="City"
+                       value="{{address_city}}" data-peatcms_handle="update_column"/>
+                <input type="checkbox" class="PEATCMS_editable" id="is_pickup_{{address_shop_id}}"
+                       data-column_name="is_pickup_address" data-table_name="_address_shop" data-handle="update_column"
+                       {{is_pickup_address: checked="checked" }}/>
+                <label for="is_pickup_{{address_shop_id}}"> is pickup address</label>
+            </div>
+            <div>
+                <textarea class="PEATCMS_editable" data-column_name="address_remarks"
+                       data-table_name="_address_shop" placeholder="Remarks" title="Remarks"
+                       data-peatcms_handle="update_column">{{address_remarks}}</textarea>
+            </div>
+        </div>
+        {%__addresses__%}
+        <div>
+            <input type="button" class="PEATCMS_editable" data-table_parent="_instance"
+                   data-table_parent_id="{{instance_id}}"
+                   data-table_name="_address_shop" data-peatcms_handle="new_row" value="Add address"/>
+        </div>
+    </section>
+    <section class="toggle">
+        <header>
+            <button class="toggle_button" title="Open / close"></button>
             Admins
         </header>
         {%__admins__%}

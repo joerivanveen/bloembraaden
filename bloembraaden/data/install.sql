@@ -3160,7 +3160,7 @@ ALTER TABLE "public"."_order"
 ALTER TABLE "public"."_order"
     ADD COLUMN if not exists "vat_history" Text;
 
-/* improve retrieving recent history for ‘poll’ request */
+-- improve retrieving recent history for ‘poll’ request
 CREATE INDEX if not exists "index_history_date_created" ON "public"."_history" USING btree ("instance_id", "date_created" Desc NULLS Last);
 
 ALTER TABLE "public"."_shoppinglist_variant"
@@ -3216,10 +3216,10 @@ COMMIT;
 
 BEGIN;
 
-/* improve retrieving history per user for ‘poll’ request */
+-- improve retrieving history per user for ‘poll’ request
 CREATE INDEX if not exists "index_history_user_id" ON "public"."_history" USING btree ("instance_id", "user_id" Desc NULLS Last);
 
-/* make items hide from search and sitemap and so on */
+-- make items hide from search and sitemap and so on
 ALTER TABLE "public"."cms_brand"
     ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
 ALTER TABLE "public"."cms_embed"
@@ -3240,5 +3240,31 @@ ALTER TABLE "public"."cms_serie"
     ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
 ALTER TABLE "public"."cms_variant"
     ADD COLUMN if not exists "can_be_found" BOOLEAN default TRUE NOT NULL;
+
+-- add shop addresses to instance
+DROP TABLE IF EXISTS "public"."_address_shop";
+CREATE TABLE "public"."_address_shop"
+(
+    "address_shop_id"         Serial PRIMARY KEY,
+    "instance_id"             Integer                                NOT NULL,
+    "is_pickup_address"       Boolean                  DEFAULT false NOT NULL,
+    "address_name"            Character Varying(127),
+    "address_postal_code"     Character Varying(127),
+    "address_number"          Character Varying(127),
+    "address_number_addition" Character Varying(127),
+    "address_street"          Character Varying(127),
+    "address_street_addition" Character Varying(127),
+    "address_city"            Character Varying(127),
+    "address_country_name"    Character Varying(127),
+    "address_country_iso2"    Character Varying(2),
+    "address_country_iso3"    Character Varying(3),
+    "address_remarks"         Text,
+    "o"                       Integer                  DEFAULT 1     NOT NULL,
+    "date_created"            Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "date_updated"            Timestamp With Time Zone DEFAULT now() NOT NULL,
+    "deleted"                 Boolean                  DEFAULT false NOT NULL
+);
+CREATE INDEX if not exists "index_address_shop_instance_id" ON "public"."_address_shop" USING btree ("instance_id" Asc);
+
 
 COMMIT

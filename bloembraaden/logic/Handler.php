@@ -2076,6 +2076,17 @@ class Handler extends BaseLogic
 
                         return (object)true;
                     }
+                case '_address_shop':
+                    if ($id = Help::getDB()->insertAddressShop(
+                        __('New address', 'peatcms'),
+                        $instance_id,
+                    )) {
+                        return Help::getDB()->selectRow('_address_shop', $id);
+                    } else {
+                        $this->addError('Could not create new address.');
+
+                        return (object)true;
+                    }
                 case '_template':
                     if ($template_id = Help::getDB()->insertTemplate(
                         __('New template', 'peatcms'),

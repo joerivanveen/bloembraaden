@@ -90,17 +90,21 @@ class Instance extends BaseLogic
     public function completeRowForOutput(): void
     {
         // TODO domains and admins should get the same lazy loading construction as menus
+        $instance_id = $this->getId();
         if (false === isset($this->row->__domains__)) {
-            $this->row->__domains__ = Help::getDB()->fetchInstanceDomains($this->getId()); // db only returns the rows, customarily
+            $this->row->__domains__ = Help::getDB()->fetchInstanceDomains($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__admins__)) {
-            $this->row->__admins__ = Help::getDB()->fetchInstanceAdmins($this->getId()); // db only returns the rows, customarily
+            $this->row->__admins__ = Help::getDB()->fetchInstanceAdmins($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__payment_service_providers__)) {
-            $this->row->__payment_service_providers__ = Help::getDB()->fetchInstancePsps($this->getId()); // db only returns the rows, customarily
+            $this->row->__payment_service_providers__ = Help::getDB()->fetchInstancePsps($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__vat_categories__)) {
-            $this->row->__vat_categories__ = Help::getDB()->fetchInstanceVatCategories($this->getId()); // db only returns the rows, customarily
+            $this->row->__vat_categories__ = Help::getDB()->fetchInstanceVatCategories($instance_id); // db only returns the rows, customarily
+        }
+        if (false === isset($this->row->__addresses__)) {
+            $this->row->__addresses__ = Help::getDB()->fetchInstanceAddresses($instance_id);
         }
         Help::prepareAdminRowForOutput($this->row, 'instance', $this->getDomain());
     }

@@ -25,6 +25,7 @@ class Type extends Base
         'instance' => '_instance',
         'user' => '_user',
         'address' => '_address',
+        'address_shop' => '_address_shop',
         'admin' => '_admin',
         'template' => '_template',
         'shoppinglist' => '_shoppinglist',
