@@ -51,27 +51,27 @@ class Image extends BaseElement
         if (isset($this->row->filename_saved)) {
             $path .= $this->row->filename_saved;
         } else {
-            $logger->log('Original no longer available');
+            $logger->log('Original no longer available.');
             return false;
         }
         if ('IMPORT' === substr($path, 0, -6)) return false; // cannot be processed
         // check physical (image) file
         if (false === file_exists($path)) {
-            $logger->log('Path does not exist');
+            $logger->log('Path does not exist.');
             if (false === $this->forgetOriginalFile()) {
-                $logger->log('Database not updated');
+                $logger->log('Database not updated.');
             }
 
             return false;
         }
-        if (false === in_array(($type = exif_imagetype($path)),
+        if (false === in_array(($type = @exif_imagetype($path)),
                 array(IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP, IMAGETYPE_WEBP)
             )
         ) {
-            $logger->log('Exif image type not recognized');
+            $logger->log("Exif image type not recognized for $path.");
             // because the file is not recognizable for processing, we have to lose it
             if (false === $this->forgetOriginalFile()) {
-                $logger->log('Database not updated');
+                $logger->log('Database not updated.');
             }
 
             return false;
@@ -84,15 +84,15 @@ class Image extends BaseElement
         $memory_needed = $width * $height * $bits * $channels * 1.5;
         $memory_limit = (int)Help::getMemorySize(ini_get('memory_limit') ?: '128M');
         if (-1 === $memory_limit) {
-            $logger->log('Memory is unlimited, probably not intentionally');
+            $logger->log('Memory is unlimited, probably not intentionally.');
         } elseif ($memory_needed > $memory_limit) {
             $memory_needed_M = Help::getMemorySize((string)$memory_needed, 'M');
             if ($memory_needed <= Setup::$MAX_MEMORY_LIMIT) {
-                $logger->log("Increasing memory to $memory_needed_M (standard is $memory_limit)");
+                $logger->log("Increasing memory to $memory_needed_M (standard is $memory_limit).");
                 ini_set('memory_limit', $memory_needed_M);
             } else {
-                $logger->log("Image too large for memory, needs $memory_needed_M");
-                $logger->log('Current limit: ' . Help::getMemorySize((string)$memory_limit, 'M'));
+                $logger->log("Image too large for memory, needs $memory_needed_M.");
+                $logger->log('Current limit: ' . Help::getMemorySize((string)$memory_limit, 'M') . '.');
             }
         }
         switch (true) {
@@ -117,10 +117,10 @@ class Image extends BaseElement
                 $data['extension'] = 'webp';
                 break;
             default:
-                $this->addError("Image type $type cannot be processed");
+                $this->addError("Image type $type cannot be processed.");
                 return false;
         }
-        $logger->log(sprintf('Loaded %s image in memory', $data['extension']));
+        $logger->log(sprintf('Loaded %s image in memory.', $data['extension']));
         // rotate and flip if necessary @since 0.11.0
         try {
             $exif = @exif_read_data($path);
@@ -138,11 +138,11 @@ class Image extends BaseElement
                 }
                 if (0 !== $angle) {
                     $image = imagerotate($image, $angle, 0);
-                    $logger->log("Rotated image $angle degrees");
+                    $logger->log("Rotated image $angle degrees.");
                 }
                 if (in_array($orientation, [2, 5, 7, 4])) {
                     imageflip($image, IMG_FLIP_HORIZONTAL);
-                    $logger->log('Image flipped as well');
+                    $logger->log('Image flipped as well.');
                 }
             }
         } catch (\Throwable $e) {
@@ -154,8 +154,8 @@ class Image extends BaseElement
         // make sure the folders exist
         if (false === file_exists($my_path)) {
             if (false === mkdir($my_path, 0755, true)) {
-                $logger->log('ERROR on filesystem');
-                $this->handleErrorAndStop("Could not mkdir $my_path");
+                $logger->log('ERROR on filesystem.');
+                $this->handleErrorAndStop("Could not mkdir $my_path.");
             }
         }
         // process and save the 5 sizes TODO compact this somewhere <- don't forget to include the check on existence
@@ -165,7 +165,7 @@ class Image extends BaseElement
             if (false === file_exists($subdir)) {
                 if (false === mkdir($subdir, 0755, true)) {
                     $logger->log('ERROR on filesystem');
-                    $this->handleErrorAndStop("Could not mkdir $subdir");
+                    $this->handleErrorAndStop("Could not mkdir $subdir.");
                 }
             }
             if ($width > $height) { // landscape
@@ -244,7 +244,7 @@ class Image extends BaseElement
                 $data["width_$size"] = $newWidth;
                 $data["height_$size"] = $newHeight;
             } else {
-                $this->addError(sprintf(__('Could not save image %s', 'peatcms'), $newPath));
+                $this->addError(sprintf(__('Could not save image %s.', 'peatcms'), $newPath));
 
                 return false;
             }
@@ -253,7 +253,7 @@ class Image extends BaseElement
         // update the element
         $data['date_processed'] = 'NOW()';
         if (true === $this->update($data)) {
-            $logger->log('Saved info to database');
+            $logger->log('Saved info to database.');
 
             return true;
         }
@@ -281,7 +281,7 @@ class Image extends BaseElement
                 if (0 !== (imagecolorat($img, $x, $y) >> 24) & 0xFF) {
                     //set pixel with the new color
                     if (!imagesetpixel($img, $x, $y, $color)) {
-                        $this->handleErrorAndStop('image processing error');
+                        $this->handleErrorAndStop('image processing error.');
                     }
                 }
             }

@@ -110,19 +110,26 @@ class Daemon
             $total_count = count($rows);
             foreach ($rows as $index => $row) {
                 Setup::loadInstanceSettingsFor($row->instance_id);
-                if (($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
-                    if (($keys = $db->updateElementsWhere(
-                        new type('product'),
-                        array('brand_id' => $serie->brand_id),
-                        array('serie_id' => $serie->serie_id))
-                    )) {
-                        $affected = count($keys);
-                        echo "Updated $affected products with serie $serie->slug\n";
-                    } else {
-                        echo "Did not update any products for serie $serie->slug\n";
+                if (null === ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
+                    echo "Error: serie $row->serie_id not found.\n";
+                    if (($affected = count($db->updateElementsWhere(
+                        new Type('variant'),
+                        array('serie_id' => 0),
+                        array('serie_id' => $row->serie_id))))
+                    ) {
+                        echo "Removed product for $affected variants.\n";
                     }
+                    continue;
+                }
+                if (($keys = $db->updateElementsWhere(
+                    new Type('product'),
+                    array('brand_id' => $serie->brand_id),
+                    array('serie_id' => $serie->serie_id))
+                )) {
+                    $affected = count($keys);
+                    echo "Updated $affected products with serie $serie->slug.\n";
                 } else {
-                    echo "Serie $row->serie_id not found\n";
+                    echo "Did not update any products for serie $serie->slug.\n";
                 }
                 if ($this->runningLate()) {
                     $rows = null;
@@ -136,20 +143,27 @@ class Daemon
             foreach ($rows as $index => $row) {
                 Setup::loadInstanceSettingsFor($row->instance_id);
                 if (null === $product || $product->product_id !== $row->product_id) {
-                    if (!($product = $db->fetchElementRow(new Type('product'), $row->product_id))) {
-                        echo "Product $row->product_id not found\n";
+                    if (null === ($product = $db->fetchElementRow(new Type('product'), $row->product_id))) {
+                        echo "Error: product $row->product_id not found.\n";
+                        if (($affected = count($db->updateElementsWhere(
+                            new Type('variant'),
+                            array('product_id' => 0),
+                            array('product_id' => $row->product_id))))
+                        ) {
+                            echo "Removed product for $affected variants.\n";
+                        }
                         continue;
                     }
                 }
                 if (($keys = $db->updateElementsWhere(
-                    new type('variant'),
+                    new Type('variant'),
                     array('brand_id' => $product->brand_id, 'serie_id' => $product->serie_id),
                     array('product_id' => $product->product_id))
                 )) {
                     $affected = count($keys);
-                    echo "Updated $affected variants with product $product->slug\n";
+                    echo "Updated $affected variants with product $product->slug.\n";
                 } else {
-                    echo "Did not update any variants for product $product->slug\n";
+                    echo "Did not update any variants for product $product->slug.\n";
                 }
                 if ($this->runningLate()) {
                     $rows = null;
@@ -159,19 +173,19 @@ class Daemon
             if (0 === $total_count) ob_clean();
             /* update csp and homepage slug, if necessary */
             $total_count = 0;
-            $trans->start('Do instance CSP default-src and homepage slug');
+            $trans->start('Check instance CSP default-src and homepage slug');
             $rows = $db->fetchInstances();
             foreach ($rows as $index => $row) {
                 $instance = new Instance($row);
                 //Setup::loadInstanceSettings($instance);
                 if ($row->csp_default_src !== ($src = $instance->fetchDefaultSrc())) {
                     $db->updateInstance($row->instance_id, array('csp_default_src' => $src));
-                    echo "Update $row->instance_id default-src to $src\n";
+                    echo "Update $row->instance_id default-src to $src.\n";
                     $total_count++;
                 }
                 if ($row->homepage_slug !== ($slug = $db->fetchPageSlug($row->homepage_id))) {
                     $db->updateInstance($row->instance_id, array('homepage_slug' => $slug));
-                    echo "Update $row->instance_id slug to $slug\n";
+                    echo "Update $row->instance_id slug to $slug.\n";
                     $total_count++;
                 }
             }
@@ -183,10 +197,10 @@ class Daemon
             foreach ($rows as $key => $row) {
                 echo 'Warming up (', $row->instance_id, ') ', $row->slug, ': ';
                 if (true === $stove->Warmup($row->slug, $row->instance_id)) {
-                    echo 'OK';
+                    echo 'OK.';
                     $total_count++;
                 } else {
-                    echo 'NO';
+                    echo 'NO.';
                 }
                 echo "\n";
                 if ($this->runningLate()) {
@@ -194,10 +208,10 @@ class Daemon
                 }
             }
             echo $total_count;
-            echo " done\n";
+            echo " done.\n";
             echo 'Remove duplicates from search index: ';
             echo $db->removeDuplicatesFromCiAi();
-            echo "\n";
+            echo ".\n";
             if (0 === $total_count) ob_clean();
         }
     }

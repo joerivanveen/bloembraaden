@@ -706,13 +706,14 @@ switch ($interval) {
             if ('IMPORT' === $row->filename_saved) continue;
             $img = new Image($row);
             Setup::$instance_id = $row->instance_id;
-            echo $img->getSlug();
+            echo $img->getSlug(), "\n";
             if (true === $img->process($logger)) {
-                echo ' SUCCESS', "\n";
+                echo "^ SUCCESS ";
             } else {
-                echo ' FAILED', "\n";
+                echo "^ FAIL ";
             }
-            $logger->out();
+            $logger->out()->clear();
+            echo "\n";
         }
         // remove some originals that are old (date_processed = long ago)
         $trans->start('Remove old files from upload directory');
@@ -722,17 +723,17 @@ switch ($interval) {
             echo $row->slug;
             if (file_exists("$upload$row->filename_saved")) {
                 if (false === unlink("$upload$row->filename_saved")) {
-                    echo ' could not be removed', "\n";
+                    echo " could not be removed.\n";
                     continue;
                 }
             } else {
                 echo ' (did not exist)';
             }
             if (false === $db->updateColumns('cms_image', array('filename_saved' => null), $row->image_id)) {
-                echo ' ERROR UPDATING DB', "\n";
+                echo " ERROR UPDATING DB.\n";
                 continue;
             }
-            echo ' ok', "\n";
+            echo " ok.\n";
         }
         // refresh the json files for the filters as well
         $trans->start('Handle properties filters cache');
@@ -743,7 +744,7 @@ switch ($interval) {
         foreach ($dir as $index => $file_info) {
             if ($file_info->isDir()) {
                 if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
-                echo "Filters for instance $instance_id\n";
+                echo "Filters for instance $instance_id.\n";
                 Setup::loadInstanceSettingsFor($instance_id);
                 $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
                 foreach ($filter_dir as $index2 => $filter_file_info) {
@@ -753,7 +754,7 @@ switch ($interval) {
                         $filename = $filter_file_info->getFilename();
                         $filename_for_cache = "$instance_id/$filename";
                         if (microtime(true) - $start_timer > 55) {
-                            echo "Stopped for time, filter age being $age seconds\n";
+                            echo "Stopped for time, filter age being $age seconds.\n";
                             // remember we left off here, to resume next run
                             $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
                             break 3;
@@ -853,7 +854,7 @@ switch ($interval) {
             echo "\n";
             usleep(300000); // wait 300 ms
         }
-        echo $deleted, ' orphaned files deleted from file system', "\n";
+        echo "$deleted orphaned files deleted from file system.\n";
         $trans->start('Clean static folder');
         $deleted = 0;
         $cleanFolder = static function ($folder) use ($db, $trans, &$deleted) {
@@ -868,10 +869,10 @@ switch ($interval) {
                 if ($fileinfo->isDot()) continue;
                 if ('webp' !== $fileinfo->getExtension()) continue;
                 $filename = $fileinfo->getFilename();
-                echo $index, ': ', "$instance/$size/$filename";
+                echo "$index: $instance/$size/$filename";
                 echo str_repeat(' ', max(1, 80 - mb_strlen($filename)));
                 if ($fileinfo->getCTime() > $a_week_ago) {
-                    echo 'too recent', "\n";
+                    echo "too recent.\n";
                     continue;
                 }
                 if (false === $db->rowExists($table_name, array(
@@ -903,10 +904,10 @@ switch ($interval) {
             if ($fileinfo->isDot()) continue;
             $cleanFolder($fileinfo->getRealPath());
         }
-        echo $deleted, ' orphaned images deleted', "\n";
+        echo "$deleted orphaned images deleted.\n";
         break;
     case 'temp':
-        echo 'Notice: this is a temp job, only for testing', "\n";
+        echo "Notice: this is a temp job, only for testing.\n";
 }
 $trans->start('Report current job');
 echo date('Y-m-d H:i:s');
