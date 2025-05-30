@@ -1666,8 +1666,6 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
 }
 
 PEATCMS_template.prototype.render = function (out) {
-    out.dark_mode = PEAT.getSessionVar('dark_mode'); // deprecated TODO 0.24.0 remove
-    out.__session__ = PEAT.getSessionValues();
     // master template contains page html broken down in parts
     //console.log(this.template);
     // benchmarking (was: ~380 ms 2020-02-10 with petitclos template)
@@ -1702,6 +1700,13 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
     // process out object
     if (out.hasOwnProperty('__ref')) {
         out = unpack_temp(out);
+    }
+    if (false === out.hasOwnProperty('__session__')) {
+        // propagate session values and some global values to output object
+        out.__session__ = PEAT.getSessionValues();
+        for (const prop of ['is_account', 'nonce', 'version', 'root']) {
+            out[prop] = PEATCMS_globals[prop];
+        }
     }
     for (tag_name in out) {
         if (false === out.hasOwnProperty(tag_name)) continue;
@@ -1770,8 +1775,6 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
                             sub_template.__html__ = sub_template.__html__.replace(`{{__row__[${temp_i}]}}`, build_rows);
                         }
                     }
-                    // propagate session to sub-object (todo more standard properties?)
-                    if ('__session__' !== tag_name) output_object.__session__ = out.__session__;
                     sub_html = this.renderOutput(output_object, sub_template);
                     // remove entirely if no content was added
                     if (sub_html === temp_remember_html) {
