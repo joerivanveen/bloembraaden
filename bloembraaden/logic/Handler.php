@@ -729,13 +729,13 @@ class Handler extends BaseLogic
                             $body = $temp->renderObject($post_data);
                         }
                         if (false === isset($body) || '' === $body) {
-                            $body = 'Click link or paste in your browser to reset your account password: <' . $post_data->confirm_link . '>';
+                            $body = "Click link or paste in your browser to reset your account password: <$post_data->confirm_link>";
                         }
                         $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
                         $mail->set(array(
                             'to' => $email_address,
                             'from' => $instance->getSetting('mail_verified_sender'),
-                            'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
+                            'subject' => $post_data->subject ?? "Mailed by {$instance->getDomain()}",
                             'text' => Help::html_to_text($body),
                             'html' => $body,
                         ));
