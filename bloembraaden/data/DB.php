@@ -3047,38 +3047,34 @@ class DB extends Base
         return $affected;
     }
 
-    public function insertAdmin(string $email, string $hash, int $client_id, int $instance_id = 0): ?int
+    public function insertAdmin(string $email, string $password_hash, int $client_id, int $instance_id = 0): ?int
     {
         $email = mb_strtolower($email);
-        if ($this->rowExists('_admin', array('email' => $email))) { // already exists
-            $this->addMessage(sprintf(__('Admin with email %s already exists.', 'peatcms'), $email));
-        } else { // insert the admin
+        if (false === $this->rowExists('_admin', array('email' => $email))) { // already exists
             return $this->insertRowAndReturnLastId('_admin', array(
                 'nickname' => $email,
                 'email' => $email,
                 'client_id' => $client_id,
                 'instance_id' => $instance_id,
-                'password_hash' => $hash,
+                'password_hash' => $password_hash,
             ));
         }
 
         return null;
     }
 
-    public function insertUserAccount(string $email, string $hash): ?int
+    public function insertUserAccount(string $email, string $password_hash): ?int
     {
         $email = mb_strtolower($email);
-        if ($this->rowExists('_user', array(
+        if (false === $this->rowExists('_user', array(
             'email' => $email,
             'is_account' => true,
             'instance_id' => Setup::$instance_id,
-        ))) { // already exists
-            $this->addMessage(sprintf(__('User with email %s already exists.', 'peatcms'), $email));
-        } else { // insert the user as an account
+        ))) {
             return $this->insertRowAndReturnLastId('_user', array(
                 'nickname' => $email,
                 'email' => $email,
-                'password_hash' => $hash,
+                'password_hash' => $password_hash,
                 'is_account' => true,
                 'instance_id' => Setup::$instance_id,
             ));

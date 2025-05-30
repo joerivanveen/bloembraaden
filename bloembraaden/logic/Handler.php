@@ -708,7 +708,7 @@ class Handler extends BaseLogic
                                 );
                             }
                         } else {
-                            $this->addMessage(__('Account could not be created.', 'peatcms'), 'error');
+                            $this->addMessage(__('Account could not be created.', 'peatcms'), 'note');
                         }
                     } else {
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
