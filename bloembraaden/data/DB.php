@@ -2928,7 +2928,7 @@ class DB extends Base
                 $values[] = $index;
             }
         }
-        if (count($placeholders) > 0) {
+        if (0 < count($placeholders)) {
             $placeholders_str = implode(', ', $placeholders);
             $statement = $this->conn->prepare("
                 INSERT INTO _shoppinglist_variant (shoppinglist_id, variant_id, variant_slug, quantity, price, price_from, o) 

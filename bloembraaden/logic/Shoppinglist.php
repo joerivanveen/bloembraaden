@@ -280,7 +280,7 @@ class Shoppinglist extends BaseLogic
     {
         if (true === isset($this->rows)) {
             $data = array_reduce($this->rows, function ($carry, $row) {
-                return "$carry $row->variant_id $row->quantity $row->price";
+                return "$carry $row->variant_id $row->quantity $row->price $row->deleted";
             }, '');
 
             return md5($data);
