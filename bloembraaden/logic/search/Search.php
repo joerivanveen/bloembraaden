@@ -267,7 +267,6 @@ class Search extends BaseElement
         }
 
         return $ids;
-
     }
 
     /**
@@ -391,8 +390,8 @@ class Search extends BaseElement
 
     public function suggestPages(array $terms = array(), int $limit = 8): array
     {
-        // for now make it just so something is returned:
-        $rows = Help::getDB()->fetchElementRowsWhere(new Type('page'), array('online' => true));
+        $rows = Help::getDB()->findElementsFiltered(new Type('page'), $this->getProperties());
+
         if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cut off the results there
 
         return $this->outputRows($rows, 'page');

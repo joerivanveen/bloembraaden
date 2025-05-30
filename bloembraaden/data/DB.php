@@ -308,6 +308,44 @@ class DB extends Base
     }
 
     /**
+     * Returns max 100 Elements (title, slug, type_name, id) of $peat_type filtered by $properties, sorted by preferred sorting column.
+     * @param Type $peat_type
+     * @param array $properties
+     * @return array
+     */
+    public function findElementsFiltered(Type $peat_type, array $properties = array()): array {
+        $type_name = $peat_type->typeName();
+        $sub_queries = $this->queriesProperties($properties, $type_name);
+        if (0 !== count($sub_queries)) {
+            $imploded_sub_queries = implode(' AND ', $sub_queries);
+        } else {
+            $imploded_sub_queries = '';
+        }
+        $table_info = $this->getTableInfo($peat_type->tableName());
+        // preferred sorting:
+        if ($table_info->getColumnByName('date_popvote')) {
+            $sorting = 'ORDER BY date_popvote DESC';
+        } elseif ($table_info->getColumnByName('date_published')) {
+            $sorting = 'ORDER BY date_published DESC';
+        } elseif ($table_info->hasStandardColumns()) {
+            $sorting = 'ORDER BY date_created DESC';
+        } else {
+            $sorting = '';
+        }
+
+        $statement = $this->conn->prepare("
+            SELECT title, slug, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
+            WHERE $imploded_sub_queries $sorting LIMIT 100;
+        ");
+        //Help::addMessage($statement->queryString, 'note');
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        return $rows;
+    }
+
+    /**
      * Returns all element ids in random order of a specific $type_name found using $terms and $properties
      *
      * @param string $type_name
@@ -385,7 +423,7 @@ class DB extends Base
             SELECT title, slug, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
             WHERE {$type_name}_id IN ($ids_as_string) $imploded_sub_queries;
         ");
-        //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
+        //Help::addMessage($statement->queryString, 'note');
         $statement->execute();
         $rows = $statement->fetchAll(5);
         $statement = null;
