@@ -48,7 +48,7 @@ class Image extends BaseElement
         $quality = array(0, 55, 65, 80)[$level] ?? 55;
         $data = array(); // the columns to update
         $path = Setup::$UPLOADS;
-        if (isset($this->row->filename_saved)) {
+        if (true === isset($this->row->filename_saved)) {
             $path .= $this->row->filename_saved;
         } else {
             $logger->log('Original no longer available.');
@@ -56,8 +56,8 @@ class Image extends BaseElement
         }
         if ('IMPORT' === substr($path, 0, -6)) return false; // cannot be processed
         // check physical (image) file
-        if (false === file_exists($path)) {
-            $logger->log('Path does not exist.');
+        if (false === file_exists($path) || false === is_file($path)) {
+            $logger->log('Original is not available.');
             if (false === $this->forgetOriginalFile()) {
                 $logger->log('Database not updated.');
             }
