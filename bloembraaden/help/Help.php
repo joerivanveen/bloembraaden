@@ -920,7 +920,6 @@ class Help
                                 $row_count = $value->row_count;
                                 $row_treat = 'save';
                                 $logger->log("Handle table $table_name");
-                                $info = $db->getTableInfo($table_name);
                                 if (false === in_array($table_name, $tables)) {
                                     $logger->log("Table $table_name is not imported");
                                     $string = '';
@@ -930,6 +929,7 @@ class Help
                                 } elseif ('_order' === $table_name) {
                                     $update_order_numbers = true;
                                 }
+                                $info = $db->getTableInfo($table_name);
                                 if ('_history' !== $table_name) { // history has no id column
                                     $id_column_name = $info->getIdColumn()->getName();
                                     // check the columns, if any _id column is present, it has to be translated

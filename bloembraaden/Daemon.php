@@ -109,6 +109,7 @@ class Daemon
             $rows = $db->jobIncorrectChainForProduct();
             $total_count = count($rows);
             foreach ($rows as $index => $row) {
+                if (0 === $row->serie_id) continue;
                 Setup::loadInstanceSettingsFor($row->instance_id);
                 if (null === ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
                     echo "Error: serie $row->serie_id not found.\n";
@@ -141,6 +142,7 @@ class Daemon
             $total_count += count($rows);
             $product = null;
             foreach ($rows as $index => $row) {
+                if (0 === $row->product_id) continue;
                 Setup::loadInstanceSettingsFor($row->instance_id);
                 if (null === $product || $product->product_id !== $row->product_id) {
                     if (null === ($product = $db->fetchElementRow(new Type('product'), $row->product_id))) {

@@ -4353,9 +4353,9 @@ class DB extends Base
             array('*'),
             array($peat_type->idColumn() => $id_and_type->id, 'deleted' => null)
         );
+        if (null === $element_row) return false;
         $element = $peat_type->getElement($element_row);
         $element_row = null;
-        if (null === $element) return false;
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
         foreach ($linked_types as $type => $relation) {
