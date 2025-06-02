@@ -348,7 +348,7 @@ class Resolver extends BaseLogic
                 }
             }
         } elseif ((false === defined('ADMIN') || false === ADMIN)
-            && false === $element->isOnline()
+            && false === $element->canBeSeen()
         ) { // @since 0.23.1 do not get offline stuff when not admin (also prevents caching of offline items)
             $title = $element->row->title;
             //$this->addError("{$element->getSlug()} is offline and replaced by a search for visitors.");
@@ -364,7 +364,7 @@ class Resolver extends BaseLogic
             // todo expand this to other places to reduce data (e.g. petitclos.nl/drank)
             $template_id = Help::getDB()->getDefaultTemplateIdFor('search');
             $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
-            if (is_array($json_prepared)) {
+            if (true === is_array($json_prepared)) {
                 $types = array();
                 $keys = array_flip(array_keys($json_prepared)); // flip to use isset which is fast
                 foreach (DB::TYPES_WITH_CI_AI as $index => $type_name) {

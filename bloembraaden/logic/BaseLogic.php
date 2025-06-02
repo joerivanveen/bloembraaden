@@ -122,7 +122,7 @@ class BaseLogic extends Base
 
                 if (true === $returnOutputObject) return $out;
                 return null;
-            } elseif (false === $this->isOnline()) {
+            } elseif (false === $this->canBeSeen()) {
                 // remove from cache if this element (type) is cached, leave it when replaced by a search page
                 $obj = $db->cached($slug);
                 if (null !== $obj && 'search' !== $obj->slugs->{$obj->__ref}->type_name) {
@@ -165,7 +165,7 @@ class BaseLogic extends Base
             // this may return null sometimes on the first try...
             if ($returnOutputObject) {
                 if (null === ($out = $db->cached($slug, 1))) {
-                    usleep(387); // wait for the database to get ready an arbitrary number of milliseconds
+                    usleep(3870); // wait for the database to get ready an arbitrary number of microseconds
                     if (null === ($out = $db->cached($slug, 1))) {
                         $this->handleErrorAndStop('Could not read cache after creating it', __('Cache error, please try again.', 'peatcms'));
                     }
@@ -256,7 +256,7 @@ class BaseLogic extends Base
      * @return bool whether the element is considered online (for non admins)
      * @since 0.7.6
      */
-    public function isOnline(): bool
+    public function canBeSeen(): bool
     {
         if (true === isset($this->row->deleted) && true === $this->row->deleted) return false;
         if (true === isset($this->row->online) && false === $this->row->online) return false;
@@ -272,7 +272,7 @@ class BaseLogic extends Base
 
     public function canBeFound(): bool
     {
-        return $this->isOnline() && ($this->row->can_be_found ?? true);
+        return $this->canBeSeen() && ($this->row->can_be_found ?? true);
     }
 
     /**
