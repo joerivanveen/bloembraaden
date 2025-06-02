@@ -3885,14 +3885,14 @@ class DB extends Base
         $where = $table->formatColumnsAndData($where, true);
         $where_statement = implode(' AND ', $where['parameterized']);
         if ('' !== $where_statement) $where_statement = "WHERE $where_statement";
-        $statement = $this->conn->prepare("SELECT $key_column_name FROM $table_name $where_statement");
+        $statement = $this->conn->prepare("SELECT $key_column_name as id FROM $table_name $where_statement;");
         $statement->execute($where['values']);
         $rows = $statement->fetchAll(5);
         $statement = null;
         $return_keys = array();
         foreach ($rows as $key => $row) {
-            if ($this->updateRowAndReturnSuccess($table_name, $data, $row->{$key_column_name})) {
-                $return_keys[] = $row->{$key_column_name};
+            if ($this->updateRowAndReturnSuccess($table_name, $data, $row->id)) {
+                $return_keys[] = $row->id;
             }
         }
 
