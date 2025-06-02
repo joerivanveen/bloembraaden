@@ -268,7 +268,7 @@ class TableInfo
 {
     private array $columns = array(), $names = array();
     private string $table_name, $primary_key_column, $id_column;
-    private bool $has_standard_columns, $has_ci_ai_column = false, $per_instance;
+    private bool $has_standard_columns, $per_instance;
 
     public function __construct(string $table_name, array $columns) // these columns must be the actual columns that are in the table
     {
@@ -277,12 +277,6 @@ class TableInfo
         $this->per_instance = false;
         foreach ($columns as $index => $column) {
             $column_name = (string)$column->name;
-            // hidden columns that are never output
-            if ('ci_ai' === $column_name) {
-                $this->has_ci_ai_column = true;
-                continue;
-            }
-            //
             $this->names[] = $column_name;
             $column->editable = true; // default value
             $this->columns[$column_name] = new Column($column_name, $column);
@@ -374,11 +368,6 @@ class TableInfo
     public function hasStandardColumns(): bool
     {
         return $this->has_standard_columns;
-    }
-
-    public function hasCiAiColumn(): bool
-    {
-        return $this->has_ci_ai_column;
     }
 
     public function getTableName(): string
