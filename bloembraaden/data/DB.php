@@ -317,7 +317,7 @@ class DB extends Base
         $type_name = $peat_type->typeName();
         $sub_queries = $this->queriesProperties($properties, $type_name);
         if (0 !== count($sub_queries)) {
-            $imploded_sub_queries = implode(' AND ', $sub_queries);
+            $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
         } else {
             $imploded_sub_queries = '';
         }
@@ -335,8 +335,9 @@ class DB extends Base
 
         $statement = $this->conn->prepare("
             SELECT title, slug, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
-            WHERE $imploded_sub_queries $sorting LIMIT 100;
+            WHERE instance_id = :instance_id $imploded_sub_queries $sorting LIMIT 100;
         ");
+        $statement->bindValue(':instance_id', Setup::$instance_id);
         //Help::addMessage($statement->queryString, 'note');
         $statement->execute();
         $rows = $statement->fetchAll(5);
