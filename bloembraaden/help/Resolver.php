@@ -92,8 +92,8 @@ class Resolver extends BaseLogic
         // remember for everyone, only needed when output is imminent:
         if (true === $output_json) Help::$OUTPUT_JSON = true;
         // special case action, may exist alongside other instructions, doesn't necessarily depend on uri[0]
-        if (true === isset($this->instructions['action'])) {
-            // todo backwards compatible with __action__/suggest syntax, remove when sites use __action__:suggest
+        // honor __action__/name style, next to __action__:name (picked up earlier)
+        if (true === isset($this->instructions['action']) && true === $this->instructions['action']) {
             if (count($uri_parts) > 0) {
                 $this->instructions['action'] = htmlentities($uri_parts[0]);
                 unset($uri_parts[0]);

@@ -1577,7 +1577,7 @@ PEATCMS_template.prototype.renderProgressiveLoad = function (slug, tag) {
     if ((tag = NAV.tagsCache(slug))) {
         self.renderProgressiveTag(tag);
     } else {
-        if (0 === slug.indexOf('__') && -1 === slug.indexOf('/')) {
+        if (0 === slug.indexOf('__') && slug.length === slug.lastIndexOf('_') + 1) {
             console.warn(`${slug} cannot be rendered progressive`);
             PEAT.registerAssetLoad(slug);
             return;
