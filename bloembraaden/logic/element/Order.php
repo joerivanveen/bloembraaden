@@ -167,5 +167,7 @@ class Order extends BaseElement
         $row->amount_grand_total_ex_vat = Help::asMoney($amount_grand_total);
         // @since 0.18.1 remove session_id, not really a secret, but no need to leak it either
         unset($row->session_id);
+        // @since 0.27.0 have deprecated remarks_user in output todo remove when no longer in use
+        $row->remarks_user = $row->shipping_remarks;
     }
 }
