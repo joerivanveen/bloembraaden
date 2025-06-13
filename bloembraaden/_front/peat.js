@@ -3914,12 +3914,16 @@ PEATCMS.coordsInRectangle = function (coords, rect) {
 }
 
 PEATCMS.getFormData = function (form) {
-    let elements = form.elements, data = form.dataset,
-        element, value, i, len, obj = {}
+    const elements = form.elements, data = form.dataset, obj = {};
+    let value, i, len;
     for (i = 0, len = elements.length; i < len; i++) {
-        element = elements[i];
-        if ('checkbox' === element.type) {
+        const element = elements[i], type = element.type;
+        if ('checkbox' === type) {
             value = element.checked;
+        } else if ('radio' === type) {
+            if (true === element.checked) {
+                value = element.value;
+            }
         } else {
             value = element.value;
         }
