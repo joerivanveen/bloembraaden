@@ -3293,4 +3293,8 @@ ALTER TABLE "public"."_shoppinglist"
 ALTER TABLE "public"."_shoppinglist"
     DROP COLUMN if exists "remarks_admin";
 
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "rating" float;
+
+
 COMMIT;
