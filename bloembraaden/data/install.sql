@@ -3267,4 +3267,30 @@ CREATE TABLE "public"."_address_shop"
 CREATE INDEX if not exists "index_address_shop_instance_id" ON "public"."_address_shop" USING btree ("instance_id" Asc);
 
 
-COMMIT
+COMMIT;
+
+-- version 0.27.0
+
+BEGIN;
+
+DO $$
+    BEGIN
+        IF EXISTS(SELECT *
+                  FROM information_schema.columns
+                  WHERE table_name='_order' AND column_name='remarks_user')
+        THEN
+            ALTER TABLE "public"."_order"
+                RENAME COLUMN "remarks_user" TO "shipping_remarks";
+        END IF;
+    END $$;
+
+ALTER TABLE "public"."_order"
+    DROP COLUMN if exists "remarks_admin";
+
+ALTER TABLE "public"."_shoppinglist"
+    DROP COLUMN if exists "remarks_user";
+
+ALTER TABLE "public"."_shoppinglist"
+    DROP COLUMN if exists "remarks_admin";
+
+COMMIT;

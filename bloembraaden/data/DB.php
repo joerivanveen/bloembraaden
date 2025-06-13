@@ -313,7 +313,8 @@ class DB extends Base
      * @param array $properties
      * @return array
      */
-    public function findElementsFiltered(Type $peat_type, array $properties = array()): array {
+    public function findElementsFiltered(Type $peat_type, array $properties = array()): array
+    {
         $type_name = $peat_type->typeName();
         $sub_queries = $this->queriesProperties($properties, $type_name);
         if (0 !== count($sub_queries)) {
@@ -1659,9 +1660,10 @@ class DB extends Base
                     'shipping_address_street',
                     'shipping_address_street_addition',
                     'shipping_address_city',
+                    'shipping_remarks',
                     'newsletter_subscribe',
                     'preferred_delivery_day',
-                    'remarks_user',
+                    'remarks_user', // @deprecated use shipping_remarks
                     'vat_number',
                     'vat_country_iso2',
                     'vat_valid',
@@ -1669,8 +1671,11 @@ class DB extends Base
                 ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
+                    case 'remarks_user': // @deprecated remove when no longer in use
+                        $key = 'shipping_remarks';
+                        break;
                     case 'vat_history':
-                    case 'remarks_user':
+                    case 'shipping_remarks':
                         break;
                     case 'vat_valid':
                     case 'newsletter_subscribe':
@@ -3005,61 +3010,51 @@ class DB extends Base
         $affected = 0;
         // all rows of shopping lists with this session_id must be moved to the corresponding (by NAME) user_id list
         $sessionlists = $this->fetchRows('_shoppinglist',
-            array('shoppinglist_id', 'name', 'remarks_user', 'remarks_admin'),
+            array('shoppinglist_id', 'name'),
             array('session_id' => $current_session_id));
         foreach ($sessionlists as $index => $sessionlist) {
             // if there is no user list with this name, just move this one over
             if (0 === count($userlists = $this->fetchRows('_shoppinglist',
-                    array('shoppinglist_id', 'remarks_user', 'remarks_admin'),
+                    array('shoppinglist_id'),
                     array('user_id' => $to_user_id, 'name' => $sessionlist->name)))) {
                 // update the current session one to the $to_user_id
                 $this->updateRowAndReturnSuccess('_shoppinglist',
                     array('session_id' => 0, 'user_id' => $to_user_id),
                     $sessionlist->shoppinglist_id);
-            } else { // there is a user list already...
-                if (1 === count($userlists)) {
-                    $userlist = $userlists[0];
-                    // check how many are in the user list, to report later to the client
-                    $statement = $this->conn->prepare('SELECT COUNT(1) FROM _shoppinglist_variant WHERE shoppinglist_id = :userlist_id');
-                    $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
-                    $statement->execute();
-                    $current_count = $statement->fetchColumn(0);
-                    // fork all the _shoppinglist_variant rows over
-                    // special case: when the variant already exists in the list, we just want to update the quantity
-                    // to the current / latest value so we remove those from the receiving (userlist) shoppinglist first
-                    $this->conn->beginTransaction();
-                    $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant WHERE shoppinglist_id = :userlist_id AND variant_id IN(SELECT variant_id FROM _shoppinglist_variant WHERE shoppinglist_id = :sessionlist_id);');
-                    $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
-                    $statement->bindValue(':sessionlist_id', $sessionlist->shoppinglist_id);
-                    $statement->execute();
-                    // subtract the deleted ones so you know how many were actually added
-                    $current_count -= $statement->rowCount();
-                    // now update the session lists to integrate with the userlist
-                    $statement = $this->conn->prepare('UPDATE _shoppinglist_variant SET shoppinglist_id = :userlist_id WHERE shoppinglist_id = :sessionlist_id;');
-                    $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
-                    $statement->bindValue(':sessionlist_id', $sessionlist->shoppinglist_id);
-                    $statement->execute();
-                    $affected += $statement->rowCount();
-                    if (true === $this->conn->commit() and $current_count !== 0) {
-                        $this->addMessage(sprintf(
-                        //# TRANSLATORS %1 is the number of rows and %2 the name of the shoppinglist (e.g. cart)
-                            __('%1$s rows belonging to your account have been added to %2$s', 'peatcms')
-                            , $current_count, $sessionlist->name));
-                    }
-                    // update the remarks as well
-                    // TODO the remarks are stored in a session, so they don’t carry over at the moment
-                    /*if (($remarks = trim($sessionlist->remarks_user)) !== '') {
-                        if (($remarks2 = trim($userlist->remarks_user)) !== '') $remarks .= "\n" . $remarks2;
-                        if (true === $this->updateRowAndReturnSuccess('_shoppinglist',
-                                array('remarks_user' => $remarks),
-                                array('shoppinglist_id' => $userlist->shoppinglist_id))) $affected += 1;
-                    }*/
-                } else { // this should never happen
-                    $this->handleErrorAndStop(
-                        'Multiple user lists found while merging shoppinglists',
-                        sprintf(__('An error occurred in %s.', 'peatcms'), $sessionlist->name)
-                    );
+            } elseif (1 === count($userlists)) { // there is a user list already...
+                $userlist = $userlists[0];
+                // check how many are in the user list, to report later to the client
+                $statement = $this->conn->prepare('SELECT COUNT(1) FROM _shoppinglist_variant WHERE shoppinglist_id = :userlist_id');
+                $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
+                $statement->execute();
+                $current_count = $statement->fetchColumn(0);
+                // fork all the _shoppinglist_variant rows over
+                // special case: when the variant already exists in the list, we just want to update the quantity
+                // to the current / latest value so we remove those from the receiving (userlist) shoppinglist first
+                $this->conn->beginTransaction();
+                $statement = $this->conn->prepare('DELETE FROM _shoppinglist_variant WHERE shoppinglist_id = :userlist_id AND variant_id IN(SELECT variant_id FROM _shoppinglist_variant WHERE shoppinglist_id = :sessionlist_id);');
+                $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
+                $statement->bindValue(':sessionlist_id', $sessionlist->shoppinglist_id);
+                $statement->execute();
+                // subtract the deleted ones so you know how many were actually added
+                $current_count -= $statement->rowCount();
+                // now update the session lists to integrate with the userlist
+                $statement = $this->conn->prepare('UPDATE _shoppinglist_variant SET shoppinglist_id = :userlist_id WHERE shoppinglist_id = :sessionlist_id;');
+                $statement->bindValue(':userlist_id', $userlist->shoppinglist_id);
+                $statement->bindValue(':sessionlist_id', $sessionlist->shoppinglist_id);
+                $statement->execute();
+                $affected += $statement->rowCount();
+                if (true === $this->conn->commit() and $current_count !== 0) {
+                    $this->addMessage(sprintf(
+                    //# TRANSLATORS %1 is the number of rows and %2 the name of the shoppinglist (e.g. cart)
+                        __('%1$s rows belonging to your account have been added to %2$s', 'peatcms')
+                        , $current_count, $sessionlist->name));
                 }
+            } else { // more than 1 user list should never happen
+                $this->handleErrorAndStop(
+                    'Multiple user lists found while merging shoppinglists',
+                    sprintf(__('An error occurred in %s.', 'peatcms'), $sessionlist->name)
+                );
             }
         }
 
@@ -3086,10 +3081,10 @@ class DB extends Base
     {
         $email = mb_strtolower($email);
         if (false === $this->rowExists('_user', array(
-            'email' => $email,
-            'is_account' => true,
-            'instance_id' => Setup::$instance_id,
-        ))) {
+                'email' => $email,
+                'is_account' => true,
+                'instance_id' => Setup::$instance_id,
+            ))) {
             return $this->insertRowAndReturnLastId('_user', array(
                 'nickname' => $email,
                 'email' => $email,
