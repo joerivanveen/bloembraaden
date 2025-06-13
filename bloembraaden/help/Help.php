@@ -1219,23 +1219,23 @@ class Help
         foreach ($rows as $i => $row) {
             // get shipping / billing address key, if not in the addresses by key, add it
             foreach (array('billing', 'shipping') as $index => $address_type) {
-                $key = strtolower(str_replace(' ', '', $row->{"{$address_type}_address_postal_code"} . $row->{"{$address_type}_address_street"} . $row->{"{$address_type}_address_number"} . $row->{"{$address_type}_address_number_addition"} . $row->{"{$address_type}_address_country_iso2"}));
+                $address = array(
+                    'user_id' => $row->user_id,
+                    'instance_id' => $row->instance_id,
+                    'address_name' => $row->{"{$address_type}_address_name"},
+                    'address_company' => $row->{"{$address_type}_address_company"},
+                    'address_postal_code' => $row->{"{$address_type}_address_postal_code"},
+                    'address_number' => $row->{"{$address_type}_address_number"},
+                    'address_number_addition' => $row->{"{$address_type}_address_number_addition"},
+                    'address_street' => $row->{"{$address_type}_address_street"},
+                    'address_street_addition' => $row->{"{$address_type}_address_street_addition"},
+                    'address_city' => $row->{"{$address_type}_address_city"},
+                    'address_country_name' => $row->{"{$address_type}_address_country_name"},
+                    'address_country_iso2' => $row->{"{$address_type}_address_country_iso2"},
+                    'address_country_iso3' => $row->{"{$address_type}_address_country_iso3"},
+                );
+                $key = Address::makeKey((object)$address);
                 if (false === isset($by_key[$key])) {
-                    $address = array(
-                        'user_id' => $row->user_id,
-                        'instance_id' => $row->instance_id,
-                        'address_name' => $row->{"{$address_type}_address_name"},
-                        'address_company' => $row->{"{$address_type}_address_company"},
-                        'address_postal_code' => $row->{"{$address_type}_address_postal_code"},
-                        'address_number' => $row->{"{$address_type}_address_number"},
-                        'address_number_addition' => $row->{"{$address_type}_address_number_addition"},
-                        'address_street' => $row->{"{$address_type}_address_street"},
-                        'address_street_addition' => $row->{"{$address_type}_address_street_addition"},
-                        'address_city' => $row->{"{$address_type}_address_city"},
-                        'address_country_name' => $row->{"{$address_type}_address_country_name"},
-                        'address_country_iso2' => $row->{"{$address_type}_address_country_iso2"},
-                        'address_country_iso3' => $row->{"{$address_type}_address_country_iso3"},
-                    );
                     if ($db->insertRowAndReturnKey('_address', $address)) {
                         $by_key[$key] = $address;
                     }

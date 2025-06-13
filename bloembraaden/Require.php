@@ -33,6 +33,8 @@ require CORE . 'logic/element/File.php';
 require CORE . 'logic/element/Comment.php';
 require CORE . 'logic/element/Menu.php';
 require CORE . 'logic/element/MenuItem.php';
+require CORE . 'logic/element/Address.php';
+require CORE . 'logic/element/AddressShop.php';
 // integrations
 require CORE . 'logic/integrations/PaymentServiceProviderInterface.php';
 require CORE . 'logic/integrations/PaymentServiceProvider.php';
