@@ -584,8 +584,6 @@ class Handler extends BaseLogic
                         $addresses = new Addresses($instance->getSetting('myparcel_api_key'));
                         $valid = $addresses->validate($country_code, $postal_code, $number, $street, $city);
                         $out = array('success' => true, 'valid' => $valid);
-                    } else {
-                        $out = array('success' => false);
                     }
                 } elseif ('order' === $action) {
                     if (true === Help::turnstileVerify($instance, $post_data)) {
@@ -652,9 +650,30 @@ class Handler extends BaseLogic
                     } else {
                         $out = true;
                     }
+                } elseif ('order_rate' === $action) {
+                    if (true === isset($post_data->order_number, $post_data->rating)) {
+                        $order_number = htmlentities(trim($post_data->order_number));
+                        $rating = Help::asFloat($post_data->rating);
+                        $order = Help::getDB()->getOrderByNumber($order_number);
+                        $own = Help::$session->getId() === $order->session_id;
+                        if (true === isset($order, $rating)) {
+                            if (true === $own) {
+                                $out = array(
+                                    'success' => Help::getDB()->updateColumns('_order',
+                                        array('rating' => $rating),
+                                        $order->order_id,
+                                    )
+                                );
+                            } else {
+                                $this->addError('Order rating error: NOT OWN ORDER.');
+                            }
+                        } else {
+                            $this->addError('Order rating error: ' . var_export($post_data, true));
+                        }
+                    }
                 } elseif ('account_login' === $action) {
                     // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
-                    if (isset($post_data->email) && isset($post_data->pass)) {
+                    if (true === isset($post_data->email, $post_data->pass)) {
                         $as_admin = $this->resolver->hasInstruction('admin');
                         if (true === $as_admin || true === Help::turnstileVerify($instance, $post_data)) {
                             if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
@@ -673,135 +692,150 @@ class Handler extends BaseLogic
                     } else {
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                     }
-                } elseif ('account_create' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (true === isset($post_data->email)
-                        && true === isset($post_data->pass)
-                        && strpos(($email_address = $post_data->email), '@')
-                    ) {
-                        $password = (string)$post_data->pass;
-                        if (8 > strlen($password)) {
-                            $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
-                        } elseif (null !== ($user_id = Help::getDB()->insertUserAccount(
-                                $email_address,
-                                Help::passwordHash($password))
-                        )) { // todo what if the e-mail address already is an account? Now it just errors.
-                            $this->addMessage(__('Account created.', 'peatcms'), 'note');
-                            // @since 0.26.0 add current order and address to the account already, by session id
-                            Help::getDB()->updateColumnsWhere('_order',
-                                array('user_id' => $user_id),
-                                array('session_id' => Help::$session->getId()) // could be slow, no index
-                            );
-                            // get the shop addresses so they will not be added to the account
-                            $by_key = array();
-                            foreach (Help::getDB()->fetchInstanceAddresses(Setup::$instance_id) as $index => $address) {
-                                $by_key[Address::makeKey($address)] = 'Shop';
-                            }
-                            // get the orders for this user to supplement the addresses to the account
-                            $rows = Help::getDB()->fetchOrdersByUserId($user_id);
-                            Help::supplementAddresses($rows, $by_key);
-                            // auto login
-                            if (false === Help::$session->login($email_address, $password, false)) {
-                                $this->addMessage(__('Could not login.', 'peatcms'), 'error');
-                            } else {
-                                $this->addMessage(__('Login successful.', 'peatcms'), 'log');
-                                $out = array(
-                                    'success' => true,
-                                    'is_account' => true,
-                                    '__user__' => Help::$session->getUser()->getOutput()
-                                );
-                            }
-                        } else {
-                            $this->addMessage(__('Account could not be created.', 'peatcms'), 'note');
-                        }
-                    } else {
-                        $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
-                    }
-                } elseif ('account_password_forgotten' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (true === isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
-                        $post_data->check_string = Help::getDB()->putInLocker(0,
-                            (object)array('email_address' => $email_address));
-                        // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
-                        $post_data->confirm_link = sprintf('%s/%s/locker:%s',
-                            $instance->getDomain(true),
-                            ($post_data->slug ?? 'account'),
-                            $post_data->check_string);
-                        $post_data->instance_name = $instance->getName();
-                        /* this largely duplicate code must be in a helper function or something... */
-                        if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
-                            $temp = new Template($template_row);
-                            $body = $temp->renderObject($post_data);
-                        }
-                        if (false === isset($body) || '' === $body) {
-                            $body = "Click link or paste in your browser to reset your account password: <$post_data->confirm_link>";
-                        }
-                        $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
-                        $mail->set(array(
-                            'to' => $email_address,
-                            'from' => $instance->getSetting('mail_verified_sender'),
-                            'subject' => $post_data->subject ?? "Mailed by {$instance->getDomain()}",
-                            'text' => Help::html_to_text($body),
-                            'html' => $body,
-                        ));
-                        $out = $mail->send();
-                        $out = $this->after_posting($out, $post_data);
-                    } else {
-                        $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
-                    }
-                } elseif ('account_password_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (true === isset($post_data->email, $post_data->pass)) {
-                        $password = (string)$post_data->pass;
-                        if (8 > strlen($password)) {
-                            $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
-                        } elseif (true === isset($post_data->locker)
-                            && $row = Help::getDB()->emptyLocker($post_data->locker)
+                } elseif ('account_create' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        if (true === isset($post_data->email, $post_data->pass)
+                            && strpos(($email_address = $post_data->email), '@')
                         ) {
-                            if (true === isset($row->information, $row->information->email_address)
-                                && ($email_address = $row->information->email_address) === $post_data->email
-                            ) {
-                                // if it’s indeed an account, update the password
-                                // (since the code proves the emailaddress is read by the owner)
-                                if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
-                                    // create an account then...
-                                    $this->action = 'account_create';
-                                    $this->Act();
+                            $password = (string)$post_data->pass;
+                            if (8 > strlen($password)) {
+                                $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                            } elseif (null !== ($user_id = Help::getDB()->insertUserAccount(
+                                    $email_address,
+                                    Help::passwordHash($password))
+                                )) { // todo what if the e-mail address already is an account? Now it just errors.
+                                $this->addMessage(__('Account created.', 'peatcms'), 'note');
+                                // @since 0.26.0 add current order and address to the account already, by session id
+                                Help::getDB()->updateColumnsWhere('_order',
+                                    array('user_id' => $user_id),
+                                    array('session_id' => Help::$session->getId()) // could be slow, no index
+                                );
+                                // get the shop addresses so they will not be added to the account
+                                $by_key = array();
+                                foreach (Help::getDB()->fetchInstanceAddresses(Setup::$instance_id) as $index => $address) {
+                                    $by_key[Address::makeKey($address)] = 'Shop';
+                                }
+                                // get the orders for this user to supplement the addresses to the account
+                                $rows = Help::getDB()->fetchOrdersByUserId($user_id);
+                                Help::supplementAddresses($rows, $by_key);
+                                // auto login
+                                if (false === Help::$session->login($email_address, $password, false)) {
+                                    $this->addMessage(__('Could not login.', 'peatcms'), 'error');
                                 } else {
-                                    $this->addMessage(__('Password updated.', 'peatcms'), 'note');
-                                    $out['success'] = true;
-                                    if (true === Help::$session->login($email_address, $password, false)) {
-                                        $this->addMessage(__('Login successful.', 'peatcms'), 'log');
-                                        $out = array(
-                                            'success' => true,
-                                            'is_account' => true,
-                                            '__user__' => Help::$session->getUser()->getOutput()
-                                        );
-                                    }
+                                    $this->addMessage(__('Login successful.', 'peatcms'), 'log');
+                                    $out = array(
+                                        'success' => true,
+                                        'is_account' => true,
+                                        '__user__' => Help::$session->getUser()->getOutput()
+                                    );
                                 }
                             } else {
-                                $this->addMessage(__('E-mail address did not match.', 'peatcms'), 'warn');
+                                $this->addMessage(__('Account could not be created.', 'peatcms'), 'note');
                             }
                         } else {
-                            $this->addMessage(__('Link is invalid or expired.', 'peatcms'), 'warn');
+                            $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                         }
                     } else {
-                        $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
+                        $out = true;
                     }
-                } elseif ('account_update' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    if (null !== ($user = Help::$session->getUser())) {
-                        // check which column is being updated... (multiple is possible)
-                        $data = array();
-                        if (true === isset($post_data->phone)) $data['phone'] = $post_data->phone;
-                        if (true === isset($post_data->gender)) $data['gender'] = $post_data->gender;
-                        if (true === isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
-                        if (count($data) > 0) {
-                            $out = array('success' => $user->updateRow($data));
+                } elseif ('account_password_forgotten' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        if (true === isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
+                            $post_data->check_string = Help::getDB()->putInLocker(0,
+                                (object)array('email_address' => $email_address));
+                            // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
+                            $post_data->confirm_link = sprintf('%s/%s/locker:%s',
+                                $instance->getDomain(true),
+                                ($post_data->slug ?? 'account'),
+                                $post_data->check_string);
+                            $post_data->instance_name = $instance->getName();
+                            /* this largely duplicate code must be in a helper function or something... */
+                            if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                                $temp = new Template($template_row);
+                                $body = $temp->renderObject($post_data);
+                            }
+                            if (false === isset($body) || '' === $body) {
+                                $body = "Click link or paste in your browser to reset your account password: <$post_data->confirm_link>";
+                            }
+                            $mail = new Mailer($instance->getSetting('mailgun_custom_domain'));
+                            $mail->set(array(
+                                'to' => $email_address,
+                                'from' => $instance->getSetting('mail_verified_sender'),
+                                'subject' => $post_data->subject ?? "Mailed by {$instance->getDomain()}",
+                                'text' => Help::html_to_text($body),
+                                'html' => $body,
+                            ));
+                            $out = $mail->send();
+                            $out = $this->after_posting($out, $post_data);
+                        } else {
+                            $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
                         }
-                        if (true === isset($post_data->email)) {
-                            // updating email address is a process, you need to authenticate again
-                            $this->addMessage('Currently updating emailaddress is not possible.', 'note');
+                    } else {
+                        $out = true;
+                    }
+                } elseif ('account_password_update' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        if (true === isset($post_data->email, $post_data->pass)) {
+                            $password = (string)$post_data->pass;
+                            if (8 > strlen($password)) {
+                                $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                            } elseif (true === isset($post_data->locker)
+                                && $row = Help::getDB()->emptyLocker($post_data->locker)
+                            ) {
+                                if (true === isset($row->information, $row->information->email_address)
+                                    && ($email_address = $row->information->email_address) === $post_data->email
+                                ) {
+                                    // if it’s indeed an account, update the password
+                                    // (since the code proves the emailaddress is read by the owner)
+                                    if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
+                                        // create an account then...
+                                        $this->action = 'account_create';
+                                        $this->Act();
+                                    } else {
+                                        $this->addMessage(__('Password updated.', 'peatcms'), 'note');
+                                        $out['success'] = true;
+                                        if (true === Help::$session->login($email_address, $password, false)) {
+                                            $this->addMessage(__('Login successful.', 'peatcms'), 'log');
+                                            $out = array(
+                                                'success' => true,
+                                                'is_account' => true,
+                                                '__user__' => Help::$session->getUser()->getOutput()
+                                            );
+                                        }
+                                    }
+                                } else {
+                                    $this->addMessage(__('E-mail address did not match.', 'peatcms'), 'warn');
+                                }
+                            } else {
+                                $this->addMessage(__('Link is invalid or expired.', 'peatcms'), 'warn');
+                            }
+                        } else {
+                            $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
                         }
-                        if (true === isset($out)) {
-                            $out['__user__'] = $user->getOutput(); // get a new user
+                    } else {
+                        $out = true; // turnstile failed, so no action
+                    }
+                } elseif ('account_update' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        if (null !== ($user = Help::$session->getUser())) {
+                            // check which column is being updated... (multiple is possible)
+                            $data = array();
+                            if (true === isset($post_data->phone)) $data['phone'] = $post_data->phone;
+                            if (true === isset($post_data->gender)) $data['gender'] = $post_data->gender;
+                            if (true === isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
+                            if (count($data) > 0) {
+                                $out = array('success' => $user->updateRow($data));
+                            }
+                            if (true === isset($post_data->email)) {
+                                // updating email address is a process, you need to authenticate again
+                                $this->addMessage('Currently updating emailaddress is not possible.', 'note');
+                            }
+                            if (true === isset($out)) {
+                                $out['__user__'] = $user->getOutput(); // get a new user
+                            }
                         }
+                    } else {
+                        $out = true; // turnstile failed, so no action
                     }
                 } elseif ('account_delete_sessions' === $action) {
                     if ((null !== ($user = Help::$session->getUser()))) {
@@ -813,50 +847,52 @@ class Handler extends BaseLogic
                     }
                 } elseif ('validate_vat' === $action) {
                     $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
-                } elseif (('update_address' === $action || 'delete_address' === $action)
-                    && (true === Help::turnstileVerify($instance, $post_data))
-                ) {
-                    //$post_data = $this->resolver->escape($post_data);
-                    if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
-                        $address_id = (int)$post_data->address_id;
-                        if ('delete_address' === $action) $post_data->deleted = true;
-                        // clean posted data before updating
-                        unset($post_data->json);
-                        unset($post_data->timestamp);
-                        unset($post_data->csrf_token);
-                        if (1 === Help::getDB()->updateColumnsWhere(
-                                '_address',
-                                (array)$post_data,
-                                array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
-                            )) {
-                            $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
-                            if ('delete_address' === $action) {
-                                $out = array('success' => true);
-                            } elseif (null === $out) {
-                                $this->addMessage(__('Error retrieving updated address.', 'peatcms'), 'error');
+                } elseif (('update_address' === $action || 'delete_address' === $action)) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        //$post_data = $this->resolver->escape($post_data);
+                        if ((null !== ($user = Help::$session->getUser())) && isset($post_data->address_id)) {
+                            $address_id = (int)$post_data->address_id;
+                            if ('delete_address' === $action) $post_data->deleted = true;
+                            // clean posted data before updating
+                            unset($post_data->json);
+                            unset($post_data->timestamp);
+                            unset($post_data->csrf_token);
+                            if (1 === Help::getDB()->updateColumnsWhere(
+                                    '_address',
+                                    (array)$post_data,
+                                    array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
+                                )) {
+                                $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
+                                if ('delete_address' === $action) {
+                                    $out = array('success' => true);
+                                } elseif (null === $out) {
+                                    $this->addMessage(__('Error retrieving updated address.', 'peatcms'), 'error');
+                                } else {
+                                    $out->success = true;
+                                }
                             } else {
-                                $out->success = true;
+                                $this->addMessage(__('Address could not be updated.', 'peatcms'), 'warn');
                             }
+                        } elseif (isset($post_data->address_id)) {
+                            $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
                         } else {
-                            $this->addMessage(__('Address could not be updated.', 'peatcms'), 'warn');
+                            $this->addError('address_id is missing.');
                         }
-                    } elseif (isset($post_data->address_id)) {
-                        $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
-                    } else {
-                        $this->addError('address_id is missing.');
                     }
                     if (false === isset($out)) $out = array('success' => false);
-                } elseif ('create_address' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
-                    $post_data = $this->resolver->escape($post_data);
-                    if ((null !== ($user = Help::$session->getUser()))) {
-                        if (null !== ($address_id = Help::getDB()->insertElement(
-                                new Type('address'),
-                                array('user_id' => $user->getId())))
-                        ) {
-                            $out = array('success' => true);
+                } elseif ('create_address' === $action) {
+                    if (true === Help::turnstileVerify($instance, $post_data)) {
+                        $post_data = $this->resolver->escape($post_data);
+                        if ((null !== ($user = Help::$session->getUser()))) {
+                            if (null !== ($address_id = Help::getDB()->insertElement(
+                                    new Type('address'),
+                                    array('user_id' => $user->getId())))
+                            ) {
+                                $out = array('success' => true);
+                            }
+                        } else {
+                            $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
                         }
-                    } else {
-                        $this->addMessage(__('You need to be logged in to manage addresses.', 'peatcms'), 'warn');
                     }
                     if (false === isset($out)) $out = array('success' => false);
                 } elseif ('detail' === $action && $this->resolver->hasInstruction('order')) {
@@ -994,7 +1030,6 @@ class Handler extends BaseLogic
                         $element = $this->getElementById($post_data->element, (int)$post_data->id);
                         if (null === $element) {
                             $this->addMessage(__('Element not found.', 'peatcms'), 'error');
-                            $out = array('success' => false);
                         } else {
                             $element_title = $element->row->title;
                             // if there is a linked element (probably file or image), set its online property to true

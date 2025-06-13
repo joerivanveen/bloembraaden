@@ -2164,6 +2164,7 @@ function PEATCMS_admin() {
         }
         // setup menu editor
         if ((el = document.getElementById('PEATCMS_admin_menu_editor'))) self.startMenuEditor(el);
+        self.thumbsUp();
     }
 
     document.addEventListener('peatcms.document_ready', activate);
@@ -2223,6 +2224,17 @@ function PEATCMS_admin() {
     //if (PEAT.getSessionVar('editing') === true) self.edit();
 }
 
+PEATCMS_admin.prototype.thumbsUp = function() {
+    // setup thumbs rating on order overview page
+    document.querySelectorAll('.order-table .row:not([data-rating=\'\'])').forEach(function (el) {
+        // rotate the thumb conforming the rating :-D
+        const rating = parseFloat(el.getAttribute('data-rating') || 0),
+            thumb = el.querySelector('.rating');
+        if (thumb) thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`;
+    });
+}
+
+
 PEATCMS_admin.prototype.pollServer = function () {
     if (false === document.hasFocus()) return;
     const self = CMS_admin, timestamp = self.polled_until || Math.floor(NAV.nav_timestamp / 1000);
@@ -2268,6 +2280,9 @@ PEATCMS_admin.prototype.pollServer = function () {
                                     console.error(e);
                                 }
                             }
+                            requestAnimationFrame(function () {
+                                self.thumbsUp();
+                            });
                         } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
                             // update the detail view
                             NAV.refresh();
