@@ -691,8 +691,11 @@ class Handler extends BaseLogic
                                 array('user_id' => $user_id),
                                 array('session_id' => Help::$session->getId()) // could be slow, no index
                             );
-                            // todo have configurable shop addresses appear in the hashes, to not add the ‘collect’ address to the account
-                            $by_key = array('1402abhuizerweg22nl' => 'Collect');
+                            // get the shop addresses so they will not be added to the account
+                            $by_key = array();
+                            foreach (Help::getDB()->fetchInstanceAddresses(Setup::$instance_id) as $index => $address) {
+                                $by_key[Address::makeKey($address)] = 'Shop';
+                            }
                             // get the orders for this user to supplement the addresses to the account
                             $rows = Help::getDB()->fetchOrdersByUserId($user_id);
                             Help::supplementAddresses($rows, $by_key);

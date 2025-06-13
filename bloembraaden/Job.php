@@ -141,13 +141,16 @@ switch ($interval) {
                 if (false === $row->emailed_order_confirmation) {
                     if (0 !== $row->user_id) {
                         echo "Check address for account\n";
-                        // todo have configurable shop addresses appear in the hashes, to not add the ‘collect’ address to the account
-                        $by_key = array('1402abhuizerweg22nl' => 'Collect');
+                        // get the shop addresses so they will not be added to the account
+                        $by_key = array();
+                        foreach ($db->fetchInstanceAddresses($instance_id) as $index => $address) {
+                            $by_key[Address::makeKey($address)] = 'Shop';
+                        }
+                        Help::addError(new \Exception(var_export($by_key, true)));
                         // get all addresses for this user_id, md5 them
                         $addresses = $db->fetchAddressesByUserId($row->user_id);
                         foreach ($addresses as $index => $address) {
-                            $key = strtolower(str_replace(' ', '', "$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2"));
-                            $by_key[$key] = $address;
+                            $by_key[Address::makeKey($address)] = $address;
                         }
                         $addresses = null;
                         Help::supplementAddresses(array($row), $by_key);

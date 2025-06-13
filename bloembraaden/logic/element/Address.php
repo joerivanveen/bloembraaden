@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -24,5 +24,15 @@ class Address extends BaseElement
         return Help::getDB()->insertElement($this->getType(), array(
             'user_id' => $user_id,
         ));
+    }
+
+    public static function makeKey(\stdClass $address): string
+    {
+        // todo remove this when local pickup is implemented everywhere
+        if ('XX' === $address->address_country_iso2) {
+            $address->address_country_iso2 = 'NL';
+        }
+
+        return strtolower(str_replace(' ', '', "$address->address_postal_code$address->address_street$address->address_number$address->address_number_addition$address->address_country_iso2"));
     }
 }
