@@ -3296,5 +3296,7 @@ ALTER TABLE "public"."_shoppinglist"
 ALTER TABLE "public"."_order"
     ADD COLUMN if not exists "rating" float;
 
+ALTER TABLE "public"."_order"
+    ADD COLUMN if not exists "local_pickup" BOOLEAN DEFAULT false NOT NULL;
 
 COMMIT;
