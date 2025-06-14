@@ -45,6 +45,6 @@
   "logfile": "/path/to/writable/logs/bloembraaden_",
   "uploads": "/path/to/writable/uploads/",
   "invoice": "/path/to/writable/invoice/",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "install": false
 }
