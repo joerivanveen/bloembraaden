@@ -2226,7 +2226,7 @@ function PEATCMS_admin() {
 
 PEATCMS_admin.prototype.orderRatingGrid = function() {
     // setup thumbs rating on order overview page
-    document.querySelectorAll('.order-table .row:not([data-rating=\'\'])').forEach(function (el) {
+    document.querySelectorAll('.order[data-rating]:not([data-rating=\'\'])').forEach(function (el) {
         // rotate the thumb conforming the rating :-D
         const rating = parseFloat(el.getAttribute('data-rating') || 0),
             thumb = el.querySelector('.rating');
