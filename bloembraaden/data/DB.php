@@ -1660,10 +1660,11 @@ class DB extends Base
                     'shipping_address_street',
                     'shipping_address_street_addition',
                     'shipping_address_city',
+                    'remarks_user', // @deprecated use shipping_remarks
                     'shipping_remarks',
+                    'local_pickup',
                     'newsletter_subscribe',
                     'preferred_delivery_day',
-                    'remarks_user', // @deprecated use shipping_remarks
                     'vat_number',
                     'vat_country_iso2',
                     'vat_valid',
@@ -1678,6 +1679,7 @@ class DB extends Base
                     case 'shipping_remarks':
                         break;
                     case 'vat_valid':
+                    case 'local_pickup':
                     case 'newsletter_subscribe':
                         $value = (bool)$value;
                         break;
