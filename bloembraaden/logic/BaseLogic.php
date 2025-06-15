@@ -132,6 +132,12 @@ class BaseLogic extends Base
                 if (true === $returnOutputObject) return $out;
                 return null;
             }
+            // TODO 0.27.0 bugfix
+            if ('search' !== $this->getTypeName() && 0 === $this->getId()) {
+                $this->addError("{$this->getTypeName()}->cacheOutputObject() called with id 0, not caching anything for $slug");
+                if (true === $returnOutputObject) return $out;
+                return null;
+            }
             // cache the first page always
             $db->cache($out, $this->getTypeName(), $this->getId(), 1);
             $this->variant_page_counter = 2; // go on to the next page
