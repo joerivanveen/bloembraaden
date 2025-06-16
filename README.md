@@ -57,7 +57,7 @@ When you have no upgrade to install just set it to false.
 
 ### Api keys
 Bloembraaden uses the following services:
-- Instagram
+- MyParcel
 - Browserless (to create pdf’s)
 - Mailchimp transactional e-mail
 
