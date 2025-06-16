@@ -1940,8 +1940,8 @@ class Handler extends BaseLogic
         $quantity = (isset($data->quantity) ? Help::asInteger($data->quantity, 1) : 1);
         // update list
         $variant = $this->getElementById('variant', $variant_id);
+        $list = new Shoppinglist($list_name);
         if ($variant instanceof Variant) {
-            $list = new Shoppinglist($list_name);
             if ($action === 'add_to_list') {
                 if (false === $list->addVariant($variant, $quantity)) {
                     $this->addMessage(sprintf(__('Adding to list %s failed.', 'peatcms'), $list_name), 'warn');
@@ -1964,8 +1964,16 @@ class Handler extends BaseLogic
 
             return true;
         } else {
-            // error message element not found
-            $this->addMessage(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), 'variant', $variant_id), 'error');
+            // element not found, this can happen when the variant is deleted or with imported sites
+            $this->addError(sprintf(__('No %1$s found with id %2$s.', 'peatcms'), 'variant', $variant_id));
+            if (true === $list->removeVariantById($variant_id)) { // remove it from the list, if it was there
+                $this->addMessage(sprintf(
+                    __('An item in %s is no longer available and has been removed.', 'peatcms'),
+                    $list_name), 'note'
+                );
+            } else {
+                $this->addError('Could not be removed');
+            }
         }
 
         return false;

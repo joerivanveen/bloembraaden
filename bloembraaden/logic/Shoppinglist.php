@@ -96,8 +96,11 @@ class Shoppinglist extends BaseLogic
      */
     public function removeVariant(Variant $variant): bool
     {
+        return $this->removeVariantById($variant->getId());
+    }
+    public function removeVariantById(int $variant_id): bool
+    {
         $rows = $this->rows;
-        $variant_id = $variant->getId();
         foreach ($rows as $index => $row) {
             if ($row->variant_id === $variant_id) {
                 unset($this->rows[$index]);
