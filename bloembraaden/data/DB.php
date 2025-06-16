@@ -317,21 +317,27 @@ class DB extends Base
     {
         $type_name = $peat_type->typeName();
         $sub_queries = $this->queriesProperties($properties, $type_name);
-        if (0 !== count($sub_queries)) {
-            $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
-        } else {
-            $imploded_sub_queries = '';
-        }
         $table_info = $this->getTableInfo($peat_type->tableName());
         // preferred sorting:
-        if ($table_info->getColumnByName('date_popvote')) {
+        if ($table_info->hasColumn('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
-        } elseif ($table_info->getColumnByName('date_published')) {
+        } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC';
+            $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
         } elseif ($table_info->hasStandardColumns()) {
             $sorting = 'ORDER BY date_created DESC';
+            $sub_queries[] = 'deleted = FALSE';
         } else {
             $sorting = '';
+        }
+        if ($table_info->hasColumn('online')) {
+            $sub_queries[] = 'online = TRUE';
+        }
+
+        if (0 !== count($sub_queries)) {
+            $imploded_sub_queries = 'AND ' . implode(' AND ', $sub_queries);
+        } else {
+            $imploded_sub_queries = '';
         }
 
         $statement = $this->conn->prepare("
@@ -1018,9 +1024,9 @@ class DB extends Base
             $and_where = '';
         }
         // preferred sorting:
-        if ($table_info->getColumnByName('date_popvote')) {
+        if ($table_info->hasColumn('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
-        } elseif ($table_info->getColumnByName('date_published')) {
+        } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC';
         }
         $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE instance_id = $instance_id $and_where $sorting LIMIT $page_size OFFSET $offset;");
@@ -1085,16 +1091,16 @@ class DB extends Base
             $not = 'NOT';
         }
         $in_placeholders = str_repeat('?,', count($in) - 1); // NOTE you need one more ? at the end of this
-        if ($table_info->getColumnByName('date_popvote')) {
+        if ($table_info->hasColumn('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
-        } elseif ($table_info->getColumnByName('date_published')) {
+        } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC';
-        } elseif ($table_info->getColumnByName('o')) {
+        } elseif ($table_info->hasColumn('o')) {
             $sorting = 'ORDER BY o ASC';
         } else {
             $sorting = '';
         }
-        if ($table_info->getColumnByName($column_name)) {
+        if ($table_info->hasColumn($column_name)) {
             if (defined('ADMIN') && false === ADMIN) {
                 $and_where_online = ' AND el.online = TRUE';
             } else {
@@ -1174,7 +1180,7 @@ class DB extends Base
         if ($table_name === 'cms_variant') {
             $sub_queries[] = 'el.online = TRUE'; // @since 0.8.15 no variants that are not online, because of paging
             $sorting = "ORDER BY date_popvote DESC LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
-        } elseif ($table_info->getColumnByName('date_published')) {
+        } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC ';
             $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
         } else {
@@ -1241,9 +1247,9 @@ class DB extends Base
         } elseif ('direct_parent' === $relation) { // get the e-commerce element this table is a direct parent of
             // honor sorting...
             $table_info = $this->getTableInfo($linked_type->tableName());
-            if ($table_info->getColumnByName('date_popvote')) {
+            if ($table_info->hasColumn('date_popvote')) {
                 $sorting = 'ORDER BY date_popvote DESC';
-            } elseif ($table_info->getColumnByName('date_published')) {
+            } elseif ($table_info->hasColumn('date_published')) {
                 $sorting = 'ORDER BY date_published DESC';
             } else {
                 $sorting = '';
@@ -3644,7 +3650,7 @@ class DB extends Base
         }
         if (in_array('o', $columns['names'])) {
             echo ' ORDER BY o';
-        } elseif ('_template' !== $table_name && $table_info->getColumnByName('date_published')) {
+        } elseif ('_template' !== $table_name && $table_info->hasColumn('date_published')) {
             if (defined('ADMIN') && false === ADMIN) {
                 echo ' AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
             }
