@@ -961,34 +961,38 @@ class Handler extends BaseLogic
                      * Admin actions, permission needs to be checked every time
                      */
                     if ('update_element' === $action) {
-                        if (($element = $this->getElementById($post_data->element, $post_data->id))) {
-                            if (true === $admin->isRelatedElement($element)) {
-                                // @since 0.8.19 check the prices
-                                if (in_array($post_data->column_name, array('price', 'price_from'))) {
-                                    $value = Help::asFloat($post_data->column_value);
-                                    $value = Help::asMoney($value);
-                                    if ('' === $value && $value !== $post_data->column_value) {
-                                        $this->addMessage(sprintf(
-                                            __('%s not recognized as money.', 'peatcms'),
-                                            $post_data->column_value), 'warn');
+                        if (true === isset($post_data->element_name, $post_data->id)) {
+                            if (($element = $this->getElementById($post_data->element, $post_data->id))) {
+                                if (true === $admin->isRelatedElement($element)) {
+                                    // @since 0.8.19 check the prices
+                                    if (in_array($post_data->column_name, array('price', 'price_from'))) {
+                                        $value = Help::asFloat($post_data->column_value);
+                                        $value = Help::asMoney($value);
+                                        if ('' === $value && $value !== $post_data->column_value) {
+                                            $this->addMessage(sprintf(
+                                                __('%s not recognized as money.', 'peatcms'),
+                                                $post_data->column_value), 'warn');
+                                        }
+                                        $post_data->column_value = $value;
                                     }
-                                    $post_data->column_value = $value;
+                                    //
+                                    if (false === $element->update(array($post_data->column_name => $post_data->column_value))) {
+                                        $this->addMessage(sprintf(__('Update of element %s failed.', 'peatcms'), $post_data->element), 'error');
+                                    }
+                                    $out = $element->row;
                                 }
-                                //
-                                if (false === $element->update(array($post_data->column_name => $post_data->column_value))) {
-                                    $this->addMessage(sprintf(__('Update of element %s failed.', 'peatcms'), $post_data->element), 'error');
-                                }
-                                $out = $element->row;
                             }
+                        } else {
+                            $this->handleErrorAndStop('Update element failed. ' . var_export($post_data, true));
                         }
                     } elseif ('create_element' === $action) {
                         if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
                             $out = $element->row;
                         } else {
-                            $this->handleErrorAndStop("Create element $post_data->element failed.");
+                            $this->handleErrorAndStop('Create element failed. ' . var_export($post_data, true));
                         }
                     } elseif ('delete_element' === $action) {
-                        if (isset($post_data->element_name) && isset($post_data->id)) {
+                        if (true === isset($post_data->element_name, $post_data->id)) {
                             $success = false;
                             $type = new Type($post_data->element_name);
                             $element = $type->getElement()->fetchById((int)$post_data->id);
@@ -1005,6 +1009,8 @@ class Handler extends BaseLogic
                             }
                             unset($element);
                             $out = array('success' => $success);
+                        } else {
+                            $this->handleErrorAndStop('Delete element failed. ' . var_export($post_data, true));
                         }
                     } elseif ('admin_get_elements' === $action) {
                         $out = array('rows' => $this->getElements($post_data->element));
@@ -1910,7 +1916,7 @@ class Handler extends BaseLogic
     {
         // validate
         if (false === isset($data->shoppinglist)) {
-            if (($resolver = $this->resolver)->hasInstruction('shoppinglist') && null !== ($term = $resolver->getTerms()[0])) {
+            if (($resolver = $this->resolver)->hasInstruction('shoppinglist') && null !== ($term = ($resolver->getTerms()[0] ?? null))) {
                 $data->shoppinglist = $term;
             } else {
                 $this->addMessage(sprintf(__('Form input %s is missing.', 'peatcms'), 'shoppinglist'), 'warn');

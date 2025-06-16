@@ -66,7 +66,7 @@ class BaseLogic extends Base
     public function getOutput(): \stdClass
     {
         if (null === $this->row) {
-            $this->addError($this->getType()->typeName() . '->getOutput() called while row is NULL');
+            $this->addError("{$this->getType()->typeName()}->getOutput() called while row is NULL.");
             $this->row = new \stdClass();
         }
         if (false === $this->completedRowForOutput) {
@@ -74,8 +74,6 @@ class BaseLogic extends Base
             $this->completeRowForOutput();
             // continue for all elements
             $row =& $this->row;
-            // hidden columns that are never output
-            if (true === isset($row->ci_ai)) unset($row->ci_ai);
             // constructed fields
             if (false === isset($row->template_pointer)) $row->template_pointer = $this->getTemplatePointer();
             $row->type_name = $this->getType()->typeName();
@@ -132,14 +130,16 @@ class BaseLogic extends Base
                 if (true === $returnOutputObject) return $out;
                 return null;
             }
-            // TODO 0.27.0 bugfix
-            if ('search' !== $this->getTypeName() && 0 === $this->getId()) {
-                $this->addError("{$this->getTypeName()}->cacheOutputObject() called with id 0, not caching anything for $slug");
+            $type_name = $this->getTypeName();
+            $type_id = $this->getId();
+            // This should never happen but it has in the past
+            if (0 === $type_id && 'search' !== $type_name) {
+                $this->addError("{$type_name}->cacheOutputObject() called with id 0, not caching anything for $slug");
                 if (true === $returnOutputObject) return $out;
                 return null;
             }
             // cache the first page always
-            $db->cache($out, $this->getTypeName(), $this->getId(), 1);
+            $db->cache($out, $type_name, $type_id, 1);
             $this->variant_page_counter = 2; // go on to the next page
             // loop through all the variant_pages to cache these separately and remember the paging as well in the out element
             // remove all the variants and add the next page of variants
@@ -147,7 +147,7 @@ class BaseLogic extends Base
                 $out = $this->getOutput();
                 $out->slugs = $GLOBALS['slugs'];
                 $out->variant_page = $this->variant_page_counter;
-                $db->cache($out, $this->getTypeName(), $this->getId(), $this->variant_page_counter);
+                $db->cache($out, $type_name, $type_id, $this->variant_page_counter);
                 $this->variant_page_counter++;
                 if ($this->variant_page_counter > 60) break; // no more than 60 pages forget it
             }
