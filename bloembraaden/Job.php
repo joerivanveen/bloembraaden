@@ -724,8 +724,10 @@ switch ($interval) {
             if ('IMPORT' === $row->filename_saved) continue;
             Setup::$instance_id = $row->instance_id;
             echo $row->slug;
-            if (file_exists("$upload$row->filename_saved")) {
-                if (false === unlink("$upload$row->filename_saved")) {
+            $filename = "$upload$row->filename_saved";
+            echo " ($filename)";
+            if (file_exists($filename) && is_file($filename)) {
+                if (false === unlink($filename)) {
                     echo " could not be removed.\n";
                     continue;
                 }
