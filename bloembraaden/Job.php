@@ -361,18 +361,19 @@ switch ($interval) {
                 // make order with the row
                 $order = new Order($row);
                 /**
-                 * convert order to myparcel json
-                 * afhalen = package_type 3 (letter)
+                 * convert order to MyParcel json
+                 * local_pickup = package_type 3 (letter)
                  * MyParcel expects prices in euro cents
                  */
                 $myparcelAmount = function (string $amount): int {
                     return (int)(100 * Help::asFloat($amount));
                 };
                 $order_out = $order->getOutput();
-                $shipping_cc = $order_out->shipping_address_country_iso2;
-                $is_pickup = $shipping_cc === 'XX';
                 $package_type = 1;
-                if ($is_pickup) {
+                if ($order_out->local_pickup) $package_type = 3;
+                // backwards compatible local pickup, todo 0.27.0 remove when no longer in use
+                $shipping_cc = $order_out->shipping_address_country_iso2;
+                if ('XX' === $shipping_cc || 'AFHALEN IN DE WINKEL' === $order_out->shipping_address_company ?? ''){
                     $shipping_cc = 'NL';
                     $package_type = 3;
                 }
