@@ -1666,8 +1666,8 @@ class DB extends Base
                     'shipping_address_street',
                     'shipping_address_street_addition',
                     'shipping_address_city',
-                    'remarks_user', // @deprecated use shipping_remarks
                     'shipping_remarks',
+                    'remarks_user', // @deprecated use shipping_remarks
                     'local_pickup',
                     'newsletter_subscribe',
                     'preferred_delivery_day',
@@ -1679,6 +1679,10 @@ class DB extends Base
                 $value = $vars[$key] ?? '';
                 switch ($key) {
                     case 'remarks_user': // @deprecated remove when no longer in use
+                        // don’t overwrite posted shipping_remarks from newer checkouts
+                        if (true === isset($vars['shipping_remarks']) && '' !== $vars['shipping_remarks']) {
+                            continue 2;
+                        }
                         $key = 'shipping_remarks';
                         break;
                     case 'vat_history':
