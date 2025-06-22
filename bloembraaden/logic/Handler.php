@@ -961,7 +961,7 @@ class Handler extends BaseLogic
                      * Admin actions, permission needs to be checked every time
                      */
                     if ('update_element' === $action) {
-                        if (true === isset($post_data->element_name, $post_data->id)) {
+                        if (true === isset($post_data->element, $post_data->id)) {
                             if (($element = $this->getElementById($post_data->element, $post_data->id))) {
                                 if (true === $admin->isRelatedElement($element)) {
                                     // @since 0.8.19 check the prices
