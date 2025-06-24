@@ -472,7 +472,7 @@ class Handler extends BaseLogic
                     $name = $post_data->name;
                     // times keeps track of how many times this var is (being) updated
                     Help::$session->setVar($name, $post_data->value, $post_data->times);
-                    $out = true; //array($name => Help::$session->getVar($name)); // the var object including value and times properties is returned
+                    $out['success'] = true;
                 } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                     $post_data = $this->resolver->escape($post_data);
                     $valid = true;
@@ -1579,6 +1579,7 @@ class Handler extends BaseLogic
                 }
             } else {
                 $this->addMessage(sprintf(__('%s check failed, please refresh browser.', 'peatcms'), 'CSRF'), 'warn');
+                $out = array('success' => false);
             }
         }
         if (null === $out) {
