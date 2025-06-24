@@ -146,7 +146,6 @@ switch ($interval) {
                         foreach ($db->fetchInstanceAddresses($instance_id) as $index => $address) {
                             $by_key[Address::makeKey($address)] = 'Shop';
                         }
-                        Help::addError(new \Exception(var_export($by_key, true)));
                         // get all addresses for this user_id, md5 them
                         $addresses = $db->fetchAddressesByUserId($row->user_id);
                         foreach ($addresses as $index => $address) {
