@@ -1820,6 +1820,7 @@ class Handler extends BaseLogic
                 'google_tracking_id' => $instance->getSetting('google_tracking_id', ''),
                 'turnstile_site_key' => $instance->getSetting('turnstile_site_key', ''),
                 'root' => $root,
+                'date' => date('Y-m-d'),
                 'plausible' => $plausible,
                 'session' => $session->getVars(),
                 'slug' => $out,
