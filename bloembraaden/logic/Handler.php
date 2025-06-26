@@ -1744,7 +1744,7 @@ class Handler extends BaseLogic
         // output
         if (true === Help::$OUTPUT_JSON) {
             if (($post_data = $this->resolver->getPostData())) {
-                if (isset($post_data->timestamp)) {
+                if (true === isset($post_data->timestamp)) {
                     $out->timestamp = $post_data->timestamp;
                 }
             }

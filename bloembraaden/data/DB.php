@@ -4757,7 +4757,7 @@ class DB extends Base
                 $user_email = $user->getRow()->email;
             }
         }
-        if (true === isset($row->user_id) && $row->user_id !== $user_id) {
+        if (true === isset($row->user_id) && 0 !== $row->user_id && $row->user_id !== $user_id) {
             if (0 < $user_id) {
                 $this->addError("User $user_id is not the same as the one in the row $row->user_id.");
                 $user_email = 'N/A';
