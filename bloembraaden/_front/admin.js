@@ -171,7 +171,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
 PEATCMS_actor.prototype.showPopVote = function (json) {
     if (json.hasOwnProperty('pop_vote')) { // pop_vote is a float between 0 (most popular) and 1 (least...)
         const vote = json.pop_vote,
-        deg = 360 * vote;
+            deg = 360 * vote;
         this.DOMElement.style.backgroundImage = `conic-gradient(from 270deg, var(--admin-color-accent-transparent) 0deg, var(--admin-color-accent-transparent) ${deg}deg, var(--admin-color-accent) ${deg}deg)`;
         this.DOMElement.title = vote;
     }
@@ -2224,7 +2224,7 @@ function PEATCMS_admin() {
     //if (PEAT.getSessionVar('editing') === true) self.edit();
 }
 
-PEATCMS_admin.prototype.orderRatingGrid = function() {
+PEATCMS_admin.prototype.orderRatingGrid = function () {
     // setup thumbs rating on order overview page
     document.querySelectorAll('.order[data-rating]:not([data-rating=\'\'])').forEach(function (el) {
         // rotate the thumb conforming the rating :-D
@@ -2233,7 +2233,7 @@ PEATCMS_admin.prototype.orderRatingGrid = function() {
         if (thumb) thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`; // duplicate
     });
 }
-PEATCMS_admin.prototype.orderRatingDetail = function(row) {
+PEATCMS_admin.prototype.orderRatingDetail = function (row) {
     const thumb = row.querySelector('.rating'),
         rating = parseFloat(row.getAttribute('data-rating') || 0);
     thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`; // duplicate
@@ -2244,7 +2244,7 @@ PEATCMS_admin.prototype.pollServer = function () {
     if (false === document.hasFocus()) return;
     const self = CMS_admin, timestamp = self.polled_until || Math.floor(NAV.nav_timestamp / 1000);
     NAV.ajax(`/__action__/poll/from:${timestamp}`, {peatcms_ajax_config: {track_progress: false}}, function (json) {
-        let el;
+        let el, handled = 0;
         if (false === json.is_admin && (el = document.getElementById('admin_wrapper'))) {
             el.remove();
             PEAT.message('Admin logged out.', 'warn');
@@ -2253,68 +2253,70 @@ PEATCMS_admin.prototype.pollServer = function () {
         self.polled_until = json.until;
         // get info
         const changes = json.changes || [], len = changes.length;
-        if (len > 10) {
-            console.warn('Too many changes to fetch automatically.', changes); // todo handle nicely
-        } else {
-            for (let i = 0; i < len; ++i) {
-                const change = changes[i];
-                if ('_order' === change.table_name) {
-                    const order_id = change.key;
-                    NAV.ajax('/__action__/admin_get_element', {
-                        element: 'order',
-                        id: order_id
-                    }, function (json) {
-                        const current_state = NAV.getCurrentElement().state;
-                        if (current_state.hasOwnProperty('__orders__')) {
-                            const el = document.getElementById(`order-${order_id}`),
-                                template = PEAT.templates['order_overview_true'] || undefined,
-                                row_template = template.template.__orders__[0] || undefined;
-                            if (!template || !row_template) {
-                                console.warn('Template order_overview_true or row not present, cannot render.');
-                                return;
-                            }
-                            const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
-                            //console.warn('koekkoek', template, row_html, json);
-                            if (el) { // if the order is on the page, update it
-                                el.insertAdjacentHTML('afterend', row_html);
-                                el.remove();
-                            } else { // if not, just add it at the top of the list below the header, as a service
-                                try {
-                                    document.querySelector('.order-table').querySelector('.header').insertAdjacentHTML('afterend', row_html);
-                                } catch (e) {
-                                    console.error(e);
-                                }
-                            }
-                            requestAnimationFrame(function () {
-                                self.orderRatingDetail(document.getElementById(`order-${order_id}`));
-                            });
-                        } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
-                            // update the detail view
-                            NAV.refresh();
-                        } else {
-                            // TODO
-                            console.log(`Order status update for ${json.order_number_human}`);
+        for (let i = 0; i < len; ++i) {
+            const change = changes[i];
+            if ('_order' === change.table_name) {
+                const order_id = change.key;
+                handled++;
+                NAV.ajax('/__action__/admin_get_element', {
+                    element: 'order',
+                    id: order_id
+                }, function (json) {
+                    const current_state = NAV.getCurrentElement().state;
+                    if (current_state.hasOwnProperty('__orders__')) {
+                        const el = document.getElementById(`order-${order_id}`),
+                            template = PEAT.templates['order_overview_true'] || undefined,
+                            row_template = template.template.__orders__[0] || undefined;
+                        if (!template || !row_template) {
+                            console.warn('Template order_overview_true or row not present, cannot render.');
+                            return;
                         }
-                    });
-                } else { // handle the subscriptions
-                    // TODO
-                    console.log(`Update for ${change.table_name} (${change.key})`);
-                    let type_name = change.table_name;
-                    if ('cms_' === type_name.substring(0, 4)) type_name = type_name.substring(4);
-                    if ('_' === type_name.substring(0, 1)) type_name = type_name.substring(1);
-                    for (const entry of self.subscriptions) {
-                        if (type_name === entry.type_name && change.key === entry.id) {
-                            NAV.ajax('/__action__/admin_get_element', {
-                                element: type_name,
-                                id: change.key
-                            }, function (json) {
-                                entry.callback(json);
-                            });
+                        const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
+                        //console.warn('koekkoek', template, row_html, json);
+                        if (el) { // if the order is on the page, update it
+                            el.insertAdjacentHTML('afterend', row_html);
+                            el.remove();
+                        } else { // if not, just add it at the top of the list below the header, as a service
+                            try {
+                                document.querySelector('.order-table').querySelector('.header').insertAdjacentHTML('afterend', row_html);
+                            } catch (e) {
+                                console.error(e);
+                            }
                         }
+                        requestAnimationFrame(function () {
+                            self.orderRatingDetail(document.getElementById(`order-${order_id}`));
+                        });
+                    } else if (current_state.hasOwnProperty('__order__') && current_state.order_id === change.key) {
+                        // update the detail view
+                        NAV.refresh();
+                    } else {
+                        // TODO
+                        console.log(`Order status update for ${json.order_number_human}`);
+                    }
+                });
+            } else { // handle the subscriptions
+                if (9 < handled) {
+                    console.warn('Too many changes handled, skipping further updates.');
+                    continue;
+                }
+                // TODO
+                console.log(`Update for ${change.table_name} (${change.key})`);
+                let type_name = change.table_name;
+                if ('cms_' === type_name.substring(0, 4)) type_name = type_name.substring(4);
+                if ('_' === type_name.substring(0, 1)) type_name = type_name.substring(1);
+                for (const entry of self.subscriptions) {
+                    if (type_name === entry.type_name && change.key === entry.id) {
+                        handled++;
+                        NAV.ajax('/__action__/admin_get_element', {
+                            element: type_name,
+                            id: change.key
+                        }, function (json) {
+                            entry.callback(json);
+                        });
                     }
                 }
-                //if (NAV.getCurrentElement())
             }
+            //if (NAV.getCurrentElement())
         }
         // repeat...
         clearTimeout(self.poll_timeout);
