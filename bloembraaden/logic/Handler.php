@@ -591,7 +591,7 @@ class Handler extends BaseLogic
                         if (false === isset($post_data->shoppinglist)) {
                             $this->addError('Shoppinglist is not set for order action.');
                             $out = true;
-                        } elseif (isset($post_data->email) && isset($post_data->shipping_country_id)) {
+                        } elseif (true === isset($post_data->email, $post_data->shipping_country_id)) {
                             $valid = true;
                             // validation process
                             if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
@@ -617,7 +617,7 @@ class Handler extends BaseLogic
                             }
                             if (true === $valid) {
                                 // check vat, if supplied
-                                if (isset($post_data->vat_number, $post_data->vat_country_iso2)) {
+                                if (true === isset($post_data->vat_number, $post_data->vat_country_iso2)) {
                                     $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
                                     if (false === isset($check['valid']) || false === $check['valid']) {
                                         $valid = false;
@@ -631,6 +631,10 @@ class Handler extends BaseLogic
                             if (true === $valid) {
                                 $session =& Help::$session; // point to this session
                                 $shoppinglist = new Shoppinglist($post_data->shoppinglist);
+                                // both session value shipping_address_collect and posting local_pickup directly result in local pickup active
+                                if (true === Help::$session->getValue('shipping_address_collect')) {
+                                    $post_data->local_pickup = true;
+                                }
                                 if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
                                     $session->setVar('order_number', $order_number);
                                     // out object

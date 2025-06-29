@@ -1573,6 +1573,7 @@ class DB extends Base
             if ($this->hasError()) return null;
             // @since 0.9.0 add vat, @since 0.23.0 allow ex-vat
             $ex_vat = true === isset($vars['vat_valid']) && true === $vars['vat_valid'];
+            $local_pickup = true === isset($vars['local_pickup']) && true === $vars['local_pickup'];
             $highest_vat = 0.0;
             // set up the necessary vars
             $instance_id = Setup::$instance_id;
@@ -1613,7 +1614,8 @@ class DB extends Base
                 return null;
             }
             $amount_grand_total = $amount_row_total;
-            if ($amount_grand_total < Help::asFloat($country->shipping_free_from)) {
+            // @since 0.27.1 local_pickup is always free for now
+            if (false === $local_pickup && $amount_grand_total < Help::asFloat($country->shipping_free_from)) {
                 $shipping_costs = Help::asFloat($country->shipping_costs);
                 if ($ex_vat && $highest_vat) {
                     $shipping_costs = 100 * $shipping_costs / (100 + $highest_vat);
