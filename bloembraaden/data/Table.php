@@ -144,15 +144,16 @@ class Table extends Base
                 $lower = false;
                 $return_value['columns'][] = $column_name;
                 if (in_array($col->getType(), array('boolean', 'smallint', 'integer', 'bigint'))) {
-                    $value = (int)$value;
+                    if (null !== $value) $value = (int)$value;
                     $return_value['values'][] = $value; // booleans must be 0 or 1, or postgresql will reject them
                 } else {
-                    $return_value['values'][] = (string) $value;
+                    if (null !== $value) $value = (string)$value;
+                    $return_value['values'][] = $value;
                     if (false === $for_update) {
                         // if the value starts and / or ends with %, treat this as a LIKE statement
                         if (true === is_string($value)
                             && (true === str_starts_with($value, '%') || strrpos($value, '%') === strlen($value) - 1)
-                        ){
+                        ) {
                             $like = true;
                         }
                         // ci_ai and token (_session) are already lower, prevent the table scan here
