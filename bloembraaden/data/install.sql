@@ -3300,3 +3300,9 @@ ALTER TABLE "public"."_order"
     ADD COLUMN if not exists "local_pickup" BOOLEAN DEFAULT false NOT NULL;
 
 COMMIT;
+
+-- version 0.27.1
+
+BEGIN;
+
+COMMIT;
