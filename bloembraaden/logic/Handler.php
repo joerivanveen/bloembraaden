@@ -465,8 +465,10 @@ class Handler extends BaseLogic
             die(); // after an sse logger you cannot provide any more content, yo
         }
         // don’t bother if you already processed out, or without csrf
-        if (null === $out && true === isset($post_data->csrf_token)) {
-            if ($post_data->csrf_token === Help::$session->getValue('csrf_token')) {
+        if (null === $out) {
+            if (true === isset($post_data->csrf_token)
+                && $post_data->csrf_token === Help::$session->getValue('csrf_token')
+            ) {
                 $out = array('success' => false); // default feedback, so you don’t get into the View part later
                 if ('set_session_var' === $action) {
                     $name = $post_data->name;
@@ -1586,6 +1588,7 @@ class Handler extends BaseLogic
                 $out = array('success' => false);
             }
         }
+        // general failure catch will be reported as error
         if (null === $out) {
             $out = array('success' => false);
             $this->addError('Action failure: ' . var_export($post_data, true));
