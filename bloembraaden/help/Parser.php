@@ -52,6 +52,7 @@ class Parser extends Base
         '![' => array('new_line' => false, 'allow_space' => true, 'tag' => 'img'),
         '[' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '<' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
+        '§' => array('new_line' => true, 'allow_space' => true, 'tag' => 'div'),
         '=' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'nowrap'),
         '@' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-email-link bloembraaden-email-link'),
         '|' => array('new_line' => false, 'allow_space' => false, 'single' => true, 'tag' => '&#173;'),
@@ -106,7 +107,7 @@ class Parser extends Base
         }
         // finish up
         echo $this->flush();
-        echo $this->closeTags();
+        echo $this->closeTags(true);
         unset($this->text);
 
         return ob_get_clean();
@@ -167,14 +168,14 @@ class Parser extends Base
         } elseif (false === $cmd['new_line']) {
             echo $this->flush();
             if ('BLANK_LINE' === $tag) { // close all previous tags
-                echo $this->closeTags();
+                echo $this->closeTags(true);
             } elseif ('EOL' === $tag) { // remember this EOL for the flusher
                 if (in_array($this->getOpenTag(), array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
                     echo $this->closeTag();
                 }
                 $this->holding_eol = true;
             } elseif ('pre' === $tag) {
-                if ($this->getOpenTag() === 'pre') { // close the current tag
+                if ('pre' === $this->getOpenTag()) { // close the current tag
                     echo $this->closeTag();
                 } else {
                     echo $this->openTag($tag);
@@ -375,6 +376,18 @@ class Parser extends Base
                     echo $this->closeTag();
                 }
                 echo $this->openTag('li');
+            } elseif ('div' === $tag) {
+                echo $this->flush();
+                echo $this->closeTags(true);
+                $next_EOL = strpos($text, "\n", $this->pointer);
+                if ($next_EOL - $this->pointer < 3) { // no classes
+                    echo $this->openTag($tag);
+                } else {
+                    $classes = trim(substr($text, $this->pointer, $next_EOL - $this->pointer), '§ ');
+                    echo $this->openTag($tag, array('className' => $classes));
+                }
+                $this->pointer = $next_EOL + 1; // skip the \n
+                $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
             } elseif ('tr' === $tag) {
                 echo $this->flush();
                 if (false === $this->hasOpenTag('table')) {
@@ -634,13 +647,20 @@ class Parser extends Base
      * Closes all tags currently open and returns the appropriate html for that
      * @return string the html to close the tags
      */
-    private function closeTags(): string
+    private function closeTags(bool $includingDiv = false): string
     {
+        $open = $this->open_tags;
+        if (false === isset($open[0])) return '';
+
         $str = '';
-        foreach ($this->open_tags as $index => $tag) {
+        if (false === $includingDiv && 'div' === $open[0]) {
+            $this->open_tags = array(array_shift($open));
+        } else {
+            $this->open_tags = array();
+        }
+        foreach ($open as $index => $tag) {
             $str = "</$tag>$str";
         }
-        $this->open_tags = array();
 
         return $str;
     }
