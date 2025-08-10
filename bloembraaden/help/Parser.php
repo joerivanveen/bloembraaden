@@ -168,7 +168,7 @@ class Parser extends Base
         } elseif (false === $cmd['new_line']) {
             echo $this->flush();
             if ('BLANK_LINE' === $tag) { // close all previous tags
-                echo $this->closeTags(true);
+                echo $this->closeTags();
             } elseif ('EOL' === $tag) { // remember this EOL for the flusher
                 if (in_array($this->getOpenTag(), array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
                     echo $this->closeTag();
@@ -380,11 +380,13 @@ class Parser extends Base
                 echo $this->flush();
                 echo $this->closeTags(true);
                 $next_EOL = strpos($text, "\n", $this->pointer);
-                if ($next_EOL - $this->pointer < 3) { // no classes
-                    echo $this->openTag($tag);
+                if (3 > $next_EOL - $this->pointer) { // no classes
+                    echo $this->openTag('div');
                 } else {
                     $classes = trim(substr($text, $this->pointer, $next_EOL - $this->pointer), '§ ');
-                    echo $this->openTag($tag, array('className' => $classes));
+                    if ('<' !== $classes) { // ‘<’ is the end-div character / ‘§<’ the sequence
+                        echo $this->openTag('div', array('className' => $classes));
+                    }
                 }
                 $this->pointer = $next_EOL + 1; // skip the \n
                 $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
@@ -645,6 +647,7 @@ class Parser extends Base
 
     /**
      * Closes all tags currently open and returns the appropriate html for that
+     * @param bool $includingDiv default false, when true also closes the custom outer div tag when present
      * @return string the html to close the tags
      */
     private function closeTags(bool $includingDiv = false): string
@@ -713,6 +716,7 @@ class Parser extends Base
     private function flush(): string
     {
         $open_tag = $this->getOpenTag();
+        if ('div' === $open_tag) $open_tag = null; // outer div is considered normal page root
         if ($this->pointer > $this->slacker) {
             $str = substr($this->text, $this->slacker, $this->pointer - $this->slacker);
             $this->slacker = $this->pointer;
