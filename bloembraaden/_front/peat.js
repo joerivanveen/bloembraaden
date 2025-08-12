@@ -3717,16 +3717,14 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
  * Stylesheet manipulator
  */
 function PEAT_style(CSSStyleSheet) {
-    // make sure you get the actual sheet, not the style thing itself
-    if (CSSStyleSheet.sheet) CSSStyleSheet = CSSStyleSheet.sheet;
     this.CSSStyleSheet = CSSStyleSheet;
     this.rules = CSSStyleSheet.cssRules;
 }
 
 PEAT_style.prototype.getCurrentValue = function (selector, property) {
-    var i, current_style, index = this.rules.length - 1;
-    for (i = index; i >= 0; i--) {
-        current_style = this.rules[i];
+    const index = this.rules.length - 1;
+    for (let i = index; i >= 0; i--) {
+        const current_style = this.rules[i];
         if (current_style.selectorText === selector) {
             return current_style.style[property];
         }
@@ -3737,11 +3735,11 @@ PEAT_style.prototype.getCurrentValue = function (selector, property) {
 PEAT_style.prototype.upsertRule = function (selector, rule) {
     //Backward searching of the selector matching cssRules
     // TODO this only hits once I think, fails if you have multiple definitions with the same selector (which is entirely possible)
-    var i, current_style, index = this.rules.length;
-    for (i = 0; i < index; ++i) {
-        current_style = this.rules[i];
+    let index = this.rules.length;
+    for (let i = 0; i < index; ++i) {
+        const current_style = this.rules[i];
         if (current_style.selectorText === selector) {
-            //Append the new rules to the current content of the cssRule;
+            // Append the new rules to the current content of the cssRule;
             if (null !== rule) rule = current_style.style.cssText + rule;
             this.CSSStyleSheet.deleteRule(i);
             index = i;
@@ -3757,8 +3755,8 @@ PEAT_style.prototype.upsertRule = function (selector, rule) {
 }
 
 PEAT_style.prototype.clearRules = function () {
-    var i, index = this.rules.length - 1;
-    for (i = index; i >= 0; i--) {
+    const index = this.rules.length - 1;
+    for (let i = index; i >= 0; i--) {
         this.CSSStyleSheet.deleteRule(i);
     }
     return this; // enable chaining
