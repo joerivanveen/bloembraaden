@@ -53,7 +53,9 @@ class Menu extends BaseElement
         // get the children as well
         $this->row->__menu__ = array(
             '__item__' => ($menu_items = Help::getDB()->fetchMenuItems($this->getId())),
+            'title' => $this->row->title,
+            'item_count' => ($count = count($menu_items)),
         );
-        $this->row->item_count = count($menu_items);
+        $this->row->item_count = $count;
     }
 }

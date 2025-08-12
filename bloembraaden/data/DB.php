@@ -2802,8 +2802,13 @@ class DB extends Base
                 // fail silently
             }
             if (($sub_items = $this->fetchMenuItems($menu_id, $row->menu_item_id, $nested_level))) {
-                $row->__menu__ = array('__item__' => $sub_items);
-                $row->item_count = count($sub_items);
+                $count = count($sub_items);
+                $row->__menu__ = array(
+                    '__item__' => $sub_items,
+                    'title' => $row->title,
+                    'item_count' => $count,
+                );
+                $row->item_count = $count;
                 $row->item_index = $key;
             }
             $row->nest_level = $nested_level;
@@ -2811,24 +2816,6 @@ class DB extends Base
         }
 
         return $items;
-    }
-
-    public function fetchInstanceMenus(int $instance_id = 0): array
-    {
-        $menus = array();
-        $rows = $this->fetchRows('cms_menu', array('menu_id', 'title', 'slug'), array('instance_id' => $instance_id));
-        foreach ($rows as $key => $row) {
-            $menus[$row->slug] = array(
-                '__menu__' => array( // menu is a complex tag, hence you need this as an array
-                    '__item__' => ($menu_items = $this->fetchMenuItems($row->menu_id)),
-                ),
-                'title' => $row->title,
-                'slug' => $row->slug,
-                'item_count' => count($menu_items),
-            );
-        }
-
-        return $menus;
     }
 
     /**
