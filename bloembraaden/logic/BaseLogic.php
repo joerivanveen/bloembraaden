@@ -79,6 +79,8 @@ class BaseLogic extends Base
             $row->type_name = $this->getType()->typeName();
             // fields title, excerpt, description and content need to be parsed
             $parser = new Parser();
+            if (true === isset($this->row->__images__)) $parser->setImages($this->row->__images__);
+            if (true === isset($this->row->__embeds__)) $parser->setEmbeds($this->row->__embeds__);
             // the parsed sections must be present (can be '') for the template to correctly identify them for the element
             $row->excerpt_parsed = $parser->parse($row->excerpt ?? null);
             $row->description_parsed = $parser->parse($row->description ?? null);

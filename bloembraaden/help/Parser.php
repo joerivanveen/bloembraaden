@@ -58,6 +58,8 @@ class Parser extends Base
         '|' => array('new_line' => false, 'allow_space' => false, 'single' => true, 'tag' => '&#173;'),
     );
     private ?LoggerInterface $logger;
+    private array $images = array(); // @since 0.29.0
+    private array $embeds = array(); // @since 0.29.0
 
     /**
      * @param LoggerInterface|null $logger
@@ -68,6 +70,16 @@ class Parser extends Base
         $this->logger = $logger;
         $this->log('New parser');
         $this->started = microtime(true);
+    }
+
+    public function setImages(array $images): void
+    {
+        $this->images = $images;
+    }
+
+    public function setEmbeds(array $embeds): void
+    {
+        $this->embeds = $embeds;
     }
 
     private function log(string $message): void
@@ -187,7 +199,6 @@ class Parser extends Base
                     echo '<input type="checkbox" class="bloembraaden parsed"/>';
                 }
             } elseif ('img' === $tag) {
-                $this->echoParagraphWhenNecessary();
                 // img: the first entry between the bracket construction ![] MUST be an integer, denoting which
                 // of the linked images needs to be displayed, one-based in the order you gave them in the edit screen
                 // all other entries (separated by a space) will be classnames added to the image,
@@ -195,14 +206,21 @@ class Parser extends Base
                 $pointer += 2;
                 if (-1 !== ($end = $this->nextPartOfCommand($text, ']', $pointer))) {
                     $str_command = trim(substr($text, $pointer, $end - $pointer));
-                    $index = (int)$str_command; // default to 0...
-                    echo '{%image:';
-                    echo $index;
-                    echo '%}<img src="{{slug}}" alt="{{excerpt}}" class="';
-                    echo $str_command;
-                    echo '"/>{%image:';
-                    echo $index;
-                    echo '%}';
+                    $css_classes = ltrim($str_command, '0123456789 ');
+                    $index = max(0, (int)$str_command - 1); // default to 0, -1 for being 1-based
+                    if (true === isset($this->images[$index])) {
+                        $image_html = "<figure{{online::not: hidden}} class=\"bloembraaden-image {{css_class}} $css_classes\"><img data-srcset='[
+    {\"width\":\"{{width_medium}}\",\"height\":\"{{height_medium}}\",\"src\":\"{{src_medium}}\"},
+    {\"width\":\"{{width_large}}\",\"height\":\"{{height_large}}\",\"src\":\"{{src_large}}\"},
+    {\"width\":\"{{width_huge}}\",\"height\":\"{{height_huge}}\",\"src\":\"{{src_huge}}\"}
+]' src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {{width_medium}} {{height_medium}}'%3E%3C/svg%3E\"
+    width=\"{{width_medium}}\" height=\"{{height_medium}}\" class=\"{{css_class|clean}} $css_classes\"
+    alt=\"{{excerpt_parsed|clean}}\" title=\"{{title|clean}}\"/>{{description_parsed:<figcaption>::value::</figcaption>}}</figure>";
+                        echo Template::renderSimply($this->images[$index], $image_html);
+                    } else {
+                        $index++; // back to 1-based
+                        echo '<p class="error">', sprintf(__('Image %d not found.', 'peatcms'), $index), '</p>';
+                    }
                 }
                 $end++;
                 $this->pointer = $end;

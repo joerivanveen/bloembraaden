@@ -376,6 +376,15 @@ class Template extends BaseLogic
         }
     }
 
+    public static function renderSimply(\stdClass $output, string $template_html): string
+    {
+        $temp = new Template(null);
+        $html = $temp->renderOutput($output, array('__html__' => $template_html)); // ->prepare seams unnecessary
+        $temp = null;
+
+        return $html;
+    }
+
     /**
      * @param \stdClass $output
      * @param array $template

@@ -431,7 +431,6 @@ class BaseElement extends BaseLogic implements Element
             $this->variant_page_size = $settings->variant_page_size;
         }
         //
-        $this->row = parent::getOutput();
         $this->row->nest_level = $nest_level;
         // max nest level can be 1 or 2, 2 is slower but displays more in the linked elements, with tags present in the template
         if ($nest_level < $this->nested_max) {
@@ -473,6 +472,8 @@ class BaseElement extends BaseLogic implements Element
                 Help::getDB()->markStaleFrom($slug, $this->row->date_published);
             }
         }
+        // getOutput must be after fetchLinked for the parser to take advantage of it
+        parent::getOutput(); // updates $this->row
         // @since 0.8.0 packed objects at the level of elements (this level: BaseElement)
         if (true === isset($GLOBALS['slugs'])) {
             $GLOBALS['slugs']->{$slug} = $this->row;
