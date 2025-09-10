@@ -40,7 +40,7 @@
             <a href="/__order__/{{order_number}}">{{order_number|format_order_number}}<span class="rating">&#x1f44d;</span></a>
             <span>{{user_email}} {{user_id:&#x1F464;}} {{emailed_payment_confirmation_success:&#x2713;:not:×}}</span>
             <span>{{shipping_address_city}}</span>
-            <span class="status">{{payment_tracking_text}}</span>
+            <span class="status">{{payment_status}}</span>
             <span class="amount">€ {{amount_grand_total|format_money}}</span>
             <span class="myparcel">{{myparcel_exported_error:×}}</span>
         </div>
