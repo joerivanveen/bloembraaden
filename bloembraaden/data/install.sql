@@ -3312,3 +3312,18 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.29.0
+
+BEGIN;
+
+ALTER TABLE "public"."_instance"
+    DROP COLUMN if exists "recaptcha_site_key";
+
+ALTER TABLE "public"."_instance"
+    DROP COLUMN if exists "recaptcha_secret_key";
+
+ALTER TABLE "public"."_instance"
+    DROP COLUMN if exists "recaptcha_pass_score";
+
+COMMIT;
