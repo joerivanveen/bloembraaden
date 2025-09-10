@@ -263,6 +263,7 @@ input[type="search"],
 input[type="number"],
 input[type="email"],
 input[type="date"],
+input[type="tel"],
 input[type="password"] {
     -moz-appearance: none;
     -webkit-appearance: none;
@@ -283,6 +284,7 @@ input[type="search"],
 input[type="number"],
 input[type="email"],
 input[type="date"],
+input[type="tel"],
 input[type="password"] {
     outline: solid 1px #484844;
 }

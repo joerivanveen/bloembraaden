@@ -1133,6 +1133,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 /* why we need the #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
 #PEATCMS_admin_page input:focus-visible,
 #PEATCMS_admin_page textarea:focus-visible,
+#PEATCMS_admin_page textarea:active,
 #PEATCMS_admin_page select:focus-visible,
 #PEATCMS_admin_page .button:focus-visible,
 #PEATCMS_admin_page button:focus-visible,
@@ -1145,6 +1146,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin input[type=password]:focus-visible,
 .PEATCMS_admin input[type=file]:focus-visible,
 .PEATCMS_admin textarea:focus-visible,
+.PEATCMS_admin textarea:active,
 .PEATCMS_admin select:focus-visible,
 .PEATCMS_admin .button:focus-visible,
 .PEATCMS_admin .edit-area input[type="checkbox"].flexible.visible:focus-visible,
@@ -1154,6 +1156,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     outline: solid 2px var(--admin-color-accent-fierce);
     outline-offset: -2px;
     animation: none;
+    background-color: transparent;
 }
 
 #PEATCMS_admin_page button:focus-visible,
