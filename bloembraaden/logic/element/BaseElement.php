@@ -21,8 +21,6 @@ class BaseElement extends BaseLogic implements Element
                 $this->addError("fetchById() called on an already filled $type_name with id: $id");
             }
             if (($this->row = Help::getDB()->fetchElementRow($this->getType(), $id))) {
-                $this->id = $id;
-
                 return $this;
             }
         }

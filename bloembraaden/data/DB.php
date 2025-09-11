@@ -1957,7 +1957,7 @@ class DB extends Base
     public function jobGetOrdersForMyParcel(): array
     {
         $statement = $this->conn->prepare(
-            'SELECT i.instance_id, i.myparcel_api_key, o.*
+            'SELECT i.instance_id, i.myparcel_api_key, o.*, o.order_id AS id, \'_order\' AS table_name
             FROM _instance i
             INNER JOIN _order o ON o.instance_id = i.instance_id
             WHERE o.myparcel_exported = FALSE AND o.payment_confirmed_bool = TRUE

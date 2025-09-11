@@ -12,9 +12,7 @@ class Admin extends BaseLogic
     public function __construct(int $admin_id)
     {
         parent::__construct();
-        if (($this->row = Help::getDB()->fetchAdmin($admin_id))) {
-            $this->id = $admin_id;
-        } else {
+        if (!($this->row = Help::getDB()->fetchAdmin($admin_id))) {
             $this->handleErrorAndStop(
                 sprintf(__('Admin not found with id %s in instance %s', 'peatcms'),
                     var_export($admin_id, true), Setup::$instance_id),
@@ -47,7 +45,7 @@ class Admin extends BaseLogic
         return ($this->isRelatedInstanceId($element->getInstanceId()));
     }
 
-    public function canDo(string $action, $table_name, $id): bool
+    public function canDo(string $action, string $table_name, $id): bool
     {
         $allowed = false;
         if ($row = Help::getDB()->selectRow($table_name, $id)) {

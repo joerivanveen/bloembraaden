@@ -8,7 +8,6 @@ class BaseLogic extends Base
     protected ?\stdClass $row, $template_settings;
     protected object $template_pointer;
     protected string $type_name;
-    protected int $id;
     // nested_level keeps track of how deep this element is stuck in the spaghetti, start at 1 (also set by first getOutput() )
     protected int $nested_level = 1, $nested_max = 2, $variant_page_size = 60, $variant_page_counter = 1;
     protected bool $nested_show_first_only = true;
@@ -248,16 +247,17 @@ class BaseLogic extends Base
      */
     public function getId(): int
     {
-        if (true === isset($this->id)) return $this->id;
+        if (true === isset($this->row->id)) return $this->row->id;
         $id_column = $this->getType()->idColumn();
         if (true === isset($this->row->{$id_column})) {
-            $this->id = $this->row->{$id_column};
+            //$this->addError("getId() called while row->id is not set."); <- this can happen legitimately
+            $this->row->id = $this->row->{$id_column};
         } else { // we don't know
-            if ($id_column !== 'search_settings_id') $this->addError("Failed to get id: $id_column");
-            $this->id = 0;
+            $this->addError("Failed to get id: $id_column");
+            $this->row->id = 0;
         }
 
-        return $this->id;
+        return $this->row->id;
     }
 
     /**

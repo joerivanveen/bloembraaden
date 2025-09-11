@@ -11,9 +11,7 @@ class User extends BaseLogic
     public function __construct(int $user_id)
     {
         parent::__construct();
-        if (($this->row = Help::getDB()->fetchUser($user_id))) {
-            $this->id = $user_id;
-        } else {
+        if (!($this->row = Help::getDB()->fetchUser($user_id))) {
             $this->addError(
                 sprintf('User not found with id %s in instance %s.',
                     var_export($user_id, true), Setup::$INSTANCE_DOMAIN)

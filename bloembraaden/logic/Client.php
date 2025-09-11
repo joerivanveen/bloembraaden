@@ -12,9 +12,7 @@ class Client extends BaseLogic
     public function __construct(int $client_id)
     {
         parent::__construct();
-        if ($this->row = Help::getDB()->fetchClient($client_id)) {
-            $this->id = $client_id;
-        } else {
+        if (!($this->row = Help::getDB()->fetchClient($client_id))) {
             $this->handleErrorAndStop(sprintf('Could not create client with id %d', $client_id));
         }
         $this->type_name = 'client';
@@ -36,7 +34,7 @@ class Client extends BaseLogic
     public function getInstances(): array
     {
         if (false === isset($this->instances)) {
-            $arr = Help::getDB()->fetchInstances($this->id);
+            $arr = Help::getDB()->fetchInstances($this->row->id);
             foreach ($arr as $index => $obj) {
                 $arr[$index] = new Instance($obj);
             }
