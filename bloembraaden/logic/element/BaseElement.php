@@ -8,7 +8,7 @@ class BaseElement extends BaseLogic implements Element
     protected array $properties;
     protected \stdClass $linked_types;
 
-    public function __construct(\stdClass $row = null)
+    public function __construct(?\stdClass $row = null)
     {
         parent::__construct($row);
     }

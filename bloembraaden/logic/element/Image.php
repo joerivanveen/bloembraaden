@@ -12,7 +12,7 @@ class Image extends BaseElement
         'tiny' => 200,
     ); // TODO in config or something?
 
-    public function __construct(\stdClass $properties = null)
+    public function __construct(?\stdClass $properties = null)
     {
         parent::__construct($properties);
         $this->type_name = 'image';

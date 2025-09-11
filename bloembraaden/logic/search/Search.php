@@ -8,7 +8,7 @@ class Search extends BaseElement
     protected int $result_count = 0;
     public const MIN_TERM_LENGTH = 3;
 
-    public function __construct(\stdClass $row = null)
+    public function __construct(?\stdClass $row = null)
     {
         parent::__construct($row);
         $this->type_name = 'search';
@@ -208,12 +208,12 @@ class Search extends BaseElement
      * meanwhile, for each path this is cached
      *
      * @param string $path
-     * @param int|null $instance_id
+     * @param ?int $instance_id
      * @param bool $rewrite
      * @return array
      * @since 0.8.12
      */
-    public function getRelevantPropertyValuesAndPrices(string $path, int $instance_id = null, bool $rewrite = false): array
+    public function getRelevantPropertyValuesAndPrices(string $path, ?int $instance_id = null, bool $rewrite = false): array
     {
         $instance_id = $instance_id ?? Setup::$instance_id;
         $file_name = Setup::$DBCACHE . "filter/$instance_id/" . rawurlencode($path) . '.serialized';

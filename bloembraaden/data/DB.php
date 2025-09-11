@@ -3473,7 +3473,7 @@ class DB extends Base
      * @param int $depth optional default 0 keeps count of recursiveness, function fails at 100 tries
      * @return string the cleared slug safe to use, per instance, with a prefix index if necessary
      */
-    public function clearSlug(string $slug = null, Type $element = null, int $id = 0, int $depth = 0): string
+    public function clearSlug(?string $slug = null, ?Type $element = null, int $id = 0, int $depth = 0): string
     {
         if (null === $element) $element = new Type('search');
         if (null === $slug || '' === $slug) $slug = "{$element->typeName()}-$id";
@@ -3748,7 +3748,7 @@ class DB extends Base
         return $this->insertRowAndReturnLastId($table_name, $data, $is_bulk);
     }
 
-    private function insertRowAndReturnLastId(string $table_name, array $col_val = null, bool $is_bulk = false): int|string|null
+    private function insertRowAndReturnLastId(string $table_name, ?array $col_val = null, bool $is_bulk = false): int|string|null
     {
         $table = new Table($this->getTableInfo($table_name));
         // reCacheWithWarmup the slug, maybe used for a search page

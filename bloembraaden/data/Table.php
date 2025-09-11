@@ -84,7 +84,7 @@ class Type extends Base
         return str_replace(' ', '', ucwords(str_replace('_', ' ', $this->type_name)));
     }
 
-    public function getElement(\stdClass $row = null): BaseElement
+    public function getElement(?\stdClass $row = null): BaseElement
     {
         $class_name = "\\Bloembraaden\\{$this->className()}";
 

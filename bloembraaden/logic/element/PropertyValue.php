@@ -7,7 +7,7 @@ namespace Bloembraaden;
 
 class PropertyValue extends BaseElement
 {
-    public function __construct(\stdClass $row = null) {
+    public function __construct(?\stdClass $row = null) {
         parent::__construct($row);
         $this->type_name = 'property_value';
     }

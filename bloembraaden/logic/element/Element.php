@@ -6,7 +6,7 @@ namespace Bloembraaden;
 
 interface Element
 {
-    public function __construct(\stdClass $row = null);
+    public function __construct(?\stdClass $row = null);
     // expects an object (via DB->normalizeRow with all the properties that make up this class
     // when constructed including the properties this is part of a result set, don't add suggestions or children etc.
     // fetchById also means this is a single instance, you can add suggestions and children to it etc, which can be filtered.

@@ -16,7 +16,7 @@ class BaseLogic extends Base
     protected bool $completedRowForOutput = false;
     protected \stdClass $output_object;
 
-    public function __construct(\stdClass $row = null)
+    public function __construct(?\stdClass $row = null)
     {
         parent::__construct();
         //$this->type_name is set to correct type (e.g. search, page, variant) by child class

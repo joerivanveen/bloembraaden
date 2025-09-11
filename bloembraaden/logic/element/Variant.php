@@ -7,7 +7,7 @@ namespace Bloembraaden;
 
 class Variant extends BaseElement
 {
-    public function __construct(\stdClass $properties = null) {
+    public function __construct(?\stdClass $properties = null) {
         parent::__construct($properties);
         $this->type_name = 'variant';
     }
