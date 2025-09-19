@@ -308,7 +308,7 @@ class DB extends Base
     }
 
     /**
-     * Returns max 100 Elements (title, slug, type_name, id) of $peat_type filtered by $properties, sorted by preferred sorting column.
+     * Returns max 100 Elements (row objects) of $peat_type filtered by $properties, sorted by preferred sorting column.
      * @param Type $peat_type
      * @param array $properties
      * @return array
@@ -340,8 +340,9 @@ class DB extends Base
             $imploded_sub_queries = '';
         }
 
+        // @since 0.29.0 bugfix: select * because if the element is not already cached we need the whole row to build it
         $statement = $this->conn->prepare("
-            SELECT title, slug, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
+            SELECT *, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
             WHERE instance_id = :instance_id $imploded_sub_queries $sorting LIMIT 100;
         ");
         $statement->bindValue(':instance_id', Setup::$instance_id);
