@@ -3701,8 +3701,8 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
             };
         form.removeAttribute('data-submitting');
         if (json.hasOwnProperty('success') && true === json.success) {
-            if (NAV.getCurrentPath() !== slug) {
-                PEAT.renderProgressive(slug);
+            if (slug.indexOf('__') !== 0 && NAV.getCurrentPath() !== slug) {
+                NAV.go(slug);
             }
             // emit events the designer can respond to
             form.dispatchEvent(new CustomEvent('peatcms.form_posted', event_data));
