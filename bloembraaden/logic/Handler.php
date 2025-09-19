@@ -1888,6 +1888,12 @@ class Handler extends BaseLogic
             if (false === isset($body) || '' === $body) {
                 $body = var_export($post_data, true);
             }
+            if (true === isset($post_data->subject)) {
+                $subject = strip_tags($post_data->subject);
+            } else {
+                $subject = "Mailed by {$instance->getDomain()} {uuid}";
+            }
+            $subject = str_replace('{uuid}', Help::randomString(12), $subject);
             if (true === isset($post_data->to)) {
                 $to = $post_data->to;
                 $allowed_recipients = array_map('trim', explode(',', $instance->getSetting('mail_form_allowed_to') ?? ''));
@@ -1903,7 +1909,7 @@ class Handler extends BaseLogic
                 'to' => $to,
                 'from' => $instance->getSetting('mail_verified_sender'),
                 'reply_to' => $from_email,
-                'subject' => $post_data->subject ?? 'Mailed by ' . $instance->getDomain(),
+                'subject' => $subject,
                 'text' => Help::html_to_text($body),
                 'html' => str_replace("\n", '<br/>', $body),
             ));
