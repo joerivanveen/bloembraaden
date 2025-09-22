@@ -3701,8 +3701,12 @@ PEATCMS_navigator.prototype.submitFormData = function (form, data) {
             };
         form.removeAttribute('data-submitting');
         if (json.hasOwnProperty('success') && true === json.success) {
-            if (slug.indexOf('__') !== 0 && NAV.getCurrentPath() !== slug) {
-                NAV.go(slug);
+            if (slug !== NAV.getCurrentPath()) {
+                if (0 === slug.indexOf('__')) { // do not navigate to actions
+                    PEAT.renderProgressive(slug); // for shoppingcart at least
+                } else {
+                    NAV.go(slug); // for thank you pages
+                }
             }
             // emit events the designer can respond to
             form.dispatchEvent(new CustomEvent('peatcms.form_posted', event_data));
