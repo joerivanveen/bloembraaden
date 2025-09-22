@@ -3187,12 +3187,25 @@ PEATCMS.prototype.startUp = function () {
  * @param session_timeout_ms
  */
 PEATCMS.prototype.pollSession = function (session_timeout_ms) {
+    console.warn('PEATCMS.pollSession is deprecated, use PEATCMS.pollSessionStart instead');
+    this.pollSessionStart(session_timeout_ms);
+}
+
+PEATCMS.prototype.pollSessionStart = function (session_timeout_ms) {
     const self = this;
     self.poll_session_timeout_ms = session_timeout_ms || 15000;
     const first_timeout_ms = Math.max(self.poll_session_timeout_ms, 3000);
     self.poll_timeout = setTimeout(self.pollSessionAct, first_timeout_ms);
     window.removeEventListener('focus', self.pollSessionAct);
     window.addEventListener('focus', self.pollSessionAct);
+}
+
+PEATCMS.prototype.pollSessionStop = function () {
+    const self = this;
+    if (null === self.poll_timeout) return;
+    clearTimeout(self.poll_timeout);
+    window.removeEventListener('focus', self.pollSessionAct);
+    self.poll_timeout = null;
 }
 
 /* internal */
