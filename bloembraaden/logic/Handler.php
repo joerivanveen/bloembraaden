@@ -1891,9 +1891,8 @@ class Handler extends BaseLogic
             if (true === isset($post_data->subject)) {
                 $subject = strip_tags($post_data->subject);
             } else {
-                $subject = "Mailed by {$instance->getDomain()} {uuid}";
+                $subject = "Mailed by {$instance->getDomain()}";
             }
-            $subject = str_replace('{uuid}', Help::randomString(12), $subject);
             if (true === isset($post_data->to)) {
                 $to = $post_data->to;
                 $allowed_recipients = array_map('trim', explode(',', $instance->getSetting('mail_form_allowed_to') ?? ''));
