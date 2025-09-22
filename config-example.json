@@ -7,14 +7,6 @@
     "pass": "blank",
     "schema": "public"
   },
-  "DB_HISTORY": {
-    "host": "localhost",
-    "port": "5432",
-    "name": "peatcms_history",
-    "user": "peatcms",
-    "pass": "blank",
-    "schema": "public"
-  },
   "MAIL": {
     "active": "mailchimp",
     "mailchimp": {
