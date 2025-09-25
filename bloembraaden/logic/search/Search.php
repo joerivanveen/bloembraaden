@@ -422,19 +422,6 @@ class Search extends BaseElement
         if (true === $this->admin) {
             Help::prepareAdminRowForOutput($this->row, 'search_settings', (string)$this->getId());
             $this->row->template_id = null;
-            // load the stopwords and alternatives
-            // TODO use a meaningful order, maybe in javascript...
-            if (($rows = Help::getDB()->fetchSearchAlternatives($this->getId()))) {
-                $this->row->__alternatives__ = $rows;
-            } else {
-                $this->row->__alternatives__ = array();
-            }
-            /*if (($rows = Help::getDB()->fetchSearchStopwords($this->getId()))) {
-                $this->row->__stopwords__ = $rows;
-            } else {
-                $this->row->__stopwords__ = array();
-            }*/
-            //
         }
     }
 

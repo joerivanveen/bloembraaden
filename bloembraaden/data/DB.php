@@ -627,22 +627,6 @@ class DB extends Base
         }
     }
 
-    public function fetchSearchAlternatives(int $search_settings_id = 0): array
-    {
-        return $this->fetchRows('_search_alternatives', array(
-            'search_alternatives_id',
-            'alternative',
-            'correct',
-        ), array(
-            'search_settings_id' => $search_settings_id,
-        ));
-    }
-
-    public function fetchSearchStopwords(int $search_settings_id = 0): array
-    {
-        return array();
-    }
-
     public function fetchElementRow(Type $peat_type, int $id): ?\stdClass
     {
         return $this->fetchRow($peat_type->tableName(), array('*'), array($peat_type->idColumn() => $id));
