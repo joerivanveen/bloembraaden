@@ -172,15 +172,15 @@ However, you **must** switch off the browser ‘auto instrument’ feature in ne
 
 ## Initial install
 The first install is done after you have prepared your config file and the two databases, as well as your webserver.
-Set `install` to `true` in the config and go to:
 
-`https://your_main_domain.tld/?admin_email=name@domain.tld&admin_password=difficult`
-
-👍 since 0.16.x you can provide the following ENV variables in lieu of the insecure querystring and just visit `https://your_main_domain.tld/`
-
+1. Set `install` to `true` in the config.
+2. Provide the following ENV variables needed for initial installation:
+```
     BLOEMBRAADEN_ADMIN_EMAIL=name@domain.tld
     BLOEMBRAADEN_ADMIN_PASSWORD=difficult
     MAIN_URL=your_main_domain.tld
+```
+3.  Visit `https://your_main_domain.tld/`
 
 Bloembraaden will contact the database and set up a first ‘instance’.
 
@@ -188,7 +188,7 @@ Bloembraaden will contact the database and set up a first ‘instance’.
 Do not forget these credentials, because you will not be able to log in without them.
 
 Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
-You should now switch off the ‘install’ flag (set it to `false`).
+You should now switch off the ‘install’ flag in the config (set it to `false`).
 
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.

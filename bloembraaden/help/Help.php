@@ -1452,14 +1452,11 @@ class Help
                 die('Install failed');
             }
             // check for first admin
-            if (isset($_GET['admin_email'], $_GET['admin_password'])) {
-                $admin_email = $_GET['admin_email'];
-                $admin_password = $_GET['admin_password'];
-            } elseif (isset($_ENV['BLOEMBRAADEN_ADMIN_EMAIL'], $_ENV['BLOEMBRAADEN_ADMIN_PASSWORD'])) {
+            if (isset($_ENV['BLOEMBRAADEN_ADMIN_EMAIL'], $_ENV['BLOEMBRAADEN_ADMIN_PASSWORD'])) {
                 $admin_email = $_ENV['BLOEMBRAADEN_ADMIN_EMAIL'];
                 $admin_password = $_ENV['BLOEMBRAADEN_ADMIN_PASSWORD'];
             } else {
-                die('Install failed, please provide first admin through env or querystring. ?admin_email=X&admin_password=Y');
+                die('Install failed, please provide first admin as ENV variables.');
             }
             /**
              * run the entire install file
