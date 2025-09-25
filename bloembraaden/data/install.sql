@@ -3327,3 +3327,9 @@ ALTER TABLE "public"."_instance"
     DROP COLUMN if exists "recaptcha_pass_score";
 
 COMMIT;
+
+-- version 0.29.1
+
+BEGIN;
+
+COMMIT;
