@@ -2266,8 +2266,9 @@ class DB extends Base
         return $temp;
     }
 
-    public function getTemplateByName(string $template_name, ?int $instance_id = null): ?\stdClass
+    public function getTemplateByName(string $template_name, int $instance_id = -1): ?\stdClass
     {
+        if (-1 === $instance_id) $instance_id = Setup::$instance_id;
         if ($row = $this->fetchRow('_template', array('*'), array(
             'name' => $template_name,
             'instance_id' => $instance_id,
