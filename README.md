@@ -148,11 +148,6 @@ You can configure 2 optional files:
 The website itself is build with simple templates that you put in the admin interface.
 You also point to the `/_site/example` folder through that admin interface.
 
-#### Known bugs
-The templating engine has a known bug.
-The detecting of nested tags fails in some complex situations where the same tags are repeated on the page.
-Unfortunately there is no workaround, this has to be fixed. Working on it.
-
 ### SSL
 Both static and the Bloembraaden site / vhost must use ssl. Bloembraaden does not work without ssl.
 When you add sites in the Bloembraaden admin, currently you need to configure their ssl separately on the server.
