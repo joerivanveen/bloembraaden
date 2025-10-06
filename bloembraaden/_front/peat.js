@@ -1956,17 +1956,6 @@ PEATCMS_template.prototype.removeComplexTagsRemaining = function (string) {
     const template = this.template;
     let html = string.toString(), // break_reference
         t, index = 0, src;
-    // let end, start, src_str;
-    // for (index = 0; index < 100; ++index) {
-    //     src = `[${index}]}}`;
-    //     while (-1 !== (end = html.indexOf(src))) {
-    //         start = html.lastIndexOf('{{', end);
-    //         src_str = html.slice(start, end + src.length);
-    //         console.warn(src_str);
-    //         html = html.replace(src_str, '');
-    //     }
-    // }
-    // return html;
     for (t in template) {
         if (template.hasOwnProperty(t) && html.indexOf(`{{${t}`) !== -1) {
             for (index = 0; index < 100; ++index) {
@@ -2000,76 +1989,6 @@ PEATCMS_template.prototype.removeSingleTagsRemaining = function (string) {
     return html;
 }
 
-PEATCMS_template.prototype.getComplexTagString = function (tag_name, html, offset) {
-    // always grab them with an EVEN number of complex tags between them
-    const search = `{%${tag_name}%}`,
-        start = html.indexOf(search);
-    let end, string;
-    if (!offset) offset = 0; // replacing default value which is not supported < ES6
-    if (offset <= start) offset = start + 1; // changed < to <= following server side bugfix
-    if (offset < html.length) {
-        end = html.indexOf(search, offset);
-        if (end > -1) {
-            end += search.length;
-            string = html.substring(start, end); // this string includes the outer complex tags
-            if (this.hasCorrectlyNestedComplexTags(string)) {
-                this.doublechecking = [];
-                return string;
-            } else {
-                if (this.doublechecking[string]) {
-                    PEAT.message(`Error in ->getComplexTagString for: ${string}`, 'error');
-                    return PEATCMS.replace(search, '', string);
-                } else {
-                    this.doublechecking[string] = true;
-                }
-                // these are nested tags, so skip the next same one as well, to speed things up
-                offset = html.indexOf(search, end + 1) + 1;
-
-                return this.getComplexTagString(tag_name, html, offset);
-            }
-        }
-    }
-
-    return false;
-}
-
-PEATCMS_template.prototype.findComplexTagName = function (string) {
-    const html = string.toString(); // break_reference
-    let start = html.indexOf('{%');
-    if (start > -1) {
-        // grab the tagName:
-        start += 2;
-
-        return html.substring(start, html.indexOf('%}', start));
-    } else {
-        return false; // ends while loop in prepare();
-    }
-}
-
-PEATCMS_template.prototype.hasCorrectlyNestedComplexTags = function (html) { // used to be called hasEvenNumberOfComplexTags
-    // all the tags need to form a 'pyramid', always be in pairs, from outside to in, if not they are incorrectly nested
-    let string = html.toString(), // break_reference
-        tag_name;
-    if ((tag_name = this.findComplexTagName(string))) {
-        let search = `{%${tag_name}%}`,
-            len = search.length,
-            pos;
-        // remove the outer two occurrences and check if the inner part still ->hasCorrectlyNestedComplexTags
-        if (-1 !== (pos = string.indexOf(search))) {
-            string = string.slice(pos + len);
-            if (-1 !== (pos = string.lastIndexOf(search))) {
-                string = string.slice(0, pos);
-
-                return this.hasCorrectlyNestedComplexTags(string);
-            } else { // there was only one of the tags, that is an error
-                return false;
-            }
-        }
-    }
-    // if there are 0 complex tags left, the pyramid has reached its summit correctly
-    return true;
-
-}
 PEATCMS_template.prototype.convertTemplateToRow = function (template) {
     let break_reference = template.__html__ || '',
         html = break_reference;

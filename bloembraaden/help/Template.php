@@ -655,28 +655,6 @@ class Template extends BaseLogic
     }
 
     /**
-     * Searches the haystack for a complex tag {%tagname%}.....{%tagname%} and returns
-     * all the occurrences as string in an array
-     *
-     * @param string $tag_name needle, the name of the complex tag we're going to find
-     * @param string $html haystack
-     * @param int $offset start looking from here (to find all complex tags with that name)
-     * @return array Array holding strings that are complex tags
-     */
-    private function getComplexTagStrings(string $tag_name, string $html, int $offset = 0): array
-    {
-        $html = substr($html, $offset);
-        if ($string = $this->getComplexTagString($tag_name, $html)) {
-            $strings = $this->getComplexTagStrings($tag_name, $html, $offset + strlen($string));
-            $strings[] = $string;
-
-            return $strings;
-        }
-
-        return array();
-    }
-
-    /**
      * @param string $tag_name
      * @param string $html
      * @param int $offset
@@ -698,7 +676,7 @@ class Template extends BaseLogic
 
                     return $string;
                 } else {
-                    if (isset($this->doublechecking[$string])) {
+                    if (true === isset($this->doublechecking[$string])) {
                         $this->addError("Error in ->getComplexTagString for this string: $string");
                         $this->addMessage(sprintf(__('Error in template for %s.', 'peatcms'), htmlentities($string)), 'error');
 
@@ -723,24 +701,19 @@ class Template extends BaseLogic
      */
     private function hasCorrectlyNestedComplexTags(string $string): bool // used to be hasEvenNumberOfComplexTags
     {
-        // all the tags need to form a 'pyramid', always be in pairs, from outside to in, if not they are incorrectly nested
-        if ($tag_name = $this->findComplexTagName($string)) {
-            $search = "{%$tag_name%}";
-            $len = strlen($search);
-            // remove the outer two occurrences and check if the inner part still ->hasCorrectlyNestedComplexTags
-            if (false !== ($pos = strpos($string, $search))) {
-                $string = substr($string, $pos + $len);
-                if (false !== ($pos = strrpos($string, $search))) { // look from the end (note the extra 'r' in strrpos)
-                    $string = substr($string, 0, $pos);
-
-                    return $this->hasCorrectlyNestedComplexTags($string);
-                } else { // there was only one of the tags, that is an error
-                    return false;
-                }
+        // just check if each complex tag comes in even numbers
+        $matches = array();
+        if (false === preg_match_all('/(\{\%[a-zA-Z0-9_\-]+\%\})/', $string, $matches, 1)) {
+            return false;
+        }
+        $tags = $matches[0]; // see docs for preg_match_all
+        // all must be found in pairs
+        sort($tags);
+        for ($i = 0; $i < count($tags); $i += 2) {
+            if ($tags[$i] !== $tags[$i + 1]) {
+                return false;
             }
         }
-
-        // if there are 0 complex tags left, the pyramid has reached its summit correctly
         return true;
     }
 
@@ -790,7 +763,7 @@ class Template extends BaseLogic
         }
         $template = array();
         // find all the first level complex tags and save them in array as a separate template to be reinserted later
-        while ($tag_name = $this->findComplexTagName($html)) {
+        while (($tag_name = $this->findComplexTagName($html))) {
             if (false === isset($template[$tag_name])) $template[$tag_name] = array();
             if (($string = $this->getComplexTagString($tag_name, $html))) {
                 $number = count($template[$tag_name]);
