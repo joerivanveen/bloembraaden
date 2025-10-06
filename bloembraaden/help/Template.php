@@ -701,20 +701,21 @@ class Template extends BaseLogic
      */
     private function hasCorrectlyNestedComplexTags(string $string): bool // used to be hasEvenNumberOfComplexTags
     {
-        // just check if each complex tag comes in even numbers
         $matches = array();
         if (false === preg_match_all('/(\{\%[a-zA-Z0-9_\-]+\%\})/', $string, $matches, 1)) {
             return false;
         }
         $tags = $matches[0]; // see docs for preg_match_all
-        // all must be found in pairs
-        sort($tags);
-        for ($i = 0; $i < count($tags); $i += 2) {
-            if ($tags[$i] !== $tags[$i + 1]) {
-                return false;
+        $open = array();
+        // check the piramidity of the tags, they must be correctly nested,
+        foreach ($tags as $tag) {
+            if ($tag === end($open)) {
+                array_pop($open);
+            } else {
+                $open[] = $tag;
             }
         }
-        return true;
+        return 0 === count($open);
     }
 
     /**
