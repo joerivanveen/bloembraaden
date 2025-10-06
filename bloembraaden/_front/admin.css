@@ -1193,6 +1193,25 @@ body .PEATCMS_admin .peatcms-link:focus {
     aspect-ratio: 3 / 2;
 }
 
+#admin_sidebar .edit-area textarea + .word_counter,
+#admin_sidebar .edit-area input + .word_counter {
+    position: absolute;
+    display: none;
+    font-size: 12px;
+    margin-top: -11px;
+    padding: 1px 4px 2px 2px;
+    border-bottom-right-radius: 8px;
+    background-color: var(--admin-color-accent-fierce);
+}
+#admin_sidebar .edit-area input + .word_counter {
+    margin-top: -5px; /* .25em padding apparently works differently here */
+}
+
+#admin_sidebar .edit-area textarea:focus + .word_counter,
+#admin_sidebar .edit-area input:focus + .word_counter {
+    display: block;
+}
+
 .PEATCMS_admin textarea.as-input {
     display: inline;
     vertical-align: bottom;

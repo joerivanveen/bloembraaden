@@ -21,6 +21,10 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
     if (typeof this.server_value === 'undefined') PEAT.message('Cache must be refreshed', 'warn');
     if ((this.DOMElement = this.create_DOMElement())) {
         this.DOMElement.id = `admin_${column_name}`;
+        if (true === ['excerpt','content','description','title'].includes(column_name)) {
+            this.on('focus', this.wordCounter.bind(this));
+            this.on('keyup', this.wordCounter.bind(this));
+        }
         return; // prevent error message from appearing
     }
     if (VERBOSE) console.error(`There is no ${this.column.type} for ${column_name}`);
@@ -513,6 +517,18 @@ PEATCMS_actor.prototype.dropFile = function (event) {
 PEATCMS_actor.prototype.on = function (type, listener) {
     // TODO make sure this gets added to existing eventlisteners
     this.DOMElement.addEventListener(type, listener);
+}
+
+PEATCMS_actor.prototype.wordCounter = function() {
+    const column_name = this.column.name;
+    const el = this.DOMElement, t = el.value;
+    let word_counter = el.nextElementSibling;
+    if (!word_counter || false === word_counter.classList.contains('word_counter')) {
+        word_counter = document.createElement('span');
+        word_counter.classList.add('word_counter', column_name);
+        el.insertAdjacentElement('afterend', word_counter);
+    }
+    word_counter.innerHTML = t.length + ' chars, ' + t.trim().split(' ').length + ' words.';
 }
 
 // noinspection JSUnusedGlobalSymbols
