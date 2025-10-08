@@ -1368,7 +1368,8 @@ function PEATCMS_panels() {
         // resize is separate for now
         const positioner = document.getElementById(`admin_${panel}_positioner`);
         if (null === positioner) return;
-        const css_cursor = 'cursor:' + window.getComputedStyle(positioner).cursor;
+        // we want the cursor associated with the positioner and no selecting while dragging
+        const css = 'cursor:' + window.getComputedStyle(positioner).cursor + ';user-select:none;';
 
         function remover() {
             PEAT.stylesheet.upsertRule('*', null);
@@ -1377,7 +1378,7 @@ function PEATCMS_panels() {
         }
 
         positioner.addEventListener('mousedown', function () {
-            PEAT.stylesheet.upsertRule('*', css_cursor);
+            PEAT.stylesheet.upsertRule('*', css);
             document.addEventListener('mousemove', mover);
             document.addEventListener('mouseup', remover);
         });
