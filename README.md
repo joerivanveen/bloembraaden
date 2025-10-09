@@ -67,21 +67,16 @@ but that code is not maintained at the moment and does not allow attachments yet
 ### Writable folders
 You need to have several folders on your server writable by the web user (e.g. nginx).
 
-The following folder needs to be **as fast as possible**.
-- cache (where table info will be cached)
-
-The following may be slower e.g. on a separate disk if you find that comfortable.
-
-Writable folders for:
+- cache (will be loaded in opcache as well)
 - uploads
 - invoice
-- cdnpath 
+- cdnpath
 
 Point to those folders in the config.
 
 ## Web server
 Set up a webserver. We recommend NGINX.
-We use php-fpm with php 8.2 (8.0 is the minimum version for Bloembraaden).
+We use php-fpm with php 8.4 (8.0 is the minimum version for Bloembraaden).
 You can have it process index.php at all times, Bloembraaden will determine what content to show.
 
 Set up two virtual hosts, one for Bloembraaden and one for static files.
@@ -163,10 +158,10 @@ At this point there are still some queries that do not use an index, we are work
 ### New relic
 You can install new relic on your server and Bloembraaden will use it to report errors and stuff.
 You don’t have to set up anything, Bloembraaden checks for ‘extension_loaded’.
-However, you **must** switch off the browser ‘auto instrument’ feature in newrelics .ini file, because it is incompatible with the Bloembraaden javascript compilation.
+However, you **must** switch off the browser ‘auto instrument’ feature in new relics `.ini` file, because it is incompatible with the Bloembraaden javascript compilation.
 
 ## Initial install
-The first install is done after you have prepared your config file and the two databases, as well as your webserver.
+The first install is done after you have prepared your config file and the database, as well as your webserver.
 
 1. Set `install` to `true` in the config.
 2. Provide the following ENV variables needed for initial installation:
