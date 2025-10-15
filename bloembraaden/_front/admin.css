@@ -1246,6 +1246,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 /*.admin input[type=text].searchable,
 #admin_console input[type=text].searchable,
 #admin_sidebar input[type=text]*/
+.PEATCMS_admin select.order-paging,
 .PEATCMS_admin input[type=text].searchable {
     background-color: var(--admin-color-accent-neutral);
     border-bottom: 0;
@@ -1331,6 +1332,12 @@ body .PEATCMS_admin span.template_status {
     right: 17px;
     top: 8px;
     /*float: right;*/
+}
+
+.PEATCMS_admin .order-paging {
+    position: absolute; /* to prevent CLS */
+    left: 110px;
+    top: 8px; /* same as order search */
 }
 
 .payment-table,
@@ -1428,72 +1435,6 @@ textarea.code {
 
 header.payment {
     font-weight: normal;
-}
-
-/**
- * paging with a bit of animation now
- */
-.PEATCMS_admin .paging {
-    padding: .5rem 0;
-    position: absolute;
-}
-
-#PEATCMS_admin_page .paging + section,
-.PEATCMS_admin .paging + section {
-    margin-top: 2.5rem;
-}
-
-.PEATCMS_admin .paging a {
-    display: inline-block;
-    float: left;
-    width: .4rem;
-    height: .4rem;
-    margin-top: .4rem;
-    line-height: 1.4em;
-    font-size: 30%;
-    padding: 0;
-    text-align: center;
-    overflow: hidden;
-    transition: all ease-in .4s;
-    outline: solid 1px var(--admin-color-accent);
-    outline-offset: -.5px;
-}
-
-.PEATCMS_admin .paging a.peatcms-current-slug {
-    text-decoration: none;
-    background-color: var(--admin-color-accent);
-    color: var(--admin-color-paper);
-}
-
-.PEATCMS_admin .paging a[data-page-distance="2"] {
-    width: 1.6rem;
-    height: 1.2rem;
-    margin-top: .1rem;
-    font-size: 90%;
-}
-
-.PEATCMS_admin .paging a[data-page-distance="3"] {
-    width: 1.1rem;
-    height: .9rem;
-    margin-top: .2rem;
-    font-size: 70%;
-}
-
-.PEATCMS_admin .paging a[data-page-distance="4"] {
-    width: .6rem;
-    height: .6rem;
-    margin-top: .3rem;
-    font-size: 50%;
-}
-
-.PEATCMS_admin .paging a:hover,
-.PEATCMS_admin .paging a[data-page-distance="1"],
-.PEATCMS_admin .paging a:focus-visible,
-.PEATCMS_admin .paging a.peatcms-current-slug {
-    width: 2rem;
-    height: 1.4rem;
-    margin-top: 0;
-    font-size: 100%;
 }
 
 .payment-table .row.raw {

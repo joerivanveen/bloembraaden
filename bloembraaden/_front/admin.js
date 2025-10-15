@@ -1969,11 +1969,17 @@ function PEATCMS_admin() {
 
     function activate() {
         let el, inputs, style;
+
+        function isActive(el) {
+            if (el.hasAttribute('data-peatcms_active')) return true;
+            el.setAttribute('data-peatcms_active', '1');
+            return false;
+        }
+
         // set homepage button
         document.querySelectorAll('button[data-peatcms_handle="set_homepage"]').forEach(
             function (btn) { //, key, parent) {
-                if (btn.hasAttribute('data-peatcms_active')) return;
-                btn.setAttribute('data-peatcms_active', '1');
+                if (true === isActive(btn)) return;
                 btn.addEventListener('click', function () {
                     self.setHomepage();
                 });
@@ -2003,6 +2009,7 @@ function PEATCMS_admin() {
         }
         document.querySelectorAll('[data-peatcms_handle="edit_current"]').forEach(
             function (btn) {
+                if (true === isActive(btn)) return;
                 btn.onclick = function () {
                     CMS_admin.edit()
                 };
@@ -2010,6 +2017,7 @@ function PEATCMS_admin() {
         );
         document.querySelectorAll('[data-peatcms_handle="uncache_current"]').forEach(
             function (btn) {
+                if (true === isActive(btn)) return;
                 btn.onclick = function () {
                     NAV.admin_uncache_slug()
                 };
@@ -2017,6 +2025,7 @@ function PEATCMS_admin() {
         );
         document.querySelectorAll('[data-peatcms_handle="send_email"]').forEach(
             function (btn) {
+                if (true === isActive(btn)) return;
                 // TODO integrate turnstile...
                 btn.onclick = function () {
                     NAV.ajax(
@@ -2030,6 +2039,7 @@ function PEATCMS_admin() {
         );
         document.querySelectorAll('[data-peatcms_handle="cancel_order"]').forEach(
             function (btn) {
+                if (true === isActive(btn)) return;
                 if (btn.hasAttribute('data-order_id')) {
                     btn.onclick = function () {
                         let submit_msg;
@@ -2060,13 +2070,16 @@ function PEATCMS_admin() {
         inputs = document.querySelectorAll('.admin_order_search');
         // search order forms (can have multiple on the page)
         inputs.forEach(function (input) {
+            if (true === isActive(input)) return;
             input.onkeyup = function (e) {
-                if (e.key === 'Enter') {
+                if ('Enter' === e.key) {
                     NAV.go(`/__order__/${input.value}`);
                 }
             }
         });
-        if ((el = document.getElementById('payment_link'))) {
+        if ((el = document.getElementById('payment_link'))
+            && false === isActive(el)
+        ) {
             el.addEventListener('click', function () {
                 const payment_link = NAV.root + PEATCMS.replace(' ', '', this.getAttribute('data-href'));
                 if (PEAT.copyToClipboard(payment_link)) {
@@ -2075,8 +2088,7 @@ function PEATCMS_admin() {
             });
         }
         document.querySelectorAll('.session_destroy').forEach(function (el) {
-            if (el.hasAttribute('data-peatcms_active')) return;
-            el.setAttribute('data-peatcms_active', '1');
+            if (true === isActive(el)) return;
             el.addEventListener('peatcms.form_posted', function (e) {
                 if (e.detail.json.success) {
                     this.innerHTML = 'Marked for destruction.';
@@ -2084,8 +2096,7 @@ function PEATCMS_admin() {
             });
         });
         document.querySelectorAll('[type="file"]').forEach(function (el) {
-            if (el.hasAttribute('data-peatcms_active')) return;
-            el.setAttribute('data-peatcms_active', '1');
+            if (true === isActive(el)) return;
             const form = el.form;
             //const label = el.label;
             if (!form) {
@@ -2120,51 +2131,16 @@ function PEATCMS_admin() {
                 // only then submit the form proper, with the filename in the form
             });
         });
-        // for paging, set proximity
-        document.querySelectorAll('.PEATCMS_admin .paging').forEach(function (div) {
-            if (div.hasAttribute('data-peatcms_active')) return;
-            div.setAttribute('data-peatcms_active', '1');
-            const nodes = div.querySelectorAll('a'),
-                len = nodes.length;
-
-            function act(self, hover) {
-                const nodes = self.parentNode.querySelectorAll('a'),
-                    len = nodes.length;
-                let current = 0, hovered = null, i;
-                for (i = 0; i < len; ++i) {
-                    const node = nodes[i];
-                    if (hover && self === node) {
-                        hovered = i;
-                    }
-                    if (node.classList.contains('peatcms-current-slug')) {
-                        current = i;
-                        if (null === hovered) hovered = i;
-                    }
-                }
-                if (null === hovered) hovered = current;
-                for (i = 0; i < len; ++i) {
-                    const dist = Math.min(Math.abs(i - current), Math.abs(i - hovered));
-                    nodes[i].setAttribute('data-page-distance', dist.toString());
-                    nodes[i].setAttribute('data-i-h-c', `${i} ${hovered} ${current}`);
-                }
-            }
-
-            function hover(which) {
-                act(which, true);
-            }
-
-            function unhover(which) {
-                act(which);
-            }
-
-            for (let i = 0; i < len; ++i) {
-                nodes[i].addEventListener('mouseover', function () {
-                    hover(this);
-                });
-                nodes[i].addEventListener('mouseout', function () {
-                    unhover(this);
-                });
-            }
+        // for paging
+        document.querySelectorAll('.PEATCMS_admin .paging').forEach(function (select) {
+            if (true === isActive(select)) return;
+            select.addEventListener('change', function () {
+                NAV.go(this.value);
+            });
+            const path = '/' + NAV.getCurrentPath();
+            select.querySelectorAll('option').forEach(function (option) {
+                if (path === option.value) option.selected = true;
+            });
         });
         // setup the quickies
         if ((el = document.getElementById('quickies'))) {
@@ -2180,7 +2156,11 @@ function PEATCMS_admin() {
             }
         }
         // setup menu editor
-        if ((el = document.getElementById('PEATCMS_admin_menu_editor'))) self.startMenuEditor(el);
+        if ((el = document.getElementById('PEATCMS_admin_menu_editor'))
+            && false === isActive(el)
+        ) {
+            self.startMenuEditor(el);
+        }
         self.orderRatingGrid();
     }
 
@@ -2190,22 +2170,22 @@ function PEATCMS_admin() {
     }
 
     window.addEventListener('keyup', function (event) {
-        let els;
-        if (event.key === 'Control') {
-            if ((els = document.querySelectorAll('.peatcms_ctrl_key_tip'))) {
-                els.forEach(function (el) {
+        if ('Control' === event.key) {
+            const elements = document.querySelectorAll('.peatcms_ctrl_key_tip')
+            if (elements) {
+                elements.forEach(function (el) {
                     el.remove();
                 });
             }
         }
     });
     window.addEventListener('keydown', function (event) {
-        let els;
         // ctrl+, = toggle edit, ctrl+. = toggle console, ctrl+/ = show / hide tools
-        if (event.key === 'Control') {
+        if ('Control' === event.key) {
             if (0 < document.getElementsByClassName('peatcms_ctrl_key_tip').length) return;
-            if ((els = document.querySelectorAll('[data-ctrl_key]'))) {
-                els.forEach(function (el) {
+            const elements = document.querySelectorAll('[data-ctrl_key]')
+            if (elements) {
+                elements.forEach(function (el) {
                     const tip = document.createElement('div');
                     tip.className = 'peatcms_ctrl_key_tip';
                     tip.appendChild(document.createTextNode(el.getAttribute('data-ctrl_key')));
@@ -2217,19 +2197,28 @@ function PEATCMS_admin() {
             }
         }
         if (event.ctrlKey || event.metaKey) {
-            if (event.key === '/') {
+            if ('/' === event.key) {
                 self.toggleTools();
-            } else if (event.key === ',') {
+            } else if (',' === event.key) {
                 const path = NAV.getCurrentPath();
                 if (path === self.panels.get('sidebar').getSlug()) {
                     self.panels.toggle('sidebar');
                 } else {
-                    self.edit(path); // (path)
+                    self.edit(path);
                 }
-            } else if (event.key === '.') {
+            } else if ('.' === event.key) {
                 self.panels.toggle('console');
             }
+        } else if ( // focus on the first order number search input when appropriate
+            '/' === event.key
+            && !['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())
+        ) {
+            event.preventDefault();
+            //event.stopPropagation();
+            const src = document.querySelector('.admin_order_search');
+            PEATCMS.isVisible(src) && src.focus();
         }
+
         return true;
     });
     // get the news from the server
@@ -2242,20 +2231,18 @@ function PEATCMS_admin() {
 }
 
 PEATCMS_admin.prototype.orderRatingGrid = function () {
+    const self = this;
     // setup thumbs rating on order overview page
     document.querySelectorAll('.order[data-rating]:not([data-rating=\'\'])').forEach(function (el) {
         // rotate the thumb conforming the rating :-D
-        const rating = parseFloat(el.getAttribute('data-rating') || 0),
-            thumb = el.querySelector('.rating');
-        if (thumb) thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`; // duplicate
+        self.orderRatingDetail(el);
     });
 }
 PEATCMS_admin.prototype.orderRatingDetail = function (row) {
     const thumb = row.querySelector('.rating'),
         rating = parseFloat(row.getAttribute('data-rating') || 0);
-    thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`; // duplicate
+    if (thumb) thumb.style.transform = `rotateZ(${(1 - rating) * 180}deg)`;
 }
-
 
 PEATCMS_admin.prototype.pollServer = function () {
     if (false === document.hasFocus()) return;

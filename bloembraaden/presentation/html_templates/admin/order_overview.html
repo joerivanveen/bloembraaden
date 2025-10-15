@@ -7,16 +7,16 @@
 </head>
 <body class="admin" id="PEATCMS_admin_page">
 <header data-peatcms-keep="admin_order_header" class="PEATCMS_admin">
-    <input class="admin_order_search right searchable" type="text" placeholder="last digits order number"/>
+    <input class="admin_order_search right searchable" type="text" placeholder="last digits order number" name="admin-order-search"/>
 </header>
 <div class="page_content PEATCMS_admin">
     <h1><a href="/__admin__/instance">&#x25C0; Back</a></h1>
     {%__pages__%}
-    <div class="paging">
+    <select class="order-paging paging" name="order-paging">
         {%__row__%}
-        <a href="/__order__/__page__:{{page_number}}" class="button" data-page-distance="{{page_distance}}">{{page_number}}</a>
+        <option value="/__order__/__page__:{{page_number}}">Page {{page_number}}</option>
         {%__row__%}
-    </div>
+    </select>
     {%__pages__%}
     <section class="order-table">
         <div class="header">
@@ -28,6 +28,7 @@
             <span>&nbsp;</span>
         </div>
         {%__orders__%}
+        {%__row__%}
         <div id="order-{{order_id}}" class="order row"
              {{payment_confirmed_bool: data-paid="1" }}
              {{emailed_payment_confirmation_success: data-emailed="1" }}
@@ -44,6 +45,7 @@
             <span class="amount">€ {{amount_grand_total|format_money}}</span>
             <span class="myparcel">{{myparcel_exported_error:×}}</span>
         </div>
+        {%__row__%}
         {%__orders__%}
     </section>
     {%__action__/admin_get_payment_status_updates%}
