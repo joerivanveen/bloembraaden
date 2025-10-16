@@ -21,7 +21,7 @@ function PEATCMS_actor(column_name, PEATCMS_element) {
     if (typeof this.server_value === 'undefined') PEAT.message('Cache must be refreshed', 'warn');
     if ((this.DOMElement = this.create_DOMElement())) {
         this.DOMElement.id = `admin_${column_name}`;
-        if (true === ['excerpt','content','description','title'].includes(column_name)) {
+        if (true === ['excerpt', 'content', 'description', 'title'].includes(column_name)) {
             this.on('focus', this.wordCounter.bind(this));
             this.on('keyup', this.wordCounter.bind(this));
         }
@@ -433,7 +433,9 @@ PEATCMS_actor.prototype.create_as_file_upload = function (column) { // create a 
             button = document.createElement('select');
             button.setAttribute('data-filename_saved', filename_saved);
             button.addEventListener('change', function () {
-                self.process(this.options[this.selectedIndex].value);
+                const level = this.options[this.selectedIndex].value
+                if ('0' === level) return;
+                self.process(level);
             });
             button.classList.add('button', 'process');
             button.options.add(option(0, '▦ Re-process this image.'));
@@ -519,7 +521,7 @@ PEATCMS_actor.prototype.on = function (type, listener) {
     this.DOMElement.addEventListener(type, listener);
 }
 
-PEATCMS_actor.prototype.wordCounter = function() {
+PEATCMS_actor.prototype.wordCounter = function () {
     const column_name = this.column.name;
     const el = this.DOMElement, t = el.value;
     let word_counter = el.nextElementSibling;
@@ -2214,9 +2216,15 @@ function PEATCMS_admin() {
             && !['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())
         ) {
             event.preventDefault();
-            //event.stopPropagation();
             const src = document.querySelector('.admin_order_search');
-            PEATCMS.isVisible(src) && src.focus();
+            if (src){
+                if (false === PEATCMS.isVisible(src)) {
+                    self.panels.open('console');
+                    if (false === PEATCMS.isVisible(src)) return;
+                }
+                event.stopPropagation();
+                src.focus();
+            }
         }
 
         return true;
