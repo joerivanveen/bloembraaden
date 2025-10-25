@@ -1419,7 +1419,7 @@ function unpack_rec(obj, nest_level) {
     if (nest_level > 2) return obj; // recursion stops here
     if (null === obj) return null;
     if (obj.hasOwnProperty('slugs')) {
-        if (VERBOSE) console.log(`Unpack ${obj.__ref}`);
+        //if (VERBOSE) console.log(`Unpack ${obj.__ref}`);
         obj = unpack_temp(obj);
     }
     for (n in obj) {
@@ -3095,7 +3095,7 @@ PEATCMS.prototype.startUp = function () {
             NAV.setState();
         }, 392);
         self.setScrolledStatus();
-    });
+    }, {passive: true});
 }
 
 /**

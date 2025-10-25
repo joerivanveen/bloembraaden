@@ -1263,17 +1263,6 @@ body .PEATCMS_admin span.template_status {
     text-transform: uppercase;
 }
 
-/* quick edit tables */
-#PEATCMS_admin_page.search_settings .alternatives {
-    display: block;
-}
-
-#PEATCMS_admin_page.search_settings .alternatives input[type="text"] {
-    display: inline-block;
-    width: 160px;
-}
-
-
 /**
  * The opening and closing of admin menu's console, sidebar, new, etc. from the button
  * Default settings that are overridden by admin.js (panels)

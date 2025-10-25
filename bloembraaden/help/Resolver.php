@@ -403,14 +403,6 @@ class Resolver extends BaseLogic
                         }
                     }
                     break;
-                case 'search_settings':
-                    if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
-                        if (($element = (new Search())->fetchById($id))) {
-                            $element->setForAdmin();
-                            if (false === $session->getAdmin()->isRelatedInstanceId($element->getInstanceId())) unset($element);
-                        }
-                    }
-                    break;
                 case 'menu_item':
                     // get the menu_item_id and fetch it
                     if (true === isset($terms[1]) && ($id = (int)$terms[1])) {

@@ -419,10 +419,11 @@ class Search extends BaseElement
         if (true === isset($this->row->slug) && 0 < count(($properties = $this->getProperties()))) {
             $this->row->slug = Help::turnIntoPath(explode('/', $this->row->slug), $properties);
         }
-        if (true === $this->admin) {
-            Help::prepareAdminRowForOutput($this->row, 'search_settings', (string)$this->getId());
-            $this->row->template_id = null;
-        }
+    }
+
+    public function getId(): int
+    {
+        return 0; // search has no id
     }
 
     /**

@@ -3344,6 +3344,8 @@ COMMIT;
 
 BEGIN;
 
+DROP TABLE IF EXISTS "public"."_search_settings";
+
 DROP TABLE IF EXISTS "public"."_payment";
 CREATE TABLE "public"."_payment"
 (

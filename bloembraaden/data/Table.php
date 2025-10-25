@@ -20,7 +20,7 @@ class Type extends Base
         'property' => 'cms_property',
         'property_value' => 'cms_property_value',
         'comment' => 'cms_comment',
-        'search' => '_search_settings',
+        'search' => '', // search is a type without a table for now
         'client' => '_client',
         'instance' => '_instance',
         'user' => '_user',
