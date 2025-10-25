@@ -3398,7 +3398,7 @@ PEATCMS_navigator.prototype.currentUrlIsLastNavigated = function (navigated_to) 
 PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
     this.is_navigating = true; // there is no document_status navigating, for document_status is prop of PEAT, and we don't bleed over to that here
     this.nav_timestamp = Date.now(); // slightly premature, but better than waiting for the server
-    let slug = path.replace(this.getRoot(true), '');
+    let slug = path.replace(this.getRoot(), '');
     if (0 === slug.indexOf('/')) slug = slug.slice(1);
     document.dispatchEvent(new CustomEvent('peatcms.navigation_start', {
         bubbles: false,
@@ -3424,7 +3424,7 @@ PEATCMS_navigator.prototype.go = function (path) {
             }
 
             if (0 === slug.indexOf('__action__/download/')) {
-                window.open(this.getRoot(true) + slug, '_blank');
+                window.open(this.getRoot() + slug, '_blank');
                 end();
                 return;
             }
@@ -3559,20 +3559,20 @@ PEATCMS_navigator.prototype.setState = function () {
     }
 }
 
-PEATCMS_navigator.prototype.getRoot = function (trailingSlash) {
-    if (true === trailingSlash) return `${this.root}/`;
-    return this.root;
+/* returns root always with trailing slash */
+PEATCMS_navigator.prototype.getRoot = function () {
+    return `${this.root}/`;
 }
 
 PEATCMS_navigator.prototype.getCurrentPath = function () { // returned path uri is clean, no extra slashes
-    let href = decodeURIComponent(document.location.href.replace(this.getRoot(true), '')),
+    let href = decodeURIComponent(document.location.href.replace(this.getRoot(), '')),
         len;
     if (href.indexOf('?') !== -1) href = href.split('?')[0];
     if (href.lastIndexOf('/') === (len = href.length - 1)) href = href.slice(0, len);
     return href;
 }
 PEATCMS_navigator.prototype.getCurrentUri = function () {
-    return (PEATCMS_globals.root || '') + '/' + this.getCurrentPath();
+    return this.getRoot() + this.getCurrentPath();
 }
 PEATCMS_navigator.prototype.getCurrentSlug = function () {
     const slugs = this.getCurrentPath().split('/'), len = slugs.length;
