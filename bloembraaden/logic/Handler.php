@@ -283,27 +283,6 @@ class Handler extends BaseLogic
                     __('No PaymentServiceProvider found.', 'peatcms')
                 );
             }
-        } elseif ('payment_return' === $action) {
-            // the url the client is sent to after completing payment, but also after it failed
-            if (($psp = $instance->getPaymentServiceProvider())) {
-                if (isset($_GET['id'])) {
-                    $status = $psp->checkPaymentStatusByPaymentId($_GET['id']);
-                    if (1 === $status) {
-                        $out = array('redirect_uri' => $psp->getFieldValue('successUrl'));
-                    } elseif (0 === $status) {
-                        $out = array('redirect_uri' => $psp->getFieldValue('pendingUrl'));
-                    } else {
-                        $out = array('redirect_uri' => $psp->getFieldValue('failedUrl'));
-                    }
-                } else {
-                    $out = array('redirect_uri' => $psp->getFieldValue('returnUrl'));
-                }
-            } else {
-                $this->handleErrorAndStop(
-                    sprintf('Could not get PaymentServiceProvider for %s.', $instance->getName()),
-                    __('No PaymentServiceProvider found.', 'peatcms')
-                );
-            }
         } elseif ('properties' === $action) { // @since 0.8.11: retrieve all the properties and relations for this instance
             $for = $post_data->for ?? 'variant';
             $out = array('properties' => Help::getDB()->fetchProperties($for));
@@ -319,17 +298,11 @@ class Handler extends BaseLogic
             $properties = $this->resolver->getProperties();
             if (true === isset($properties['order_number'])) {
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
-                // check a couple of things: if its already paid, do not do this (ie payment_transaction_id has to be NULL)
-                // else remove the tracking id so payment_start can be fresh
                 if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
                     if ($order_row->payment_confirmed_bool) {
                         $this->addMessage(sprintf(__('Order %s is marked as paid.', 'peatcms'), $order_number), 'note');
                         $out = (object)array('redirect_uri' => '/');
                     } else {
-                        Help::getDB()->updateElement(new Type('order'), array(
-                            'payment_tracking_id' => NULL,
-                            'payment_transaction_id' => NULL,
-                        ), $order_row->order_id);
                         Help::$session->setVar('order_number', $order_number);
                         if (true === isset($properties['slug'][0])) {
                             $redirect_uri = Help::slugify($properties['slug'][0]);
@@ -924,21 +897,20 @@ class Handler extends BaseLogic
                                     $this->addMessage(__('Order is cancelled.', 'peatcms'), 'warn');
                                 } elseif ($max_age < Setup::getNow() - Date::intFromDate($row->date_created)) {
                                     $this->addMessage(__('Payment has expired, please make a new order.', 'peatcms'), 'note');
-                                } elseif (($payment_tracking_id = $order->getPaymentTrackingId())) {
-                                    $live_flag = $row->payment_live_flag ?? false;
-                                    $out = array('tracking_id' => $payment_tracking_id, 'live_flag' => $live_flag, 'success' => true);
                                 } elseif (($psp = $instance->getPaymentServiceProvider())) {
                                     if (false === $psp->hasError()) {
-                                        $live_flag = $psp->isLive();
                                         if (($tracking_id = $psp->beginTransaction($order, $instance))) {
-                                            // update order with the payment transaction id
-                                            if (Help::getDB()->updateElement(new Type('order'), array(
-                                                'payment_tracking_id' => $tracking_id,
-                                                'payment_live_flag' => $live_flag,
-                                            ), $order->getId()))
-                                                $out = array('tracking_id' => $tracking_id, 'live_flag' => $live_flag, 'success' => true);
+                                            // add payment to this order
+                                            if ($tracking_id === Help::getDB()->insertRowAndReturnKey('_payment', array(
+                                                    'payment_id' => $tracking_id,
+                                                    'order_id' => $order->getId(),
+                                                ))) {
+                                                $out = array('tracking_id' => $tracking_id, 'success' => true);
+                                            } else {
+                                                $this->addError("Error adding payment $tracking_id to order $post_data->order_number.");
+                                            }
                                         } else {
-                                            $out = array('live_flag' => $live_flag, 'success' => false);
+                                            $this->addError('Could not begin transaction with Payment Service Provider.');
                                         }
                                     } else {
                                         $this->addError(sprintf('Payment Service Provider error %s.', $psp->getLastError()));

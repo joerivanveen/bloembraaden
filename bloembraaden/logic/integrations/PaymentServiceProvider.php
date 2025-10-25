@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -32,19 +32,15 @@ class PaymentServiceProvider extends BaseLogic
 
     public function getFieldValue(string $field_name)
     {
-        if (isset($this->getFields()->{$field_name})) {
-            return $this->getFields()->{$field_name};
-        }
-
-        return null;
+        return $this->getFields()->{$field_name} ?? null;
     }
 
     public function getFields(): \stdClass
     {
-        if (isset($this->cache_fields)) return $this->cache_fields;
+        if (true === isset($this->cache_fields)) return $this->cache_fields;
 
         $field_values = array();
-        if (isset($this->row->field_values)) {
+        if (true === isset($this->row->field_values)) {
             $field_values = json_decode($this->row->field_values);
             if (json_last_error() !== 0) {
                 $field_values = array();
@@ -53,7 +49,7 @@ class PaymentServiceProvider extends BaseLogic
         }
         $field_names = $this->getFieldNames(); // detached now, the array will contain name=>value pairs after this
         foreach ($field_names as $field_name => $expl) {
-            if (isset($field_values->{$field_name})) {
+            if (true === isset($field_values->{$field_name})) {
                 $field_names[$field_name] = $field_values->{$field_name};
             } else {
                 $field_names[$field_name] = null;

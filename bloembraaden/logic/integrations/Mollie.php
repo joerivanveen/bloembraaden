@@ -116,7 +116,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
     {
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->getFieldValue('gateway_url') . 'payments/' . $payment_id,
+            CURLOPT_URL => $this->getFieldValue('gateway_url') . "payments/$payment_id",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -159,15 +159,15 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         return null;
     }
 
-    public function checkPaymentStatusByPaymentId(string $payment_id): int
-    {
-        if (($result = $this->getPaymentByPaymentId($payment_id))) {
-            if ('paid' === $result->status) return PaymentServiceProviderInterface::STATUS_PAID;
-            if (in_array($result->status, array('open', 'pending', 'authorized'))) return PaymentServiceProviderInterface::STATUS_PENDING;
-        }
-
-        return PaymentServiceProviderInterface::STATUS_UNPAID;
-    }
+//    public function checkPaymentStatusByPaymentId(string $payment_id): int
+//    {
+//        if (($result = $this->getPaymentByPaymentId($payment_id))) {
+//            if ('paid' === $result->status) return PaymentServiceProviderInterface::STATUS_PAID;
+//            if (in_array($result->status, array('open', 'pending', 'authorized'))) return PaymentServiceProviderInterface::STATUS_PENDING;
+//        }
+//
+//        return PaymentServiceProviderInterface::STATUS_UNPAID;
+//    }
 
     public function updatePaymentStatus(\stdClass $payload): bool
     {
@@ -178,26 +178,23 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 $log_id = $this->logPaymentStatus($result);
                 // get the order having this payment_id
                 $amount = (float)$result->amount->value ?? 0.0;
-                $status = $result->status;
+                $status = strtolower($result->status);
                 if (($order_row = Help::getDB()->getOrderByPaymentTrackingId($payment_id))) {
                     $order_update_array = array(
                         'payment_status' => $status,
-                        'payment_tracking_text' => '',
-                        'payment_transaction_id' => $payment_id,
                     );
                     $order_id = $order_row->order_id;
                     if ('paid' === $status) {
                         // check if the amount is more or less ok
                         if ((($amount + 1.0) * 100) < $order_row->amount_grand_total) {
-                            // if not the status must not be ‘paid’...
-                            $order_update_array = array_merge($order_update_array, array(
-                                'payment_confirmed_text' => 'Wrong amount',
-                            ));
+                            // if not, override the status
+                            $order_update_array = array(
+                                'payment_status' => 'wrong amount',
+                            );
                         } else {
                             $order_update_array = array_merge($order_update_array, array(
                                 'payment_confirmed_bool' => true,
                                 'payment_confirmed_date' => 'NOW()',
-                                'payment_confirmed_text' => 'Auto',
                             ));
                         }
                     }
@@ -210,10 +207,12 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                     ), $log_id);
                     // update the status in the order
                     return Help::getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
-                } elseif ('expired' === $status) {
-                    $this->addError(sprintf('Payment %s with status expired discarded', $payment_id));
-                    return true; // don’t bother any further with expired statuses, already logged with processed false
+                } else {
+                    $this->addError(sprintf('%s->updatePaymentStatus no order found for %s', 'Mollie', $payment_id));
+                    return true; // don’t bother any further already logged with processed false
                 }
+            } else {
+                $this->addError(sprintf('%s->updatePaymentStatus could not get payment status for id %s', 'Mollie', $payment_id) );
             }
         } else {
             $this->addError(sprintf('%s->updatePaymentStatus missing id in payload: ' . var_export($payload, true), 'Mollie'));

@@ -1875,6 +1875,15 @@ class DB extends Base
 
     public function getOrderByPaymentTrackingId(string $payment_tracking_id): ?\stdClass
     {
+        // @since 0.29.3 get order_id from one of its associated payments
+        if (($order_id = $this->fetchRow('_payment', array('order_id'), array(
+            'payment_id' => $payment_tracking_id, // uses index
+        )))) { // NOTE: for update payment routine the instance is not relevant
+            return $this->fetchRow('_order', array('*'), array(
+                'order_id' => $order_id->order_id, // uses index
+            ));
+        }
+        // fallback to old method
         return $this->fetchRow('_order', array('*'), array(
             'payment_tracking_id' => $payment_tracking_id,
             'instance_id' => Setup::$instance_id,

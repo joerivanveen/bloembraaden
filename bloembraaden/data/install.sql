@@ -3339,3 +3339,17 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.29.3
+
+BEGIN;
+
+DROP TABLE IF EXISTS "public"."_payment";
+CREATE TABLE "public"."_payment"
+(
+    "payment_id"   Character Varying(127) PRIMARY KEY     NOT NULL,
+    "order_id"     Integer                                NOT NULL,
+    "date_created" Timestamp With Time Zone DEFAULT now() NOT NULL
+);
+
+COMMIT;
