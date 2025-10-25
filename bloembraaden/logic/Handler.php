@@ -22,6 +22,7 @@ class Handler extends BaseLogic
 
     public function Act(): void
     {
+        //header('Access-Control-Allow-Origin: https://apirequest.io'); // This is temp for testing
         if (null === ($action = $this->action)) return;
         // here you can do the actions, based on what’s $post-ed
         $out = null;
@@ -269,7 +270,6 @@ class Handler extends BaseLogic
                 }
             }
         } elseif ('payment_status_update' === $action) {
-            //header('Access-Control-Allow-Origin: https://apirequest.io'); // This is temp for testing, not necessary for curl
             Help::$OUTPUT_JSON = true;
             if (($psp = $instance->getPaymentServiceProvider())) {
                 if (true === $psp->updatePaymentStatus($post_data)) {
