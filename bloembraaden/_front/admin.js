@@ -2277,12 +2277,13 @@ PEATCMS_admin.prototype.pollServer = function () {
                     const current_state = NAV.getCurrentElement().state;
                     if (current_state.hasOwnProperty('__orders__')) {
                         const el = document.getElementById(`order-${order_id}`),
-                            template = PEAT.templates['order_overview_true'] || undefined,
-                            row_template = template.template.__orders__[0] || undefined;
+                            template = PEAT.templates['order_overview_true'] || undefined;
+                        let row_template = template.template.__orders__[0] || undefined;
                         if (!template || !row_template) {
                             console.warn('Template order_overview_true or row not present, cannot render.');
                             return;
                         }
+                        if (row_template.hasOwnProperty('__row__')) row_template = row_template.__row__[0];
                         const row_html = template.convertTagsRemaining(template.renderOutput(json, row_template));
                         //console.warn('koekkoek', template, row_html, json);
                         if (el) { // if the order is on the page, update it
