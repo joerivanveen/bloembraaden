@@ -21,9 +21,6 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
     {
         // https://docs.mollie.com/reference/v2/payments-api/create-payment
         $out = $order->getOutputFull();
-        // TODO temp for pc...
-        if ($out->shipping_address_country_iso2 === 'XX') $out->shipping_address_country_iso2 = 'NL';
-        if ($out->billing_address_country_iso2 === 'XX') $out->billing_address_country_iso2 = 'NL';
         // set a valid billing country
         if (false === isset($out->billing_address_country_iso2) || '' === trim($out->billing_address_country_iso2)) {
             // default set to same as shipping
@@ -84,23 +81,23 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         ));
         $result = curl_exec($curl);
         // receives a _links.checkout in the response by Mollie to redirect the client to, but we build that ourselves in javascript
-        $err = curl_error($curl);
+        $error_message = curl_error($curl);
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
         curl_close($curl);
-        if ($err) {
-            $this->addError($err);
+        if ($error_message) {
+            $this->addError($error_message);
             $this->addMessage(__('Payment request generated an error on the server.', 'peatcms'), 'error');
         } else {
             $return_object = json_decode($result);
             if ($status_code >= 400) {
-                if (json_last_error() === 0) {
+                if (0 === json_last_error()) {
                     $this->addError($return_object->detail ?? $return_object->title ?? 'ERROR');
                 } else {
                     $this->addError($result);
                 }
                 $this->addMessage(sprintf(__('Payment request was bad (status %s).', 'peatcms'), $status_code), 'error');
             } else { // status code must be 200...
-                if (json_last_error() === 0) {
+                if (0 === json_last_error()) {
                     return $return_object->id;
                 } else {
                     $this->addError($result);

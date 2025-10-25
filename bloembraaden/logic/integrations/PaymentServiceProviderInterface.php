@@ -25,13 +25,6 @@ interface PaymentServiceProviderInterface
     public function isLive(): bool;
 
     /**
-     * @param string $payment_id
-     * @return int -1 means unpaid / canceled, 0 means pending / waiting, 1 means paid
-     * @since 0.7.9
-     */
-    public function checkPaymentStatusByPaymentId(string $payment_id): int;
-
-    /**
      * startup a payment transaction, return unique id to track this payment, or null on failure
      * @param Order $order
      * @param Instance $instance

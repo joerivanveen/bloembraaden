@@ -69,12 +69,6 @@ class PaymentServiceProvider extends BaseLogic
         return $this->row->live_flag ?? false;
     }
 
-    public function checkPaymentStatusByPaymentId(string $payment_id): int
-    {
-        $this->handleErrorAndStop('->checkPaymentStatusByPaymentId must be overridden by actual PaymentServiceProvider class');
-        return 0;
-    }
-
     protected function logPaymentStatus(\stdClass $payload): int
     {
         return (int)Help::getDB()->insertRowAndReturnKey('_payment_status_update', array(
