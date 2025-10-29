@@ -419,6 +419,9 @@ class Search extends BaseElement
         if (true === isset($this->row->slug) && 0 < count(($properties = $this->getProperties()))) {
             $this->row->slug = Help::turnIntoPath(explode('/', $this->row->slug), $properties);
         }
+        if (0 < $this->result_count) {
+            $this->row->can_be_found = true;
+        }
     }
 
     public function getId(): int
