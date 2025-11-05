@@ -444,10 +444,12 @@ class Handler extends BaseLogic
             ) {
                 $out = array('success' => false); // default feedback, so you don’t get into the View part later
                 if ('set_session_var' === $action) {
-                    $name = $post_data->name;
-                    // times keeps track of how many times this var is (being) updated
-                    Help::$session->setVar($name, $post_data->value, $post_data->times);
-                    $out['success'] = true;
+                    if (true === isset($post_data->name, $post_data->value, $post_data->times)) {
+                        $name = $post_data->name;
+                        // times keeps track of how many times this var is (being) updated
+                        Help::$session->setVar($name, $post_data->value, $post_data->times);
+                        $out['success'] = true;
+                    }
                 } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                     $post_data = $this->resolver->escape($post_data);
                     $valid = true;
