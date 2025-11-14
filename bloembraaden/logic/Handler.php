@@ -1502,7 +1502,7 @@ class Handler extends BaseLogic
                             }
                         }
                     } elseif ('admin_file_upload' === $action) {
-                        if (isset($_SERVER['HTTP_X_FILE_NAME'])) {
+                        if (true === isset($_SERVER['HTTP_X_FILE_NAME'])) {
                             Help::$OUTPUT_JSON = true;
                             $x_file_name = urldecode($_SERVER['HTTP_X_FILE_NAME']);
                             // save the file temporarily
@@ -1512,7 +1512,7 @@ class Handler extends BaseLogic
                             stream_copy_to_stream($handle1, $handle2);
                             fclose($handle1);
                             fclose($handle2);
-                            if (isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import_instance' === $_SERVER['HTTP_X_FILE_ACTION']) {
+                            if (true === isset($_SERVER['HTTP_X_FILE_ACTION']) && 'import_instance' === $_SERVER['HTTP_X_FILE_ACTION']) {
                                 Help::$session->setVar('import_file_name', $temp_file);
                                 $out = array('file_saved' => file_exists($temp_file));
                             } else {
@@ -1520,7 +1520,8 @@ class Handler extends BaseLogic
                                 $file_info = finfo_open(FILEINFO_MIME_TYPE);
                                 $post_data = array();
                                 $post_data['content_type'] = finfo_file($file_info, $temp_file);
-                                $post_data['filename_original'] = $x_file_name; // a column that is not editable, but maybe you can search for it
+                                // a column that is not editable, but maybe you can search for it, prevent truncate errors for this
+                                $post_data['filename_original'] = substr($x_file_name, 0, 127);
                                 // prepare a default element based on the uploaded file that will be created when a new element is needed
                                 $default_type = 'file';
                                 if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';

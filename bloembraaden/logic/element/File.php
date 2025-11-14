@@ -31,7 +31,7 @@ class File extends BaseElement
     {
         // make sure nothing has been sent
         if (headers_sent()) {
-            $this->handleErrorAndStop("Headers already sent, cannot serve file {$this->row->slug}.", __('File not found on server.', 'peatcms'));
+            $this->handleErrorAndStop("Headers already sent, cannot serve file {$this->row->slug}.", __('Error serving file.', 'peatcms'));
         } else {
             $filename = Setup::$UPLOADS . $this->row->filename_saved; // 'uploads' is base folder of XSendFile extension
             if (file_exists($filename)) {
