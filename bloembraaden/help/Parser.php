@@ -12,6 +12,7 @@ class Parser extends Base
 {
     // "\n" is the newline character in this parser (converted upon input)
     private array $open_tags = array(); // indexed list of tags that are open, outer to inner
+    private array $ids = array(); // to avoid duplicate ids
     private string $text;
     private int $pointer, $slacker, $len;
     private float $started;
@@ -24,37 +25,38 @@ class Parser extends Base
         '###' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h3'),
         '##' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h2'),
         '#' => array('new_line' => true, 'allow_space' => true, 'tag' => 'h1'),
-        '–––' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-minuses'),
-        '---' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-minuses'),
-        '+++' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-pluses'),
-        '***' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-stars'),
-        '___' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'className' => 'bloembraaden-underscores'),
+        '–––' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'class' => 'bloembraaden-minuses'),
+        '---' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'class' => 'bloembraaden-minuses'),
+        '+++' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'class' => 'bloembraaden-pluses'),
+        '***' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'class' => 'bloembraaden-stars'),
+        '___' => array('new_line' => true, 'allow_space' => true, 'tag' => 'hr', 'class' => 'bloembraaden-underscores'),
         '```' => array('new_line' => false, 'allow_space' => true, 'tag' => 'pre'), // also when indented by four spaces..., except when in a list
         '    ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'TAB'),
         ' | ' => array('new_line' => false, 'allow_space' => true, 'tag' => 'td'),
         ' |' => array('new_line' => false, 'allow_space' => true, 'tag' => 'td'),
         '| ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'tr'),
-        '– ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
-        '- ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'minuses bloembraaden-minuses'),
-        '+ ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'pluses bloembraaden-pluses'),
-        '* ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'className' => 'stars bloembraaden-stars'),
+        '– ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'class' => 'minuses bloembraaden-minuses'),
+        '- ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'class' => 'minuses bloembraaden-minuses'),
+        '+ ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'class' => 'pluses bloembraaden-pluses'),
+        '* ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ul', 'class' => 'stars bloembraaden-stars'),
         '. ' => array('new_line' => true, 'allow_space' => true, 'tag' => 'ol'),
+        '(:' => array('new_line' => false, 'allow_space' => true, 'tag' => 'id'),
         '>' => array('new_line' => true, 'allow_space' => true, 'tag' => 'blockquote'),
         "\n" => array('new_line' => false, 'allow_space' => true, 'tag' => 'EOL'),
         '`' => array('new_line' => false, 'allow_space' => false, 'tag' => 'code'),
         '_' => array('new_line' => false, 'allow_space' => false, 'tag' => 'em'),
         '~' => array('new_line' => false, 'allow_space' => false, 'tag' => 's'),
         '*' => array('new_line' => false, 'allow_space' => false, 'tag' => 'strong'),
-        '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-circ bloembraaden-circ'),
-        '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-curr bloembraaden-curr'),
+        '^' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'class' => 'peatcms-circ bloembraaden-circ'),
+        '¤' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'class' => 'peatcms-curr bloembraaden-curr'),
         '[ ]' => array('new_line' => false, 'allow_space' => true, 'tag' => 'check'),
         '[x]' => array('new_line' => false, 'allow_space' => true, 'tag' => 'check'),
         '![' => array('new_line' => false, 'allow_space' => true, 'tag' => 'img'),
         '[' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '<' => array('new_line' => false, 'allow_space' => false, 'tag' => 'a'),
         '§' => array('new_line' => true, 'allow_space' => true, 'tag' => 'div'),
-        '=' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'nowrap'),
-        '@' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'className' => 'peatcms-email-link bloembraaden-email-link'),
+        '=' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'class' => 'nowrap'),
+        '@' => array('new_line' => false, 'allow_space' => false, 'tag' => 'span', 'class' => 'peatcms-email-link bloembraaden-email-link'),
         '|' => array('new_line' => false, 'allow_space' => false, 'single' => true, 'tag' => '&#173;'),
     );
     private ?LoggerInterface $logger;
@@ -203,13 +205,15 @@ class Parser extends Base
                 // of the linked images needs to be displayed, one-based in the order you gave them in the edit screen
                 // all other entries (separated by a space) will be classnames added to the image,
                 // alt text will be provided by the image element
+                // as with other elements, (:id-1) should be used to set an id on the figure
                 $pointer += 2;
                 if (-1 !== ($end = $this->nextPartOfCommand($text, ']', $pointer))) {
                     $str_command = trim(substr($text, $pointer, $end - $pointer));
-                    $css_classes = ltrim($str_command, '0123456789 ');
+                    $css_classes = trim($this->removeId(ltrim($str_command, '0123456789')), ' ');
+                    $id_string = $this->extractId($str_command, 0, 'img');
                     $index = max(0, (int)$str_command - 1); // default to 0, -1 for being 1-based
                     if (true === isset($this->images[$index])) {
-                        $image_html = "<figure{{online::not: hidden}} class=\"bloembraaden-image {{css_class}} $css_classes\"><img data-srcset='[
+                        $image_html = "<figure$id_string{{online::not: hidden}} class=\"bloembraaden-image {{css_class}} $css_classes\"><img data-srcset='[
     {\"width\":\"{{width_medium}}\",\"height\":\"{{height_medium}}\",\"src\":\"{{src_medium}}\"},
     {\"width\":\"{{width_large}}\",\"height\":\"{{height_large}}\",\"src\":\"{{src_large}}\"},
     {\"width\":\"{{width_huge}}\",\"height\":\"{{height_huge}}\",\"src\":\"{{src_huge}}\"}
@@ -230,7 +234,7 @@ class Parser extends Base
                 $positions = $this->nextPartOfCommandOnSameLine($text, ']:', $pointer);
                 // honor the eol before a link, when not on the separate id line
                 if (true === $this->holding_eol && null === $positions) {
-                    if ($this->getOpenTag()) echo '<br/>';
+                    if ($this->getOpenTag()) echo '<br>';
                     $this->holding_eol = false;
                 }
                 // the following types of links can be in the text
@@ -295,7 +299,8 @@ class Parser extends Base
                     } elseif (null !== ($positions = $this->nextPartOfCommandOnSameLine($text, ($tag_sig = ']['), $pointer))) {
                         $tag_sig_position = $positions[0];
                         if (($closing_position = $this->nextPartOfCommand($text, ']', $tag_sig_position + 1))
-                            === ($starting_position = $tag_sig_position + strlen($tag_sig))) {
+                            === ($starting_position = $tag_sig_position + strlen($tag_sig))
+                        ) {
                             $link_id = substr($text, $pointer + 1, $tag_sig_position - $pointer - 1);
                         } else {
                             $link_id = substr($text, $starting_position, $closing_position - $starting_position);
@@ -371,6 +376,13 @@ class Parser extends Base
                         echo $this->openTag('th');
                     }
                 }
+            } elseif ('id' === $tag) {
+                // skip over the entire id, that is picked up by openTag already
+                $end = $this->nextPartOfCommandOnSameLine($text, ')', $this->pointer);
+                if (null !== $end) {
+                    $this->pointer = $end[0] + 1; // skip the ')'
+                    $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
+                }
             } elseif ($tag === $this->getOpenTag()) { // close the current tag
                 echo $this->closeTag();
             } else {
@@ -401,9 +413,9 @@ class Parser extends Base
                 if (3 > $next_EOL - $this->pointer) { // no classes
                     echo $this->openTag('div');
                 } else {
-                    $classes = trim(substr($text, $this->pointer, $next_EOL - $this->pointer), '§ ');
+                    $classes = trim($this->removeId(ltrim(substr($text, $this->pointer, $next_EOL - $this->pointer), '§ ')));
                     if ('<' !== $classes) { // ‘<’ is the end-div character / ‘§<’ the sequence
-                        echo $this->openTag('div', array('className' => $classes));
+                        echo $this->openTag('div', array('class' => $classes));
                     }
                 }
                 $this->pointer = $next_EOL + 1; // skip the \n
@@ -437,12 +449,12 @@ class Parser extends Base
                 echo $this->flush();
                 echo $this->closeTags();
                 echo '<hr';
-                if (isset($cmd['className'])) {
+                if (isset($cmd['class'])) {
                     echo ' class="';
-                    echo $cmd['className'];
+                    echo $cmd['class'];
                     echo '"';
                 }
-                echo '/>';
+                echo '>';
                 // with HR forget about the rest of this row (note there is always "\n" at the end of $text)
                 $this->pointer = strpos($text, "\n", $this->pointer + 1);
                 $sig = ''; // set signature to 0 chars to have the pointer remain at the set position
@@ -452,7 +464,7 @@ class Parser extends Base
                     echo $this->closeTags();
                     echo $this->openTag($tag);
                 } else {
-                    echo '<br/>';
+                    echo '<br>';
                 }
             }
         }
@@ -613,7 +625,6 @@ class Parser extends Base
 
     /**
      * Opens a html tag and returns the html as string needed for that
-     * TODO do not restrict the attributes...
      * attributes ‘className’ (string) and ‘start’ can be passed in the named array and will be added to the tag
      * @param string $tag the tag to open, e.g. p, span, etc.
      * @param array $attributes array holding attributes, currently only ‘className’ and ‘start’ are allowed
@@ -627,23 +638,20 @@ class Parser extends Base
         if (true === $this->holding_eol) {
             $open_tag = $this->getOpenTag();
             if (null !== $open_tag) {
-                if ('p' !== $open_tag) echo '<br/>';
+                if ('p' !== $open_tag) echo '<br>';
                 $this->holding_eol = false;
             }
         }
         echo '<';
         echo $tag;
-        if (true === isset($attributes['className'])) {
-            echo ' class="';
-            echo $attributes['className'];
-            echo '"';
+        // some attributes can be set on the tag
+        foreach (array('class', 'start') as $index => $name) {
+            if (true === isset($attributes[$name])) {
+                echo ' ', $name, '="', $attributes[$name], '"';
+            }
         }
-        if (true === isset($attributes['start'])) {
-            echo ' start="';
-            echo $attributes['start'];
-            echo '"';
-        }
-        echo '>';
+
+        echo $this->extractId($this->text, $this->pointer, $tag), '>';
 
         return ob_get_clean();
     }
@@ -716,19 +724,71 @@ class Parser extends Base
     private function nextPartOfCommandOnSameLine(string $haystack, string $needle, int $position = 0): ?array
     {
         $next_EOL = strpos($haystack, "\n", $position);
-        if (($found_position = $this->nextPartOfCommand($haystack, $needle, $position)) !== -1 and
-            $found_position < $next_EOL) {
+        if (($found_position = $this->nextPartOfCommand($haystack, $needle, $position)) !== -1
+            && $found_position < $next_EOL
+        ) {
             return array($found_position, $next_EOL);
         } else {
             return null;
         }
     }
 
+    private function removeId(string $text): string
+    {
+        if (false === str_contains($text, '(:')) return $text;
+        $parts = explode('(:', $text);
+        foreach ($parts as $index => $part) {
+            $end = strpos($part, ')');
+            if (false !== $end) {
+                $parts[$index] = substr($part, $end + 1);
+            }
+        }
+        return implode('', $parts);
+    }
+
+    private function extractId(string $text, int $position, string $tag): string
+    {
+        $text = "$text\n";
+        $plop = function($id) {
+            if (true === isset($this->ids[$id])) {
+                echo " data-error='bloembraaden-duplicate-id: $id'";
+            } else {
+                echo " id='$id'";
+                $this->ids[$id] = true;
+            }
+        };
+        $positions = $this->nextPartOfCommandOnSameLine($text, '(:', $position);
+
+        ob_start();
+
+        if (null === $positions) {
+            if (in_array($tag, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
+                // auto-generate id from header text
+                $next_EOL = strpos($text, "\n", $this->pointer);
+                $content = trim(substr($text, $this->pointer, $next_EOL - $this->pointer));
+                $id = 'header-' . Help::slugify($content);
+                $plop($id);
+            }
+        } else {
+            $start = $positions[0] + 2; // length of id command '(:' is 2
+            $end = $this->nextPartOfCommandOnSameLine($text, ')', $start);
+
+            if (null !== $end) {
+                $id = Help::slugify(substr($text, $start, $end[0] - $start));
+                $plop($id);
+            } else {
+                echo ' data-error="bloembraaden-malformed-id"';
+            }
+        }
+
+        return ob_get_clean();
+    }
+
     /**
      * returns content that has not been output up until the pointer, resets the slacker to reflect this
      * it converts the string inside pre and code
      * it opens a ‘p’ tag if there’s no tag open to prevent #textnodes
-     * it takes care of holding EOL and trailing characters for headings
+     * it takes care of holding EOL and trailing hashes for headings
      * @return string the contents currently between pointer and slacker
      */
     private function flush(): string
@@ -740,12 +800,12 @@ class Parser extends Base
             $this->slacker = $this->pointer;
             if ('pre' === $open_tag || 'code' === $open_tag) {
                 // NOTICE: allow original double quotes, but encode all other html chars
-                $str = str_replace('&quot;', '"', htmlspecialchars($str));
+                $str = str_replace('&quot;', '"', htmlspecialchars($str, ENT_QUOTES & ~ENT_COMPAT, 'UTF-8'));
             }
             if (true === $this->holding_eol) {
-                // EOL converts to '<br/>' inside another tag which is not PRE
+                // EOL converts to '<br>' inside another tag which is not PRE
                 if (null !== $open_tag) {
-                    $str = "<br/>$str";
+                    $str = "<br>$str";
                 }
                 $this->holding_eol = false;
             }
@@ -754,13 +814,7 @@ class Parser extends Base
                 if (null === $open_tag && false === $this->is_sub_parser) {
                     $str = $this->openTag('p') . $str; // default to regular paragraph
                 } elseif (in_array($open_tag, array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
-                    // remove trailing # characters
-                    for ($i = strlen($str) - 1; $i > 0; --$i) {
-                        if ('#' !== $str[$i]) {
-                            $str = substr($str, 0, $i + 1);
-                            break;
-                        }
-                    }
+                    $str = rtrim($str, '#');
                 }
             }
             $this->log("<em>flushing:</em> '$str'");
