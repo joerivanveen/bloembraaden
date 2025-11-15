@@ -369,7 +369,7 @@ class Session extends BaseLogic
             'domain' => '',
             'secure' => true, // or false
             'httponly' => true, // or false
-            'samesite' => 'Lax' // None || Lax  || Strict <- strict breaks session after payment and other incoming links
+            'samesite' => 'None' // None || Lax  || Strict <- potentially breaks session after payment and other incoming links
         ));
     }
 
