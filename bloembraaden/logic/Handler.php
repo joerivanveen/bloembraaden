@@ -1166,7 +1166,7 @@ class Handler extends BaseLogic
                                     if (true === isset($post_data->slug) && ($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->slug))) {
                                         $parent = (new Type($row->type_name))->getElement()->fetchById($row->id);
                                         $element_type_name = $element->type_name;
-                                        $success = $parent->link($element_type_name, $element->id);
+                                        $success = $parent->link($element_type_name, $element->getId());
                                         $linked = $parent->getLinked($element_type_name);
                                         // verify / change order
                                         if (true === $success && true === isset($post_data->place)) {
