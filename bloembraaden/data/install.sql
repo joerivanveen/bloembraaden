@@ -3355,3 +3355,17 @@ CREATE TABLE "public"."_payment"
 );
 
 COMMIT;
+
+-- version 0.29.4
+
+BEGIN;
+
+DROP TABLE IF EXISTS "public"."_admin_login_attempt";
+CREATE TABLE "public"."_admin_login_attempt"
+(
+    "admin_login_attempt_id" Serial PRIMARY KEY                    NOT NULL,
+    "domain"                 Character Varying(255)                 NOT NULL,
+    "date_created"           Timestamp With Time Zone DEFAULT now() NOT NULL
+);
+
+COMMIT;

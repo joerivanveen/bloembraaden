@@ -246,28 +246,12 @@ class Handler extends BaseLogic
                     $this->addMessage(__('File not found.', 'peatcms'), 'warn');
                 }
             }
-        } elseif ('account_delete_session' === $action) {
-            if (false === isset(($terms = $this->resolver->getTerms())[0])) {
-                Help::$session->delete();
-                $this->addMessage(__('Session has been deleted.', 'peatcms'), 'log');
-                $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
-            } else {
-                $session_id = (int)$terms[0];
-                $my_session = Help::$session;
-                if ($session_id === $my_session->getId()) {
-                    $this->addMessage(__('You can not destroy your own session this way.', 'peatcms'), 'warn');
-                } elseif (true === Help::getDB()->deleteSessionById(
-                        $session_id,
-                        ($user = $my_session->getUser()) ? $user->getId() : 0,
-                        ($admin = $my_session->getAdmin()) ? $admin->getId() : 0
-                    )) {
-                    $out = array(
-                        'success' => true,
-                        'destroyed_session_id' => $session_id,
-                    );
-                } else {
-                    $this->addMessage(__('Failed destroying the session.', 'peatcms'), 'error');
-                }
+        } elseif ('account_login' === $action) {
+            // propagate posted csrf input to header for handling later
+            if (true === isset($post_data->csrf_token)
+                && $this->resolver->hasInstruction('admin')
+            ) {
+                $_SERVER['HTTP_X_CSRF_TOKEN'] = $post_data->csrf_token;
             }
         } elseif ('payment_status_update' === $action) {
             Help::$OUTPUT_JSON = true;
@@ -439,9 +423,8 @@ class Handler extends BaseLogic
         }
         // don’t bother if you already processed out, or without csrf
         if (null === $out) {
-            if (true === isset($post_data->csrf_token)
-                && $post_data->csrf_token === Help::$session->getValue('csrf_token')
-            ) {
+            $csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null);
+            if ($csrf_token === Help::$session->getValue('csrf_token')) {
                 $out = array('success' => false); // default feedback, so you don’t get into the View part later
                 if ('set_session_var' === $action) {
                     if (true === isset($post_data->name, $post_data->value, $post_data->times)) {
@@ -653,14 +636,18 @@ class Handler extends BaseLogic
                         }
                     }
                 } elseif ('account_login' === $action) {
-                    // TODO for admin this works without turnstile, but I want to put a rate limiter etc. on it
                     if (true === isset($post_data->email, $post_data->pass)) {
                         $as_admin = $this->resolver->hasInstruction('admin');
-                        if (true === $as_admin || true === Help::turnstileVerify($instance, $post_data)) {
+                        if ((false === $as_admin && true === Help::turnstileVerify($instance, $post_data))
+                            || (true === $as_admin && Help::getDB()->mayAdminLogin())
+                        ) {
                             if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
                             } elseif (true === $as_admin) {
-                                $out = array('redirect_uri' => '/'); // @since 0.7.8 reload to get all the admin css and js
+                                // reload to get all the admin css and js via the console in html
+                                $out = array('redirect_uri' => '/');
+                                // refresh csrf token
+                                Help::$session->delVar('csrf_token');
                             } else {
                                 $this->addMessage(__('Login successful.', 'peatcms'), 'log');
                                 $out = array(
@@ -669,6 +656,9 @@ class Handler extends BaseLogic
                                     '__user__' => Help::$session->getUser()->getOutput()
                                 );
                             }
+                        } else {
+                            // todo better message
+                            $this->addMessage('No login allowed by turnstile or admin logins disabled.', 'warn');
                         }
                     } else {
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
@@ -817,6 +807,29 @@ class Handler extends BaseLogic
                         }
                     } else {
                         $out = true; // turnstile failed, so no action
+                    }
+                } elseif ('account_delete_session' === $action) {
+                    if (false === isset(($terms = $this->resolver->getTerms())[0])) {
+                        Help::$session->delete();
+                        $this->addMessage(__('Session has been deleted.', 'peatcms'), 'log');
+                        $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
+                    } else {
+                        $session_id = (int)$terms[0];
+                        $my_session = Help::$session;
+                        if ($session_id === $my_session->getId()) {
+                            $this->addMessage(__('You can not destroy your own session this way.', 'peatcms'), 'warn');
+                        } elseif (true === Help::getDB()->deleteSessionById(
+                                $session_id,
+                                ($user = $my_session->getUser()) ? $user->getId() : 0,
+                                ($admin = $my_session->getAdmin()) ? $admin->getId() : 0
+                            )) {
+                            $out = array(
+                                'success' => true,
+                                'destroyed_session_id' => $session_id,
+                            );
+                        } else {
+                            $this->addMessage(__('Failed destroying the session.', 'peatcms'), 'error');
+                        }
                     }
                 } elseif ('account_delete_sessions' === $action) {
                     if ((null !== ($user = Help::$session->getUser()))) {

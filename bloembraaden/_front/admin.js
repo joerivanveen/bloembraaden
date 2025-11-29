@@ -2706,12 +2706,12 @@ function peatcms_admin_setup() {
 }
 
 /* function(s) */
-function PEATCMS_logevent(evt) {
-    if (evt.detail) {
-        console.log(`PEATCMS emitted event: ${evt.type} with event.detail:`);
-        console.log(evt.detail);
+function PEATCMS_logevent(e) {
+    if (e.detail) {
+        console.log(`PEATCMS emitted event: ${e.type} with event.detail:`);
+        console.log(e.detail);
     } else {
-        console.log(`PEATCMS emitted event: ${evt.type}`);
+        console.log(`PEATCMS emitted event: ${e.type}`);
     }
 }
 

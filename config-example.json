@@ -22,6 +22,10 @@
       "api_url": "https://api.eu.mailgun.net/v3/"
     }
   },
+  "ADMIN": {
+    "login_attempts_per_hour": 60,
+    "login_attempts_each_min": 6,
+  },
   "integrations": {
     "pdfmaker": {
       "api_key": "your_api_key",

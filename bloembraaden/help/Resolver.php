@@ -12,7 +12,7 @@ namespace Bloembraaden;
 // - __terms__
 class Resolver extends BaseLogic
 {
-    private ?\stdClass $post_data;
+    private ?\stdClass $post_data = null;
     private array $terms, $properties, $instructions = array();
     private string $path;
     private int $variant_page;
@@ -73,8 +73,7 @@ class Resolver extends BaseLogic
             }));
         }
         // for fileupload...
-        if (true === isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
-            $csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN']);
+        if (true === isset($_SERVER['HTTP_X_FILE_NAME'])) {
             $post_data = null;
         } else {
             // 0.5.3 / if you change this, check if the templates can still be saved
@@ -84,7 +83,6 @@ class Resolver extends BaseLogic
         if (null === $post_data) {
             // this is at least used when files are uploaded and for the login page __admin__
             $post_data = (object)filter_input_array(INPUT_POST); // assume form data
-            if (true === isset($csrf_token)) $post_data->csrf_token = $csrf_token;
             $output_json = true === isset($post_data->json) && true === $post_data->json;
         } else {
             $output_json = true; // if you receive json you can bet it wants json back

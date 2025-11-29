@@ -1238,7 +1238,6 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
     if (element && element.hasAttribute('data-file-action')) {
         xhr.setRequestHeader('X-File-Action', encodeURIComponent(element.getAttribute('data-file-action')));
     }
-    xhr.setRequestHeader('X-Csrf-Token', PEAT.getSessionVar('csrf_token'));
     if ('string' === typeof for_slug) { // noinspection JSCheckFunctionSignatures // because it's a string here, phpStorm should shut up
         xhr.setRequestHeader('X-Slug', encodeURIComponent(for_slug));
     }
@@ -1271,6 +1270,8 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
     const self = this;
     let json = {}, i, len, arr, obj;
     xhr.withCredentials = true; // send the cookies to cross-sub domain (secure)
+    // custom request header, with the csrf token
+    xhr.setRequestHeader('X-Csrf-Token', PEAT.getSessionVar('csrf_token'));
     if ('function' === typeof on_done) {
         // default was to track progress, so only if you receive a config with track_progress other than true, don’t
         if (!config || false === config.hasOwnProperty('track_progress') || true === config.track_progress) {
@@ -1464,7 +1465,6 @@ PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
     } else { // use array notation instead of object, to suppress warning in IDE
         data['json'] = true;
         if (!data.hasOwnProperty('timestamp')) data['timestamp'] = NAV.nav_timestamp;
-        data['csrf_token'] = PEAT.getSessionVar('csrf_token');
     }
     // GET does not send any data at the moment
     // if (method === 'GET') {

@@ -2631,13 +2631,57 @@ class DB extends Base
         $rows = $statement->fetchAll(5);
         $statement = null;
         $num_rows = count($rows);
-        if ($num_rows === 1) {
+        if (1 === $num_rows) {
             return $rows[0];
-        } elseif ($num_rows > 1) {
+        } elseif (1 < $num_rows) {
             $this->handleErrorAndStop(sprintf('DB->fetchForLogin returned %d rows.', $num_rows), __('Error during login.', 'peatcms'));
         }
 
         return null; // $num_rows === 0
+    }
+
+    /**
+     * @since 0.29.4 rate limiting on admin login attempts.
+     * Max 60 attempts in 60 minutes, max 5 in any one minute.
+     */
+    public function mayAdminLogin(): bool
+    {
+        $may = false;
+        $admin = Setup::$ADMIN;
+        $per_hour = $admin->login_attempts_per_hour ?? 60;
+        $each_min = $admin->login_attempts_each_min ?? 5;
+
+        $statement = $this->conn->prepare('
+            SELECT date_created FROM _admin_login_attempt 
+            WHERE date_created > NOW() - INTERVAL \'60 minutes\'
+        ');
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        $count = count($rows);
+
+        if ($count < $per_hour) {
+            if ($count < $each_min) {
+                $may = true;
+            } else {
+                // check if the last of the allowed attempts was more than a minute ago
+                $row = $rows[$each_min - 1]; // 0 based index
+                $may = 60 < Setup::getNow() - Date::intFromDate($row->date_created);
+            }
+        }
+
+        // register this attempt when it is allowed
+        if (true === $may) {
+            $statement = $this->conn->prepare('
+                INSERT INTO _admin_login_attempt (domain) VALUES (:domain);
+            ');
+            $statement->bindValue(':domain', Setup::$INSTANCE_DOMAIN);
+            $statement->execute();
+            $statement = null;
+        }
+
+        return $may;
     }
 
     public function fetchAdmin(int $admin_id): ?\stdClass
