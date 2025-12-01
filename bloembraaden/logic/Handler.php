@@ -429,9 +429,16 @@ class Handler extends BaseLogic
                 if ('set_session_var' === $action) {
                     if (true === isset($post_data->name, $post_data->value, $post_data->times)) {
                         $name = $post_data->name;
-                        // times keeps track of how many times this var is (being) updated
-                        Help::$session->setVar($name, $post_data->value, $post_data->times);
-                        $out['success'] = true;
+                        // filter out session variables that may not be set from the client
+                        if (in_array($name, array('csrf_token', 'import_file_name', 'order_number'))
+                            || str_starts_with($name, '.locks.')
+                        ) {
+                            $this->addMessage(sprintf(__('Session variable %s cannot be set.', 'peatcms'), htmlentities($name)), 'warn');
+                        } else {
+                            // times keeps track of how many times this var is (being) updated
+                            Help::$session->setVar($name, $post_data->value, $post_data->times);
+                            $out['success'] = true;
+                        }
                     }
                 } elseif ('post_comment' === $action && (true === Help::turnstileVerify($instance, $post_data))) {
                     $post_data = $this->resolver->escape($post_data);
