@@ -664,8 +664,7 @@ class Handler extends BaseLogic
                                 );
                             }
                         } else {
-                            // todo better message
-                            $this->addMessage('No login allowed by turnstile or admin logins disabled.', 'warn');
+                            $this->addMessage(__('Login not allowed.', 'peatcms'), 'warn');
                         }
                     } else {
                         $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
