@@ -24,7 +24,7 @@
   },
   "ADMIN": {
     "login_attempts_per_hour": 60,
-    "login_attempts_each_min": 6,
+    "login_attempts_each_min": 6
   },
   "integrations": {
     "pdfmaker": {
