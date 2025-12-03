@@ -1440,7 +1440,7 @@ class Handler extends BaseLogic
                                 ) {
                                     $this->handleErrorAndStop(
                                         sprintf('Domain %1$s was blocked for instance %2$s.', $value, $posted_id),
-                                        __('Manipulating this domain is not allowed.', 'peatcms'));
+                                        __('Domain cannot be updated.', 'peatcms'));
                                 } else { // validate the domain here
                                     // test domain utf-8 characters: 百度.co (baidu.co)
                                     if (function_exists('idn_to_ascii')) {
@@ -1450,6 +1450,12 @@ class Handler extends BaseLogic
                                         $this->handleErrorAndStop(
                                             sprintf('Domain %1$s was not in DNS for instance %2$s.', $value, $posted_id),
                                             __('Domain not found, check your input and try again later.', 'peatcms'));
+                                    }
+                                    // if the domain is already in use somewhere in this bloembraaden installation, block it
+                                    if (Help::getDB()->domainIsInUse($value)) {
+                                        $this->handleErrorAndStop(
+                                            sprintf('Domain %1$s is already in use for another instance.', $value),
+                                            __('Domain cannot be updated.', 'peatcms'));
                                     }
                                 }
                             } elseif ($posted_table_name === '_template') {

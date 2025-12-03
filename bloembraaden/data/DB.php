@@ -2738,6 +2738,25 @@ class DB extends Base
         ));
     }
 
+    public function domainIsInUse(string $domain): bool
+    {
+        $statement = $this->conn->prepare('SELECT COUNT(instance_id) FROM _instance_domain 
+            WHERE domain = :domain AND deleted = FALSE;');
+        $statement->bindValue(':domain', $domain);
+        $statement->execute();
+        $count = (int)$statement->fetchColumn(0);
+        if (0 === $count) {
+            $statement = $this->conn->prepare('SELECT COUNT(instance_id) FROM _instance 
+                WHERE domain = :domain AND deleted = FALSE;');
+            $statement->bindValue(':domain', $domain);
+            $statement->execute();
+            $count = (int)$statement->fetchColumn(0);
+        }
+        $statement = null;
+
+        return 0 < $count;
+    }
+
     public function fetchInstanceAdmins(int $instance_id): array
     {
         return $this->fetchRows('_admin', array('nickname', 'email'), array(
