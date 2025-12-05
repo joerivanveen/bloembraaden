@@ -289,9 +289,12 @@ class DB extends Base
                 }
             }
         }
-        if (isset($x_alias)) $x_alias .= '.';
-        else $x_alias = '';
-        $sub_query_format = "$x_alias{$cms_type_name}_id IN (SELECT {$cms_type_name }_id
+        if (true === isset($x_alias)) {
+            $x_alias .= '.';
+        } else {
+            $x_alias = '';
+        }
+        $sub_query_format = "$x_alias{$cms_type_name}_id IN (SELECT {$cms_type_name}_id
             FROM cms_{$cms_type_name}_x_properties WHERE property_value_id = %d) ";
         foreach ($values_by_property as $property_name => $property_value_ids) {
             if (0 === count($property_value_ids)) continue;

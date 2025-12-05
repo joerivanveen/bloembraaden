@@ -202,7 +202,7 @@ class BaseElement extends BaseLogic implements Element
                         $this->row->__x_values__ = Help::getDB()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
                         $this->row->__x_values__['item_count'] = count($this->row->__x_values__);
                     }
-                } elseif ($this->nested_level === 1) { // only get these from base property and property_value
+                } elseif (1 === $this->nested_level) { // only get these from base property and property_value
                     // relation must be the other way around, an indexed array is supplied containing the elements linked
                     //if (false === is_array($relation)) $this->handleErrorAndStop('x_value relation must contain array');
                     foreach ($relation as $index => $element_name) {

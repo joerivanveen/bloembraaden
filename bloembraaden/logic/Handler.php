@@ -1037,8 +1037,7 @@ class Handler extends BaseLogic
                             $this->addMessage(__('Element not found.', 'peatcms'), 'error');
                         } else {
                             $element_title = $element->row->title;
-                            // if there is a linked element (probably file or image), set its online property to true
-                            // also update the title and slug
+                            // if there is a linked element (probably file or image), update the title and slug
                             foreach ($element->getLinked() as $type_name => $elements) {
                                 foreach ($elements as $key => $out) {
                                     if (false === is_int($key)) continue; // not an element
