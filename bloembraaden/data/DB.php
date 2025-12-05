@@ -323,7 +323,7 @@ class DB extends Base
             $sorting = 'ORDER BY date_popvote DESC';
         } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC';
-            $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
+            $sub_queries[] = '(date_published IS NULL OR date_published < NOW())';
         } elseif ($table_info->hasStandardColumns()) {
             $sorting = 'ORDER BY date_created DESC';
             $sub_queries[] = 'deleted = FALSE';
@@ -1167,7 +1167,7 @@ class DB extends Base
             $sorting = "ORDER BY date_popvote DESC LIMIT $variant_page_size OFFSET " . ($variant_page_size * ($variant_page - 1));
         } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC ';
-            $sub_queries[] = '(date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
+            $sub_queries[] = '(date_published IS NULL OR date_published < NOW())';
         } else {
             $sorting = 'ORDER BY date_created DESC ';
         }
@@ -3703,7 +3703,7 @@ class DB extends Base
             echo ' ORDER BY o';
         } elseif ('_template' !== $table_name && $table_info->hasColumn('date_published')) {
             if (defined('ADMIN') && false === ADMIN) {
-                echo ' AND (date_published IS NULL OR date_published < NOW() - INTERVAL \'5 minutes\')'; // allow a few minutes for the cache to update
+                echo ' AND (date_published IS NULL OR date_published < NOW())';
             }
             echo ' ORDER BY date_published DESC';
         } elseif ('_order' !== $table_name && in_array('date_updated', $columns['names'])) {
