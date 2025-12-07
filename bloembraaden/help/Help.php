@@ -460,15 +460,15 @@ class Help
         // https://www.vultr.com/docs/scan-for-malware-and-viruses-on-centos-using-clamav-and-linux-malware-detect
         // if malicious code is found, also block the admin? Or only when multiple times?
         // save the file
-        $file_name = Help::randomString(20);
-        $new_path = Setup::$UPLOADS . $file_name;
+        $filename = Help::randomString(20);
+        $new_path = Setup::$UPLOADS . $filename;
         if (file_exists($new_path)) { // this should never happen
             self::trigger_error("File $new_path already exists", E_USER_ERROR);
         } else {
             copy($temp_path, $new_path);
         }
 
-        return $file_name;
+        return $filename;
     }
 
     /**
@@ -724,7 +724,7 @@ class Help
     public static function obtainLock(string $identifier, bool $persist = false): bool
     {
         $identifier = ".locks.$identifier";
-        $file_name = Setup::$DBCACHE . rawurlencode($identifier);
+        $filename = Setup::$DBCACHE . rawurlencode($identifier);
 
         if (true === $persist) {
             $lock = self::$session->getValue($identifier);
@@ -736,9 +736,9 @@ class Help
             return true;
         }
         // if nobody else has it, lock it tight, else return false
-        if (false === file_exists($file_name)) {
+        if (false === file_exists($filename)) {
             // TODO have locks work over multiple servers...
-            file_put_contents($file_name, '', LOCK_EX);
+            file_put_contents($filename, '', LOCK_EX);
         } else {
             return false;
         }
@@ -748,11 +748,11 @@ class Help
         } else {
             self::setValue($identifier, true);
             // if not persisting, release the lock always when the request is done
-            register_shutdown_function(static function () use ($file_name) {
+            register_shutdown_function(static function () use ($filename) {
                 if (Help::$LOGGER) {
-                    (Help::$LOGGER)->log("Releasing lock $file_name");
+                    (Help::$LOGGER)->log("Releasing lock $filename");
                 }
-                @unlink($file_name);
+                @unlink($filename);
             });
         }
 
@@ -762,14 +762,14 @@ class Help
     public static function releaseLock(string $identifier): void
     {
         $identifier = ".locks.$identifier";
-        $file_name = Setup::$DBCACHE . rawurlencode($identifier);
+        $filename = Setup::$DBCACHE . rawurlencode($identifier);
 
         // remove lock
         $lock = self::getValue($identifier) ?: self::$session->getValue($identifier, true);
         if (true === $lock) {
-            if (true === file_exists($file_name)) {
+            if (true === file_exists($filename)) {
                 // it might already been released early, if this is from shutdown routine...
-                unlink($file_name);
+                unlink($filename);
             }
         } else {
             self::addError(new \Exception("Lock $identifier not found for release"));
@@ -839,10 +839,10 @@ class Help
         return $folder_name;
     }
 
-    public static function import_into_this_instance(string $file_name, LoggerInterface $logger): void
+    public static function import_into_this_instance(string $filename, LoggerInterface $logger): void
     {
         // todo import files as well...
-        if (false === file_exists($file_name)) {
+        if (false === file_exists($filename)) {
             $logger->log('File does not exist, aborting');
             return;
         }
@@ -863,7 +863,7 @@ class Help
             }
         }
         // prepare some vars
-        $files = array($file_name);
+        $files = array($filename);
         $db = self::getDB();
         $tables = array_map(function ($value) {
             return $value->table_name;
@@ -893,11 +893,11 @@ class Help
         );
         $repeat = -1;
         // read file
-        while (($file_name = array_shift($files)) && file_exists($file_name)) {
+        while (($filename = array_shift($files)) && file_exists($filename)) {
             ++$repeat;
             $row_index = 0;
-            $logger->log("Process file $file_name");
-            $handle = @fopen($file_name, 'r');
+            $logger->log("Process file $filename");
+            $handle = @fopen($filename, 'r');
             $string = '';
             $table_name = '';
             if ($handle) {
@@ -973,13 +973,13 @@ class Help
                                 } else { // 'wait' === $row_treat
                                     $logger->log("Save table $table_name for later");
                                     // register this table for importing later and write the object to disk
-                                    $file_name = "$folder_name$instance_id.$table_name.json";
-                                    if (false === file_exists($file_name)) {
-                                        file_put_contents($file_name, "$string\n", LOCK_EX);
+                                    $filename = "$folder_name$instance_id.$table_name.json";
+                                    if (false === file_exists($filename)) {
+                                        file_put_contents($filename, "$string\n", LOCK_EX);
                                     } else {
                                         $row_treat = 'skip'; // no need to save all the rows to this file again
                                     }
-                                    $files[] = $file_name;
+                                    $files[] = $filename;
                                 }
                                 // we’re done with the table row
                                 $string = '';
@@ -1055,7 +1055,7 @@ class Help
                                     }
                                 } elseif ('wait' === $row_treat) {
                                     // save to the existing file
-                                    file_put_contents($file_name, "$string\n", FILE_APPEND);
+                                    file_put_contents($filename, "$string\n", FILE_APPEND);
                                 }
                                 //$logger->log(var_export($value, true));
                             } elseif (is_array($value)) {

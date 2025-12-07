@@ -562,13 +562,13 @@ class BaseElement extends BaseLogic implements Element
 
     public function saveFile(string $temp_location): bool
     {
-        $file_name = Help::scanFileAndSaveWhenOk($temp_location);
-        if (null === $file_name) {
+        $filename = Help::scanFileAndSaveWhenOk($temp_location);
+        if (null === $filename) {
             $this->addError(sprintf(__('Scanning temp file %s failed.', 'peatcms'), $temp_location));
 
             return false;
         }
-        $data['filename_saved'] = $file_name;
+        $data['filename_saved'] = $filename;
         $data['extension'] = strtolower(pathinfo($this->row->filename_original, PATHINFO_EXTENSION));
 
         return $this->update($data);

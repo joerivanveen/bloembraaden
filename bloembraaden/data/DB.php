@@ -3394,7 +3394,7 @@ class DB extends Base
     {
         // get all the id’s of templates in the db
         $ids = array();
-        $file_names = '';
+        $filenames = '';
         $statement = $this->conn->prepare('SELECT template_id FROM _template');
         $statement->execute();
         while (($row = $statement->fetch(5))) {
@@ -3403,15 +3403,15 @@ class DB extends Base
         // load the id’s of templates in the folder
         if (($files = scandir("{$this->cache_folder}templates/"))) {
             $files = array_diff($files, array('..', '.'));
-            foreach ($files as $index => $file_name) {
-                if (false === isset($ids[intval(explode('.', $file_name)[0])])) {
-                    unlink("{$this->cache_folder}templates/$file_name");
-                    $file_names .= $file_name . ', ';
+            foreach ($files as $index => $filename) {
+                if (false === isset($ids[intval(explode('.', $filename)[0])])) {
+                    unlink("{$this->cache_folder}templates/$filename");
+                    $filenames .= $filename . ', ';
                 }
             }
         }
 
-        return $file_names .= 'done';
+        return $filenames .= 'done';
     }
 
     public function jobDeleteOldSessions(int $interval_in_days = 30): int
