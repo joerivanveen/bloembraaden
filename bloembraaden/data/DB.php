@@ -2690,7 +2690,7 @@ class DB extends Base
     public function fetchAdmin(int $admin_id): ?\stdClass
     {
         return $this->fetchRow('_admin',
-            array('client_id', 'instance_id', 'email', 'nickname'),
+            array('client_id', 'instance_id', 'email', 'nickname', 'password_hash'),
             array('admin_id' => $admin_id, 'instance_id' => null) // instance_id can be this instance, or 0, so leave it out
         );
     }

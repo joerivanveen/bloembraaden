@@ -58,6 +58,11 @@ class Admin extends BaseLogic
         return $allowed;
     }
 
+    public function checkPassword(string $password): bool
+    {
+        return password_verify($password, $this->row->password_hash);
+    }
+
     public function getClient(): Client
     {
         if (false === isset($this->client)) {

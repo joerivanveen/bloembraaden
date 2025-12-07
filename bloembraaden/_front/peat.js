@@ -1394,63 +1394,6 @@ PEATCMS_ajax.prototype.setUpProcess = function (xhr, on_done, config) {
         }
     }
 }
-
-function unpack_temp(obj) {
-    let i, unp;
-    const slugs = obj['slugs'] || [];
-    // load the slugs
-    if (!window.PEATCMS_globals.slugs) window.PEATCMS_globals.slugs = {};
-    for (i in slugs) {
-        if (slugs.hasOwnProperty(i)) {
-            window.PEATCMS_globals.slugs[i] = slugs[i];
-        }
-    }
-    delete obj['slugs'];
-    unp = unpack_rec(obj, 0);
-    for (i in unp) {
-        if (unp.hasOwnProperty(i)) obj[i] = unp[i];
-    }
-    unp = null;
-
-    return obj;
-}
-
-function unpack_rec(obj, nest_level) {
-    let n, i, len, arr, cache;
-    if (nest_level > 2) return obj; // recursion stops here
-    if (null === obj) return null;
-    if (obj.hasOwnProperty('slugs')) {
-        //if (VERBOSE) console.log(`Unpack ${obj.__ref}`);
-        obj = unpack_temp(obj);
-    }
-    for (n in obj) {
-        if (obj.hasOwnProperty(n)) {
-            if ('__ref' === n
-                && !obj.hasOwnProperty('slug') // check for slug to prevent bugs where __ref and slug are present
-                && window.PEATCMS_globals.slugs[obj.__ref] // it could be missing (@since 0.23.1)
-            ) {
-                // __ref is considered to be this level
-                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj.__ref], nest_level));
-            }
-            if (Array.isArray(obj[n])) {
-                for (i = 0, arr = obj[n], len = arr.length; i < len; ++i) {
-                    arr[i] = unpack_rec(arr[i], nest_level + 1);
-                }
-            } else {
-                const obj_n = obj[n];
-                if (typeof obj_n === 'object') {
-                    try {
-                        obj[n] = unpack_rec(obj_n, nest_level + 1);
-                    } catch (e) {
-                        console.error(e, obj_n);
-                    }
-                }
-            }
-        }
-    }
-    return obj;
-}
-
 PEATCMS_ajax.prototype.ajax = function (url, data, callback, method, headers) {
     const xhr = this.getHTTPObject(),
         slug = decodeURIComponent(url);
@@ -1509,6 +1452,62 @@ PEATCMS_ajax.prototype.invalidateCache = function (slug) {
     } else if (typeof slug === 'string') {
         delete (this.slugs[slug]);
     }
+}
+
+function unpack_temp(obj) {
+    let i, unp;
+    const slugs = obj['slugs'] || [];
+    // load the slugs
+    if (!window.PEATCMS_globals.slugs) window.PEATCMS_globals.slugs = {};
+    for (i in slugs) {
+        if (slugs.hasOwnProperty(i)) {
+            window.PEATCMS_globals.slugs[i] = slugs[i];
+        }
+    }
+    delete obj['slugs'];
+    unp = unpack_rec(obj, 0);
+    for (i in unp) {
+        if (unp.hasOwnProperty(i)) obj[i] = unp[i];
+    }
+    unp = null;
+
+    return obj;
+}
+
+function unpack_rec(obj, nest_level) {
+    let n, i, len, arr, cache;
+    if (nest_level > 2) return obj; // recursion stops here
+    if (null === obj) return null;
+    if (obj.hasOwnProperty('slugs')) {
+        //if (VERBOSE) console.log(`Unpack ${obj.__ref}`);
+        obj = unpack_temp(obj);
+    }
+    for (n in obj) {
+        if (obj.hasOwnProperty(n)) {
+            if ('__ref' === n
+                && !obj.hasOwnProperty('slug') // check for slug to prevent bugs where __ref and slug are present
+                && window.PEATCMS_globals.slugs[obj.__ref] // it could be missing (@since 0.23.1)
+            ) {
+                // __ref is considered to be this level
+                return Object.assign(obj, unpack_rec(window.PEATCMS_globals.slugs[obj.__ref], nest_level));
+            }
+            if (Array.isArray(obj[n])) {
+                for (i = 0, arr = obj[n], len = arr.length; i < len; ++i) {
+                    arr[i] = unpack_rec(arr[i], nest_level + 1);
+                }
+            } else {
+                const obj_n = obj[n];
+                if (typeof obj_n === 'object') {
+                    try {
+                        obj[n] = unpack_rec(obj_n, nest_level + 1);
+                    } catch (e) {
+                        console.error(e, obj_n);
+                    }
+                }
+            }
+        }
+    }
+    return obj;
 }
 
 function PEATCMS_template(obj) {
@@ -4284,6 +4283,42 @@ PEATCMS.isVisible = function (element, part) {
     // todo: what if another element is (partly) blocking this element...
 }
 
+PEATCMS.prototype.prompt = function(question, success, cancel, hide_text) {
+    const text_security = hide_text ? ' text-security' : '';
+    let wrapper = document.getElementById('peatcms-prompt-wrapper');
+    wrapper && wrapper.remove();
+    wrapper = document.createElement('div');
+    wrapper.id = 'bloembraaden-prompt-wrapper';
+    wrapper.classList.add('PEATCMS_admin');
+    wrapper.innerHTML = `<div class="bloembraaden-prompt">
+        <div class="bloembraaden-prompt-question">${question}</div>
+        <input type="text" class="bloembraaden-prompt-answer ${text_security}"/>
+        <div class="bloembraaden-prompt-buttons">
+            <button class="bloembraaden-prompt-cancel">Cancel</button>
+            <button class="bloembraaden-prompt-ok">OK</button>
+        </div>
+    </div>`;
+    document.body.appendChild(wrapper);
+    requestAnimationFrame(function() {
+        const answer_input = wrapper.querySelector('.bloembraaden-prompt-answer');
+        answer_input.focus();
+        function ok() {
+            const answer = answer_input.value;
+            document.body.removeChild(wrapper);
+            if (success) success(answer);
+        }
+        function no() {
+            document.body.removeChild(wrapper);
+            if (cancel) cancel();
+        }
+        answer_input.addEventListener('keydown', function (e) {
+            if ('Enter' === e.key) ok();
+            if ('Escape' === e.key) no();
+        });
+        wrapper.querySelector('.bloembraaden-prompt-ok').addEventListener('click', ok);
+        wrapper.querySelector('.bloembraaden-prompt-cancel').addEventListener('click', no);
+    });
+}
 
 /**
  * startup peatcms object

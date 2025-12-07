@@ -1148,12 +1148,12 @@ const PEATCMS_column_updater = function (DOMElement, PEATElement) {
 PEATCMS_column_updater.prototype.typed = function (event, enter_triggers_save = false) {
     this.reflectChanged();
     if (true === enter_triggers_save) {
-        if (event.key === 'Enter') {
-            //this.DOMElement.blur();
-            this.update(this.DOMElement.value);
+        if ('Enter' === event.key) {
+            this.DOMElement.blur();
+            //this.update(this.DOMElement.value);
         }
     }
-    if (event.key === 'Escape') {
+    if ('Escape' === event.key) {
         this.DOMElement.value = this.server_value;
         this.reflectChanged();
     }
@@ -1162,8 +1162,8 @@ PEATCMS_column_updater.prototype.keydown = function (event) {
     // this only handles saving
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
         // Save Function
-        //this.DOMElement.blur();
-        this.update(this.DOMElement.value);
+        this.DOMElement.blur();
+        //this.update(this.DOMElement.value);
         event.preventDefault();
         event.stopPropagation();
         event.returnValue = '';
@@ -1173,18 +1173,31 @@ PEATCMS_column_updater.prototype.keydown = function (event) {
         event.preventDefault();
         event.stopPropagation();
         event.returnValue = '';
-        PEATCMS.insertAtCaret(this.DOMElement, '    '); // insert four spaces in stead of a tab
+        PEATCMS.insertAtCaret(this.DOMElement, '    '); // insert four spaces instead of a tab
         return false;
     }
 }
 
 PEATCMS_column_updater.prototype.blur = function () {
+    if (false === this.reflectChanged()) return;
     this.update(this.DOMElement.value);
 }
 
+PEATCMS_column_updater.prototype.addPasswordChallenge = function (data, callback) {
+    const self = this;
+    PEAT.prompt(__('Enter your password to confirm change:'), function(answer) {
+        data['password_challenge'] = answer;
+        callback(data);
+    }, function(){
+        self.DOMElement.classList.remove('peatcms_loading');
+        // as if you Escaped it!
+        self.DOMElement.value = self.server_value;
+        self.reflectChanged();
+    }, true);
+}
+
 PEATCMS_column_updater.prototype.update = function (value) {
-    const self = this,
-        data = {
+    const data = {
             'table_name': this.table_name,
             'column_name': this.column_name,
             'id': this.id,
@@ -1192,10 +1205,19 @@ PEATCMS_column_updater.prototype.update = function (value) {
         };
     this.reflectChanged();
     this.DOMElement.classList.add('peatcms_loading');
+    // send password challenge for certain columns
+    if (['password', 'email'].includes(this.column_name) && value !== '') {
+        this.addPasswordChallenge(data, this.updateColumn.bind(this));
+    } else {
+        this.updateColumn(data);
+    }
+}
+PEATCMS_column_updater.prototype.updateColumn = function(data) {
+    const self = this;
     NAV.ajax('/__action__/update_column', data, function (data) {
         const el = self.DOMElement,
             pub = document.getElementById('peatcms_publish');
-        let msg, parent_element;
+        let msg, parent_element, value;
         if ((parent_element = self.parent_element)) {
             NAV.admin_uncache_slug(parent_element.state.slug, true); // @since 0.10.4
         }
@@ -1261,20 +1283,23 @@ PEATCMS_column_updater.prototype.new = function () {
 
 PEATCMS_column_updater.prototype.reflectChanged = function () { // TODO integrate with reflectChanged in peat.js
     const el = this.DOMElement;
-    if (el.type === 'submit') return;
+    if (el.type === 'submit') return false;
     if (el.type === 'select-one') {
         if (el.options[el.selectedIndex].value === el.getAttribute('data-value')) {
             el.classList.remove('unsaved');
         } else {
             el.classList.add('unsaved');
+            return true;
         }
     } else {
         if (el.value !== this.server_value.toString()) {
             el.classList.add('unsaved');
+            return true;
         } else {
             el.classList.remove('unsaved');
         }
     }
+    return false;
 }
 
 PEATCMS_column_updater.prototype.set = function (value) {
@@ -2217,7 +2242,7 @@ function PEATCMS_admin() {
         ) {
             event.preventDefault();
             const src = document.querySelector('.admin_order_search');
-            if (src){
+            if (src) {
                 if (false === PEATCMS.isVisible(src)) {
                     self.panels.open('console');
                     if (false === PEATCMS.isVisible(src)) return;

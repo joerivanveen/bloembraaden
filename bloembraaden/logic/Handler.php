@@ -138,9 +138,9 @@ class Handler extends BaseLogic
                 }
                 // use Template() by loading html from disk
                 $temp = new Template(null);
-                $admin = ((true === isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
+                $as_admin = ((true === isset($post_data->admin) && true === $post_data->admin) && Help::$session->isAdmin());
                 //$out = array('html' => $temp->load($data->template_name, $admin));
-                if ($html = $temp->loadByTemplatePointer($post_data->template_name, $admin)) {
+                if ($html = $temp->loadByTemplatePointer($post_data->template_name, $as_admin)) {
                     $out = $temp->getPrepared($html);
                     $out['__template_status__'] = 'default';
                 } else {
@@ -1409,30 +1409,43 @@ class Handler extends BaseLogic
                             /**
                              * Some exceptions in the columns are handled first
                              */
-                            if ($posted_column_name === 'password' && $posted_value !== '') {
-                                $update_arr = array('password_hash' => Help::passwordHash($posted_value));
+                            if ($posted_column_name === 'password') {
+                                if ('' === trim($posted_value)) {
+                                    $update_arr = array(); // do not update to empty password
+                                } elseif (true === isset($post_data->password_challenge)
+                                    && true === $admin->checkPassword($post_data->password_challenge)
+                                ) {
+                                    $update_arr = array('password_hash' => Help::passwordHash($posted_value));
+                                } else {
+                                    Help::addMessage(__('Password challenge failed.', 'peatcms'), 'error');
+                                    $update_arr = array(); // do not update without current password
+                                }
+                            }
+                            if ($posted_column_name === 'email') {
+                                if ('' === trim($posted_value) || false === filter_var( $posted_value,FILTER_VALIDATE_EMAIL)) {
+                                    $update_arr = array(); // do not update to empty or incorrect email
+                                } elseif (false === isset($post_data->password_challenge)
+                                    || false === $admin->checkPassword($post_data->password_challenge)
+                                ) {
+                                    Help::addMessage(__('Password challenge failed.', 'peatcms'), 'error');
+                                    $update_arr = array(); // do not update without current password
+                                }
                             }
                             // for admin and user, any change must invalidate all sessions
-                            if ('_admin' === $posted_table_name) {
-                                $admin_id = (int)$posted_id;
-                                $rows = Help::getDB()->fetchAdminSessions($admin_id);
-                                foreach ($rows as $key => $row) {
-                                    Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                            if (0 < count($update_arr)) {
+                                if ('_admin' === $posted_table_name) {
+                                    $admin_id = (int)$posted_id;
+                                    $rows = Help::getDB()->fetchAdminSessions($admin_id);
+                                    foreach ($rows as $key => $row) {
+                                        Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                                    }
+                                } elseif ('_user' === $posted_table_name) {
+                                    $user_id = (int)$posted_id;
+                                    Help::getDB()->deleteSessionsForUser($user_id, 0);
                                 }
-                            } elseif ('_user' === $posted_table_name) {
-                                $user_id = (int)$posted_id;
-                                Help::getDB()->deleteSessionsForUser($user_id, 0);
                             }
                             //
-                            if ($posted_table_name === '_admin'
-                                && $posted_column_name === 'deleted'
-                                && $posted_value === true
-                            ) {
-                                if ((int)$posted_id === Help::$session->getAdmin()->getId()) {
-                                    $this->handleErrorAndStop(sprintf('Admin %s tried to delete itself.', $posted_id),
-                                        __('You can’t delete yourself.', 'peatcms'));
-                                }
-                            } elseif ($posted_column_name === 'domain') {
+                            if ($posted_column_name === 'domain') {
                                 $value = $posted_value;
                                 if ($posted_table_name === '_instance'
                                     && ($instance->getDomain() === $value || $instance->getId() === (int)$posted_id)
@@ -1476,7 +1489,9 @@ class Handler extends BaseLogic
                             /**
                              * Generic column update statement
                              */
-                            if (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
+                            if (0 === count($update_arr)) {
+                                $this->addMessage(__('Update column failed.', 'peatcms'), 'error');
+                            } elseif (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
                                 $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
                             } else {
                                 $this->addError(Help::getDB()->getLastError()->getMessage());
