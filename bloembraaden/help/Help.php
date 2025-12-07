@@ -535,13 +535,15 @@ class Help
     public static function turnstileVerify(Instance $instance, \stdClass $post_data): bool
     {
         if ($instance->getSetting('turnstile_site_key') === '') return true;
-        if (($turnstile_secret_key = $instance->getSetting('turnstile_secret_key')) === '') {
+        if ('' === ($turnstile_secret_key = $instance->getSetting('turnstile_secret_key'))) {
             Help::addError(new \Exception('Turnstile secret key not filled in'));
             Help::addMessage(__('Turnstile configuration error.', 'peatcms'), 'error');
 
             return false;
         }
-        if (isset($post_data->{'cf-turnstile-response'}) && ($cf_turnstile_response = $post_data->{'cf-turnstile-response'})) {
+        if (true === isset($post_data->{'cf-turnstile-response'})
+            && ($cf_turnstile_response = $post_data->{'cf-turnstile-response'})
+        ) {
             $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
             $fields = [
                 'secret' => $turnstile_secret_key,

@@ -663,6 +663,8 @@ class Handler extends BaseLogic
                                     '__user__' => Help::$session->getUser()->getOutput()
                                 );
                             }
+                        } elseif (true === $as_admin) {
+                            $this->addMessage(__('Rate limiting: no more admin logins for a while.', 'peatcms'), 'warn');
                         } else {
                             $this->addMessage(__('Login not allowed.', 'peatcms'), 'warn');
                         }
@@ -1422,7 +1424,7 @@ class Handler extends BaseLogic
                                 }
                             }
                             if ($posted_column_name === 'email') {
-                                if ('' === trim($posted_value) || false === filter_var( $posted_value,FILTER_VALIDATE_EMAIL)) {
+                                if ('' === trim($posted_value) || false === filter_var($posted_value, FILTER_VALIDATE_EMAIL)) {
                                     $update_arr = array(); // do not update to empty or incorrect email
                                 } elseif (false === isset($post_data->password_challenge)
                                     || false === $admin->checkPassword($post_data->password_challenge)

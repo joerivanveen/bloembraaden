@@ -2645,7 +2645,7 @@ class DB extends Base
 
     /**
      * @since 0.29.4 rate limiting on admin login attempts.
-     * Max 60 attempts in 60 minutes, max 5 in any one minute.
+     * Default: max 60 attempts in 60 minutes, max 5 in any one minute.
      */
     public function mayAdminLogin(): bool
     {
