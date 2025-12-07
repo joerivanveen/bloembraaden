@@ -910,6 +910,96 @@ switch ($interval) {
             $cleanFolder($fileinfo->getRealPath());
         }
         echo "$deleted orphaned images deleted.\n";
+        // rotate logs
+        // TODO make system settings: rotate logs yes / no, email the zipped logs yes / no (no = without attachment)
+        $trans->start('Rotate logs');
+        $log_file = Setup::$LOGFILE;
+        $log_dir = dirname($log_file);
+        echo "Log files in $log_dir:\n";
+        $dir = new \DirectoryIterator(dirname($log_file));
+        $now = date('Y-m-d');
+        foreach ($dir as $index => $file_info) {
+            if ($file_info->isDot()) continue;
+            $filename = $file_info->getFilename();
+            if (str_ends_with($log_file, $filename)) continue;
+            echo $filename;
+            // if it’s a zip file older than 7 days, delete it
+            if ('zip' === $file_info->getExtension()) {
+                $age = time() - $file_info->getCTime();
+                if ($age > 604800) {
+                    echo " - delete old zip file\n";
+                    unlink($file_info->getRealPath());
+                } else {
+                    echo "\n";
+                }
+                continue;
+            }
+            // zip the file
+            $zip = new \ZipArchive();
+            $zip_filename = "$filename.$now.zip";
+            if (true !== $zip->open("$log_dir/$zip_filename", \ZipArchive::CREATE | \ZipArchive::OVERWRITE)) {
+                echo " - ERROR could not create zip file\n";
+                continue;
+            }
+            if (true !== $zip->addFile($file_info->getRealPath(), $filename)) {
+                echo " - ERROR could not add file to zip\n";
+                continue;
+            }
+            $zip->close();
+            unset($zip);
+            echo " - create zip file";
+            // delete our own files, truncate other files
+            if (str_starts_with("$log_dir/$filename", Setup::$LOGFILE_STARTSWITH)) {
+                // our own log file, delete
+                unlink($file_info->getRealPath());
+            } else {
+                // truncate the file
+                file_put_contents($file_info->getRealPath(), '', LOCK_EX);
+            }
+            // if < 10MB, mail the file, else, mail that this file is too big
+            $filesize = filesize("$log_dir/$zip_filename");
+            echo " (size $filesize bytes)";
+            //find the super admin(s) that will receive the log files
+            $rows = $db->fetchInstanceAdmins(0);
+            $email_addresses = array();
+            foreach ($rows as $index => $row) {
+                if (false === isset($row->email)
+                    || '' === trim($email = $row->email)
+                    || false === filter_var($email, FILTER_VALIDATE_EMAIL)
+                ) continue;
+                $email_addresses[] = $email;
+            }
+            if (0 < count($email_addresses)) {
+                $row = $db->jobFetchWorkingMailSettings(Setup::$MAIL->active);
+                if (null === $row) {
+                    echo " - ERROR no mail parameters available\n";
+                    continue;
+                }
+                // todo mailgun custom domain, from email
+                $mailer = new Mailer($row->mailgun_custom_domain);
+                $text = "New archive log file '$log_dir/$zip_filename'.\n";
+                if ($filesize < 10 * 1024 * 1024) { // 10 MB
+                    $mailer->attach(
+                        $zip_filename,
+                        'application/zip',
+                        file_get_contents("$log_dir/$zip_filename")
+                    );
+                    $text .= 'Attached.';
+                    echo " - mail it\n";
+                } else {
+                    echo " - >10 MB is not mailed\n";
+                    $text .= 'Too large for e-mail, please download within 7 days.';
+                }
+                $mailer->set(array(
+                    'to' => implode(',', $email_addresses),
+                    'from' => $row->mail_verified_sender,
+                    'subject' => "Bloembraaden log: $zip_filename",
+                    'text' => $text,
+                ));
+                $mailer->send();
+                unset($row);
+            }
+        }
         break;
     case 'temp':
         echo "Notice: this is a temp job, only for testing.\n";

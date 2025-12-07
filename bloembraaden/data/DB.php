@@ -1029,6 +1029,7 @@ class DB extends Base
      * To help the fetchElementRowsPage functionality have paging controls
      *
      * @param Type $peat_type
+     * @param int $current_page
      * @param int $page_size default 400 use the same as fetchElementRowsPage obviously to get the right amount returned
      * @return array
      */
@@ -1949,6 +1950,39 @@ class DB extends Base
         $statement = null;
 
         return $rows;
+    }
+
+    /**
+     * @param string $provider when 'mailgun' a mailgun_custom_domain is expected, otherwise no matter
+     * @return \stdClass|null, the row with mailgun_custom_domain and mail_verified_sender or null when not found
+     */
+    public function jobFetchWorkingMailSettings(string $provider): ?\stdClass {
+        $return = null;
+        if ('mailgun' === $provider) {
+            $statement = $this->conn->prepare('
+                SELECT mailgun_custom_domain, mail_verified_sender FROM _instance;
+            ');
+        } else {
+            $statement = $this->conn->prepare('
+                SELECT "domain" as mailgun_custom_domain, mail_verified_sender FROM _instance;
+            ');
+        }
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+
+        foreach ($rows as $index => $row) {
+            if (isset($row->mailgun_custom_domain, $row->mail_verified_sender) &&
+                '' !== trim($row->mailgun_custom_domain) &&
+                '' !== trim($row->mail_verified_sender)
+            ) {
+                $return = $row;
+                break;
+            }
+        }
+        $rows = null;
+
+        return $return;
     }
 
     public function jobGetOrdersForMyParcel(): array

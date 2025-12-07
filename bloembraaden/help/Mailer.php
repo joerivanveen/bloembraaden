@@ -123,6 +123,7 @@ class Mailer extends Base
                 return (object)array('success' => false);
             }
         }
+        if (false === isset($this->fields['html'])) $this->fields['html'] = $this->fields['text'];
         // mailchimp formerly mandrill
         // https://mandrillapp.com/api/docs/messages.JSON.html
         if ($this->active_provider === 'mailchimp') {
@@ -130,8 +131,7 @@ class Mailer extends Base
             // mailchimp uses a to-name, so check if it's in the fields or make a default
             $to_name = $this->fields['to_name'] ?? $this->fields['to'];
             // it also splits the from in e-mail and name, so split that
-            $from_email = $this->fields['from'];
-            $from_name = $from_email;
+            $from_email = $from_name = $this->fields['from'];
             if (($pos = strpos($from_email, '<'))) {
                 $from_name = trim(substr($from_name, 0, $pos));
                 $from_email = trim(substr($from_email, $pos + 1, strlen($from_email) - $pos - 2));
