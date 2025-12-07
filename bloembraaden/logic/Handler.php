@@ -1589,9 +1589,13 @@ class Handler extends BaseLogic
                             $this->addError(__('You need to be admin and provide X-File-Name header.', 'peatcms'));
                         }
                     } elseif ('admin_database_report' === $action) {
-                        $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
-                        $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
-                        $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
+                        if (0 === $admin->getInstanceId()) {
+                            $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
+                            $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
+                            $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
+                        } else {
+                            $out = array('__rows__' => Help::unpackKeyValueRows(array('date_updated' => $admin->getRow()->date_updated)));
+                        }
                         $out['slug'] = 'admin_database_report';
                     }
                 } elseif ('reflect' === $action) {
