@@ -12,8 +12,7 @@
         <a href="mailto:{{email}}">{{email}}</a><br/>
     </p>
     {%__clients__%}
-    <h2><input type="text" class="PEATCMS_editable" data-column_name="name" data-table_name="{{table_name}}"
-               value="{{name}}" data-handle="update_column"/></h2>
+    <h2>{{name}}</h2>
     {%__instances__%}
     <h3>Instances:</h3>
     {%__row__%}
@@ -292,7 +291,7 @@
     <h3><a href="/__admin__/instance/{{domain}}">Edit {{name}}</a></h3>
     {%__instances__%}
     <p>&nbsp;</p>
-    <div class="toggle">
+    <div class="toggle" id="your-sessions">
         <header>
             <button class="toggle_button" alt="Open / close"></button>
             Your sessions
