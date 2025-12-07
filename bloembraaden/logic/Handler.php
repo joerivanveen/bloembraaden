@@ -423,7 +423,7 @@ class Handler extends BaseLogic
         }
         // don’t bother if you already processed out, or without csrf
         if (null === $out) {
-            $csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null);
+            $csrf_token = urldecode($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
             if ($csrf_token === Help::$session->getValue('csrf_token')) {
                 $out = array('success' => false); // default feedback, so you don’t get into the View part later
                 if ('set_session_var' === $action) {
