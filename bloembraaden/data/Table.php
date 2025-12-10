@@ -6,7 +6,7 @@ namespace Bloembraaden;
 
 class Type extends Base
 {
-    private array $peatcms_types = array(
+    private const PEATCMS_TYPES = array(
         'page' => 'cms_page',
         'embed' => 'cms_embed',
         'image' => 'cms_image',
@@ -41,10 +41,10 @@ class Type extends Base
     public function __construct(string $type_name)
     {
         parent::__construct();
-        if (isset($this->peatcms_types[$type_name])) {
+        if (true === isset(self::PEATCMS_TYPES[$type_name])) {
             $this->type_name = $type_name;
-            $this->table_name = $this->peatcms_types[$type_name];
-        } elseif (($new_type_name = array_search($type_name, $this->peatcms_types))) {
+            $this->table_name = self::PEATCMS_TYPES[$type_name];
+        } elseif (($new_type_name = array_search($type_name, self::PEATCMS_TYPES))) {
             $this->type_name = $new_type_name;
             $this->table_name = $type_name; // the supplied string for $type_name turns out to be the table_name
         } else {
@@ -53,6 +53,11 @@ class Type extends Base
                 sprintf(__('%s is not a recognized type.', 'peatcms'), $type_name)
             );
         }
+    }
+
+    public static function isTypeName(string $type_name): bool
+    {
+        return isset(self::PEATCMS_TYPES[$type_name]);
     }
 
     public function __toString(): string

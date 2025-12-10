@@ -1059,20 +1059,34 @@ class DB extends Base
     }
 
     /**
+     * @param array $columns the columns you want to select, specifically
      * @param Type $peat_type
      * @param string $column_name
      * @param array $in indexed array holding id’s, when empty this method always returns an empty array
      * @param bool $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
      * @param int $limit default 1000 limits the number of rows
      * @return array indexed array holding plain row objects that are online (non-admin only) and not deleted
-     * @since 0.5.15
+     * @since 0.30.0
+     * @noinspection PhpTooManyParametersInspection
      */
-    public function fetchElementRowsWhereIn(Type $peat_type, string $column_name, array $in, bool $exclude = false, int $limit = 1000): array
+    public function fetchElementColumnsWhereIn(array $columns, Type $peat_type, string $column_name, array $in, bool $exclude = false, int $limit = 1000): array
     {
-        if (0 === count($in)) return array();
+        if (0 === count($in) || 0 === count($columns)) return array();
         $table_name = $peat_type->tableName();
         $table_info = $this->getTableInfo($table_name);
         $id_column = $table_info->getIdColumn();
+        if ('*' === $columns[0]) {
+            $select_columns = 'el.*';
+        } else {
+            $columns = array_filter($columns, function ($column) use ($table_info) {
+                return $table_info->hasColumn($column);
+            });
+            if (0 === count($columns)) {
+                $select_columns = 'el.*'; // fallback
+            } else {
+                $select_columns = 'el.' . implode(', el.', $columns);
+            }
+        }
         $instance_id = Setup::$instance_id;
         if (false === $exclude) {
             $not = '';
@@ -1095,7 +1109,7 @@ class DB extends Base
             } else {
                 $and_where_online = '';
             }
-            $statement = $this->conn->prepare("SELECT el.*, $id_column AS id, '$table_name' AS table_name
+            $statement = $this->conn->prepare("SELECT $select_columns, $id_column AS id, '$table_name' AS table_name
                 FROM $table_name el WHERE el.deleted = FALSE AND el.instance_id = $instance_id $and_where_online
                 AND el.$column_name $not IN ($in_placeholders?) $sorting LIMIT $limit;");
             $statement->execute($in);
@@ -1108,6 +1122,59 @@ class DB extends Base
 
             return array();
         }
+    }
+
+    /**
+     * @param Type $peat_type
+     * @param string $column_name
+     * @param array $in indexed array holding id’s, when empty this method always returns an empty array
+     * @param bool $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
+     * @param int $limit default 1000 limits the number of rows
+     * @return array indexed array holding plain row objects that are online (non-admin only) and not deleted
+     * @since 0.5.15
+     */
+    public function fetchElementRowsWhereIn(Type $peat_type, string $column_name, array $in, bool $exclude = false, int $limit = 1000): array
+    {
+        return $this->fetchElementColumnsWhereIn(array('*'), $peat_type, $column_name, $in, $exclude, $limit);
+//        if (0 === count($in)) return array();
+//        $table_name = $peat_type->tableName();
+//        $table_info = $this->getTableInfo($table_name);
+//        $id_column = $table_info->getIdColumn();
+//        $instance_id = Setup::$instance_id;
+//        if (false === $exclude) {
+//            $not = '';
+//        } else {
+//            $not = 'NOT';
+//        }
+//        $in_placeholders = str_repeat('?,', count($in) - 1); // NOTE you need one more ? at the end of this
+//        if ($table_info->hasColumn('date_popvote')) {
+//            $sorting = 'ORDER BY date_popvote DESC';
+//        } elseif ($table_info->hasColumn('date_published')) {
+//            $sorting = 'ORDER BY date_published DESC';
+//        } elseif ($table_info->hasColumn('o')) {
+//            $sorting = 'ORDER BY o ASC';
+//        } else {
+//            $sorting = '';
+//        }
+//        if ($table_info->hasColumn($column_name)) {
+//            if (defined('ADMIN') && false === ADMIN) {
+//                $and_where_online = ' AND el.online = TRUE';
+//            } else {
+//                $and_where_online = '';
+//            }
+//            $statement = $this->conn->prepare("SELECT el.*, $id_column AS id, '$table_name' AS table_name
+//                FROM $table_name el WHERE el.deleted = FALSE AND el.instance_id = $instance_id $and_where_online
+//                AND el.$column_name $not IN ($in_placeholders?) $sorting LIMIT $limit;");
+//            $statement->execute($in);
+//            $rows = $statement->fetchAll(5);
+//            $statement = null;
+//
+//            return $rows;
+//        } else {
+//            $this->addError(sprintf('Column %s does not exist', $column_name));
+//
+//            return array();
+//        }
     }
 
     /**
@@ -4904,6 +4971,50 @@ class DB extends Base
         }
 
         return $row;
+    }
+
+    public function fetchHistory(Type $type, int $key): ?array
+    {
+        $table_name = $type->tableName();
+        $id_column = $type->idColumn();
+        // get the link action
+        $statement = $this->conn->prepare('
+            SELECT table_name, key FROM _history 
+            WHERE instance_id = :instance_id AND table_column = :id_column AND value = :value 
+            ORDER BY date_created DESC;
+        ');
+        // TODO this is probably a table scan, make an index for it
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':id_column', $id_column);
+        $statement->bindValue(':value', (string)$key);
+        if (false === $statement->execute()) {
+            $this->handleErrorAndStop("Fail: $statement->queryString", __('Error fetching history.', 'peatcms'));
+        }
+        $rows = $statement->fetchAll(5);
+        $or = '';
+        foreach ($rows as $row) {
+            // todo use the linked_types shizzle to determine if we have to show here, because cross linked is still too much.
+            if (false === str_contains($row->table_name, '_x_')) continue; // only cross tables here
+            $or = "$or OR (instance_id = :instance_id AND table_name = '$row->table_name' AND key = $row->key AND value <> '$key')";
+        }
+
+        $statement = $this->conn->prepare("
+            SELECT admin_name, user_name, table_name, table_column, key, value, date_created 
+            FROM _history 
+            WHERE (instance_id = :instance_id AND table_name = :table_name AND key = :key)
+            $or
+            ORDER BY date_created DESC
+            LIMIT 1000;
+        ");
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':table_name', $table_name);
+        $statement->bindValue(':key', $key);
+        if (false === $statement->execute()) {
+            if (false === $statement->execute()) {
+                $this->handleErrorAndStop("Fail: $statement->queryString", __('Error fetching history.', 'peatcms'));
+            }
+        }
+        return $statement->fetchAll(5);
     }
 
     private function getMeaningfulSearchString(\stdClass $out): string

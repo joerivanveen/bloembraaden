@@ -1493,6 +1493,99 @@ PEATCMS_panels.prototype.resetTools = function () { // make sure the panels are 
     }
 }
 
+function PEATCMS_history(type_name, key) {
+    this.type_name = type_name;
+    this.key = key;
+    this.rows = [];
+    this.info = [];
+}
+
+PEATCMS_history.prototype.fetch = function(callback) {
+    const self = this;
+    NAV.ajax('/__action__/admin_get_history', {
+        type_name: this.type_name,
+        key: this.key
+    }, function (data) {
+        if (data.hasOwnProperty('rows')) {
+            self.rows = data.rows;
+            self.info = data.info;
+            data = null; // free memory
+        } else {
+            console.error('Could not fetch history.');
+        }
+        if (typeof callback === 'function') {
+            callback();
+        }
+    });
+    return this;
+}
+
+PEATCMS_history.prototype.display = function(container) {
+    let i, len, entry, el, column_name, table_reference, value_summary, value_more;
+    container.innerHTML = '';
+    for (i = 0, len = this.rows.length; i < len; ++i) {
+        entry = this.rows[i];
+        const table_column = entry.table_column;
+        table_reference = `${entry.table_name}-${entry.key}"`;
+        el = document.createElement('details');
+        el.className = 'history-entry';
+        el.name = 'history-entry';
+        // if we have info by id, use it:
+        if ('_id' === table_column.slice(-3)) {
+            const column = table_column.replace('sub_', ''),
+                ref = this.info[column];
+            if (ref) {
+                const extra = ref[parseInt(entry.value)];
+                if (extra) {
+                    // template row has different columns
+                    if (extra.hasOwnProperty('title')) {
+                        entry.value = extra.title; // todo make a link using extra.slug?
+                    } else {
+                        entry.value = extra.name;
+                    }
+                }
+            }
+            column_name = column.replace('_id', '').replace('_', ' ');
+        } else {
+            column_name = table_column;
+        }
+        // for o (order) and deleted, set cross references
+        if ('o' === table_column || 'deleted' === table_column) {
+            column_name = `<span data-original-table="${table_reference}">${column_name}</span>`;
+            table_reference = ''; // do not set on summary, for this is not useful information to refer to
+        }
+        // handle value nicely, when it is huge, make it part of the ‘more’ section
+        const value = entry.value;
+        if (typeof value === 'string' && value.length > 99) {
+            value_summary = value.slice(0, 77) + '...';
+            value_more = `<div class="history-more">${PEATCMS.replace('\n','<br>',value)}</div>`;
+        } else {
+            value_summary = value;
+            value_more = '';
+        }
+        el.innerHTML = `<summary data-table="${table_reference}">${column_name}: ${value_summary}</summary>${value_more}${new Date(entry.date_created).toLocaleString()} - <em>${entry.admin_name || 'unknown'}</em> - ${entry.table_name}: ${table_column}</details>`;
+        container.appendChild(el);
+    }
+    // update cross references
+    container.querySelectorAll('[data-original-table]').forEach(function(el) {
+        const ref = container.querySelector(`[data-table="${el.getAttribute('data-original-table')}"]`);
+        ref && el.parentElement.insertAdjacentHTML('beforeend', ` (${ref ? ref.textContent : 'unknown'})`);
+    });
+    // intersection observer makes sure the history display is gone when the sidebar is
+    const observer = new IntersectionObserver(function (entries, observer) {
+        entries.forEach(function (entry) {
+            const el = entry.target;
+            //console.warn(entry.isIntersecting, entry.target);
+            if (el.hasAttribute('data-observing') && !entry.isIntersecting) {
+                el.remove();
+                observer.disconnect();
+            }
+            el.setAttribute('data-observing', '1'); // prevent the first observation to remove it
+        });
+    });
+    observer.observe(container);
+}
+
 function PEATCMS_quickie(quickie) {
     // preliminary sanity check of the quickie, eg it can have at most 1 file, and it must have an element
     if (false === quickie.hasOwnProperty('element')) {

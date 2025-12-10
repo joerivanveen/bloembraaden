@@ -668,9 +668,9 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     }
     // set a reminder (for the 'new' button) which element is being edited
     el = document.createElement('button');
+    el.innerText = '+';
     el.setAttribute('data-element_type', this.state.type_name);
     el.classList.add('new', 'edit');
-    el.innerText = '+';
     el.title = `New ${this.state.type_name}`;
     el.onclick = function () {
         CMS_admin.createElement(this.getAttribute('data-element_type'));
@@ -678,21 +678,41 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     edit_area.insertAdjacentElement('afterbegin', el);
     // add an uncache link
     el = document.createElement('button');
+    el.innerText = '↫';
     el.classList.add('edit');
     el.title = 'Warmup cache';
     el.onclick = function () {
         NAV.admin_uncache_slug();
     };
-    el.innerText = '↫';
+    edit_area.insertAdjacentElement('beforeend', el);
+    // history! @since 0.30.0
+    el = document.createElement('button');
+    el.innerText = '⎇';
+    el.classList.add('edit');
+    el.title = 'History';
+    el.onclick = function () {
+        const history = new PEATCMS_history(self.state.type_name, self.state.id);
+        history.fetch(function() {
+            let div = document.getElementById('admin-history-area');
+            div && div.remove();
+            div = document.createElement('div');
+            div.id = 'admin-history-area';
+            div.classList.add('edit-area');
+            history.display(div);
+            requestAnimationFrame(function() {
+                document.getElementById('admin_wrapper').appendChild(div);
+            });
+        });
+    };
     edit_area.insertAdjacentElement('beforeend', el);
     // add a view link
     el = document.createElement('button');
+    el.innerText = '⊙';
     el.classList.add('edit');
     el.title = 'Show';
     el.onclick = function () {
-        NAV.go(self.state.slug)
+        NAV.go(self.state.slug);
     };
-    el.innerText = '⊙';
     edit_area.insertAdjacentElement('beforeend', el);
     // header
     if (!(el = document.getElementById('edit_area_header'))) {

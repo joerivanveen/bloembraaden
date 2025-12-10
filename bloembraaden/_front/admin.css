@@ -1031,6 +1031,31 @@ body .PEATCMS_admin .peatcms-link:focus {
     display: none;
 }
 
+#admin-history-area {
+    position: fixed;
+    height: 100%;
+    z-index: 100;
+    background-color: var(--admin-color-paper);
+    padding: 0;
+    display: none; /* only when admin sidebar is displayed as well */
+    overflow-y: scroll;
+    right: 0;
+    top: 0;
+    width: calc(100vw - var(--admin-sidebar-width));
+}
+
+#admin_sidebar_checkbox:checked ~ #admin-history-area {
+    display: inline-block;
+}
+
+#admin-history-area .history-entry {
+    padding: 0 .5em;
+}
+
+#admin-history-area .history-more {
+    color: var(--admin-color-accent-light);
+}
+
 /* quickie is also a screen */
 #quickie-modal {
     position: fixed;
@@ -1203,6 +1228,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     border-bottom-right-radius: 8px;
     background-color: var(--admin-color-accent-fierce);
 }
+
 #admin_sidebar .edit-area input + .word_counter {
     margin-top: -5px; /* .25em padding apparently works differently here */
 }

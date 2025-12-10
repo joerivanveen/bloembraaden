@@ -1099,6 +1099,34 @@ class Handler extends BaseLogic
                                 );
                             }
                         }
+                    } elseif ('admin_get_history' === $action) {
+                        if (true === isset($post_data->type_name, $post_data->key)) {
+                            $type = new Type($post_data->type_name);
+                            $rows = Help::getDB()->fetchHistory($type, (int)$post_data->key);
+                            $info = array();
+                            $table_name = $type->tableName();
+                            $id_column = $type->idColumn();
+                            foreach ($rows as $index => $row) {
+                                //if ($table_name === $row->table_name) continue;
+                                if (str_ends_with($row->table_column, '_id')) {
+                                    $column = str_replace('sub_', '', $row->table_column);
+                                    if ($column === $id_column) continue;
+                                    if (false === Type::isTypeName(substr($column, 0, -3))) continue;
+                                    $value = (int)$row->value;
+                                    if (false === isset($info[$column])) $info[$column] = array();
+                                    if (true === isset($info[$column][$value])) continue;
+                                    $info[$column][$value] = array();
+                                }
+                            }
+                            foreach ($info as $column_name => $ids) {
+                                $type = new Type(substr($column_name, 0, -3)); // remove _id to get type name
+                                $element_rows = Help::getDB()->fetchElementColumnsWhereIn(array('title', 'slug'), $type, $column_name, array_keys($ids));
+                                foreach ($element_rows as $index => $element_row) {
+                                    $info[$column_name][$element_row->id] = $element_row;
+                                }
+                            }
+                            $out = array('rows' => $rows, 'info' => $info);
+                        }
                     } elseif ('admin_uncache' === $action) {
                         if (true === isset($post_data->path)) {
                             $path = $post_data->path;
