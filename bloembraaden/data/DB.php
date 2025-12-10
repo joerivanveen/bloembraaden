@@ -2023,7 +2023,8 @@ class DB extends Base
      * @param string $provider when 'mailgun' a mailgun_custom_domain is expected, otherwise no matter
      * @return \stdClass|null, the row with mailgun_custom_domain and mail_verified_sender or null when not found
      */
-    public function jobFetchWorkingMailSettings(string $provider): ?\stdClass {
+    public function jobFetchWorkingMailSettings(string $provider): ?\stdClass
+    {
         $return = null;
         if ('mailgun' === $provider) {
             $statement = $this->conn->prepare('
@@ -2745,7 +2746,7 @@ class DB extends Base
     }
 
     /**
-     * @since 0.29.4 rate limiting on admin login attempts.
+     * @since 0.30.0 rate limiting on admin login attempts.
      * Default: max 60 attempts in 60 minutes, max 5 in any one minute.
      */
     public function mayAdminLogin(): bool
