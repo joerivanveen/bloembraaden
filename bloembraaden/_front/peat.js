@@ -203,8 +203,6 @@ Address.prototype.enhanceWrapper = function () {
             pop.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
                 bubbles: true,
                 detail: {
-                    placeholder_element: pop, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
-                    parent_element: document.body, // todo 0.23.0 remove when nonstockphoto + petit clos use e.target
                     slug: out.slug || null,
                 }
             }));
@@ -1276,7 +1274,7 @@ PEATCMS_ajax.prototype.fileUpload = function (callback, file, for_slug, element)
 
 PEATCMS_ajax.prototype.trackProgress = function (xhr, progress) {
     let state = xhr.readyState, i, len, calls, i_progress = 0, progress_width;
-    const loading_bar = document.getElementById('bloembraaden-loading-bar') || document.getElementById('peatcms_loading_bar');
+    const loading_bar = document.getElementById('bloembraaden-loading-bar');
     if (!(loading_bar)) return;
     if (!progress) progress = (state === 4) ? 1 : 0;
     // first 3 states account for 60% of the bar now, .2 of 1 each :-) last 40% is for the loading progress
@@ -1673,8 +1671,6 @@ PEATCMS_template.prototype.renderProgressiveTag = function (json) {
                     el.dispatchEvent(new CustomEvent('peatcms.progressive_ready', {
                         bubbles: true,
                         detail: {
-                            placeholder_element: el, // todo 0.27.0 remove when petit clos uses e.target
-                            parent_element: parent_node, // todo 0.27.0 remove when petit clos uses e.target
                             slug: slug
                         }
                     }));
@@ -2642,7 +2638,7 @@ PEATCMS.prototype.render = function (element, callback) {// don't rely on elemen
             }
         }
         // remove any attributes that were not sent
-        if ((originals = PEATCMS.getAttributeNames(document.body))) {
+        if ((originals = document.body.getAttributeNames())) {
             for (i = 0, len = originals.length; i < len; i++) {
                 if (!new_attrs[originals[i]]) document.body.removeAttribute(originals[i]);
             }
@@ -3103,7 +3099,7 @@ PEATCMS.prototype.startUp = function () {
     });
     // default of the progressbar
     document.addEventListener('peatcms.navigation_start', function () {
-        const loading_bar = document.getElementById('bloembraaden-loading-bar') || document.getElementById('peatcms_loading_bar');
+        const loading_bar = document.getElementById('bloembraaden-loading-bar');
         if (loading_bar) {
             loading_bar.style.width = '0';
             // loading_bar.setAttribute('aria-valuemin', '0'); // default 0 need not be set
@@ -3930,20 +3926,6 @@ PEATCMS.getFormDataAsProperties = function (form) {
 function getFormData(form) {
     console.warn('getFormData() is deprecated, use PEATCMS.getFormData()');
     return PEATCMS.getFormData(form);
-}
-
-/**
- * getAttributeNames can be done on an element directly
- * TODO restore that when adoption is sufficient https://caniuse.com/?search=getAttributeNames
- */
-PEATCMS.getAttributeNames = function (el) {
-    const attributes = el.attributes;
-    const length = attributes.length;
-    const result = new Array(length);
-    for (let i = 0; i < length; i++) {
-        result[i] = attributes[i].name;
-    }
-    return result;
 }
 
 // https://stackoverflow.com/a/11077016
