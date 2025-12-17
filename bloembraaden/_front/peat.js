@@ -128,9 +128,12 @@ PeatStickyColumns.prototype.doTheMargins = function (tall, short, difference, ta
 }
 
 
+/**
+ * Returns all user addresses AS REFERENCE, so changes you make, will be reflected in the user
+ */
 function Address_getAllUserAddresses() {
     const user = PEATCMS_globals.__user__;
-    if (user && user.hasOwnProperty('__addresses__')) return PEATCMS.cloneStructured(user.__addresses__);
+    if (user && user.hasOwnProperty('__addresses__')) return user.__addresses__;
     return {};
 }
 
@@ -183,7 +186,7 @@ Address.prototype.enhanceWrapper = function () {
     // switch dormant state of button
     button.classList.remove('hidden');
     button.classList.add('active');
-    // todo construct a modal where addresses can be chosen
+    // construct a modal where addresses can be chosen
     button.addEventListener('click', function () {
         function popup(template, out) {
             let pop = document.getElementById('popup');
@@ -241,7 +244,7 @@ Address.prototype.getCountryCode = function () {
     return null;
 }
 Address.prototype.enhanceInput = function (input) {
-    input.Address = this; // TODO remove once petit clos uses peatcms_address
+    input.Address = this; // TODO 0.30.0 remove once petit clos uses peatcms_address
     input.peatcms_address = this;
     if (this.myparcel && input === this.myparcel) {
         const hipster = input.closest('.hipster-input');
@@ -429,11 +432,11 @@ Address.prototype.send = function () {
     }
     this.save(this.getFields());
 }
-Address.prototype.save = function (fields, in_session_only) {
+Address.prototype.save = function (fields) {
     const self = this, wrapper = self.wrapper, timestamp = Date.now();
     wrapper.setAttribute('data-updating', '1');
-    if (fields.hasOwnProperty('address_id') && !in_session_only) {
-        NAV.submitData('/__action__/update_address', fields, function (json) {
+    if (fields.hasOwnProperty('address_id')) {
+        NAV.ajax('/__action__/update_address', fields, function (json) {
             self.updateClientOnly(json);
             wrapper.removeAttribute('data-updating');
         });
@@ -493,11 +496,15 @@ Address.prototype.getFields = function () {
     // return
     return fields;
 }
+
+/**
+ * returns a reference to the user address, so changes you make will be reflected in the original object
+ */
 Address.prototype.getUserAddress = function (fields) {
     let i, len, user = PEATCMS_globals.__user__, user_addresses, user_address = {}, address_id;
     if (null === fields) return {};
     if (fields.hasOwnProperty('address_id') && (address_id = fields.address_id)) {
-        if (user.hasOwnProperty('__addresses__') && (user_addresses = PEATCMS.cloneStructured(user.__addresses__))) {
+        if (user.hasOwnProperty('__addresses__') && (user_addresses = user.__addresses__)) {
             for (i = 0, len = user_addresses.length; i < len; ++i) {
                 if ((user_address = user_addresses[i]).hasOwnProperty('address_id')
                     && user_address['address_id'] === address_id
@@ -547,7 +554,7 @@ Address.prototype.updateClientGenderList = function (fields) {
     }
 }
 Address.prototype.updateClientCountryList = function (fields) {
-    let select_list, options, option, i, len, wrapper = this.wrapper;
+    let select_list, options, option, i, len, wrapper = this.wrapper, found = false;
     if ((select_list = wrapper.querySelector('select[name="country"]'))
         || (select_list = wrapper.querySelector('select[name="billing_country"]'))
     ) {
@@ -575,7 +582,9 @@ Address.prototype.updateClientCountryList = function (fields) {
             } else {
                 for (i = 0, len = options.length; i < len; ++i) {
                     if ((option = options[i]).hasAttribute('data-iso2')
-                        && option.getAttribute('data-iso2') === fields['address_country_iso2']) {
+                        && option.getAttribute('data-iso2') === fields['address_country_iso2']
+                    ) {
+                        found = true;
                         if (select_list.selectedIndex !== i) {
                             select_list.selectedIndex = i;
                             select_list.dispatchEvent(new CustomEvent('change'));
@@ -583,6 +592,7 @@ Address.prototype.updateClientCountryList = function (fields) {
                         break;
                     }
                 }
+                if (!found) console.error(`Country ${fields['address_country_iso2']} is missing from shipping country select list.`);
                 wrapper.removeAttribute('data-updating');
             }
         }
@@ -2269,7 +2279,8 @@ const PEATCMS = function () {
         let el, i, len;
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i]; // this is a container holding address elements you want to enhance
-            el.Address = el.peatcms_address = new Address(el); // TODO remove el.Address once petit clos uses peatcms_address
+            el.peatcms_address = new Address(el);
+            el.Address = el.peatcms_address; // TODO 0.30.0 remove once petit clos uses peatcms_address
             // addresses in wrappers can be present as sessionvars!
             if (false === el.hasAttribute('id')) {
                 console.error('Address wrapper element needs a unique id');
