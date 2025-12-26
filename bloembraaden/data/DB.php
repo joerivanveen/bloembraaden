@@ -4974,10 +4974,10 @@ class DB extends Base
         return $row;
     }
 
-    public function fetchHistory(Type $type, int $key): ?array
+    public function fetchHistory(Type $peat_type, int $key): ?array
     {
-        $table_name = $type->tableName();
-        $id_column = $type->idColumn();
+        $table_name = $peat_type->tableName();
+        $id_column = $peat_type->idColumn();
         // get the link action
         $statement = $this->conn->prepare('
             SELECT table_name, key FROM _history 
@@ -4993,9 +4993,12 @@ class DB extends Base
         }
         $rows = $statement->fetchAll(5);
         $or = '';
+        $linked = (array)$this->getLinkTables($peat_type);
         foreach ($rows as $row) {
-            // todo use the linked_types shizzle to determine if we have to show here, because cross linked is still too much.
-            if (false === str_contains($row->table_name, '_x_')) continue; // only cross tables here
+            //var_dump($row->table_name, $row->key);
+            $type_name = str_replace('cms_', '', $row->table_name);
+            if (false === str_contains($type_name, '_x_') // show cross tables always
+                || (true === isset($linked[$type_name]) && 'direct_child' !== $linked[$type_name])) continue; // and direct children
             $or = "$or OR (instance_id = :instance_id AND table_name = '$row->table_name' AND key = $row->key AND value <> '$key')";
         }
 

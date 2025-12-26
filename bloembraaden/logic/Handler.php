@@ -1104,7 +1104,7 @@ class Handler extends BaseLogic
                             $type = new Type($post_data->type_name);
                             $rows = Help::getDB()->fetchHistory($type, (int)$post_data->key);
                             $info = array();
-                            $table_name = $type->tableName();
+                            //$table_name = $type->tableName();
                             $id_column = $type->idColumn();
                             foreach ($rows as $index => $row) {
                                 //if ($table_name === $row->table_name) continue;

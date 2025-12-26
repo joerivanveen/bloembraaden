@@ -1566,11 +1566,15 @@ PEATCMS_history.prototype.display = function(container) {
         el.innerHTML = `<summary data-table="${table_reference}">${column_name}: ${value_summary}</summary>${value_more}${new Date(entry.date_created).toLocaleString()} - <em>${entry.admin_name || 'unknown'}</em> - ${entry.table_name}: ${table_column}</details>`;
         container.appendChild(el);
     }
-    // update cross references
-    container.querySelectorAll('[data-original-table]').forEach(function(el) {
-        const ref = container.querySelector(`[data-table="${el.getAttribute('data-original-table')}"]`);
-        ref && el.parentElement.insertAdjacentHTML('beforeend', ` (${ref ? ref.textContent : 'unknown'})`);
-    });
+    if (0 === len) {
+        container.innerHTML = '<p class="history-entry">No history available.</p>';
+    } else {
+        // update cross references
+        container.querySelectorAll('[data-original-table]').forEach(function (el) {
+            const ref = container.querySelector(`[data-table="${el.getAttribute('data-original-table')}"]`);
+            ref && el.parentElement.insertAdjacentHTML('beforeend', ` (${ref ? ref.textContent : 'unknown'})`);
+        });
+    }
     // intersection observer makes sure the history display is gone when the sidebar is
     const observer = new IntersectionObserver(function (entries, observer) {
         entries.forEach(function (entry) {
