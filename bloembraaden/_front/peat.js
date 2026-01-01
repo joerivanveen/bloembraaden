@@ -3050,6 +3050,8 @@ PEATCMS.prototype.startUp = function () {
     this.currentY = 0;
     this.html_node = document.getElementsByTagName('html')[0];
     this.poll_session_timeout_ms = 1599;
+    this.session_changed_timeout = undefined;
+    this.session_changed_details = {};
     // console.error('startUp short circuited for now');
     // return;
     // initialize dark mode
@@ -3195,7 +3197,7 @@ PEATCMS.prototype.pollSessionAct = function () {
             self.polled_until = detail['since'] = Math.max(self.polled_until, json.user);
         }
         if (detail.hasOwnProperty('since')) {
-            document.dispatchEvent(new CustomEvent('peatcms.session_changed', {detail: detail}));
+            self.sessionChanged(detail);
         }
         // repeat...
         self.poll_timeout = setTimeout(self.pollSessionAct, self.poll_session_timeout_ms);
@@ -3248,14 +3250,29 @@ PEATCMS.prototype.updateSessionVarClientOnly = function (name, session_var) {
     if (session[name]) times = session[name]['times'];
     if (session_var.times >= times) {
         session[name] = session_var;
-        if (VERBOSE) {
-            console.log(`Session var ${name} updated:`, session_var);
-        }
+        const detail = {};
+        detail[name] = session_var.value;
+        this.sessionChanged(detail);
     } else if (!session[name]) {
         console.error('Session var does not exist', session_var);
     } else if (session_var.value !== session[name].value) {
         console.warn(`Refused session var ${name} because it’s too old`);
     }
+}
+
+/**
+ * Throttles the session changed event, accumulating changes that happen fast.
+ * @param detail
+ */
+PEATCMS.prototype.sessionChanged = function (detail) {
+    const self = this;
+    clearTimeout(this.session_changed_timeout);
+    this.session_changed_details = Object.assign(this.session_changed_details, detail);
+    this.session_changed_timeout = setTimeout(function () {
+        const detail = self.session_changed_details;
+        self.session_changed_details = {};
+        document.dispatchEvent(new CustomEvent('peatcms.session_changed', {detail: detail}));
+    }, this.poll_session_timeout_ms / 2);
 }
 
 PEATCMS.prototype.setSessionVar = function (name, value, callback) { // NOTE callback is only for ajax, so the server value is updated as well
