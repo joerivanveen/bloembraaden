@@ -25,7 +25,7 @@ Bloembraaden is an elegant cms that serves ‘single page apps’ using templati
 It does not force anything on you, there are no ‘themes’, you will start from scratch.
 
 It provides the backend / cms for your client.
-Bloembraaden integrates with [Mollie](https://www.mollie.com/) (other payment providers on request), [Plausible Analytics](https://plausible.io), Cloudflare’s [Turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms) and [MyParcel](https://www.myparcel.nl).
+Bloembraaden integrates with [Mollie](https://www.mollie.com/) (other payment providers on request), [Umami](https://umami.is) (GDPR compliant analytics), Cloudflare’s [Turnstile](https://www.cloudflare.com/products/turnstile/) (to protect your forms) and shipping platform [MyParcel](https://www.myparcel.nl).
 
 One Bloembraaden installation can serve many websites, each one as unique as the other is baffling.
 

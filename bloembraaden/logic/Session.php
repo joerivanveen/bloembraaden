@@ -61,6 +61,9 @@ class Session extends BaseLogic
         if (null === $this->getValue('csrf_token')) {
             $this->setVar('csrf_token', Help::randomString(9), 0);
         }
+        if (null === $this->getValue('umami_identifier')) {
+            $this->setVar('umami_identifier', Help::randomString(12), 0);
+        }
         // get lingering messages (if any)
         if (null !== ($messages_as_json = $this->getValue('peatcms_messages', true))) {
             if ($messages = json_decode($messages_as_json)) {

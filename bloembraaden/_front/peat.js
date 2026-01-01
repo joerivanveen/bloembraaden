@@ -700,14 +700,14 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.title = 'History';
     el.onclick = function () {
         const history = new PEATCMS_history(self.state.type_name, self.state.id);
-        history.fetch(function() {
+        history.fetch(function () {
             let div = document.getElementById('admin-history-area');
             div && div.remove();
             div = document.createElement('div');
             div.id = 'admin-history-area';
             div.classList.add('edit-area');
             history.display(div);
-            requestAnimationFrame(function() {
+            requestAnimationFrame(function () {
                 document.getElementById('admin_wrapper').appendChild(div);
             });
         });
@@ -2249,13 +2249,12 @@ const PEATCMS = function () {
             }
             delete window.PEATCMS_globals.turnstile_site_key;
         }
-        if (window.PEATCMS_globals.hasOwnProperty('plausible')) {
-            if (null !== (self.plausible = JSON.parse(window.PEATCMS_globals.plausible))
-                && typeof CMS_admin === 'undefined'
-            ) {
-                self.setup_plausible();
+        if (window.PEATCMS_globals.hasOwnProperty('umami_website_id')) {
+            const website_id = PEATCMS.trim(window.PEATCMS_globals.umami_website_id);
+            if ('' !== website_id && typeof CMS_admin === 'undefined') {
+                self.setup_umami(website_id);
             }
-            delete window.PEATCMS_globals.plausible;
+            delete window.PEATCMS_globals.umami_website_id;
         }
         // load the google tracking_id server_values
         if (window.PEATCMS_globals.hasOwnProperty('google_tracking_id')) {
@@ -2489,18 +2488,38 @@ PEATCMS.prototype.setup_google_tracking = function (google_tracking_id) {
         }
     }
 }
-PEATCMS.prototype.setup_plausible = function () {
-    const script = document.createElement('script'),
-        plausible = this.plausible;
+PEATCMS.prototype.setup_umami = function (website_id) {
+    const script = document.createElement('script');
     script.setAttribute('nonce', window.PEATCMS_globals.nonce);
-    script.setAttribute('data-domain', plausible.data_domain);
-    script.id = 'plausible-js';
-    script.src = plausible.src || 'https://plausible.io/js/script.js';
+    script.setAttribute('data-website-id', website_id);
+    script.setAttribute('data-auto-track', 'false');
+    script.id = 'umami-js';
+    script.src = '/umami.js'; // proxy must be setup in nginx
+    script.onload = function () {
+        const identifier = PEAT.getSessionVar('umami_identifier'),
+            identify = function (identifier, detail) {
+                if (detail && detail.email) {
+                    if (VERBOSE) console.log('UMAMI identify', identifier, {email: detail.email});
+                    window.umami.identify(identifier, {email: detail.email});
+                } else if (detail.umami_identifier) { // only update when identifier has changed
+                    if (VERBOSE) console.log('UMAMI identify', identifier);
+                    window.umami.identify(identifier);
+                }
+            };
+        // initial setup and track
+        identify(identifier, {email: PEAT.getSessionVar('email'), umami_identifier: identifier});
+        window.umami.track(); // first track works correctly with the initial page
+        // when the session changes, let identify determine whether to re-identify with umami
+        document.addEventListener('peatcms.session_changed', function (e) {
+            identify(PEAT.getSessionVar('umami_identifier'), e.detail);
+        });
+        if (VERBOSE) console.log('... Umami is tracking visit.')
+    }
     document.head.appendChild(script);
-    if (VERBOSE) console.log('Loaded plausible GDPR compliant analytics');
+    if (VERBOSE) console.log('Loading Umami GDPR compliant analytics ...');
 }
 
-PEATCMS.prototype.render = function (element, callback) {// don't rely on element methods, it could have been serialized
+PEATCMS.prototype.render = function (element, callback) { // don't rely on element methods, it could have been serialized
     let self = this,
         out = PEATCMS.cloneShallow(element.state), // break reference (or else the element.state.template_pointer would get changed)
         template_pointer = out.hasOwnProperty('template_pointer') ? out.template_pointer : {
@@ -3451,6 +3470,14 @@ PEATCMS_navigator.prototype.go = function (path) {
 
             if (0 === slug.indexOf('__action__/download/')) {
                 window.open(this.getRoot() + slug, '_blank');
+                window.umami &&
+                window.umami.track(function (props) {
+                    return {
+                        ...props,
+                        url: slug,
+                        title: `Download ${slug}`
+                    };
+                });
                 end();
                 return;
             }
@@ -3476,6 +3503,14 @@ PEATCMS_navigator.prototype.go = function (path) {
                         }
                         PEAT.render(el, function (el) {
                             if (VERBOSE) console.log(`Finished rendering ${title}`);
+                            window.umami &&
+                            window.umami.track(function (props) {
+                                return {
+                                    ...props,
+                                    url: document.location.href,
+                                    title: document.title
+                                };
+                            });
                             end();
                         });
                     } catch (e) {
@@ -4296,7 +4331,7 @@ PEATCMS.isVisible = function (element, part) {
     // todo: what if another element is (partly) blocking this element...
 }
 
-PEATCMS.prototype.prompt = function(question, success, cancel, hide_text) {
+PEATCMS.prototype.prompt = function (question, success, cancel, hide_text) {
     const text_security = hide_text ? ' text-security' : '';
     let wrapper = document.getElementById('peatcms-prompt-wrapper');
     wrapper && wrapper.remove();
@@ -4312,18 +4347,21 @@ PEATCMS.prototype.prompt = function(question, success, cancel, hide_text) {
         </div>
     </div>`;
     document.body.appendChild(wrapper);
-    requestAnimationFrame(function() {
+    requestAnimationFrame(function () {
         const answer_input = wrapper.querySelector('.bloembraaden-prompt-answer');
         answer_input.focus();
+
         function ok() {
             const answer = answer_input.value;
             document.body.removeChild(wrapper);
             if (success) success(answer);
         }
+
         function no() {
             document.body.removeChild(wrapper);
             if (cancel) cancel();
         }
+
         answer_input.addEventListener('keydown', function (e) {
             if ('Enter' === e.key) ok();
             if ('Escape' === e.key) no();

@@ -248,26 +248,14 @@
                            data-table_name="{{table_name}}"
                            value="{{turnstile_secret_key}}" data-handle="update_column"/>
                 </div>
-                <h3>Plausible Analytics</h3>
+                <h3>Umami (Analytics)</h3>
                 <p class="info">GDPR-compliant analytics. Set up your account at <a
-                        href="https://plausible.io">plausible.io</a>.</a></p>
-                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_active_{{instance_id}}"
-                            data-column_name="plausible_active"
-                            data-table_name="_instance" data-handle="update_column"
-                            {{plausible_active: checked="checked" }}/>
-                    <label for="plausible_active_{{instance_id}}">Use Plausible Analytics</label></div>
-                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_events_{{instance_id}}"
-                            data-column_name="plausible_events"
-                            data-table_name="_instance" data-handle="update_column"
-                            {{plausible_events: checked="checked" }}/>
-                    <label for="plausible_events_{{instance_id}}">Track events (use css class names in template)</label>
-                </div>
-                <div><input type="checkbox" class="PEATCMS_editable" id="plausible_revenue_{{instance_id}}"
-                            data-column_name="plausible_revenue"
-                            data-table_name="_instance" data-handle="update_column"
-                            {{plausible_revenue: checked="checked" }}/>
-                    <label for="plausible_revenue_{{instance_id}}">Track revenue (track events will be on as
-                        well)</label><br/>&nbsp;
+                        href="https://umami.is">umami.is</a>.</a></p>
+                <div><label>Website id:</label>
+                    <input type="text" class="PEATCMS_editable"
+                           data-column_name="umami_website_id"
+                           data-table_name="{{table_name}}"
+                           value="{{umami_website_id}}" data-handle="update_column"/>
                 </div>
                 <h3>Google Analytics:</h3>
                 <p class="info">You must display a cookie banner if you use services from Google.</p>

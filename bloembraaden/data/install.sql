@@ -3368,4 +3368,16 @@ CREATE TABLE "public"."_admin_login_attempt"
     "date_created"           Timestamp With Time Zone DEFAULT now() NOT NULL
 );
 
+
+ALTER TABLE _instance
+    DROP COLUMN if exists plausible_active;
+ALTER TABLE _instance
+    DROP COLUMN if exists plausible_events;
+ALTER TABLE _instance
+    DROP COLUMN if exists plausible_revenue;
+ALTER TABLE _instance
+    ADD COLUMN if not exists umami_website_id text;
+
 COMMIT;
+
+

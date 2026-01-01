@@ -1834,20 +1834,6 @@ class Handler extends BaseLogic
             $out->version = Setup::$VERSION;
             $root = $instance->getDomain(true);
             $out->root = $root;
-            if (true === $instance->getSetting('plausible_active')) {
-                if (true === $instance->getSetting('plausible_revenue')) {
-                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.revenue.js"}';
-                } elseif (true === $instance->getSetting('plausible_events')) {
-                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.tagged-events.js"}';
-                } else {
-                    $plausible = '{"data_domain":"%s","src":"https://plausible.io/js/script.js"}';
-                }
-                $domain = $instance->getDomain();
-                if (str_starts_with($domain, 'www.')) $domain = substr($domain, 4);
-                $plausible = sprintf($plausible, $domain);
-            } else {
-                $plausible = 'null';
-            }
             // @since 0.7.9 get the user and setup account related stuff
             $user = $session->getUser();
             if (null === $user) {
@@ -1874,9 +1860,9 @@ class Handler extends BaseLogic
                 'radix' => Setup::$RADIX,
                 'google_tracking_id' => $instance->getSetting('google_tracking_id', ''),
                 'turnstile_site_key' => $instance->getSetting('turnstile_site_key', ''),
+                'umami_website_id' => $instance->getSetting('umami_website_id', ''),
                 'root' => $root,
                 'date' => date('Y-m-d'),
-                'plausible' => $plausible,
                 'session' => $session->getVars(),
                 'slug' => $out,
                 'slugs' => $GLOBALS['slugs'],
@@ -1894,7 +1880,7 @@ class Handler extends BaseLogic
             $cdn_root = Setup::$CDNROOT;
             $frame_ancestors = Setup::$FRAME_ANCESTORS;
             // TODO make csp flexible using settings for the instance
-            $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://plausible.io https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.umami.dev https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             unset($out);
             if (true === headers_sent()) { // warnings that slipped through our error handler could be sent, apparently
                 // TODO when this happens there is no CSP

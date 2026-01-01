@@ -884,6 +884,7 @@ class Help
             'session_id' => false,
             'admin_id' => false,
             'google_tracking_id' => false,
+            'umami_website_id' => false,
             'payment_transaction_id' => false,
             'payment_tracking_id' => false,
             'taxonomy_id' => false,
