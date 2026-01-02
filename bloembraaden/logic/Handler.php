@@ -1145,7 +1145,8 @@ class Handler extends BaseLogic
                     } elseif ('admin_export_templates_by_name' === $action) {
                         if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
                             $content = Help::getDB()->getTemplates($instance_id);
-                            $filename = Help::slugify(Help::$session->getInstance()->getName()) . '-Templates.json';
+                            $instance_row = Help::getDB()->fetchInstanceById($instance_id);
+                            $filename = Help::slugify($instance_row->name) . '-Templates.json';
                             $out = array('download' => array('content' => $content, 'file_name' => $filename));
                         }
                     } elseif ('admin_import_templates_by_name' === $action) {
