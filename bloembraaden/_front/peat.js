@@ -3146,10 +3146,7 @@ PEATCMS.prototype.startUp = function () {
 }
 
 /**
- * Call this function to be able to react to session and user changes on the server.
- * This will poll the server and emit a 'peatcms.session_changed' event when the session or user changes.
- * Add poll time in ms as argument, default is 15000ms.
- * @since 0.26.0
+ * @deprecated since 0.26.0, use PEATCMS.pollSessionStart instead
  * @param session_timeout_ms
  */
 PEATCMS.prototype.pollSession = function (session_timeout_ms) {
@@ -3157,6 +3154,14 @@ PEATCMS.prototype.pollSession = function (session_timeout_ms) {
     this.pollSessionStart(session_timeout_ms);
 }
 
+/**
+ * Call this function to be able to react to session and user changes on the server.
+ * This will poll the server and emit a 'peatcms.session_changed' event when the session or user changes.
+ * Add poll time in ms as argument, default is 15000ms.
+ * Call PEAT.pollSessionStop() to stop polling.
+ * @since 0.26.0
+ * @param session_timeout_ms
+ */
 PEATCMS.prototype.pollSessionStart = function (session_timeout_ms) {
     const self = this;
     self.poll_session_timeout_ms = session_timeout_ms || 15000;
@@ -3278,11 +3283,16 @@ PEATCMS.prototype.sessionChanged = function (detail) {
 PEATCMS.prototype.setSessionVar = function (name, value, callback) { // NOTE callback is only for ajax, so the server value is updated as well
     const session = this.session;
     let times = 0;
-    if (!callback) callback = null;
-    if (session[name]) times = 1 + session[name]['times'];
+    if (session[name]) {
+        if (value === session[name]['value']) {
+            if (typeof callback === 'function') callback.call(null, value);
+            return; // no change
+        }
+        times = 1 + session[name]['times'];
+    }
     session[name] = {value: value, times: times}; // update it right away, affirm when it’s back from the server
-    NAV.ajax('/__action__/set_session_var', {name: name, value: value, times: times}, function (data) {
-        // ajax updates new session vars automatically, you dan’t have to do that here @since 0.6.1
+    NAV.ajax('/__action__/set_session_var', {name: name, value: value, times: times}, function () {
+        // ajax updates new session vars automatically, you don’t have to do that here @since 0.6.1
         if (typeof callback === 'function') callback.call(null, value);
     });
 }
