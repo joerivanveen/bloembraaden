@@ -4081,7 +4081,7 @@ class DB extends Base
         $row_count = $statement->rowCount();
         $statement = null;
         // uncache the slug
-        if (null !== $old_row and isset($old_row->slug)) {
+        if (null !== $old_row && true === isset($old_row->slug)) {
             $this->reCacheWithWarmup($old_row->slug);
         }
         unset($old_row);
