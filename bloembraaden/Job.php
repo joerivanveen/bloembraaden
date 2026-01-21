@@ -105,9 +105,7 @@ switch ($interval) {
                 $order_number = $row->order_number;
                 if (false === Help::obtainLock("mailjob.order.$order_number")) continue;
                 $instance_id = $row->instance_id;
-                if (Setup::$instance_id !== $instance_id) {
-                    Setup::loadInstanceSettings(new Instance($db->fetchInstanceById($instance_id)));
-                }
+                Setup::loadInstanceSettingsFor($instance_id);
                 // determine what to do with the order
                 echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
                 // make sure the dates are in the current timezone, and also use a generic format
@@ -352,10 +350,7 @@ switch ($interval) {
                 // somewhat duplicate code
                 $order_number = $row->order_number;
                 if (false === Help::obtainLock("myparcel.order.$order_number")) continue;
-                $instance_id = $row->instance_id;
-                if (Setup::$instance_id !== $instance_id) {
-                    Setup::loadInstanceSettings(new Instance($db->fetchInstanceById($instance_id)));
-                }
+                Setup::loadInstanceSettingsFor($row->instance_id);
                 echo Setup::$INSTANCE_DOMAIN, "\tORDER: $order_number\n";
                 // make order with the row
                 $order = new Order($row);
