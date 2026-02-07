@@ -3031,7 +3031,7 @@ PEATCMS.prototype.currentSlugs = function (element) {
     var i, len, a, href, el = element || document,
         as = el.getElementsByTagName('a'), // faster than querySelectorAll()
         current_slug = NAV.getCurrentPath() + '|', // the pipe character is to match wordboundary, so you match the entire slug
-        root = NAV.getRoot(true);
+        root = NAV.getRoot();
     for (i = 0, len = as.length; i < len; ++i) {
         a = as[i];
         href = PEATCMS.replace(root, '', decodeURI(a.href)) + '|'; // match the exact slug, not when it’s a part of the link
