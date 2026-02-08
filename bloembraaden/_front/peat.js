@@ -242,7 +242,7 @@ Address.prototype.getCountryCode = function () {
     return null;
 }
 Address.prototype.enhanceInput = function (input) {
-    input.Address = this; // TODO 0.30.0 remove once petit clos uses peatcms_address
+    input.Address = this; // TODO 0.31.0 remove once petit clos uses peatcms_address
     input.peatcms_address = this;
     if (this.myparcel && input === this.myparcel) {
         const hipster = input.closest('.hipster-input');
@@ -712,7 +712,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
             });
         });
     };
-    //edit_area.insertAdjacentElement('beforeend', el); // TODO 0.30.0 disabled history because it’s still wonky
+    //edit_area.insertAdjacentElement('beforeend', el); // TODO 0.31.0 disabled history because it’s still wonky
     // add a view link
     el = document.createElement('button');
     el.innerText = '⊙';
@@ -2275,7 +2275,7 @@ const PEATCMS = function () {
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i]; // this is a container holding address elements you want to enhance
             el.peatcms_address = new Address(el);
-            el.Address = el.peatcms_address; // TODO 0.30.0 remove once petit clos uses peatcms_address
+            el.Address = el.peatcms_address; // TODO 0.31.0 remove once petit clos uses peatcms_address
             // addresses in wrappers can be present as sessionvars!
             if (false === el.hasAttribute('id')) {
                 console.error('Address wrapper element needs a unique id');

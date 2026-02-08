@@ -1547,18 +1547,18 @@ class Handler extends BaseLogic
                         }
                     } elseif ('admin_popvote' === $action) {
                         $pop_vote = -1;
-                        $element_name = $post_data->element_name;
+                        $element = $post_data->element;
                         $id = $post_data->id;
                         if (true === isset($post_data->direction)
-                            && true === $admin->canDo($action, "cms_$element_name", $id)
+                            && true === $admin->canDo($action, "cms_$element", $id)
                         ) {
                             if (($direction = $post_data->direction) === 'up') {
-                                $pop_vote = Help::getDB()->updatePopVote($element_name, $id);
+                                $pop_vote = Help::getDB()->updatePopVote($element, $id);
                             } elseif ($direction === 'down') {
                                 $how_much = max(1, (int)($post_data->places ?? 1));
-                                $pop_vote = Help::getDB()->updatePopVote($element_name, $id, $how_much);
+                                $pop_vote = Help::getDB()->updatePopVote($element, $id, $how_much);
                             } else { // return the relative position always
-                                $pop_vote = Help::getDB()->getPopVote($element_name, $id);
+                                $pop_vote = Help::getDB()->getPopVote($element, $id);
                             }
                         }
                         $out = array('pop_vote' => $pop_vote);
@@ -2028,14 +2028,9 @@ class Handler extends BaseLogic
         return false;
     }
 
-    public function getSession()
-    {
-        return Help::$session;
-    }
-
     /**
      * @param string $type_name The name of the element
-     * @param $data array containing column and value pairs to be updated
+     * @param array $data containing column and value pairs to be updated
      * @param int $id The id of the element
      * @return BaseElement|null Returns the updated element when succeeded, null when update failed
      */

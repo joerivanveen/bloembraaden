@@ -129,7 +129,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
             NAV.ajax('/__action__/admin_popvote/', {
                 direction: 'up',
                 id: self.parent_PEATCMS_element.getElementId(),
-                element_name: self.parent_PEATCMS_element.getElementName(),
+                element: self.parent_PEATCMS_element.getElementName(),
             }, function (json) {
                 self.showPopVote(json);
             });
@@ -145,7 +145,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
                 direction: 'down',
                 places: PEAT.getSessionVar('pop_vote_places'),
                 id: self.parent_PEATCMS_element.getElementId(),
-                element_name: self.parent_PEATCMS_element.getElementName(),
+                element: self.parent_PEATCMS_element.getElementName(),
             }, function (json) {
                 self.showPopVote(json);
             });
@@ -156,7 +156,7 @@ PEATCMS_actor.prototype.create_as_date = function (column) {
         NAV.ajax('/__action__/admin_popvote/', {
             direction: 'get',
             id: self.parent_PEATCMS_element.getElementId(),
-            element_name: self.parent_PEATCMS_element.getElementName(),
+            element: self.parent_PEATCMS_element.getElementName(),
         }, function (json) {
             self.showPopVote(json);
         });

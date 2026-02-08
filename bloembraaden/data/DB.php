@@ -1349,15 +1349,16 @@ class DB extends Base
     }
 
     /**
-     * Updates the date_popvote column to NOW() (making this element the most popular) or when $down_vote === true
+     * Updates the date_popvote column to NOW() (making this element the most popular) or when $down_vote is a positive int
      * will add a random amount of minutes to the date of the next element, putting it below it
      * Calls getPopVote to return the new position
      *
      * @param string $element_name
      * @param int $id
-     * @param bool $down_vote default false: will put the element at the top
+     * @param int $down_vote default 0: will put the element at the top
      * @return float the pop_vote value (between 0, the most popular, and 1, the least)
      * @since 0.5.12
+     * TODO 0.31.0 addtohistory!
      */
     public function updatePopVote(string $element_name, int $id, int $down_vote = 0): float
     {
@@ -3915,7 +3916,7 @@ class DB extends Base
     {
         $table = new Table($this->getTableInfo($table_name));
         // reCacheWithWarmup the slug, maybe used for a search page
-        if (isset($col_val['slug'])) {
+        if (true === isset($col_val['slug'])) {
             $new_slug = $this->clearSlug($col_val['slug']); // (INSERT) needs to be unique for any entry
             $col_val['slug'] = $new_slug;
         }
@@ -3938,7 +3939,7 @@ class DB extends Base
                 $row_id = $rows[0]->{$primary_key_column_name};
 
                 if (false === $is_bulk) {
-                    if (isset($new_slug)) $this->reCacheWithWarmup($new_slug);
+                    if (true === isset($new_slug)) $this->reCacheWithWarmup($new_slug);
                     $this->addToHistory($table, $row_id, $col_val, true);
                 }
 
@@ -3954,6 +3955,7 @@ class DB extends Base
         } catch (\Exception $e) {
             $this->addError($e->getMessage());
 
+            // in case of duplicate key error, try to fix the table index.
             if ($e instanceof \PDOException && '23505' === $e->getCode()) {
                 $this->healTable($table_name);
             }
@@ -4961,7 +4963,7 @@ class DB extends Base
             }
         }
 
-        if (true === isset($insert) && true === isset($row->session_id) && 0 < $row->session_id) {
+        if (true === isset($insert) && true === isset($row->session_id) && 0 !== $row->session_id) {
             // this session is (retroactively) updated, do it directly because e.g. ->updateColumns will not work for several reasons
             $statement = $this->conn->prepare('
                 UPDATE _session SET date_updated = NOW() WHERE session_id = :session_id;');
