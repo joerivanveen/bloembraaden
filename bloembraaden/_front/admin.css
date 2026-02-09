@@ -1044,6 +1044,14 @@ body .PEATCMS_admin .peatcms-link:focus {
     width: calc(100vw - var(--admin-sidebar-width));
 }
 
+#admin-history-area h1 {
+    margin-left: .5rem;
+}
+
+#admin-history-area .close-history {
+    float: right;
+}
+
 #admin_sidebar_checkbox:checked ~ #admin-history-area {
     display: inline-block;
 }

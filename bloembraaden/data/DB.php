@@ -4739,8 +4739,8 @@ class DB extends Base
     {
         if (true === isset($row->user_id, $row->user_name, $row->table_name, $row->table_column, $row->key, $row->value, $row->date_created)) {
             $statement = $this->conn->prepare('
-                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value, date_created) 
-                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :date_created);
+                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value, element_name, element_id, date_created) 
+                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :element_name, :element_id, :date_created);
             ');
             $statement->bindValue(':instance_id', Setup::$instance_id);
             $statement->bindValue(':admin_id', $row->admin_id ?? 0);
@@ -4751,6 +4751,8 @@ class DB extends Base
             $statement->bindValue(':table_column', $row->table_column);
             $statement->bindValue(':key', (int)$row->key);
             $statement->bindValue(':value', $row->value);
+            $statement->bindValue(':element_name', $row->element_name ?? null);
+            $statement->bindValue(':element_id', (int)$row->element_id ?? null);
             $statement->bindValue(':date_created', $row->date_created);
             $success = $statement->execute();
             $statement = null;
@@ -4918,6 +4920,13 @@ class DB extends Base
             }
             $user_id = $row->user_id;
         }
+        // @since 0.31.0 add for which element this is done
+        $post_data = $GLOBALS['post'];
+        $element_name = $post_data->element ?? null;
+        $element_id = $post_data->id ?? null;
+        var_dump($row);
+        die(' ERJKWLWW');
+        // TODO 0.31.0 based on $row as well, make it more intelligible...
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
             if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
@@ -4942,21 +4951,11 @@ class DB extends Base
                 'table_column' => $column_name,
                 'key' => (int)$key,
                 'value' => $value,
+                'element_name' => $element_name,
+                'element_id' => $element_id,
                 'date_created' => 'NOW()',
             );
-//            $statement = $this->conn->prepare('
-//                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value)
-//                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value);
-//            ');
-//            $statement->bindValue(':instance_id', Setup::$instance_id);
-//            $statement->bindValue(':admin_id', $admin_id);
-//            $statement->bindValue(':admin_name', $admin_email);
-//            $statement->bindValue(':user_id', $user_id);
-//            $statement->bindValue(':user_name', $user_email);
-//            $statement->bindValue(':table_name', $table_name);
-//            $statement->bindValue(':table_column', $column_name);
-//            $statement->bindValue(':key', (int)$key);
-//            $statement->bindValue(':value', $value);
+
             if (false === $this->insertHistoryEntry($insert)) {
                 $this->addError(sprintf('addToHistory could not insert into _history for %1$s with %2$s = %3$s',
                     $table_name, $column_name, $value));
@@ -4978,54 +4977,27 @@ class DB extends Base
 
     public function fetchHistory(Type $peat_type, int $key): ?array
     {
-        $table_name = $peat_type->tableName();
-        $id_column = $peat_type->idColumn();
-        // get the link action
         $statement = $this->conn->prepare('
-            SELECT table_name, key FROM _history 
-            WHERE instance_id = :instance_id AND table_column = :id_column AND value = :value 
+            SELECT admin_name, user_name, table_name, table_column, key, value, date_created 
+            FROM _history 
+            WHERE instance_id = :instance_id AND element_name = :element AND element_id = :id
             ORDER BY date_created DESC;
         ');
-        // TODO this is probably a table scan, make an index for it
         $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->bindValue(':id_column', $id_column);
-        $statement->bindValue(':value', (string)$key);
+        $statement->bindValue(':element', $peat_type->typeName());
+        $statement->bindValue(':id', $key);
         if (false === $statement->execute()) {
             $this->handleErrorAndStop("Fail: $statement->queryString", __('Error fetching history.', 'peatcms'));
         }
         $rows = $statement->fetchAll(5);
-        $or = '';
-        $linked = (array)$this->getLinkTables($peat_type);
-        foreach ($rows as $row) {
-            //var_dump($row->table_name, $row->key);
-            $type_name = str_replace('cms_', '', $row->table_name);
-            if (false === str_contains($type_name, '_x_') // show cross tables always
-                || (true === isset($linked[$type_name]) && 'direct_child' !== $linked[$type_name])) continue; // and direct children
-            $or = "$or OR (instance_id = :instance_id AND table_name = '$row->table_name' AND key = $row->key AND value <> '$key')";
-        }
+        $statement = null;
 
-        $statement = $this->conn->prepare("
-            SELECT admin_name, user_name, table_name, table_column, key, value, date_created 
-            FROM _history 
-            WHERE (instance_id = :instance_id AND table_name = :table_name AND key = :key)
-            $or
-            ORDER BY date_created DESC
-            LIMIT 1000;
-        ");
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->bindValue(':table_name', $table_name);
-        $statement->bindValue(':key', $key);
-        if (false === $statement->execute()) {
-            if (false === $statement->execute()) {
-                $this->handleErrorAndStop("Fail: $statement->queryString", __('Error fetching history.', 'peatcms'));
-            }
-        }
-        return $statement->fetchAll(5);
+        return $rows;
     }
 
     private function getMeaningfulSearchString(\stdClass $out): string
     {
-        if (isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
+        if (true === isset($out->__ref)) $out = $GLOBALS['slugs']->{$out->__ref};
         ob_start();
         if (true === isset($out->title)) {
             echo $out->title, ' ';

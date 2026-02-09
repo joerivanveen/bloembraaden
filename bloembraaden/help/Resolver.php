@@ -12,7 +12,6 @@ namespace Bloembraaden;
 // - __terms__
 class Resolver extends BaseLogic
 {
-    private ?\stdClass $post_data = null;
     private array $terms, $properties, $instructions = array();
     private string $path;
     private int $variant_page;
@@ -100,7 +99,7 @@ class Resolver extends BaseLogic
             $this->instructions['action'] = $post_data->action;
         }
         //
-        $this->post_data = $post_data;
+        $GLOBALS['post'] = $post_data;
         // cleanup terms and properties
         $this->properties = array();
         // $src holds the properties (filters), and possibly other things from the query string,
@@ -137,11 +136,6 @@ class Resolver extends BaseLogic
             $terms = array_merge($this->terms, $terms);
         }
         $this->terms = $terms;
-    }
-
-    public function getPostData()
-    {
-        return $this->post_data;
     }
 
     public function isHomepage(): bool
@@ -207,7 +201,7 @@ class Resolver extends BaseLogic
 
     public function cleanOutboundProperties(\stdClass $out): \stdClass
     {
-        $post_data = $this->getPostData();
+        $post_data = $GLOBALS['post'];
         // reflect properties:
         if (isset($post_data->render_in_tag)) $out->render_in_tag = $post_data->render_in_tag;
         if (isset($post_data->full_feedback)) $out->full_feedback = $post_data->full_feedback;
@@ -318,7 +312,7 @@ class Resolver extends BaseLogic
         if (0 === $num_terms) { // homepage is requested
             $type_name = 'page';
             // todo 0.27.0 joeri temporary error reporting
-            $this->addError('Homepage request uri fail ' . var_export($this->getPostData(), true));
+            $this->addError('Homepage request uri fail ' . var_export($GLOBALS['post'], true));
             $element_id = Help::$session->getInstance()->getHomepageId();
         } elseif (1 === $num_terms) {
             $term = $terms[0];

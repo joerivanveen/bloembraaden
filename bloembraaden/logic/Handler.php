@@ -26,7 +26,7 @@ class Handler extends BaseLogic
         if (null === ($action = $this->action)) return;
         // here you can do the actions, based on what’s $post-ed
         $out = null;
-        $post_data = $this->resolver->getPostData();
+        $post_data = $GLOBALS['post'];
         $instance = Help::$session->getInstance();
         // NOTE you always get the current version even if you ask for a previous one, this is no big deal I think
         $version = Setup::$VERSION . '-' . strtotime($instance->getSetting('date_updated'));
@@ -1799,7 +1799,7 @@ class Handler extends BaseLogic
         $out = $this->resolver->cleanOutboundProperties($out);
         // output
         if (true === Help::$OUTPUT_JSON) {
-            if (($post_data = $this->resolver->getPostData())) {
+            if (($post_data = $GLOBALS['post'])) {
                 if (true === isset($post_data->timestamp)) {
                     $out->timestamp = $post_data->timestamp;
                 }

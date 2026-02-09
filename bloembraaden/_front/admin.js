@@ -1522,7 +1522,7 @@ PEATCMS_history.prototype.fetch = function(callback) {
 
 PEATCMS_history.prototype.display = function(container) {
     let i, len, entry, el, column_name, table_reference, value_summary, value_more;
-    container.innerHTML = '';
+    container.innerHTML = '<button class="close-history">×</button><h1>History:</h1>';
     for (i = 0, len = this.rows.length; i < len; ++i) {
         entry = this.rows[i];
         const table_column = entry.table_column;
@@ -1567,7 +1567,7 @@ PEATCMS_history.prototype.display = function(container) {
         container.appendChild(el);
     }
     if (0 === len) {
-        container.innerHTML = '<p class="history-entry">No history available.</p>';
+        container.innerHTML += '<p class="history-entry">No history available.</p>';
     } else {
         // update cross references
         container.querySelectorAll('[data-original-table]').forEach(function (el) {
@@ -1588,6 +1588,10 @@ PEATCMS_history.prototype.display = function(container) {
         });
     });
     observer.observe(container);
+    container.querySelector('.close-history').addEventListener('click', function () {
+        container.remove();
+        observer.disconnect();
+    });
 }
 
 function PEATCMS_quickie(quickie) {

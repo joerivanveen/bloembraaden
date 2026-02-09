@@ -712,7 +712,7 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
             });
         });
     };
-    //edit_area.insertAdjacentElement('beforeend', el); // TODO 0.31.0 disabled history because it’s still wonky
+    edit_area.insertAdjacentElement('beforeend', el); // TODO 0.31.0 disabled history because it’s still wonky
     // add a view link
     el = document.createElement('button');
     el.innerText = '⊙';

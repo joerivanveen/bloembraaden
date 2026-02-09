@@ -3380,4 +3380,18 @@ ALTER TABLE _instance
 
 COMMIT;
 
+-- version 0.31.0
+
+BEGIN;
+
+ALTER TABLE "public"."_history" ADD COLUMN if not exists "element_name" Character Varying(255);
+ALTER TABLE "public"."_history" ADD COLUMN if not exists "element_id" Integer;
+
+CREATE INDEX if not exists "index_history_which_element" ON "public"."_history" USING btree ("instance_id", "element_name", "element_id" Asc NULLS Last);
+
+UPDATE "public"."_history" SET
+    element_name = ltrim(replace(table_name, 'cms', ''), '_'),
+    element_id = key;
+
+COMMIT;
 
