@@ -120,7 +120,7 @@ class Session extends BaseLogic
     public function delete(): bool
     {
         // set the session to deleted in the db
-        if (true === Help::getDB()->updateColumns('_session', array('deleted' => true), $this->token)) {
+        if (true === Help::getDB()->updateColumns('_session', array('deleted' => true), Help::tokenHash($this->token))) {
             // @since 0.7.9 remove remnants of the session from this instance
             $this->admin = null;
             $this->user = null;
@@ -131,10 +131,19 @@ class Session extends BaseLogic
         return false;
     }
 
-    public function login(string $email, string $pass, bool $as_admin): bool
+    public function login(string $email, string $password, bool $as_admin): bool
     {
         if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
-            if (true === password_verify($pass, $row->hash)) {
+            $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
+            $verified = password_verify($hashed, $row->hash);
+            // update hash to new way if it checks out the old way
+            if (false === $verified && true === ($verified = password_verify($password, $row->hash))) {
+                $table = $as_admin ? '_admin' : '_user';
+                Help::getDB()->updateColumns($table, array('password_hash' => Help::passwordHash($password)), $row->id);
+                $this->addError(sprintf('Password for %s with id %d updated to new method.', $as_admin ? 'admin' : 'user', $row->id));
+            }
+
+            if (true === $verified) {
                 if (false === $as_admin) {
                     if (($this->user = new User($row->id))) {
                         return $this->refreshAfterLogin(array('user_id' => $row->id));
@@ -148,7 +157,7 @@ class Session extends BaseLogic
         }
         $this->addMessage(__('Name / pass combination unknown.', 'peatcms'), 'warn');
         // delay based on user input against timing attacks
-        usleep(abs(crc32("pseudorandomstr1ng$email$pass") % 1000));
+        usleep(abs(crc32("pseudorandomstr1ng$email$password") % 1000));
 
         return false;
     }
@@ -162,12 +171,12 @@ class Session extends BaseLogic
     {
         // $columns_to_update holds the user_id or admin_id that you must update in the _session table
         $new_token = $this->generateToken();
-        $columns_to_update['token'] = $new_token; // also update the token
-        if (true === Help::getDB()->updateColumns('_session', $columns_to_update, $this->token)) {
+        $columns_to_update['token_hash'] = Help::tokenHash($new_token); // also update the token
+        if (true === Help::getDB()->updateColumns('_session', $columns_to_update, Help::tokenHash($this->token))) {
             if (true === $this->setSessionCookie($new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
                 if (true === isset($columns_to_update['user_id'])
-                    && 0 < ($user_id = (int) $columns_to_update['user_id'])
+                    && 0 < ($user_id = (int)$columns_to_update['user_id'])
                 ) {
                     $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
                 }
@@ -367,7 +376,7 @@ class Session extends BaseLogic
     {
         // returns false when there's already been output, true when it successfully runs
         return setCookie('BLOEMBRAADEN', $value, array(
-            'expires' => time() + 31536000,
+            'expires' => time() + 604800, // 7 days, maximum allowed by OWASP
             'path' => '/',
             'domain' => '',
             'secure' => true, // or false

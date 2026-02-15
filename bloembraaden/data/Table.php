@@ -161,8 +161,8 @@ class Table extends Base
                         ) {
                             $like = true;
                         }
-                        // ci_ai and token (_session) are already lower, prevent the table scan here
-                        if ('ci_ai' !== $column_name && 'token' !== $column_name) {
+                        // ci_ai is already lower, prevent the table scan here
+                        if ('ci_ai' !== $column_name && 'token_hash' !== $column_name ) {
                             $column_name = "lower($column_name)";
                             $lower = true;
                         }

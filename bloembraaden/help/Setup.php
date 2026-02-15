@@ -14,7 +14,7 @@ class Setup
     public static bool $INSTALL, $VERBOSE, $NOT_IN_STOCK_CAN_BE_ORDERED, $NEWRELIC_RECORDS_BACKEND = false;
     public static int $instance_id, $DECIMAL_DIGITS;
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
-    public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH, $LOGFILE_STARTSWITH;
+    public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH, $HASHKEY, $LOGFILE_STARTSWITH;
     public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $HOMEPAGE_SLUG, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
     public static array $translations;
     public static stdClass $MAIL, $ADMIN, $PDFMAKER;
@@ -142,6 +142,7 @@ class Setup
         self::$THEDATE = $current_date;
         self::$LOGFILE = "$config->logfile$current_date.log";
         self::$VERBOSE = $config->VERBOSE;
+        self::$HASHKEY = $config->HASHKEY;
         self::$INSTALL = $config->install;
         self::$DB_MAIN = $config->DB_MAIN;
         self::$MAIL = $config->MAIL;

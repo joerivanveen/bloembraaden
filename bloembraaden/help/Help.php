@@ -598,7 +598,13 @@ class Help
      */
     public static function passwordHash(string $password): bool|string|null
     {
-        return password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 1024, 'time_cost' => 128, 'threads' => 1]);
+        $password = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
+        return password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 15360, 'time_cost' => 128, 'threads' => 1]);
+    }
+
+    public static function tokenHash(string $token): bool|string|null
+    {
+        return hash_hmac('sha256', $token, Setup::$HASHKEY, false);
     }
 
     /**

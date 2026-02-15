@@ -35,6 +35,7 @@
   "newrelic_records_backend": false,
   "max_memory_limit": "1g",
   "VERBOSE": true,
+  "HASHKEY": "your_random_hashkey",
   "dbcache": "/path/to/writable/cache/",
   "cdnpath": "/static/files/",
   "cdnroot": "https://static.your_main_domain.tld/",

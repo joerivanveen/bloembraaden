@@ -3391,7 +3391,24 @@ CREATE INDEX if not exists "index_history_which_element" ON "public"."_history" 
 
 UPDATE "public"."_history" SET
     element_name = ltrim(replace(table_name, 'cms', ''), '_'),
-    element_id = key;
+    element_id = key
+WHERE 1 = 1;
+
+-- session restructuring:
+TRUNCATE "public"."_session";
+
+ALTER TABLE "public"."_session"
+    DROP CONSTRAINT IF EXISTS "unique__session_token";
+ALTER TABLE "public"."_session"
+    DROP COLUMN if exists "token";
+ALTER TABLE "public"."_session"
+    DROP COLUMN if exists "token_hash";
+
+ALTER TABLE "public"."_session" ADD COLUMN "token_hash" Character Varying(255);
+
+ALTER TABLE "public"."_session"
+    ADD PRIMARY KEY (token_hash);
+-- end session restructuring
 
 COMMIT;
 

@@ -677,8 +677,8 @@ class Handler extends BaseLogic
                             && strpos(($email_address = $post_data->email), '@')
                         ) {
                             $password = (string)$post_data->pass;
-                            if (8 > strlen($password)) {
-                                $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                            if (12 > strlen($password)) {
+                                $this->addMessage(__('Password must be at least 12 characters long.', 'peatcms'), 'warn');
                             } elseif (null !== ($user_id = Help::getDB()->insertUserAccount(
                                     $email_address,
                                     Help::passwordHash($password))
@@ -710,6 +710,7 @@ class Handler extends BaseLogic
                                 }
                             } else {
                                 $this->addMessage(__('Account could not be created.', 'peatcms'), 'note');
+                                $this->addMessage(__('If you want to add this order to an existing account, please contact us.', 'peatcms'), 'note');
                             }
                         } else {
                             $this->addMessage(__('No e-mail and / or pass received.', 'peatcms'), 'warn');
@@ -756,8 +757,8 @@ class Handler extends BaseLogic
                     if (true === Help::turnstileVerify($instance, $post_data)) {
                         if (true === isset($post_data->email, $post_data->pass)) {
                             $password = (string)$post_data->pass;
-                            if (8 > strlen($password)) {
-                                $this->addMessage(__('Password must be at least 8 characters long.', 'peatcms'), 'warn');
+                            if (12 > strlen($password)) {
+                                $this->addMessage(__('Password must be at least 12 characters long.', 'peatcms'), 'warn');
                             } elseif (true === isset($post_data->locker)
                                 && $row = Help::getDB()->emptyLocker($post_data->locker)
                             ) {
@@ -765,11 +766,25 @@ class Handler extends BaseLogic
                                     && ($email_address = $row->information->email_address) === $post_data->email
                                 ) {
                                     // if it’s indeed an account, update the password
-                                    // (since the code proves the emailaddress is read by the owner)
+                                    // (since the code proves the email address is read by the owner)
                                     if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
-                                        // create an account then...
-                                        $this->action = 'account_create';
-                                        $this->Act();
+                                        // @since 0.31.0 the highest admin can also reset their password like this, for when the hashkey changes
+                                        // note that this does not work when their email address is also a user.
+                                        if (1 === count(($admin_rows = Help::getDB()->fetchElementRowsWhere(
+                                                new Type('admin'),
+                                                array('email' => $email_address, 'instance_id' => 0)
+                                            )))) {
+                                            if (true === Help::getDB()->updateElement(new Type('admin'), array('password_hash' => Help::passwordHash($password)), $admin_rows[0]->id)) {
+                                                $this->addMessage(__('Admin password updated.', 'peatcms'), 'note');
+                                                $out['success'] = true;
+                                            } else {
+                                                $this->addError('Failed updating (admin) password.');
+                                            }
+                                        } else {
+                                            // create an account then...
+                                            $this->action = 'account_create';
+                                            $this->Act();
+                                        }
                                     } else {
                                         $this->addMessage(__('Password updated.', 'peatcms'), 'note');
                                         $out['success'] = true;
@@ -818,9 +833,12 @@ class Handler extends BaseLogic
                     }
                 } elseif ('account_delete_session' === $action) {
                     if (false === isset(($terms = $this->resolver->getTerms())[0])) {
-                        Help::$session->delete();
-                        $this->addMessage(__('Session has been deleted.', 'peatcms'), 'log');
-                        $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
+                        if (false === Help::$session->delete()) {
+                            $this->addError('Failed deleting the session.');
+                        } else {
+                            $this->addMessage(__('Session has been deleted.', 'peatcms'), 'log');
+                            $out = array('success' => true, 'is_account' => false, '__user__' => new \stdClass());
+                        }
                     } else {
                         $session_id = (int)$terms[0];
                         $my_session = Help::$session;
@@ -2211,7 +2229,7 @@ class Handler extends BaseLogic
                         $domain_name = str_replace('www.', '', ($instance->getDomain()));
                         if (null === Help::getDB()->insertAdmin(
                                 Help::randomString(10) . "@$domain_name", // email
-                                Help::passwordHash(Help::randomString(10)), // password
+                                Help::passwordHash(Help::randomString(12)), // password
                                 $client_id, // client_id
                                 $instance_id // instance_id
                             )) {

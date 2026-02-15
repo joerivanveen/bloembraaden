@@ -60,7 +60,8 @@ class Admin extends BaseLogic
 
     public function checkPassword(string $password): bool
     {
-        return password_verify($password, $this->row->password_hash);
+        $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
+        return password_verify($hashed, $this->row->password_hash);
     }
 
     public function getClient(): Client

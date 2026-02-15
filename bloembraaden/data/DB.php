@@ -2698,8 +2698,8 @@ class DB extends Base
                 'ip_address',
                 'reverse_dns',
                 'user_agent',
-            ), array('token' => $token)))) {
-            //$this->addError(sprintf('DB->fetchSession() returned nothing for token %s', $token));
+            ), array('token_hash' => Help::tokenHash($token))))) {
+
             return null;
         }
         // get session vars
@@ -3483,10 +3483,10 @@ class DB extends Base
         return $filenames .= 'done';
     }
 
-    public function jobDeleteOldSessions(int $interval_in_days = 30): int
+    public function jobDeleteOldSessions(int $interval_in_days = 7): int
     {
         $statement = $this->conn->prepare("
-            DELETE FROM _session WHERE admin_id = 0 AND user_id = 0 AND date_accessed < NOW() - interval '$interval_in_days days';
+            DELETE FROM _session WHERE date_accessed < NOW() - interval '$interval_in_days days';
         ");
         $statement->execute();
         $affected = $statement->rowCount();
@@ -3495,7 +3495,7 @@ class DB extends Base
         return $affected;
     }
 
-    public function jobDeleteOldHistory(int $interval_in_days = 30): int
+    public function jobDeleteOldHistory(int $interval_in_days = 400): int
     {
         $statement = $this->conn->prepare("
             DELETE FROM _history WHERE date_created < NOW() - interval '$interval_in_days days' AND table_column <> 'slug'
@@ -3561,23 +3561,26 @@ class DB extends Base
 
     public function insertSession(string $token, string $ip_address, string $user_agent): ?string
     {
-        return (string)$this->insertRowAndReturnLastId('_session', array(
-            'token' => $token,
-            'ip_address' => $ip_address,
-            'user_agent' => $user_agent,
-            'instance_id' => Setup::$instance_id,
-        ));
+        if (null === $this->insertRowAndReturnLastId('_session', array(
+                'token_hash' => Help::tokenHash($token),
+                'ip_address' => $ip_address,
+                'user_agent' => $user_agent,
+                'instance_id' => Setup::$instance_id,
+            ))) {
+            return null;
+        }
+        return $token;
     }
 
     public function registerSessionAccess(string $token, array $columns): void
     {
         if (0 === count($columns)) {
-            $statement = $this->conn->prepare('UPDATE _session SET date_accessed = NOW() WHERE token = ?;');
+            $statement = $this->conn->prepare('UPDATE _session SET date_accessed = NOW() WHERE token_hash = ?;');
             $statement->execute(array($token));
             $statement = null;
         } else {
             $columns['date_accessed'] = $columns['date_updated'] = 'NOW()';
-            $this->updateColumns('_session', $columns, $token);
+            $this->updateColumns('_session', $columns, Help::tokenHash($token));
 //            $statement = $this->conn->prepare(
 //                'UPDATE _session SET date_accessed = NOW(), date_updated = NOW(), ip_address = ?, reverse_dns = NULL WHERE token = ?;');
 //            $statement->execute(array($ip_address, $token));
