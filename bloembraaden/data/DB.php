@@ -38,6 +38,7 @@ class DB extends Base
         'password_hash',
         'turnstile_secret_key',
         'access_token',
+        'myparcel_api_key',
     );
 
     public function __construct()
@@ -3480,7 +3481,7 @@ class DB extends Base
             }
         }
 
-        return $filenames .= 'done';
+        return "{$filenames}done";
     }
 
     public function jobDeleteOldSessions(int $interval_in_days = 7): int

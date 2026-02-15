@@ -1420,7 +1420,7 @@ class Help
             if (PHP_VERSION_ID < 80000) {
                 die('Bloembraaden needs php version 8.0 or higher.');
             }
-            if (is_null(Help::passwordHash('test'))) {
+            if (null === Help::passwordHash('test')) {
                 $installable = false;
                 echo 'PASSWORD_ARGON2ID seems missing', "\n";
             }
