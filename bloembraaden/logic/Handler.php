@@ -2337,9 +2337,32 @@ class Handler extends BaseLogic
      */
     public function after_posting(\stdClass $out, \stdClass $post_data): \stdClass
     {
+        $safeUrl = function(string $url) {
+            // only local redirects are allowed
+            if (true === str_starts_with($url, 'https://')) {
+                $url = substr($url, 8);
+            } elseif (true === str_starts_with($url, 'http://')) {
+                $url = substr($url, 7);
+            } elseif (true === str_starts_with($url, '//')) {
+                $url = substr($url, 2);
+            } else {
+                return $url; // is local
+            }
+            $parts = explode('/', $url);
+            if (Setup::$INSTANCE_DOMAIN === $parts[0]) {
+                array_shift($parts);
+            } else {
+                $this->addError(sprintf('Unsafe redirect URL provided: %s', $url));
+
+                return null; // not local!
+            }
+
+            return implode('/', $parts); // return relative path
+        };
+
         if (false === $out->success) {
             if (true === isset($post_data->failure_url)
-                && null !== ($url = Help::safeUrl($post_data->failure_url))
+                && null !== ($url = $safeUrl($post_data->failure_url))
             ) {
                 $out->redirect_uri = $url;
             } elseif (true === isset($post_data->failure_message)) {
@@ -2352,7 +2375,7 @@ class Handler extends BaseLogic
         }
 
         if (true === isset($post_data->success_url)
-            && null !== ($url = Help::safeUrl($post_data->success_url))
+            && null !== ($url = $safeUrl($post_data->success_url))
         ) {
             $out->redirect_uri = $url;
         } elseif (true === isset($post_data->success_message)) {
