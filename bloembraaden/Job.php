@@ -582,7 +582,7 @@ switch ($interval) {
             $stream_context = stream_context_create(array(
                 'http' => array(
                     'method' => 'GET',
-                    'header' => "Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*\r\n"
+                    'header' => "Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*\r\n"
                 )
             ));
             $static_path = Setup::$CDNPATH;
@@ -592,12 +592,20 @@ switch ($interval) {
                 $update_data = array();
                 if (false === file_exists("$static_path$instance_id")) mkdir("$static_path$instance_id");
                 if (false === str_ends_with($static_root, '/')) $static_root = "$static_root/";
+                if (false === preg_match('/^(https:\/\/.)[-a-zA-Z0-9@%._\+~#=]{2,256}\.[a-z]{2,6}\/$/', $static_root)) {
+                    echo "ERROR: skipped importing $row->slug because static root is not a valid url\n";
+                    continue;
+                }
                 foreach (Image::SIZES as $size => $pixels) {
                     $save_path = "$instance_id/$size/";
                     $src_path = "src_$size";
                     $image_src = trim($row->{$src_path} ?? '');
                     if ('' === $image_src) {
                         continue; // we do not have an url to get, so skip it
+                    }
+                    if (false === str_ends_with($image_src, 'webp')) {
+                        echo "ERROR: skipped importing $image_src because it is not a webp image\n";
+                        continue;
                     }
                     $image_src = "$static_root$image_src";
                     // todo remember the paths so you dont need to check every time
