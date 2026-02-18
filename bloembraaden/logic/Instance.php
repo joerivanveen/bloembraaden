@@ -162,7 +162,9 @@ class Instance extends BaseLogic
             // try to find alternative hosts to provide a 301 redirect
             if (($canonical = Help::getDB()->fetchInstanceCanonicalDomain($domain))) {
                 // @since 0.7.1 also supply the originally requested uri...
-                header("Location: https://$canonical" . urldecode($_SERVER['REQUEST_URI']), true, 301);
+                // @since 0.31.0 only allow redirects to slugs
+                $path = Help::slugify(urldecode($_SERVER['REQUEST_URI']));
+                header("Location: https://$canonical/$path", true, 301);
                 die();
             } else {
                 // @since 0.10.2 no more error reporting for these kinds of requests
