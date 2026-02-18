@@ -498,7 +498,9 @@ class Help
     public static function validate_vat(string $country_iso2, string $number): array
     {
         // check availability: https://ec.europa.eu/taxation_customs/vies/#/self-monitoring
-        if (2 !== strlen($country_iso2) || strlen($number) < 5) {
+        $number = strtoupper(str_replace(' ', '', $number));
+        // VAT numbers are 8 to 12 chars long and may contain only alphanumeric chars
+        if (2 !== strlen($country_iso2) || false === preg_match('/^[A-Z0-9]{8,12}$/', $number)) {
             return array('success' => true, 'valid' => false, 'response' => 'Incorrect format');
         }
         $ch = curl_init();

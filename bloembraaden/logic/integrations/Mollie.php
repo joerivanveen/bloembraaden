@@ -6,6 +6,8 @@ namespace Bloembraaden;
 
 class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInterface
 {
+    private const GATEWAY_URL = 'https://api.mollie.com/v2/';
+
     public function getFieldNames(): array
     {
         return array(
@@ -13,7 +15,6 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
             'cancelUrl' => 'Return url when no payment is done',
             'api_key' => 'The api key used for authorization',
             'default_src' => 'Space separated list of domain names for CSP header',
-            'gateway_url' => 'The full url of the api endpoint',
         );
     }
 
@@ -65,7 +66,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         }';
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->getFieldValue('gateway_url') . 'payments',
+            CURLOPT_URL => self::GATEWAY_URL . 'payments',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -113,7 +114,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
     {
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->getFieldValue('gateway_url') . "payments/$payment_id",
+            CURLOPT_URL => self::GATEWAY_URL . "payments/$payment_id",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
