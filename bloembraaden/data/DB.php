@@ -4756,7 +4756,7 @@ class DB extends Base
             $statement->bindValue(':key', (int)$row->key);
             $statement->bindValue(':value', $row->value);
             $statement->bindValue(':element_name', $row->element_name ?? null);
-            $statement->bindValue(':element_id', (int)$row->element_id ?? null);
+            $statement->bindValue(':element_id', (int)($row->element_id ?? null));
             $statement->bindValue(':date_created', $row->date_created);
             $success = $statement->execute();
             $statement = null;
