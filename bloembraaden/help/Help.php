@@ -454,7 +454,7 @@ class Help
      */
     public static function scanFileAndSaveWhenOk(string $temp_path): ?string
     {
-        if (!file_exists($temp_path)) return null;
+        if (false === file_exists($temp_path)) return null;
         // TODO check the file before saving, throw exception when it doesn't work
         // execute maldet / clamav or something on the file
         // https://www.vultr.com/docs/scan-for-malware-and-viruses-on-centos-using-clamav-and-linux-malware-detect
@@ -462,7 +462,7 @@ class Help
         // save the file
         $filename = Help::randomString(20);
         $new_path = Setup::$UPLOADS . $filename;
-        if (file_exists($new_path)) { // this should never happen
+        if (true === file_exists($new_path)) { // this should never happen
             self::trigger_error("File $new_path already exists", E_USER_ERROR);
         } else {
             copy($temp_path, $new_path);

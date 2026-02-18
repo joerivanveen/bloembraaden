@@ -3410,5 +3410,9 @@ ALTER TABLE "public"."_session"
     ADD PRIMARY KEY (token_hash);
 -- end session restructuring
 
+-- enlarge content type for files
+ALTER TABLE "public"."cms_file"
+    ALTER COLUMN "content_type" TYPE character varying(255);
+
 COMMIT;
 
