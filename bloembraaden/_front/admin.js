@@ -688,7 +688,21 @@ function PEATCMS_x_value(row, parent_element) { // contains property / property_
     this.parent_element = parent_element;
     //this.property = window.PEATCMS_globals.slugs[row.__property__.__ref];
     el.className = (row.online) ? 'online' : 'offline';
-    el.innerHTML = `<span class="drag_handle">::</span> <a href="/${row.property_slug}">${row.property_title}</a>: <a href="/${row.slug}">${row.title}</a>`;
+    // prepare the elements and add the content
+    const span = document.createElement('span'),
+    a1 = document.createElement('a'),
+    a2 = document.createElement('a');
+    span.className = 'drag_handle';
+    span.textContent = '::';
+    a1.href = `/${row.property_slug}`;
+    a1.textContent = row.property_title;
+    a2.href = `/${row.slug}`;
+    a2.textContent = row.title;
+    el.appendChild(span);
+    el.insertAdjacentText('beforeend', ' ');
+    el.appendChild(a1);
+    el.insertAdjacentText('beforeend', ': ');
+    el.appendChild(a2);
     // add remove button
     btn = document.createElement('span');
     btn.classList.add('remove');

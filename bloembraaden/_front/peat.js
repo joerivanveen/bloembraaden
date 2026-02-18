@@ -928,7 +928,10 @@ PEATCMS_element.prototype.populatePropertiesArea = function (type, suggestions, 
             el.classList.add((suggestion.online) ? 'online' : 'offline');
             el.setAttribute('data-property_id', suggestion.property_id);
             el.setAttribute('data-property_value_id', suggestion.property_value_id);
-            el.innerHTML = '<a href="/' + suggestion.slug + '">' + suggestion.title + '</a>';
+            const a = document.createElement('a');
+            a.href = `/${suggestion.slug}`;
+            a.textContent = suggestion.title;
+            el.appendChild(a);
             btn = document.createElement('button');
             btn.className = 'unlinked';
             btn.addEventListener('click', function () {
@@ -3318,7 +3321,7 @@ PEATCMS.prototype.message = function (msg_obj, level) {
         el.classList.add('PEATCMS');
         el.classList.add('message');
         el.classList.add(level);
-        el.innerHTML = string;
+        el.textContent = string;
         el.setAttribute('data-count', count.toString());
         el.setAttribute('data-from', Date.now().toString())
         el.id = id;
