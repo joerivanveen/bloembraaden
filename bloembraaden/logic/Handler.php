@@ -117,7 +117,8 @@ class Handler extends BaseLogic
             // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
             if (true === isset($post_data->template_name)) {
                 // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
-                if (true === isset($post_data->template_id) && is_numeric(($template_id = $post_data->template_id))) {
+                if (true === isset($post_data->template_id)) {
+                    $template_id = (int) $post_data->template_id;
                     if (ADMIN && ($row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                         $temp = new Template($row);
                         if (false === $temp->checkIfPublished()) {
@@ -167,11 +168,7 @@ class Handler extends BaseLogic
         } elseif ('get_template_by_name' === $action) {
             if (isset($post_data->template_name)) {
                 if (($template_row = Help::getDB()->getTemplateByName($post_data->template_name))) {
-                    $filename = Setup::$DBCACHE . 'templates/' . $template_row->template_id . '.gz';
-                    // TODO temp fallback remove when all templates are regenerated anew 0.10.5
-                    if (false === file_exists($filename)) {
-                        $filename = CORE . 'presentation/templates/' . $template_row->template_id . '.gz';
-                    }
+                    $filename = Setup::$DBCACHE . "templates/$template_row->template_id.gz";
                     if (true === file_exists($filename)) {
                         header('Content-Type: application/json');
                         header('Content-Encoding: gzip');
