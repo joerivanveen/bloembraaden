@@ -162,7 +162,7 @@ class Handler extends BaseLogic
                 unset($response);
                 die();
             } else {
-                $this->handleErrorAndStop(sprintf('No template_name found in data %s.', \var_export($post_data, true)),
+                $this->handleErrorAndStop(sprintf('No template_name found in data %s.', var_export($post_data, true)),
                     __('Could not load template.', 'peatcms'));
             }
         } elseif ('get_template_by_name' === $action) {
