@@ -1930,7 +1930,6 @@ class Handler extends BaseLogic
 
     private function sendMail(Instance $instance, \stdClass $post_data): ?\stdClass
     {
-        $out = null;
         if (true === isset($post_data->from_email)
             && strpos(($from_email = $post_data->from_email), '@')
         ) {
@@ -1967,7 +1966,7 @@ class Handler extends BaseLogic
             ));
             $out = $mail->send();
         } else {
-            $out = array('success' => false);
+            $out = (object)array('success' => false);
         }
 
         return $this->after_posting($out, $post_data);
