@@ -3142,7 +3142,7 @@ PEATCMS.prototype.startUp = function () {
         // throttle updating
         clearTimeout(this.setstate_timeout);
         this.setstate_timeout = setTimeout(function () {
-            NAV.setState();
+            NAV.rememberScrollingPosition();
         }, 392);
         self.setScrolledStatus();
     }, {passive: true});
@@ -3411,7 +3411,6 @@ PEATCMS.prototype.scrollTo = function (x, y, element) {
 }
 
 window.onpopstate = function (e) {
-    let pos;
     if (e.state === null || !NAV) {
         if (!NAV) {
             console.error('Navigator not loaded on *pop*.');
@@ -3419,14 +3418,15 @@ window.onpopstate = function (e) {
             console.error('No state given on *pop*.');
         }
         //document.location.reload(); // this keeps reloading on safari / iphone
-    } else { // e.state holds max 640k so you can't put an element in it, for now it's just the slug and scrolling position
-        const path = e.state.path;
+    } else { // e.state holds max 640k so you can't put an element in it
+        const path = e.state.path,
+            scroll = JSON.parse(sessionStorage.getItem(`scroll:${path}`));
         NAV.signalStartNavigating(path);
         if (VERBOSE) console.log(e);
         // @since 0.7.1 restore scrolling position from history (after rendering)
-        if (e.state.hasOwnProperty('scrollY') && (pos = {x: e.state.scrollX, y: e.state.scrollY})) {
+        if (scroll) {
             PEAT.addEventListener('peatcms.navigation_end', function () {
-                window.scrollTo(pos.x, pos.y);
+                window.scrollTo(scroll.scrollX, scroll.scrollY);
             }, true); // true means event is only executed once then removed
         }
         NAV.refresh(path);
@@ -3489,7 +3489,7 @@ PEATCMS_navigator.prototype.go = function (path) {
     let slug;
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
-        this.setState();
+        this.rememberScrollingPosition();
         if (0 === path.indexOf(this.getRoot()) || 0 !== path.indexOf('http')) { // this is a local link
             slug = this.signalStartNavigating(path);
 
@@ -3617,7 +3617,7 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             } else {
                 PEAT.render(el, function (el) {
                     self.element = el; // cache current element
-                    self.setState();
+                    self.rememberScrollingPosition();
                     self.is_navigating = false;
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end')); // send without detail, does not bubble
                 });
@@ -3630,23 +3630,13 @@ PEATCMS_navigator.prototype.refresh = function (path) {
  * updates the history state with scroll position
  * @since 0.7.1
  */
-PEATCMS_navigator.prototype.setState = function () {
-    const el = this.element;
-    if (window.history && window.history.pushState) {
-        if (el) {
-            const title = el.state.title,
-                path = el.state.path || el.state.slug;
-            window.history.replaceState({
-                path: path,
-                title: title,
-                scrollY: window.scrollY,
-                scrollX: window.scrollX
-            }, title, `/${path}`);
-            if (VERBOSE) console.log('State set regarding scroll position.');
-        } else {
-            console.error('Could not set state, no element found.');
-            console.log(this);
-        }
+PEATCMS_navigator.prototype.rememberScrollingPosition = function () {
+    const el = this.element, path = el.state.path || el.state.slug || null;
+    if (path) {
+        sessionStorage.setItem(`scroll:${path}`, JSON.stringify({scrollY: window.scrollY, scrollX: window.scrollX}));
+    } else {
+        console.error('Could not set state, no element found.');
+        console.log(this);
     }
 }
 
@@ -4185,8 +4175,8 @@ PEATCMS.loadSrcSets = function () {
 PEATCMS.setupCarousels = function () {
     function setupCarousel(wrapper) {
         let el, slides, slide, i, len, strip;
-        const identifier = 'carousel_' + PEATCMS.numericHashFromString(wrapper.innerText).toString(),
-            x = localStorage.getItem(identifier) || 0;
+        const identifier = 'carousel:' + PEATCMS.numericHashFromString(wrapper.innerText).toString(),
+            x = sessionStorage.getItem(identifier) || 0;
         if (!(strip = wrapper.querySelector('.strip'))) strip = wrapper; // no wrapper = backwards compatible
         if (!wrapper.hasAttribute('data-carousel-setup')) {
             wrapper.setAttribute('data-carousel-setup', '0');
@@ -4255,7 +4245,7 @@ PEATCMS.setupCarousels = function () {
             function scrollReg() {
                 const scrollLeft = strip.scrollLeft;
                 // remember scroll position
-                localStorage.setItem(strip.identifier, scrollLeft);
+                sessionStorage.setItem(strip.identifier, scrollLeft);
                 // set attributes for css
                 if (scrollLeft < 1) {
                     wrapper.setAttribute('data-scrolled', '0');
