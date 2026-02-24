@@ -11,7 +11,7 @@ namespace Bloembraaden;
 class Mailer extends Base
 {
     private array $fields = array(), $attachments = array();
-    private string $api_url, $active_provider, $api_key;
+    private string $active_provider, $api_key;
     private int $success_status = 200; // which I would consider normal but Sendgrid thinks differently
     private $curl;
     // Mailer uses mailgun api via curl
@@ -29,13 +29,12 @@ class Mailer extends Base
         parent::__construct();
         try {
             $mail = Setup::$MAIL;
-            $this->active_provider = $mail->active;
-            $this->api_key = $mail->{$mail->active}->api_key;
-            $this->api_url = $mail->{$mail->active}->api_url;
+            $this->active_provider = $active_provider = $mail->active;
+            $this->api_key = $mail->{$active_provider}->api_key;
         } catch (\Exception $e) {
             $this->handleErrorAndStop($e, __('Mail configuration error.', 'peatcms'));
         }
-        if ($this->active_provider === 'mailgun' && false === strpos(($custom_domain = trim($custom_domain)), '.')) {
+        if ($active_provider === 'mailgun' && false === str_contains(($custom_domain = trim($custom_domain)), '.')) {
             $this->addError(sprintf('%s is not a valid custom domain for Mailer', $custom_domain));
         }
         // setup one curl to use for the instance of the mailer, is fastest
@@ -45,24 +44,24 @@ class Mailer extends Base
         }
         //curl_setopt($curl, CURLOPT_USERAGENT, 'Bloembraaden/VERSION');
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
-        if ($this->active_provider === 'mailchimp') {
+        if ($active_provider === 'mailchimp') {
             // mailchimp / mandrill expects a json encoded array holding the required fields
-            curl_setopt($curl, CURLOPT_URL, $this->api_url . 'messages/send.json');
+            curl_setopt($curl, CURLOPT_URL, 'https://mandrillapp.com/api/1.0/messages/send.json');
             curl_setopt($curl, CURLOPT_HTTPHEADER, array(
                 'Content-Type: application/json'
             ));
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        } elseif ($this->active_provider === 'mailgun') {
-            curl_setopt($curl, CURLOPT_URL, $this->api_url . $custom_domain . '/messages');
+        } elseif ($active_provider === 'mailgun') {
+            curl_setopt($curl, CURLOPT_URL, "https://api.eu.mailgun.net/v3/$custom_domain/messages");
             curl_setopt($curl, CURLOPT_USERPWD, 'api:' . $this->api_key);
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        } elseif ($this->active_provider === 'sendgrid') {
+        } elseif ($active_provider === 'sendgrid') {
             // sendgrid uses 202 for successful queueing, 200 actually means the message is not going to be delivered
             $this->success_status = 202;
             // add mail/send to the api_url as per the specs
-            curl_setopt($curl, CURLOPT_URL, $this->api_url . 'mail/send');
+            curl_setopt($curl, CURLOPT_URL, 'https://api.sendgrid.com/v3/mail/send');
             // set sendgrid authorization header https://stackoverflow.com/a/48896992
             curl_setopt($curl, CURLOPT_HTTPHEADER, array(
                 'Authorization: Bearer ' . $this->api_key,
@@ -80,7 +79,7 @@ class Mailer extends Base
 
     public function __shutdown(): void
     {
-        if (isset($this->curl)) curl_close($this->curl);
+        if (true === isset($this->curl)) curl_close($this->curl);
     }
 
     public function set(array $fields): array
