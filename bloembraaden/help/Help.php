@@ -507,6 +507,8 @@ class Help
         curl_setopt($ch, CURLOPT_URL, "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/$country_iso2/vat/$number");
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         $result = (array)json_decode(curl_exec($ch));
         curl_close($ch);
         if (0 === json_last_error()) {
@@ -558,6 +560,8 @@ class Help
             curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // it would hang for 2 minutes even though the answer was already there?
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             $result = (array)json_decode(curl_exec($ch));
             curl_close($ch);
             if (0 === json_last_error()) {

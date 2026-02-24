@@ -243,6 +243,8 @@ switch ($interval) {
                         if (false === $curl) {
                             continue; // peatcms can’t mail without curl anyway so might as well just ignore this
                         }
+                        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
+                        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
                         //curl_setopt($curl, CURLOPT_USERAGENT, 'Bloembraaden/VERSION');
                         curl_setopt($curl, CURLOPT_URL, Setup::$PDFMAKER->api_url . '?token=' . Setup::$PDFMAKER->api_key);
                         curl_setopt($curl, CURLOPT_POST, true);
@@ -468,6 +470,8 @@ switch ($interval) {
                     CURLOPT_TIMEOUT => 30,
                     CURLOPT_CONNECTTIMEOUT => 3,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                    CURLOPT_SSL_VERIFYHOST => 2,
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => "{\"data\":{\"orders\":[$order_myparcel_json]}}",
                     CURLOPT_HTTPHEADER => array(

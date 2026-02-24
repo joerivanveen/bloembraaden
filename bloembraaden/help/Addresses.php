@@ -104,6 +104,8 @@ class Addresses extends Base
             CURLOPT_TIMEOUT => 12,
             CURLOPT_CONNECTTIMEOUT => 2,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'Accept: application/json',
