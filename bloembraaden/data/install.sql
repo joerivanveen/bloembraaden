@@ -3414,5 +3414,13 @@ ALTER TABLE "public"."_session"
 ALTER TABLE "public"."cms_file"
     ALTER COLUMN "content_type" TYPE character varying(255);
 
+-- remove unused payment columns from order table
+ALTER TABLE "public"."_order"
+    DROP COLUMN if exists "payment_transaction_id";
+ALTER TABLE "public"."_order"
+    DROP COLUMN if exists "payment_tracking_id";
+ALTER TABLE "public"."_order"
+    DROP COLUMN if exists "payment_tracking_text";
+
 COMMIT;
 

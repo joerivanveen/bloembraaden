@@ -939,10 +939,10 @@ class Handler extends BaseLogic
                                     if (false === $psp->hasError()) {
                                         if (($tracking_id = $psp->beginTransaction($order, $instance))) {
                                             // add payment to this order
-                                            if ($tracking_id === Help::getDB()->insertRowAndReturnKey('_payment', array(
-                                                    'payment_id' => $tracking_id,
+                                            if ($tracking_id === Crypt::decrypt(Help::getDB()->insertRowAndReturnKey('_payment', array(
+                                                    'payment_id' => Crypt::encrypt($tracking_id),
                                                     'order_id' => $order->getId(),
-                                                ))) {
+                                                )))) {
                                                 $out = array('tracking_id' => $tracking_id, 'success' => true);
                                             } else {
                                                 $this->addError("Error adding payment $tracking_id to order $post_data->order_number.");

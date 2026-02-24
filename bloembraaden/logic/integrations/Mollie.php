@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Bloembraaden;
 
@@ -130,7 +130,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         $result = curl_exec($curl);
         // receives a resource (payment object) with status and amount etc.
         $err = curl_error($curl);
-        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);   //get status code
+        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
         curl_close($curl);
         if ($err) {
             $this->addError($err);
@@ -144,13 +144,11 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                     $this->addError($result);
                 }
                 $this->addMessage(sprintf(__('Payment request was bad (status %s).', 'peatcms'), $status_code), 'error');
-            } else { // status code must be 200...
-                if (json_last_error() === 0) {
-                    return $return_object;
-                } else {
-                    $this->addError($result);
-                    $this->addMessage(__('Payment response was not recognized.', 'peatcms'), 'error');
-                }
+            } elseif (json_last_error() === 0) {
+                return $return_object;
+            } else {
+                $this->addError($result);
+                $this->addMessage(__('Payment response was not recognized.', 'peatcms'), 'error');
             }
         }
 
@@ -174,9 +172,9 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
             // get the status of this payment id from mollie https://docs.mollie.com/reference/v2/payments-api/get-payment
             if (($result = $this->getPaymentByPaymentId($payment_id))) {
                 $log_id = $this->logPaymentStatus($result);
-                // get the order having this payment_id
-                $amount = (float)$result->amount->value ?? 0.0;
+                $amount = (float)($result->amount->value ?? 0);
                 $status = strtolower($result->status);
+                // get the order having this payment_id
                 if (($order_row = Help::getDB()->getOrderByPaymentTrackingId($payment_id))) {
                     $order_update_array = array(
                         'payment_status' => $status,
@@ -201,21 +199,20 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                         'bool_processed' => true,
                         'date_processed' => 'NOW()',
                         'order_id' => $order_id,
-                        'amount' => intval($amount * 100),
+                        'amount' => (int)($amount * 100),
                     ), $log_id);
                     // update the status in the order
                     return Help::getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
                 } else {
-                    $this->addError(sprintf('%s->updatePaymentStatus no order found for %s', 'Mollie', $payment_id));
-                    return true; // don’t bother any further already logged with processed false
+                    $this->addError(sprintf('%s->updatePaymentStatus no order found.', 'Mollie'));
                 }
             } else {
-                $this->addError(sprintf('%s->updatePaymentStatus could not get payment status for id %s', 'Mollie', $payment_id) );
+                $this->addError(sprintf('%s->updatePaymentStatus could not get payment status.', 'Mollie'));
             }
         } else {
-            $this->addError(sprintf('%s->updatePaymentStatus missing id in payload: ' . var_export($payload, true), 'Mollie'));
+            $this->addError(sprintf('%s->updatePaymentStatus missing id in payload.', 'Mollie'));
         }
 
-        return false;
+        return true; // recommended by Mollie to always return status 200 ok if you processed the webhook
     }
 }
