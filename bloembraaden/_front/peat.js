@@ -3617,7 +3617,12 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             } else {
                 PEAT.render(el, function (el) {
                     self.element = el; // cache current element
-                    self.rememberScrollingPosition();
+                    //self.rememberScrollingPosition();
+                    // data holds max 640k hence you can't put pages in it
+                    window.history.replaceState({
+                        title: el.title,
+                        path: path
+                    }, el.title, `/${path}`);
                     self.is_navigating = false;
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end')); // send without detail, does not bubble
                 });
