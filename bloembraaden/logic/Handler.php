@@ -256,11 +256,11 @@ class Handler extends BaseLogic
                 if (true === $psp->updatePaymentStatus($post_data)) {
                     $out = $psp->successBody();
                 } else {
-                    $this->handleErrorAndStop('Did not accept payment_status_update with ' . json_encode($post_data));
+                    $this->handleErrorAndStop("Did not accept payment_status_update in {$instance->getDomain()}.");
                 }
             } else {
                 $this->handleErrorAndStop(
-                    sprintf('Could not get PaymentServiceProvider for %s.', $instance->getName()),
+                    "Could not get PaymentServiceProvider for {$instance->getDomain()}.",
                     __('No PaymentServiceProvider found.', 'peatcms')
                 );
             }

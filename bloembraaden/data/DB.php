@@ -1525,7 +1525,7 @@ class DB extends Base
         if (1 === count($rows)) {
             return (int)$rows[0][0];
         }
-        $this->handleErrorAndStop(sprintf('payment sequential number failed for instance %s', $instance_id));
+        $this->handleErrorAndStop(sprintf('payment sequential number failed for instance %s.', $instance_id));
 
         return 0;
     }
@@ -1626,8 +1626,8 @@ class DB extends Base
     {
         // we need specific vars for the ordering process, validation process has run, if something misses you should throw an error
         if (count(($order_rows = $shoppinglist->getRows())) > 0) {
-            if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present');
-            if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present');
+            if (false === isset($vars['email'])) $this->addError('DB->placeOrder: email is not present.');
+            if (false === isset($vars['shipping_country_id'])) $this->addError('DB->placeOrder: shipping_country_id is not present.');
             if ($this->hasError()) return null;
             // @since 0.9.0 add vat, @since 0.23.0 allow ex-vat
             $ex_vat = true === isset($vars['vat_valid']) && true === $vars['vat_valid'];
@@ -1666,8 +1666,8 @@ class DB extends Base
                 $quantity_total += $quantity;
             }
             if (0 === $quantity_total) { // @since 0.7.6 if there is nothing to order, also abandon the process
-                $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
-                $this->addError('DB->placeOrder: no rows in shoppinglist to order');
+                $this->addMessage(__('There are no rows in this shoppinglist to order.', 'peatcms'), 'warn');
+                $this->addError('DB->placeOrder: no rows in shoppinglist to order.');
 
                 return null;
             }
@@ -1682,8 +1682,8 @@ class DB extends Base
             }
             // set up the order_number
             if (null === ($order_number = $this->createUniqueOrderNumber($instance_id))) {
-                $this->addMessage(__('Could not create unique order_number', 'peatcms'));
-                $this->addError('Could not create unique order_number');
+                $this->addMessage(__('Could not create unique order_number.', 'peatcms'));
+                $this->addError('Could not create unique order_number.');
 
                 return null;
             }
@@ -1767,8 +1767,8 @@ class DB extends Base
             try {
                 $this->conn->beginTransaction();
                 if (null === ($order_id = $this->insertRowAndReturnLastId('_order', $order_fields))) {
-                    $this->addMessage(__('Could not create order', 'peatcms'), 'error');
-                    $this->addError('Could not create order');
+                    $this->addMessage(__('Could not create order.', 'peatcms'), 'error');
+                    $this->addError('Could not create order.');
 
                     return null;
                 }
@@ -1778,8 +1778,8 @@ class DB extends Base
                     unset($row->variant_slug); // this is not saved in the order, prevent logging by removing now
                     if (null === $this->insertRowAndReturnLastId('_order_variant', (array)$row)) {
                         $this->resetConnection();
-                        $this->addMessage(__('Order row insert failed', 'peatcms'), 'error');
-                        $this->addError('Order row insert failed');
+                        $this->addMessage(__('Order row insert failed.', 'peatcms'), 'error');
+                        $this->addError('Order row insert failed.');
 
                         return null;
                     }
@@ -1787,19 +1787,19 @@ class DB extends Base
                 // ok commit
                 $this->conn->commit();
             } catch (\Exception $e) {
-                $this->handleErrorAndStop($e, __('Order process failure', 'peatcms'));
+                $this->handleErrorAndStop($e, __('Order process failure.', 'peatcms'));
             }
             // update quantity in stock when necessary
             $this->updateStock($order_rows, -1, $order_number);
             // clear the shoppinglist (orphaned rows will be deleted by daily job)
             if (false === $this->deleteRowAndReturnSuccess('_shoppinglist', $shoppinglist->getId())) {
-                $this->addMessage(__('Order placed, shoppinglist could not be cleared', 'peatcms'), 'warn');
+                $this->addMessage(__('Order placed, shoppinglist could not be cleared.', 'peatcms'), 'warn');
             }
 
             return $order_number;
         } else {
-            $this->addMessage(__('There are no rows in this shoppinglist to order', 'peatcms'), 'warn');
-            $this->addError("No rows in shoppinglist {$shoppinglist->getId()}");
+            $this->addMessage(__('There are no rows in this shoppinglist to order.', 'peatcms'), 'warn');
+            $this->addError("No rows in shoppinglist {$shoppinglist->getId()}.");
 
             return null;
         }
@@ -1907,7 +1907,7 @@ class DB extends Base
             }
         }
         $statement = null;
-        if (null === $order_number) $this->handleErrorAndStop('order_number still null', __('Could not create unique order_number', 'peatcms'));
+        if (null === $order_number) $this->handleErrorAndStop('order_number still null.', __('Could not create unique order_number.', 'peatcms'));
 
         return $order_number;
     }
@@ -2405,7 +2405,7 @@ class DB extends Base
     public function orderMenuItem(int $menu_id, int $item_id, int $to_item_id): bool
     {
         if ($to_item_id === $item_id) {
-            $this->addMessage(__('You can’t order a menu item before itself', 'peatcms'), 'error');
+            $this->addMessage(__('You can’t order a menu item before itself.', 'peatcms'), 'error');
 
             return false;
         }
@@ -2445,7 +2445,7 @@ class DB extends Base
         $deleted_rows = $this->deleteRowWhereAndReturnAffected('cms_menu_item_x_menu', $where);
         $deleted_rows += $this->deleteRowWhereAndReturnAffected('cms_menu_item_x_menu_item', $where);
         if ($deleted_rows > 1) {
-            $this->addMessage(sprintf(__('Deleted %s rows to order menu item', 'peatcms'), $deleted_rows));
+            $this->addMessage(sprintf(__('Deleted %s rows to order menu item.', 'peatcms'), $deleted_rows));
         }
         //var_dump($table_name);
         // insert the item in the right table, and move it to the correct order (if applicable)
@@ -2455,13 +2455,13 @@ class DB extends Base
                 if ($row = $this->fetchRow('cms_menu_item_x_menu_item', array('menu_item_id'), $where_to)) {
                     $where_not_deleted = array_merge(array('menu_item_id' => $row->menu_item_id), $where_not_deleted);
                 } else {
-                    $this->addError('Could not determine the menu_item_id this item is supposed to go under');
+                    $this->addError('Could not determine the menu_item_id this item is supposed to go under.');
                 }
             }
             $cross_table_row_id = $this->insertRowAndReturnLastId($table_name,
                 array_merge(array('online' => true, 'o' => 0), $where_not_deleted));
             if (null === $cross_table_row_id) {
-                $this->addError('Inserting menu item failed');
+                $this->addError('Inserting menu item failed.');
 
                 return false;
             }
@@ -2489,7 +2489,7 @@ class DB extends Base
     public function underMenuItem(int $menu_id, int $item_id, int $to_item_id = 0): bool // to_item_id = 0 means delete this
     {
         if ($to_item_id === $item_id) {
-            $this->addMessage(__('You can’t make a menu item a child of itself', 'peatcms'), 'error');
+            $this->addMessage(__('You can’t make a menu item a child of itself.', 'peatcms'), 'error');
 
             return false;
         }
@@ -2623,7 +2623,7 @@ class DB extends Base
                 return true;
             }
         }
-        $this->addError("->upsertLinked failed, no link table found for $type_name and $sub_type_name");
+        $this->addError("->upsertLinked failed, no link table found for $type_name and $sub_type_name.");
 
         return false;
     }
@@ -2637,7 +2637,7 @@ class DB extends Base
                 'admin_id' => $admin_id,
             );
         } elseif (0 === $user_id) {
-            $this->addMessage('Anonymous session can not be destroyed', 'warn');
+            $this->addMessage('Anonymous session can not be destroyed.', 'warn');
             $where = array(
                 'session_id' => 0,
             );
@@ -2966,7 +2966,7 @@ class DB extends Base
                     }
                 } else {
                     $this->addMessage(
-                        sprintf(__('json_decode error on menu item %s', 'peatcms'),
+                        sprintf(__('json_decode error on menu item %s.', 'peatcms'),
                             \var_export($row->title, true)), 'warn');
                 }
             } catch (\Exception) {
@@ -3038,7 +3038,7 @@ class DB extends Base
                 if (0 === count($rows)) {
                     $this->handleErrorAndStop(
                         'Unable to create shoppinglist ' . var_export($data, true),
-                        __('Could not get shoppinglist', 'peatcms')
+                        __('Could not get shoppinglist.', 'peatcms')
                     );
                 }
             }
@@ -3219,12 +3219,12 @@ class DB extends Base
                 if (true === $this->conn->commit() and $current_count !== 0) {
                     $this->addMessage(sprintf(
                     //# TRANSLATORS %1 is the number of rows and %2 the name of the shoppinglist (e.g. cart)
-                        __('%1$s rows belonging to your account have been added to %2$s', 'peatcms')
+                        __('%1$s rows belonging to your account have been added to %2$s.', 'peatcms')
                         , $current_count, $sessionlist->name));
                 }
             } else { // more than 1 user list should never happen
                 $this->handleErrorAndStop(
-                    'Multiple user lists found while merging shoppinglists',
+                    'Multiple user lists found while merging shoppinglists.',
                     sprintf(__('An error occurred in %s.', 'peatcms'), $sessionlist->name)
                 );
             }
@@ -3286,7 +3286,7 @@ class DB extends Base
             'instance_id' => Setup::$instance_id,
         ));
         if ($affected === 1) return true;
-        if ($affected > 1) $this->handleErrorAndStop(sprintf('User password updated %s rows', $affected));
+        if ($affected > 1) $this->handleErrorAndStop(sprintf('User password updated %s rows.', $affected));
 
         return false;
     }
@@ -3314,7 +3314,7 @@ class DB extends Base
         if ($this->rowExists('_instance', array('domain' => $domain))) {
             // TODO this goes wrong with multiple clients
             if ($this->rowExists('_instance', array('domain' => $domain, 'deleted' => false))) {
-                $this->addMessage(__(sprintf('Domain %s already taken', $domain), 'peatcms'));
+                $this->addMessage(__(sprintf('Domain %s already taken.', $domain), 'peatcms'));
             } elseif ($arr = $this->updateRowsWhereAndReturnKeys('_instance',
                 array('deleted' => false),
                 array('client_id' => $client_id, 'domain' => $domain),
@@ -3368,13 +3368,13 @@ class DB extends Base
                 }
             } else {
                 $this->addMessage(
-                    sprintf(__('Only pages can be set to homepage, received: %s', 'peatcms'),
+                    sprintf(__('Only pages can be set to homepage, received: %s.', 'peatcms'),
                         var_export($row->type_name, true)),
                     'warn'
                 );
             }
         } else {
-            $this->addMessage(__('Only pages can be set to homepage', 'peatcms'), 'warn');
+            $this->addMessage(__('Only pages can be set to homepage.', 'peatcms'), 'warn');
         }
 
         return null;
@@ -3558,7 +3558,7 @@ class DB extends Base
     public function updateElementsWhere(Type $which, array $data, array $where): array
     {
         if (true === isset($data['slug'])) {
-            $this->addError('->updateElementsWhere() cannot update column `slug`');
+            $this->addError('->updateElementsWhere() cannot update column `slug`.');
 
             return array();
         }
@@ -3658,7 +3658,7 @@ class DB extends Base
         $slug = substr($slug, 0, 127);
         $instance_id = Setup::$instance_id;
         if (false === Help::obtainLock("clearSlug-$instance_id")) {
-            $this->handleErrorAndStop("Could not obtain lock to clear slug $slug for instance $instance_id", 'Operation is locked');
+            $this->handleErrorAndStop("Could not obtain lock to clear slug $slug for instance $instance_id.", 'Operation is locked.');
         }
         $rows = $this->getTablesWithSlugs();
         $found = false;
@@ -3690,7 +3690,7 @@ class DB extends Base
             if ($depth === 0) {
                 return $this->clearSlug("1-$slug", $element, $id, 1);
             } else {
-                if ($depth === 100) $this->handleErrorAndStop('Clear slug loops >100, probably error');
+                if ($depth === 100) $this->handleErrorAndStop('Clear slug loops >100, probably error.');
                 // remove current depth number
                 $slug = substr($slug, (strlen((string)$depth) + 1));
                 ++$depth; // increase depth to try again
@@ -3803,7 +3803,7 @@ class DB extends Base
         $where = $table->formatColumnsAndData($where);
         // @since 0.7.9 source of potential bugs, the changing of a where clause, will cause a fatal error from now on
         if (0 !== count($where['discarded'])) {
-            $this->handleErrorAndStop('->fetchRows discarded columns in where clause');
+            $this->handleErrorAndStop('->fetchRows discarded columns in where clause.');
         }
         // build the query
         ob_start();
@@ -3957,7 +3957,7 @@ class DB extends Base
             } elseif (0 === count($rows)) {
                 return null;
             } else { // this should be impossible
-                $this->handleErrorAndStop(new \Exception("Found more than one primary key for $table_name"),
+                $this->handleErrorAndStop(new \Exception("Found more than one primary key for $table_name."),
                     __('Database error.', 'peatcms'));
 
                 return null;
@@ -4041,7 +4041,7 @@ class DB extends Base
 
             return true;
         } else {
-            $this->addError("DB->updateRowAndReturnSuccess resulted in a rowcount of $row_count for key $key on table $table_name");
+            $this->addError("DB->updateRowAndReturnSuccess resulted in a rowcount of $row_count for key $key on table $table_name.");
         }
         $table = null;
         $old_row = null;
@@ -4221,7 +4221,7 @@ class DB extends Base
 
     public function queryAllRows(string $table_name, array $columns = array('*'), ?int $instance_id = null): \PDOStatement
     {
-        if (0 === count($columns)) $this->handleErrorAndStop('No columns to query');
+        if (0 === count($columns)) $this->handleErrorAndStop('No columns to query.');
         if (null === $instance_id) {
             $where = '';
         } else {
