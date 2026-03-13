@@ -1738,13 +1738,6 @@ class DB extends Base
                 ) as $index => $key) {
                 $value = $vars[$key] ?? '';
                 switch ($key) {
-                    case 'remarks_user': // @deprecated remove when no longer in use
-                        // don’t overwrite posted shipping_remarks from newer checkouts
-                        if (true === isset($vars['shipping_remarks']) && '' !== $vars['shipping_remarks']) {
-                            continue 2;
-                        }
-                        $key = 'shipping_remarks';
-                        break;
                     case 'vat_history':
                     case 'shipping_remarks':
                         break;
@@ -4934,8 +4927,8 @@ class DB extends Base
         $post_data = $GLOBALS['post'];
         $element_name = $post_data->element ?? null;
         $element_id = $post_data->id ?? null;
-        var_dump($row);
-        die(' ERJKWLWW');
+//        var_dump($row);
+//        die(' ERJKWLWW');
         // TODO 0.31.0 based on $row as well, make it more intelligible...
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;

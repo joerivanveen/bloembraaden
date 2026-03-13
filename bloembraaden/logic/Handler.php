@@ -310,7 +310,7 @@ class Handler extends BaseLogic
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
                 if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
                     if ($order_row->user_id !== $user->getId()) {
-                        $this->addMessage(__('You can only reorder your own orders.', 'peatcms'), 'warn');
+                        $this->addMessage(__('Order not found.', 'peatcms'), 'warn');
                         $out = true;
                     } else {
                         $order = new Order($order_row);
@@ -942,10 +942,11 @@ class Handler extends BaseLogic
                                             if ($tracking_id === Crypt::decrypt(Help::getDB()->insertRowAndReturnKey('_payment', array(
                                                     'payment_id' => Crypt::encrypt($tracking_id),
                                                     'order_id' => $order->getId(),
-                                                )))) {
+                                                )))
+                                            ) {
                                                 $out = array('tracking_id' => $tracking_id, 'success' => true);
                                             } else {
-                                                $this->addError("Error adding payment $tracking_id to order $post_data->order_number.");
+                                                $this->addError("Error adding payment tracking_id to order $post_data->order_number.");
                                             }
                                         } else {
                                             $this->addError('Could not begin transaction with Payment Service Provider.');
@@ -1655,7 +1656,7 @@ class Handler extends BaseLogic
         // general failure catch will be reported as error
         if (null === $out) {
             $out = array('success' => false);
-            $this->addError('Action failure: ' . var_export($post_data, true));
+            $this->addError('Action failure.');
         }
         $out = (object)$out;
         $out->slugs = $GLOBALS['slugs']; //<- *RECURSION* ?? when, why
