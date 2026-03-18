@@ -9,10 +9,10 @@ namespace Bloembraaden;
 require __DIR__ . '/Require.php';
 $trans = new jobTransaction();
 // to test from cli / as a cron job, run it as follows:
-// # /path/to/php /path/to/bloembraaden/Job.php interval_value (eg: 5)
-$interval = $_GET['interval'] ?? $argv[1];
+// # /path/to/php /path/to/bloembraaden/Job.php instruction (eg: 5, or pass)
+$interval = $argv[1] ?? null;
 if (!$interval) {
-    die('interval needed');
+    die('Instruction needed.');
 }
 // backwards compatibility:
 if (str_starts_with($interval, 'interval=')) {
@@ -1007,6 +1007,35 @@ switch ($interval) {
                 unset($row);
             }
         }
+        break;
+    case 'pass':
+        $mail = $argv[2] ?? null;
+        $pass = $argv[3] ?? null;
+        if (null === $mail || null === $pass) {
+            echo "Usage: php job.php pass 'email' 'newpassword' (use single quotes around the values!).\n";
+            break;
+        }
+        $db = Help::getDB();
+        $rows = $db->fetchElementRowsWhere(new Type('admin'), array('email' => $mail, 'instance_id' => 0));
+        if (0 === count($rows)) {
+            echo "Email must belong to an existing super admin.\n";
+            break;
+        } elseif (1 < count($rows)) {
+            echo "Multiple admins with this email, cannot proceed.\n"; // impossible because of unique constraint, but just to be sure
+            break;
+        }
+        $admin_id = $rows[0]->id;
+        if (true === $db->updateColumns('_admin', array('password_hash' => Help::passwordHash($pass)), $admin_id)) {
+            echo "Password updated for $mail.\n";
+        } else {
+            echo "Error updating password for $mail.\n";
+        }
+        // Invalidate sessions.
+        $rows = $db->fetchAdminSessions($admin_id);
+        foreach ($rows as $key => $row) {
+            $db->deleteSessionById($row->session_id, 0, $admin_id);
+        }
+        // Done.
         break;
     case 'temp':
         echo "Notice: this is a temp job, only for testing.\n";

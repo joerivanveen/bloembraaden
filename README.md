@@ -180,6 +180,14 @@ Do not forget these credentials, because you will not be able to log in without 
 Go to `https://your_main_domain.tld/__admin__/` and login with the credentials you just provided.
 You should now switch off the ‘install’ flag in the config (set it to `false`).
 
+In the case you forget the password, or you change your `HASHKEY` variable (invalidating all passwords), you can reset the password on the server.
+You need to execute the `Job.php` file with the ‘pass’ instruction followed by your email address and new password, like so:
+```
+/path/to/bloembraaden php Job.php pass 'original@email.address' 'difficult_password'
+```
+
+For security reasons only the original admin can be updated with this command.
+
 ### Now what?
 The ‘instance’ (website) is empty. This can be daunting. I prefer to consider it liberating.
 
