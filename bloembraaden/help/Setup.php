@@ -93,7 +93,7 @@ class Setup
     {
         try {
             return new PDO(sprintf(
-                'pgsql:host=%s;port=%s;dbname=%s',
+                'pgsql:sslmode=require;host=%s;port=%s;dbname=%s',
                 $db_properties->host,
                 $db_properties->port,
                 $db_properties->name
