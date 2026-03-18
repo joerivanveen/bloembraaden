@@ -652,6 +652,32 @@ class Help
     }
 
     /**
+     * Wrapper for var_export($data, true) that redacts common sensitive keys like password, csrf_token, etc.
+     *
+     * @param mixed $data
+     * @return string|null
+     */
+    public static function export(mixed $data): string {
+        if (null === $data) return '';
+        $cleanup = function(mixed $data) {
+            if (true === is_object($data)) {
+                $data = (array)$data;
+            }
+            if (false === is_array($data)) {
+                return (string) $data;
+            }
+            foreach ($data as $key => $value) {
+                if (in_array($key, ['password', 'pass', 'pass_word', 'secret', 'token', 'hash', 'csrf', 'csrf_token'], true)) {
+                    $data[$key] = '*REDACTED*';
+                }
+            }
+            return $data;
+        };
+
+        return var_export($cleanup($data), true);
+    }
+
+    /**
      * @param array $terms
      * @param array $properties
      * @return string

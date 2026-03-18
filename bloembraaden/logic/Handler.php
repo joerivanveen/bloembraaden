@@ -162,7 +162,7 @@ class Handler extends BaseLogic
                 unset($response);
                 die();
             } else {
-                $this->handleErrorAndStop(sprintf('No template_name found in data %s.', var_export($post_data, true)),
+                $this->handleErrorAndStop(sprintf('No template_name found in data %s.', Help::export($post_data)),
                     __('Could not load template.', 'peatcms'));
             }
         } elseif ('get_template_by_name' === $action) {
@@ -517,7 +517,7 @@ class Handler extends BaseLogic
                                 $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
                             }
                         } else {
-                            $this->addError(sprintf('Comment not added with data %s.', var_export($post_data, true)));
+                            $this->addError(sprintf('Comment not added with data %s.', Help::export($post_data)));
                             $this->addMessage(__('Comment not added.', 'peatcms'), 'warn');
                         }
                     }
@@ -636,7 +636,7 @@ class Handler extends BaseLogic
                                 $this->addError('Order rating error: NOT OWN ORDER.');
                             }
                         } else {
-                            $this->addError('Order rating error: ' . var_export($post_data, true));
+                            $this->addError('Order rating error: ' . Help::export($post_data));
                         }
                     }
                 } elseif ('account_login' === $action) {
@@ -1000,13 +1000,13 @@ class Handler extends BaseLogic
                                 }
                             }
                         } else {
-                            $this->handleErrorAndStop('Update element failed. ' . var_export($post_data, true));
+                            $this->handleErrorAndStop('Update element failed. ' . Help::export($post_data));
                         }
                     } elseif ('create_element' === $action) {
                         if ($element = $this->createElement($post_data->element, $post_data->online ?? false)) {
                             $out = $element->row;
                         } else {
-                            $this->handleErrorAndStop('Create element failed. ' . var_export($post_data, true));
+                            $this->handleErrorAndStop('Create element failed. ' . Help::export($post_data));
                         }
                     } elseif ('delete_element' === $action) {
                         if (true === isset($post_data->element_name, $post_data->id)) {
@@ -1027,7 +1027,7 @@ class Handler extends BaseLogic
                             unset($element);
                             $out = array('success' => $success);
                         } else {
-                            $this->handleErrorAndStop('Delete element failed. ' . var_export($post_data, true));
+                            $this->handleErrorAndStop('Delete element failed. ' . Help::export($post_data));
                         }
                     } elseif ('admin_get_elements' === $action) {
                         $out = array('rows' => $this->getElements($post_data->element));
@@ -1687,7 +1687,7 @@ class Handler extends BaseLogic
             header("Location: $out->redirect_uri", true, 302);
             die();
         } else {
-            $this->addError('Fallen through action: ' . var_export($post_data, true));
+            $this->addError('Fallen through action: ' . Help::export($post_data));
             //\header('Location: /' . $this->resolver->getPath(), true, 307); <- doesn’t work
             //die();
         }
@@ -1936,7 +1936,7 @@ class Handler extends BaseLogic
                 $body = $temp->renderObject($post_data);
             }
             if (false === isset($body) || '' === $body) {
-                $body = var_export($post_data, true);
+                $body = Help::export($post_data);
             }
             if (true === isset($post_data->subject)) {
                 $subject = strip_tags($post_data->subject);
