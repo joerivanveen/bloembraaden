@@ -216,7 +216,7 @@ class Search extends BaseElement
     public function getRelevantPropertyValuesAndPrices(string $path, ?int $instance_id = null, bool $rewrite = false): array
     {
         $instance_id = $instance_id ?? Setup::$instance_id;
-        $filename = Setup::$DBCACHE . "filter/$instance_id/" . rawurlencode($path) . '.serialized';
+        $filename = Setup::$DBCACHE . "filter/$instance_id/" . md5($path) . '.serialized';
         if (true === file_exists($filename) && false === $rewrite) {
             if (false !== ($obj = unserialize(file_get_contents($filename)))) {
                 return $obj;
