@@ -1815,6 +1815,13 @@ PEATCMS_template.prototype.renderOutput = function (out, template) {
             }
         } else if (['string', 'number', 'boolean'].includes(type_of_object)) {
             check_if.push({tag_name: tag_name, output_object: output_object}); // @since 0.10.7 remember tags to check for if-statements in template last
+            // todo security this might prevent scripts in content but execution is already blocked and we cannot block scripts in templates... that might be the real security issue, someone writing templates...
+            // const output_string = output_object.toString();
+            // if (output_string.length > 8 && -1 !== output_string.indexOf('<script')) {
+            //     html = PEATCMS.replace(`{{${tag_name}}}`, 'ILLEGAL SCRIPT TAG', html);
+            // } else {
+            //     html = PEATCMS.replace(`{{${tag_name}}}`, output_string, html);
+            // }
             html = PEATCMS.replace(`{{${tag_name}}}`, output_object.toString(), html);
             // @since 0.4.6: simple tags can also be processed by a function by using a pipe character |, {{tag|function_name}}
             while ((start = html.indexOf(`{{${tag_name}|`)) > -1) {
@@ -3138,6 +3145,7 @@ PEATCMS.prototype.startUp = function () {
     // handle messages
     this.messages(window.PEATCMS_globals['__messages__']);
     // @since 0.7.1 remember scroll position for when the user returns
+    window.history && (window.history.scrollRestoration = 'manual');
     window.addEventListener('scroll', function () {
         // throttle updating
         clearTimeout(this.setstate_timeout);
@@ -3410,7 +3418,7 @@ PEATCMS.prototype.scrollTo = function (x, y, element) {
     }
 }
 
-window.onpopstate = function (e) {
+window.addEventListener('popstate', function (e) {
     if (e.state === null || !NAV) {
         if (!NAV) {
             console.error('Navigator not loaded on *pop*.');
@@ -3431,7 +3439,7 @@ window.onpopstate = function (e) {
         }
         NAV.refresh(path);
     }
-};
+});
 
 /**
  * The navigator object, instantiated later as global NAV
