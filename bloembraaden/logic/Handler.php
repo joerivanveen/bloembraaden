@@ -403,8 +403,7 @@ class Handler extends BaseLogic
                     $sse->addError("{$admin->getRow()->name} may not import / export instance $instance_id.");
                 }
             } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
-                // TODO check if the instance is empty, if not, request a special user-agent string
-
+                // TODO 0.32.0 check if the instance is empty, if not, request a special user-agent string
                 Help::import_into_this_instance($import_file_name, $sse);
                 // clear cache
                 $rows_affected = Help::getDB()->clear_cache_for_instance(Setup::$instance_id);

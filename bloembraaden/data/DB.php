@@ -1359,7 +1359,7 @@ class DB extends Base
      * @param int $down_vote default 0: will put the element at the top
      * @return float the pop_vote value (between 0, the most popular, and 1, the least)
      * @since 0.5.12
-     * TODO 0.31.0 addtohistory!
+     * TODO 0.32.0 addtohistory!
      */
     public function updatePopVote(string $element_name, int $id, int $down_vote = 0): float
     {
@@ -1950,7 +1950,7 @@ class DB extends Base
                 'order_id' => $order_id->order_id, // uses index
             ));
         }
-        // fallback to unencrypted for backwards compatibility, todo @0.32.0 remove this fallback
+        // fallback to unencrypted for backwards compatibility, todo 0.32.0 remove this fallback
         if (($order_id = $this->fetchRow('_payment', array('order_id'), array(
             'payment_id' => $payment_tracking_id, // uses index
         )))) { // NOTE: for update payment routine the instance is not relevant
@@ -4924,12 +4924,13 @@ class DB extends Base
             $user_id = $row->user_id;
         }
         // @since 0.31.0 add for which element this is done
-        $post_data = $GLOBALS['post'];
+        // todo 0.32.0 (history): the job does not have this and has errors then and goes into a loop
+        $post_data = $GLOBALS['post'] ?? new \stdClass();
         $element_name = $post_data->element ?? null;
         $element_id = $post_data->id ?? null;
 //        var_dump($row);
 //        die(' ERJKWLWW');
-        // TODO 0.31.0 based on $row as well, make it more intelligible...
+        // TODO 0.32.0 based on $row as well, make it more intelligible...
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
             if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
