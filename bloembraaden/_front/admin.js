@@ -1569,8 +1569,8 @@ PEATCMS_history.prototype.display = function(container) {
             table_reference = ''; // do not set on summary, for this is not useful information to refer to
         }
         // handle value nicely, when it is huge, make it part of the ‘more’ section
-        const value = entry.value;
-        if (typeof value === 'string' && value.length > 99) {
+        const value = PEATCMS.replace('<', '&lt;', entry.value || '');
+        if (value.length > 99) {
             value_summary = value.slice(0, 77) + '...';
             value_more = `<div class="history-more">${PEATCMS.replace('\n','<br>',value)}</div>`;
         } else {
