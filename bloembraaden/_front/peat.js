@@ -3428,7 +3428,9 @@ window.addEventListener('popstate', function (e) {
         //document.location.reload(); // this keeps reloading on safari / iphone
     } else { // e.state holds max 640k so you can't put an element in it
         const path = e.state.path,
-            scroll = JSON.parse(sessionStorage.getItem(`scroll:${path}`));
+            identifier = e.state.uniqid || path,
+            scroll = JSON.parse(sessionStorage.getItem(`scroll:${identifier}`));
+        NAV.uniqid = identifier; // update for current run
         NAV.signalStartNavigating(path);
         if (VERBOSE) console.log(e);
         // @since 0.7.1 restore scrolling position from history (after rendering)
@@ -3447,6 +3449,7 @@ window.addEventListener('popstate', function (e) {
 //class PEATCMS_navigator extends PEATCMS_ajax(PEATCMS_base) {
 let PEATCMS_navigator = function (root) {
     this.root = root; // the root is served without trailing slash
+    this.uniqid = null; // for history state, so you can identify the history entry
     this.element = false; // will load currently displayed element
     this.last_navigate = null; // remember if we went somewhere
     this.is_navigating = false;
@@ -3527,6 +3530,9 @@ PEATCMS_navigator.prototype.go = function (path) {
                 } else {
                     try {
                         if (el.state.hasOwnProperty('slug')) {
+                            // @since 0.31.0 add unique id in history
+                            const uniqid = PEATCMS.uniqid();
+                            self.uniqid = uniqid; // so you can identify the history entry
                             slug = el.state.slug;
                             title = el.state.title;
                             path = el.state.path || slug;
@@ -3535,7 +3541,8 @@ PEATCMS_navigator.prototype.go = function (path) {
                             // data holds max 640k hence you can't put pages in it
                             window.history.pushState({
                                 title: title,
-                                path: path
+                                path: path,
+                                uniqid: uniqid
                             }, title, `/${path}`);
                             self.maybeEdit(slug);
                         }
@@ -3625,11 +3632,15 @@ PEATCMS_navigator.prototype.refresh = function (path) {
             } else {
                 PEAT.render(el, function (el) {
                     self.element = el; // cache current element
+                    // @since 0.31.0 add unique id in history
+                    const uniqid = PEATCMS.uniqid();
+                    self.uniqid = uniqid; // so you can identify the history entry
                     //self.rememberScrollingPosition();
                     // data holds max 640k hence you can't put pages in it
                     window.history.replaceState({
                         title: el.title,
-                        path: path
+                        path: path,
+                        uniqid: uniqid
                     }, el.title, `/${path}`);
                     self.is_navigating = false;
                     document.dispatchEvent(new CustomEvent('peatcms.navigation_end')); // send without detail, does not bubble
@@ -3644,12 +3655,9 @@ PEATCMS_navigator.prototype.refresh = function (path) {
  * @since 0.7.1
  */
 PEATCMS_navigator.prototype.rememberScrollingPosition = function () {
-    const el = this.element, path = el.state.path || el.state.slug || null;
-    if (path) {
-        sessionStorage.setItem(`scroll:${path}`, JSON.stringify({scrollY: window.scrollY, scrollX: window.scrollX}));
-    } else {
-        console.error('Could not set state, no element found.');
-        console.log(this);
+    const identifier = this.uniqid;
+    if (identifier) {
+        sessionStorage.setItem(`scroll:${identifier}`, JSON.stringify({scrollY: window.scrollY, scrollX: window.scrollX}));
     }
 }
 
@@ -3827,6 +3835,10 @@ PEATCMS.numericHashFromString = function (str) {
         hash |= 0; // Convert to 32bit integer
     }
     return hash;
+}
+
+PEATCMS.uniqid = function() {
+    return window.performance.now() + Math.random().toString(16).slice(2);
 }
 
 Number.prototype.cleanUp = function () {
