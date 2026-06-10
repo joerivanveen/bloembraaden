@@ -1896,7 +1896,7 @@ class Handler extends BaseLogic
             $cdn_root = Setup::$CDNROOT;
             $frame_ancestors = Setup::$FRAME_ANCESTORS;
             // TODO make csp flexible using settings for the instance
-            $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.umami.dev https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
+            $csp = "Content-Security-Policy: frame-ancestors $frame_ancestors; default-src 'self' {$instance->getDefaultSrc()}; script-src 'self' 'nonce-$out->nonce'; connect-src 'self' https://*.umami.is https://*.google-analytics.com; img-src 'self' blob: $cdn_root *.googletagmanager.com https://*.google-analytics.com data:;font-src 'self' https://fonts.gstatic.com https://*.typekit.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.typekit.net;base-uri 'self';form-action 'self';";
             unset($out);
             if (true === headers_sent()) { // warnings that slipped through our error handler could be sent, apparently
                 // TODO when this happens there is no CSP
