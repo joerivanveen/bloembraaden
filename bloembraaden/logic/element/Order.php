@@ -155,10 +155,6 @@ class Order extends BaseElement
         foreach ($vat as $percentage_index => $vat_amount) {
             $amount_grand_total -= $vat_amount;
             $vat_amount_display = Help::asMoney($vat_amount);
-            // old style (DEPRECATED) todo remove when petit clos uses new style
-            $percentage_tag = "vat_percentage_$percentage_index";
-            $row->{$percentage_tag} = $vat_amount_display;
-            // new style:
             $row->vat_rows[] = (object)array(
                 'percentage' => $percentage_index,
                 'amount' => $vat_amount_display,
@@ -167,7 +163,5 @@ class Order extends BaseElement
         $row->amount_grand_total_ex_vat = Help::asMoney($amount_grand_total);
         // @since 0.18.1 remove session_id, not really a secret, but no need to leak it either
         unset($row->session_id);
-        // @since 0.27.0 have deprecated remarks_user in output todo remove when no longer in use
-        $row->remarks_user = $row->shipping_remarks;
     }
 }

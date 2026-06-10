@@ -1950,14 +1950,6 @@ class DB extends Base
                 'order_id' => $order_id->order_id, // uses index
             ));
         }
-        // fallback to unencrypted for backwards compatibility, todo 0.32.0 remove this fallback
-        if (($order_id = $this->fetchRow('_payment', array('order_id'), array(
-            'payment_id' => $payment_tracking_id, // uses index
-        )))) { // NOTE: for update payment routine the instance is not relevant
-            return $this->fetchRow('_order', array('*'), array(
-                'order_id' => $order_id->order_id, // uses index
-            ));
-        }
 
         return null;
     }
