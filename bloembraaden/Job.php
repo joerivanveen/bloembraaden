@@ -673,6 +673,9 @@ switch ($interval) {
         $trans->start('Purge deleted');
         echo $db->jobPurgeDeleted((int)$interval ?: 5), "\n";
         // delete cross table entries with orphaned id’s
+        // todo 0.32.0: dit is zo’n ding dat de import routine in de war kan schoppen, als die halverwege uitgevoerd wordt
+        // dus doe iets met date_updated, dat je alleen oude weggooit? net geïmporteerde kunnen nog incorrect zijn?
+        // nee toch? de ids zijn toch al vertaald adhv de element tabellen?
         $trans->start('Clear cross (_x_) tables');
         $tables = array_map(static function ($row) {
             return $row->table_name;

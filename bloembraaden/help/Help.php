@@ -885,7 +885,7 @@ class Help
          */
         $ids = array(
             'homepage_id' => 'page_id',
-            'reply_to_id' => 'comment_id',
+            'reply_to_id' => 'comment_id', // todo 0.32.0 this is a loop
             'session_id' => false,
             'admin_id' => false,
             'google_tracking_id' => false,

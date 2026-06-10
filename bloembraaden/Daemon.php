@@ -113,6 +113,7 @@ class Daemon
                 Setup::loadInstanceSettingsFor($row->instance_id);
                 if (null === ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
                     echo "Error: serie $row->serie_id not found.\n";
+                    // TODO 0.32.0: if there is an error, it will loop forever?
                     if (($affected = count($db->updateElementsWhere(
                         new Type('variant'),
                         array('serie_id' => 0),
