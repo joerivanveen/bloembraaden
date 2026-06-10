@@ -1942,9 +1942,9 @@ class DB extends Base
     public function getOrderByPaymentTrackingId(string $payment_tracking_id): ?\stdClass
     {
         // @since 0.29.3 get order_id from one of its associated payments
-        // @since 0.31.0 we use encrypted tracking_ids
+        // @since 0.31.0 we use hashed tracking_ids
         if (($order_id = $this->fetchRow('_payment', array('order_id'), array(
-            'payment_id' => Crypt::encrypt($payment_tracking_id), // uses index
+            'payment_id' => Help::tokenHash($payment_tracking_id), // uses index
         )))) { // NOTE: for update payment routine the instance is not relevant
             return $this->fetchRow('_order', array('*'), array(
                 'order_id' => $order_id->order_id, // uses index
