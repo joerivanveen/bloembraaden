@@ -242,7 +242,6 @@ Address.prototype.getCountryCode = function () {
     return null;
 }
 Address.prototype.enhanceInput = function (input) {
-    input.Address = this; // TODO 0.32.0 remove once petit clos uses peatcms_address
     input.peatcms_address = this;
     if (this.myparcel && input === this.myparcel) {
         const hipster = input.closest('.hipster-input');
@@ -406,8 +405,7 @@ Address.prototype.enhanceLists = function () {
         });
     }
 }
-Address.prototype.set = function (values, deprecated_type) {
-    if (deprecated_type) console.warn('used deprecated address type input', values);
+Address.prototype.set = function (values) {
     const type = this.wrapper.getAttribute('data-address_type');
     if (!type) {
         console.error('Address wrapper needs data-address_type', this.wrapper);
@@ -2285,7 +2283,6 @@ const PEATCMS = function () {
         for (i = 0, len = elements.length; i < len; ++i) {
             el = elements[i]; // this is a container holding address elements you want to enhance
             el.peatcms_address = new Address(el);
-            el.Address = el.peatcms_address; // TODO 0.32.0 remove once petit clos uses peatcms_address
             // addresses in wrappers can be present as sessionvars!
             if (false === el.hasAttribute('id')) {
                 console.error('Address wrapper element needs a unique id');
@@ -3157,15 +3154,6 @@ PEATCMS.prototype.startUp = function () {
 }
 
 /**
- * @deprecated since 0.26.0, use PEATCMS.pollSessionStart instead
- * @param session_timeout_ms
- */
-PEATCMS.prototype.pollSession = function (session_timeout_ms) {
-    console.warn('PEATCMS.pollSession is deprecated, use PEATCMS.pollSessionStart instead');
-    this.pollSessionStart(session_timeout_ms);
-}
-
-/**
  * Call this function to be able to react to session and user changes on the server.
  * This will poll the server and emit a 'peatcms.session_changed' event when the session or user changes.
  * Add poll time in ms as argument, default is 15000ms.
@@ -3703,16 +3691,13 @@ PEATCMS_navigator.prototype.getCurrentElement = function () {
 PEATCMS_navigator.prototype.setCurrentElement = function (el) {
     this.element = el;
 }
-/**
- * Use submitData(string slug, object data, function callback)
- */
-PEATCMS_navigator.prototype.postData = function () {
-    //
-}
+
+/* submitData is the successor to postData */
 PEATCMS_navigator.prototype.submitData = function (slug, data, callback) {
     console.warn('submitData() is deprecated, use NAV.ajax() directly.');
     this.ajax(slug, data, callback);
 }
+
 PEATCMS_navigator.prototype.submitForm = function (form) {
     this.submitFormData(form, PEATCMS.getFormData(form));
 }
@@ -3803,10 +3788,6 @@ PEAT_style.prototype.clearRules = function () {
 /**
  * ponyfills are static methods of PEATCMS :-)
  */
-String.prototype.replaceAll = function (search, replace) {
-    console.warn('String.prototype.replaceAll is deprecated, use PEATCMS.replace');
-    return PEATCMS.replace(search, replace, this);
-};
 PEATCMS.replace = function (search, replace, str) {
     const parts = str.split(search);
     return parts.join(replace);
@@ -3821,10 +3802,6 @@ PEATCMS.replace = function (search, replace, str) {
     // return str;
 }
 
-String.prototype.hashCode = function () {
-    console.warn('String.prototype.hashCode is deprecated, use PEATCMS.numericHashFromString');
-    return PEATCMS.numericHashFromString(this);
-};
 PEATCMS.numericHashFromString = function (str) {
     let hash = 0, i, chr;
     const len = str.length;
@@ -3841,10 +3818,6 @@ PEATCMS.uniqid = function() {
     return window.performance.now() + Math.random().toString(16).slice(2);
 }
 
-Number.prototype.cleanUp = function () {
-    console.warn('Number.prototype.cleanUp is deprecated, use PEATCMS.cleanUpNumber');
-    return PEATCMS.cleanUpNumber(this);
-}
 PEATCMS.cleanUpNumber = function (nr) {
     // function removes artefacts caused by decimal rounding error
     let n = nr.toString(), i = n.lastIndexOf('.'), d, index;
@@ -3872,19 +3845,9 @@ PEATCMS.removeNode = function (node) {
     node.remove();
 }
 
-function removeNode(node) {
-    console.warn('removeNode() is deprecated, use node.remove()');
-    return node.remove();
-}
-
 PEATCMS.opacityNode = function (node, opacity) {
     if (null === node) return;
     node.style.opacity = (Math.min(Math.abs(opacity), 1)).toString();
-}
-
-function opacityNode(node, opacity) {
-    console.warn('opacityNode() is deprecated, use PEATCMS.opacityNode()');
-    return PEATCMS.opacityNode(node, opacity);
 }
 
 PEATCMS.isInt = function (value) {
@@ -3893,11 +3856,6 @@ PEATCMS.isInt = function (value) {
     }
     const x = parseFloat(value);
     return (x | 0) === x;
-}
-
-function isInt(value) {
-    console.warn('isInt() is deprecated, use PEATCMS.isInt()');
-    return PEATCMS.isInt(value);
 }
 
 PEATCMS.cloneStructured = function (obj) {
@@ -3911,11 +3869,6 @@ PEATCMS.cloneShallow = function (obj) {
     return Object.assign({}, obj);
 }
 
-function cloneShallow(obj) {
-    console.warn('cloneShallow() is deprecated, use PEATCMS.cloneShallow()');
-    return PEATCMS.cloneShallow(obj);
-}
-
 // https://stackoverflow.com/a/55292366
 PEATCMS.trim = function (str, chars) {
     let start = 0, end;
@@ -3927,11 +3880,6 @@ PEATCMS.trim = function (str, chars) {
     while (end > start && chars.indexOf(str[end - 1]) >= 0)
         --end;
     return (start > 0 || end < str.length) ? str.substring(start, end) : str;
-}
-
-function trim(str, chars) {
-    console.warn('trim() is deprecated, use PEATCMS.trim()');
-    return PEATCMS.trim(str, chars);
 }
 
 /**
@@ -4001,11 +3949,6 @@ PEATCMS.getFormDataAsProperties = function (form) {
         str += '/' + i + ':' + obj[i];
     }
     return str;
-}
-
-function getFormData(form) {
-    console.warn('getFormData() is deprecated, use PEATCMS.getFormData()');
-    return PEATCMS.getFormData(form);
 }
 
 // https://stackoverflow.com/a/11077016
