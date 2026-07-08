@@ -3600,6 +3600,8 @@ PEATCMS_navigator.prototype.refresh = function (path) {
                 if (slug.hasOwnProperty('variant_page')) {
                     path += `/variant_page${slug.variant_page}`;
                 }
+            } else if (!path && slug.hasOwnProperty('slug')) {
+                path = slug.slug;
             }
             if (VERBOSE) console.log(`Put ${path} into the cache from globals`);
             // cache is built into PEATCMS_ajax
