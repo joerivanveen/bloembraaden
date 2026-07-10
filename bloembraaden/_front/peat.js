@@ -2959,7 +2959,8 @@ PEATCMS.prototype.ajaxSubmit = function (e) {
 }
 
 PEATCMS.prototype.ajaxifyDOMElements = function (el) {
-    var self = this, forms, form, as, a, i, len, sibling, stasher, parent_name;
+    const self = this;
+    let forms, form, as, i, len, stasher, parent_name;
     if (el) {
         if (!el instanceof Element) {
             console.error(el, 'must be a DOMElement');
@@ -2970,14 +2971,16 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     }
     // update links
     as = el.getElementsByTagName('a');
-    // TODO this renders relative links relative to the PREVIOUS slug, which does not work great
     for (i = 0, len = as.length; i < len; i++) {
-        a = as[i];
+        const a = as[i], href = a.href;
         if (true === a.hasAttribute('target')) continue;
+        if (false === NAV.isLocalLink(href)) { // @since 0.31.1
+            a.classList.add('bloembraaden-external-link');
+        }
         // make sure to add the eventlistener only once, or each click will generate multiple ajax calls over time
         a.removeEventListener('click', self.ajaxNavigate);
         a.addEventListener('click', self.ajaxNavigate);
-        a.setAttribute('data-peatcms_href', a.href);
+        a.setAttribute('data-peatcms_href', href);
     }
     // update forms
     forms = el.getElementsByTagName('form');
@@ -2998,7 +3001,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     // fix e-mail links:
     as = el.getElementsByClassName('peatcms-email-link');
     for (i = 0, len = as.length; i < len; ++i) {
-        a = as[i];
+        const a = as[i];
         a.removeEventListener('click', self.ajaxMailto);
         a.addEventListener('click', self.ajaxMailto);
         if (a.hasAttribute('data-peatcms_ajaxified')) continue;
@@ -3011,7 +3014,8 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
     if (typeof CMS_admin !== 'undefined') {
         as = el.getElementsByClassName('PEATCMS_editable');
         for (i = as.length - 1; i >= 0; i--) {
-            if ((a = as[i]).hasAttribute('data-peatcms_ajaxified')) continue;
+            let a = as[i];
+            if (a.hasAttribute('data-peatcms_ajaxified')) continue;
             a.setAttribute('data-peatcms_ajaxified', '1');
             if (a.getAttribute('data-peatcms_handle') === 'new_row') {
                 // TODO this is so messy, I'm sure you can do better
@@ -3035,13 +3039,13 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
 }
 
 PEATCMS.prototype.currentSlugs = function (element) {
-    var i, len, a, href, el = element || document,
+    const el = element || document,
         as = el.getElementsByTagName('a'), // faster than querySelectorAll()
         current_slug = NAV.getCurrentPath() + '|', // the pipe character is to match wordboundary, so you match the entire slug
         root = NAV.getRoot();
-    for (i = 0, len = as.length; i < len; ++i) {
-        a = as[i];
-        href = PEATCMS.replace(root, '', decodeURI(a.href)) + '|'; // match the exact slug, not when it’s a part of the link
+    for (let i = 0, len = as.length; i < len; ++i) {
+        const a = as[i],
+            href = PEATCMS.replace(root, '', decodeURI(a.href)) + '|'; // match the exact slug, not when it’s a part of the link
         if (current_slug === href) {
             a.classList.add('peatcms-current-slug');
             a.setAttribute('aria-current', 'location');
@@ -3483,13 +3487,17 @@ PEATCMS_navigator.prototype.signalStartNavigating = function (path) {
 
     return slug;
 }
+PEATCMS_navigator.prototype.isLocalLink = function (path) {
+    return 0 === path.indexOf(this.getRoot()) || 0 !== path.indexOf('http');
+
+}
 PEATCMS_navigator.prototype.go = function (path) {
     const self = this;
     let slug;
     if (window.history && window.history.pushState) {
         // @since 0.7.1 remember current scrolling position, overwrite the current setting in history
         this.rememberScrollingPosition();
-        if (0 === path.indexOf(this.getRoot()) || 0 !== path.indexOf('http')) { // this is a local link
+        if (self.isLocalLink(path)) {
             slug = this.signalStartNavigating(path);
 
             function end() {
