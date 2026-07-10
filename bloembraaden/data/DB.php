@@ -2687,6 +2687,7 @@ class DB extends Base
                 'user_id',
                 'admin_id',
                 'session_id',
+                'date_accessed',
                 'ip_address',
                 'reverse_dns',
                 'user_agent',
@@ -3568,7 +3569,7 @@ class DB extends Base
     {
         if (0 === count($columns)) {
             $statement = $this->conn->prepare('UPDATE _session SET date_accessed = NOW() WHERE token_hash = ?;');
-            $statement->execute(array($token));
+            $statement->execute(array(Help::tokenHash($token)));
             $statement = null;
         } else {
             $columns['date_accessed'] = $columns['date_updated'] = 'NOW()';

@@ -58,15 +58,15 @@ class Session extends BaseLogic
                 $this->handleErrorAndStop($this->getLastError(), __('Could not start session.', 'peatcms'));
             }
         }
-        if (null === $this->getValue('csrf_token')) {
+        if (null === $this->getVar('csrf_token')) {
             $this->setVar('csrf_token', Help::randomString(9), 0);
         }
-        if (null === $this->getValue('umami_identifier')) {
+        if (null === $this->getVar('umami_identifier')) {
             $this->setVar('umami_identifier', Help::randomString(12), 0);
         }
         // get lingering messages (if any)
         if (null !== ($messages_as_json = $this->getValue('peatcms_messages', true))) {
-            if ($messages = json_decode($messages_as_json)) {
+            if (($messages = json_decode($messages_as_json))) {
                 foreach ($messages as $index => $message) {
                     $this->addMessage(
                         $message->message,
@@ -359,12 +359,17 @@ class Session extends BaseLogic
             }
             $this->session_id = $row->session_id; // must always be present, this is NOT the token, just an int for identifying internally
 
-            return true;
-        } else {
-            //$this->addError('Session->load(): Could not get session from Database.');
+            // @since 0.31.1: prolong session once a day at the most
+            if (date('d') !== substr($row->date_accessed, 8, 2)) {
+                if (false === $this->setSessionCookie($this->token)) {
+                    $this->addError("Session->load() could not prolong session cookie for $this->session_id.");
+                }
+            }
 
-            return false;
+            return true;
         }
+
+        return false;
     }
 
     private function getSessionCookie(): ?string
