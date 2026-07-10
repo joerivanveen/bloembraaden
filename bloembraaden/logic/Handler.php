@@ -426,7 +426,7 @@ class Handler extends BaseLogic
                     if (true === isset($post_data->name, $post_data->value, $post_data->times)) {
                         $name = $post_data->name;
                         // filter out session variables that may not be set from the client
-                        if (in_array($name, array('csrf_token', 'import_file_name', 'order_number'))
+                        if (in_array($name, array('csrf_token', 'import_file_name', 'order_number', 'umami_identifier'))
                             || str_starts_with($name, '.locks.')
                         ) {
                             $this->addMessage(sprintf(__('Session variable %s cannot be set.', 'peatcms'), htmlentities($name)), 'warn');
