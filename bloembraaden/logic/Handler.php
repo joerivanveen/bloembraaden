@@ -1178,7 +1178,7 @@ class Handler extends BaseLogic
                                                 $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
                                                 continue;
                                             }
-                                            $this->addMessage(sprintf(__('Created new template %s’.', 'peatcms'), $template_name), 'note');
+                                            $this->addMessage(sprintf(__('Created new template ‘%s’.', 'peatcms'), $template_name), 'note');
                                         }
                                         // update
                                         if (true === Help::getDB()->updateColumns('_template', array(
