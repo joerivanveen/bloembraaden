@@ -2999,7 +2999,7 @@ PEATCMS.prototype.ajaxifyDOMElements = function (el) {
         }
     }
     // fix e-mail links:
-    as = el.getElementsByClassName('peatcms-email-link');
+    as = el.querySelectorAll('.bloembraaden-email-link,.peatcms-email-link');
     for (i = 0, len = as.length; i < len; ++i) {
         const a = as[i];
         a.removeEventListener('click', self.ajaxMailto);
