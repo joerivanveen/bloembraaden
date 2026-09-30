@@ -119,7 +119,7 @@ class Daemon
                         array('serie_id' => 0),
                         array('serie_id' => $row->serie_id))))
                     ) {
-                        echo "Removed product for $affected variants.\n";
+                        echo "Removed serie for $affected variants.\n";
                     }
                     continue;
                 }
