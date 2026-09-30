@@ -2793,7 +2793,10 @@ class DB extends Base
 
     public function fetchUser(int $user_id): ?\stdClass
     {
-        return $this->fetchRow('_user', array('nickname', 'email', 'phone', 'gender'), array('user_id' => $user_id));
+        return $this->fetchRow('_user',
+            array('nickname', 'email', 'phone', 'gender', 'password_hash'),
+            array('user_id' => $user_id)
+        );
     }
 
     /**

@@ -813,12 +813,17 @@ class Handler extends BaseLogic
                             if (true === isset($post_data->phone)) $data['phone'] = $post_data->phone;
                             if (true === isset($post_data->gender)) $data['gender'] = $post_data->gender;
                             if (true === isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
+                            if (true === isset($post_data->email)) {
+                                if (true === isset($post_data->password_challenge)
+                                    && true === $user->checkPassword($post_data->password_challenge)
+                                ){
+                                    $data['email'] = $post_data->email;
+                                } else {
+                                    $this->addMessage(__('Email address could not be updated.', 'peatcms'), 'warn');
+                                }
+                            }
                             if (count($data) > 0) {
                                 $out = array('success' => $user->updateRow($data));
-                            }
-                            if (true === isset($post_data->email)) {
-                                // updating email address is a process, you need to authenticate again
-                                $this->addMessage('Currently updating emailaddress is not possible.', 'note');
                             }
                             if (true === isset($out)) {
                                 $out['__user__'] = $user->getOutput(); // get a new user

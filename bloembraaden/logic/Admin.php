@@ -87,6 +87,8 @@ class Admin extends BaseLogic
         }
         $this->row->__sessions__ = Help::getDB()->fetchAdminSessions($this->getId());
         Help::prepareAdminRowForOutput($this->row, 'admin');
+        // some fields can never be output
+        unset($this->row->password_hash);
     }
 }
 

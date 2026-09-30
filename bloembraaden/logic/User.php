@@ -20,6 +20,12 @@ class User extends BaseLogic
         $this->type_name = 'user';
     }
 
+    public function checkPassword(string $password): bool
+    {
+        $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
+        return password_verify($hashed, $this->row->password_hash);
+    }
+
     /**
      * Get the addresses for this user
      * @return array indexed holding address objects (stdClass)
@@ -60,6 +66,8 @@ class User extends BaseLogic
         // TODO because this is not used currently and there is no index on user_id in _session, remove entirely
         //$this->row->__has_multiple_sessions__ = 1 < Help::getDB()->fetchUserSessionCount($this->getId());
         $this->row->slug = '__user__'; //the default slug...
+        // some fields can never be output
+        unset($this->row->password_hash);
     }
 
 }
