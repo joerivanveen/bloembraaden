@@ -670,6 +670,75 @@ switch ($interval) {
         $images = null;
         break;
     case '5': // interval should be 5
+        $trans->start('Remove duplicates from cache and search index');
+        echo 'Cache: ', $db->removeDuplicatesFromCache(), "\n";
+        echo 'Search index: ', $db->removeDuplicatesFromCiAi(), "\n";
+        $trans->start('Parent chains');
+        // when some serie has its brand_id updated
+        $rows = $db->jobIncorrectChainForProduct();
+        $chains_count = count($rows);
+        foreach ($rows as $index => $row) {
+            if (0 === $row->serie_id) continue;
+            Setup::loadInstanceSettingsFor($row->instance_id);
+            if (null === ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
+                echo "Error: serie $row->serie_id not found.\n";
+                // TODO 0.32.0: if there is an error, it will loop forever?
+                if (($affected = count($db->updateElementsWhere(
+                    new Type('variant'),
+                    array('serie_id' => 0),
+                    array('serie_id' => $row->serie_id))))
+                ) {
+                    echo "Removed serie for $affected variants.\n";
+                }
+                continue;
+            }
+            if (($keys = $db->updateElementsWhere(
+                new Type('product'),
+                array('brand_id' => $serie->brand_id),
+                array('serie_id' => $serie->serie_id))
+            )) {
+                $affected = count($keys);
+                echo "Updated $affected products with serie $serie->slug.\n";
+            } else {
+                echo "Did not update any products for serie $serie->slug.\n";
+            }
+            if (microtime(true) - $start_timer > 55) break;
+        }
+        if (microtime(true) - $start_timer < 55) {
+            // when some product has its serie_id updated, or its serie had its brand_id updated previously
+            $rows = $db->jobIncorrectChainForVariant();
+            $chains_count += count($rows);
+            $product = null;
+            foreach ($rows as $index => $row) {
+                if (0 === $row->product_id) continue;
+                Setup::loadInstanceSettingsFor($row->instance_id);
+                if (null === $product || $product->product_id !== $row->product_id) {
+                    if (null === ($product = $db->fetchElementRow(new Type('product'), $row->product_id))) {
+                        echo "Error: product $row->product_id not found.\n";
+                        if (($affected = count($db->updateElementsWhere(
+                            new Type('variant'),
+                            array('product_id' => 0),
+                            array('product_id' => $row->product_id))))
+                        ) {
+                            echo "Removed product for $affected variants.\n";
+                        }
+                        continue;
+                    }
+                }
+                if (($keys = $db->updateElementsWhere(
+                    new Type('variant'),
+                    array('brand_id' => $product->brand_id, 'serie_id' => $product->serie_id),
+                    array('product_id' => $product->product_id))
+                )) {
+                    $affected = count($keys);
+                    echo "Updated $affected variants with product $product->slug.\n";
+                } else {
+                    echo "Did not update any variants for product $product->slug.\n";
+                }
+                if (microtime(true) - $start_timer > 55) break;
+            }
+        }
+        echo "$chains_count broken chains\n";
         $trans->start('Purge deleted');
         echo $db->jobPurgeDeleted((int)$interval ?: 5), "\n";
         // delete cross table entries with orphaned id’s
