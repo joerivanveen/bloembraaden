@@ -32,6 +32,8 @@
       "api_url": "https://chrome.browserless.io/pdf"
     }
   },
+  "search_cache_refresh_minutes": 30,
+  "search_cache_max_minutes": 120,
   "newrelic_records_backend": false,
   "max_memory_limit": "1g",
   "VERBOSE": true,

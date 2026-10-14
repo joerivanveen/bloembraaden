@@ -670,6 +670,8 @@ switch ($interval) {
         $images = null;
         break;
     case '5': // interval should be 5
+        $trans->start('Delete expired search pages from cache');
+        echo $db->jobDeleteExpiredSearchCache(Setup::$SEARCH_CACHE_MAX_MINUTES), "\n";
         $trans->start('Parent chains');
         // when some serie has its brand_id updated
         $rows = $db->jobIncorrectChainForProduct();

@@ -4431,12 +4431,13 @@ class DB extends Base
      *
      * @param string $slug the unique slug to look for this instance
      * @param int $variant_page
+     * @param bool $for_view @since 0.32.0 true when serving a page, applies the age rules for search pages
      * @return \stdClass|null the row object found or null when not cached
      * @since 0.5.4
      */
-    public function cached(string $slug, int $variant_page = 1): ?\stdClass
+    public function cached(string $slug, int $variant_page = 1, bool $for_view = false): ?\stdClass
     {
-        $statement = $this->conn->prepare('SELECT row_as_json, since, variant_page_json FROM _cache 
+        $statement = $this->conn->prepare('SELECT row_as_json, since, variant_page_json, type_name FROM _cache 
                     WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page
                     ORDER BY since DESC LIMIT 1;');
         $statement->bindValue(':instance_id', (Setup::$instance_id));
@@ -4449,6 +4450,7 @@ class DB extends Base
         }
         $row = $statement->fetchAll(5)[0];
         $statement = null;
+        if (true === $for_view && false === $this->cachedRowCanBeServed($slug, $row->type_name, $row->since)) return null;
 
         $obj = json_decode($row->row_as_json);
         $obj->x_cache_timestamp = strtotime($row->since); // @since 0.8.2
@@ -4471,7 +4473,7 @@ class DB extends Base
      */
     public function cachex(string $slug, int $in_browser_timestamp): bool
     {
-        $statement = $this->conn->prepare('SELECT since FROM _cache WHERE instance_id = :instance_id AND slug = :slug LIMIT 1;');
+        $statement = $this->conn->prepare('SELECT since, type_name FROM _cache WHERE instance_id = :instance_id AND slug = :slug LIMIT 1;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
@@ -4480,10 +4482,32 @@ class DB extends Base
 
             return false;
         }
-        $timestamp = strtotime($statement->fetchColumn(0));
+        $row = $statement->fetchAll(5)[0];
         $statement = null;
+        if (false === $this->cachedRowCanBeServed($slug, $row->type_name, $row->since)) return false;
 
-        return ($in_browser_timestamp >= $timestamp);
+        return ($in_browser_timestamp >= strtotime($row->since));
+    }
+
+    /**
+     * Whether a cached row can be served to a visitor, search pages older than the refresh age are marked stale here as well.
+     * Cached search pages are not refreshed periodically, but when they are visited: older than the refresh age
+     * they are marked stale so the daemon refreshes them in the background, older than the max age they are not served.
+     * Other types can always be served, they are kept up to date by the daemon.
+     * @param string $slug
+     * @param string|null $type_name of the cached row
+     * @param string $since of the cached row
+     * @return bool false when the row is too old to be served
+     * @since 0.32.0
+     */
+    private function cachedRowCanBeServed(string $slug, ?string $type_name, string $since): bool
+    {
+        if ('search' !== $type_name) return true;
+        $age_in_minutes = (Setup::getNow() - strtotime($since)) / 60;
+        if ($age_in_minutes > Setup::$SEARCH_CACHE_MAX_MINUTES) return false;
+        if ($age_in_minutes > Setup::$SEARCH_CACHE_REFRESH_MINUTES) $this->markStale($slug);
+
+        return true;
     }
 
     /**
@@ -4541,6 +4565,10 @@ class DB extends Base
     {
         // get all the slugs we need to warmup for this element
         $id_and_type = $this->fetchElementIdAndTypeBySlug($slug);
+        // @since 0.32.0 when a search page replaced the element in cache (e.g. it is offline), find the element itself
+        if (null !== $id_and_type && 'search' === $id_and_type->type_name) {
+            $id_and_type = $this->fetchElementIdAndTypeBySlug($slug, true);
+        }
         if (null === $id_and_type) return false;
         // you must mark stale also for deleted elements, so get this element also when deleted
         $peat_type = new Type($id_and_type->type_name);
@@ -4674,8 +4702,10 @@ class DB extends Base
      */
     public function jobOldCacheRows(int $interval = 600, int $limit = 60): array
     {
+        // @since 0.32.0 search pages are refreshed when visited (see cached()), not periodically
         $statement = $this->conn->prepare("SELECT DISTINCT slug, instance_id, since FROM _cache 
-            WHERE since < NOW() - interval '$interval minutes' ORDER BY since LIMIT $limit;");
+            WHERE since < NOW() - interval '$interval minutes' AND (type_name IS NULL OR type_name <> 'search')
+            ORDER BY since LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $statement->fetchAll(5);
@@ -4685,6 +4715,23 @@ class DB extends Base
         $statement = null;
 
         return $rows;
+    }
+
+    /**
+     * Search pages that were not visited for a while are not served anymore, remove them from cache
+     * @param int $minutes the age after which cached search pages are not served anymore
+     * @return int the number of rows removed
+     * @since 0.32.0
+     */
+    public function jobDeleteExpiredSearchCache(int $minutes): int
+    {
+        $statement = $this->conn->prepare("DELETE FROM _cache 
+            WHERE type_name = 'search' AND since < NOW() - interval '$minutes minutes';");
+        $statement->execute();
+        $affected = $statement->rowCount();
+        $statement = null;
+
+        return $affected;
     }
 
     /**

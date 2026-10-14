@@ -192,7 +192,7 @@ class Template extends BaseLogic
                 foreach ($temp as $path => $template) {
                     if (true === str_starts_with($path, '__')) continue; // actions cannot be processed here
                     // for now, only get it from cache, if not in cache, then accept the progressive loading
-                    if (($object_from_cache = Help::getDB()->cached($path))) {
+                    if (($object_from_cache = Help::getDB()->cached($path, 1, true))) {
                         $this->addTags($output_object->slugs, $object_from_cache->slugs);
                         if (true === isset($object_from_cache->__ref) && ($ref = $object_from_cache->__ref)) {
                             $this->addTags($output_object, (object)array($ref => $object_from_cache->slugs->{$ref}));

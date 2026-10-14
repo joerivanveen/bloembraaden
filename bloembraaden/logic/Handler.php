@@ -1721,9 +1721,9 @@ class Handler extends BaseLogic
             $element = $this->resolver->getElement();
             $out = $element->getOutputObject();
             unset($element);
-        } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page))) {
+        } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page, true))) {
             // check if it’s a paging error
-            if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1);
+            if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1, true);
             if (null === $out && ($element = $this->resolver->getElement()) instanceof BaseElement) {
                 // construct the new path for this old slug
                 if (($properties = $this->resolver->getProperties())) {
@@ -1732,7 +1732,7 @@ class Handler extends BaseLogic
                     $path = $element->getSlug();
                 }
                 // try the cache one more time with the new slug, else cache it
-                if (null !== ($out = Help::getDB()->cached($path))) {
+                if (null !== ($out = Help::getDB()->cached($path, 1, true))) {
                     if (extension_loaded('newrelic')) {
                         $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
                         newrelic_name_transaction("$transaction_name from history");
