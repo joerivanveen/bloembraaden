@@ -269,15 +269,16 @@ class DB extends Base
         $sub_queries = array();
         $values_by_property = array();
         foreach ($properties as $property_name => $property_values) {
+            // @since 0.32.0 minimum price is inclusive and prices are not rounded, the same as the check in Search
             if ('price_min' === $property_name && 'variant' === $cms_type_name) {
                 $sub_queries[] = sprintf(
-                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') > %3$s) ',
-                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') >= %3$F) ',
+                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, Help::asFloat($property_values[0], 0)
                 );
             } elseif ('price_max' === $property_name && 'variant' === $cms_type_name) {
                 $sub_queries[] = sprintf(
-                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$s) ',
-                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, (int)$property_values[0]
+                    '(peat_parse_float(price, \'%1$s\', \'%2$s\') <= %3$F) ',
+                    Setup::$DECIMAL_SEPARATOR, Setup::$RADIX, Help::asFloat($property_values[0], 0)
                 );
             } else {
                 $values_by_property[$property_name] = array(); // since the properties are sorted and formatted, we can do this
@@ -309,6 +310,61 @@ class DB extends Base
         }
 
         return $sub_queries;
+    }
+
+    /**
+     * Removes variants and pages from search results that do not have the property values in $properties, using the
+     * same rules as Search->findWeighted (every property must have one of its values), so they need not be loaded first.
+     * Price filters are left to Search.
+     * @param array $results search results with type_name and id
+     * @param array $properties property slug => array of property value slugs
+     * @return array the results that remain, in the same order
+     * @since 0.32.0
+     */
+    public function filterResultsByProperties(array $results, array $properties): array
+    {
+        unset($properties['price_min'], $properties['price_max']);
+        if (0 === count($properties)) return $results;
+        $ids_by_type = array();
+        foreach ($results as $index => $result) {
+            if ('variant' === $result->type_name || 'page' === $result->type_name) {
+                $ids_by_type[$result->type_name][] = (int)$result->id;
+            }
+        }
+        $keep = array();
+        foreach ($ids_by_type as $type_name => $ids) {
+            // same joins and conditions as fetchPropertyRowsLinked, which provides the __x_values__ Search checks
+            $conditions = array();
+            $values = array();
+            foreach ($properties as $property_slug => $property_value_slugs) {
+                if (0 === count($property_value_slugs)) {
+                    $conditions[] = 'FALSE';
+                    continue;
+                }
+                $in = implode(',', array_fill(0, count($property_value_slugs), '?'));
+                $conditions[] = "EXISTS (SELECT 1 FROM cms_{$type_name}_x_properties x
+                    INNER JOIN cms_property p ON p.property_id = x.property_id
+                    INNER JOIN cms_property_value v ON v.property_value_id = x.property_value_id
+                    WHERE x.{$type_name}_id = el.{$type_name}_id AND x.deleted = FALSE AND v.deleted = FALSE
+                    AND p.slug = ? AND v.slug IN ($in))";
+                $values[] = (string)$property_slug;
+                foreach ($property_value_slugs as $index => $property_value_slug) {
+                    $values[] = (string)$property_value_slug;
+                }
+            }
+            $ids_as_string = implode(',', $ids);
+            $statement = $this->conn->prepare("SELECT {$type_name}_id FROM cms_$type_name el 
+                WHERE {$type_name}_id IN ($ids_as_string) AND " . implode(' AND ', $conditions) . ';');
+            $statement->execute($values);
+            $keep[$type_name] = array_flip($statement->fetchAll(\PDO::FETCH_COLUMN));
+            $statement = null;
+        }
+
+        return array_values(array_filter($results, static function ($result) use ($keep) {
+            if (false === isset($keep[$result->type_name])) return true;
+
+            return isset($keep[$result->type_name][(int)$result->id]);
+        }));
     }
 
     /**
@@ -374,11 +430,13 @@ class DB extends Base
             $this->handleErrorAndStop("$type_name is not a type with ci_ai, cannot find element ids.");
         }
         $special_variant_term = '';
+        // @since 0.32.0 like findCiAi, leave out what cannot be found by visitors, so it does not need to be loaded
+        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND online = TRUE' : '';
         // get the id's from the _ci_ai table
-        $statement = $this->conn->prepare('
+        $statement = $this->conn->prepare("
             SELECT title, slug, type_name, id FROM _ci_ai 
-            WHERE instance_id = :instance_id AND type_name = :type_name AND ci_ai LIKE lower(:term);
-        ');
+            WHERE instance_id = :instance_id AND type_name = :type_name AND ci_ai LIKE lower(:term) $online_query;
+        ");
         $arr = array();
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':type_name', $type_name);

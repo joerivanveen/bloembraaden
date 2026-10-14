@@ -59,6 +59,8 @@ class Search extends BaseElement
         }
         // @since 0.12.0 get results from ci_ai table
         $results = $this->getResults($terms, $clean_types);
+        // @since 0.32.0 leave out variants and pages that do not have the requested property values before loading them
+        if (0 < count($properties)) $results = Help::getDB()->filterResultsByProperties($results, $properties);
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until || $hydrate_until < 0) {
             $hydrate_until = (null === $hydrate_until) ? $item_count : abs($hydrate_until);
@@ -81,11 +83,11 @@ class Search extends BaseElement
                     if (null === ($element = (new Type($type_name))->getElement()->fetchById($result->id))) continue;
                     $output = $element->getOutputFull();
                 }
-                // only include if all properties are present
+                // only include if the price is within range
+                // @since 0.32.0 property values are already filtered by DB::filterResultsByProperties above
                 $all_properties_present = true;
                 if (true === isset($output->__x_values__)) {
                     foreach ($properties as $property => $property_values) {
-                        //echo "$property: ";
                         if ('price_max' === $property && true === isset($property_values[0])) {
                             if (true === isset($output->price) &&
                                 Help::asFloat($property_values[0]) < Help::asFloat($output->price)
@@ -93,32 +95,14 @@ class Search extends BaseElement
                                 $all_properties_present = false;
                                 break;
                             }
-                            continue;
-                        }
-                        if ('price_min' === $property && true === isset($property_values[0])) {
+                        } elseif ('price_min' === $property && true === isset($property_values[0])) {
                             if (true === isset($output->price) &&
                                 Help::asFloat($output->price) < Help::asFloat($property_values[0])
                             ) {
                                 $all_properties_present = false;
                                 break;
                             }
-                            continue;
                         }
-                        foreach ($property_values as $index => $value) {
-                            //echo "$value, ";
-                            foreach ($output->__x_values__ as $x_i => $x_value) {
-                                // ATTENTION bugfix: is_int returns false for string '0', '1', etc. as returned by cache
-                                if (false === is_numeric($x_i)) continue; // not a row
-                                if ($x_value->property_slug === $property && $x_value->slug === $value) {
-                                    //echo "YES\n";
-                                    continue 3; // means 'or' todo make and / or configurable?
-                                    //continue 2; // means 'and'
-                                }
-                            }
-                            //echo "NO\n";
-                        }
-                        $all_properties_present = false;
-                        break;
                     }
                 }
                 //$output = null;
