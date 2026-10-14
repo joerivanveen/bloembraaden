@@ -131,7 +131,8 @@ class Setup
 
     private static function loadConfig(): void
     {
-        $current_date = date('Y-m-d');
+        // @since 0.32.0 always in UTC, the timezone changes when instance settings are loaded
+        $current_date = gmdate('Y-m-d');
         $config = json_decode(file_get_contents(CORE . '../config.json'));
         self::$VERSION = $config->version;
         self::$UPLOADS = $config->uploads;
