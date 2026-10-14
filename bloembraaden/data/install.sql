@@ -3462,4 +3462,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "unique__ci_ai_type_name_id"
 CREATE INDEX IF NOT EXISTS "index__stale_instance_id_slug" ON "public"."_stale" USING btree ("instance_id", "slug");
 DROP INDEX IF EXISTS "index_slug_stale";
 
+-- filter files are no longer refreshed by walking the directory, so no need to remember where that stopped
+ALTER TABLE "public"."_system"
+    DROP COLUMN IF EXISTS "cache_pointer_filter_filename";
+
 COMMIT;

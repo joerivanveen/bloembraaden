@@ -218,7 +218,16 @@ class Search extends BaseElement
         $instance_id = $instance_id ?? Setup::$instance_id;
         $filename = Setup::$DBCACHE . "filter/$instance_id/" . md5($path) . '.serialized';
         if (true === file_exists($filename) && false === $rewrite) {
-            if (false !== ($obj = unserialize(file_get_contents($filename)))) {
+            // @since 0.32.0 same age rules as cached search pages: refreshed in the background when old, regenerated when too old
+            $age_in_minutes = (time() - filemtime($filename)) / 60;
+            if ($age_in_minutes < Setup::$SEARCH_CACHE_MAX_MINUTES
+                && false !== ($obj = unserialize(file_get_contents($filename)))
+            ) {
+                // the 5-minute job refreshes files with a marker, the marker holds the path since the filename is a hash
+                if ($age_in_minutes > Setup::$SEARCH_CACHE_REFRESH_MINUTES && false === file_exists("$filename.refresh")) {
+                    file_put_contents("$filename.refresh", $path, LOCK_EX);
+                }
+
                 return $obj;
             }
             unlink($filename);

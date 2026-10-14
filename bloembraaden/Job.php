@@ -819,45 +819,38 @@ switch ($interval) {
             echo " ok.\n";
         }
         // refresh the json files for the filters as well
-        $trans->start('Handle properties filters cache');
-        $dir = new \DirectoryIterator(Setup::$DBCACHE . 'filter');
-        // get the cache pointer to resume where we left off, if present
-        $cache_pointer_filter_filename = $db->getSystemValue('cache_pointer_filter_filename');
-        $filename_for_cache = null;
-        foreach ($dir as $index => $file_info) {
-            if ($file_info->isDir()) {
-                if (0 === ($instance_id = (int)$file_info->getFilename())) continue;
-                echo "Filters for instance $instance_id.\n";
-                Setup::loadInstanceSettingsFor($instance_id);
-                $filter_dir = new \DirectoryIterator($file_info->getPath() . '/' . $instance_id);
-                foreach ($filter_dir as $index2 => $filter_file_info) {
-                    if ('serialized' === $filter_file_info->getExtension()) {
-                        $age = strtotime(date('Y-m-d H:i:s')) - $filter_file_info->getMTime();
-                        if ($age < 300) continue; // filter may be 5 minutes old
-                        $filename = $filter_file_info->getFilename();
-                        $filename_for_cache = "$instance_id/$filename";
-                        if (microtime(true) - $start_timer > 55) {
-                            echo "Stopped for time, filter age being $age seconds.\n";
-                            // remember we left off here, to resume next run
-                            $db->setSystemValue('cache_pointer_filter_filename', $filename_for_cache);
-                            break 3;
-                        }
-                        if ($filename_for_cache === $cache_pointer_filter_filename) $cache_pointer_filter_filename = null;
-                        if (null !== $cache_pointer_filter_filename) continue;
-                        // -11 to remove .serialized extension
-                        $path = urldecode(substr($filename, 0, -11));
-                        $src = new Search();
-                        $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
-                        //echo "Refreshed $path\n";
-                    }
-                }
-                $db->setSystemValue('cache_pointer_filter_filename', null); // register we’re done
+        // @since 0.32.0 only refresh filter files that were requested, they have a marker holding the path
+        $trans->start('Refresh requested properties filters');
+        $refreshed = 0;
+        foreach (glob(Setup::$DBCACHE . 'filter/*/*.serialized.refresh') ?: array() as $index => $marker) {
+            if (microtime(true) - $start_timer > 55) {
+                echo "Stopped for time.\n";
+                break;
             }
+            $path = (string)file_get_contents($marker);
+            unlink($marker); // a request during the refresh may place a new marker
+            if (0 === ($instance_id = (int)basename(dirname($marker))) || '' === $path) continue;
+            Setup::loadInstanceSettingsFor($instance_id);
+            $src = new Search();
+            $src->getRelevantPropertyValuesAndPrices($path, $instance_id, true);
+            ++$refreshed;
         }
-        echo "done... \n";
-        if (null === $filename_for_cache) ob_clean();
+        echo "$refreshed refreshed.\n";
+        if (0 === $refreshed) ob_clean();
         break;
     case 'hourly': // interval should be hourly
+        // @since 0.32.0 filter files that were not requested for a while are not served anymore
+        $trans->start('Remove expired properties filters');
+        $deleted = 0;
+        $expired = time() - 60 * Setup::$SEARCH_CACHE_MAX_MINUTES;
+        foreach (new \DirectoryIterator(Setup::$DBCACHE . 'filter') as $index => $dir_info) {
+            if (false === $dir_info->isDir() || true === $dir_info->isDot()) continue;
+            foreach (new \DirectoryIterator($dir_info->getPathname()) as $index2 => $file_info) {
+                if (false === $file_info->isFile()) continue;
+                if ($file_info->getMTime() < $expired && unlink($file_info->getPathname())) ++$deleted;
+            }
+        }
+        echo "$deleted deleted.\n";
         // check all the js and css in the cache, delete old ones
         $trans->start('Handle js and css cache');
         foreach (array('js', 'css') as $sub_directory) {
