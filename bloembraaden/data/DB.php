@@ -2114,10 +2114,11 @@ class DB extends Base
         $out = $element->getOutputFull();
         $ci_ai = Help::removeAccents(mb_strtolower($this->getMeaningfulSearchString($out)));
         // @since 0.12.0 maintain _ci_ai table
+        // @since 0.32.0 update the existing row, only insert when it is not there yet
+        $online = (true === $element->canBeFound()) ? 1 : 0;
         $statement = $this->conn->prepare('
-            INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id, online)
-            VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id, :online)
-            RETURNING ci_ai_id
+            UPDATE _ci_ai SET instance_id = :instance_id, ci_ai = :ci_ai, title = :title, slug = :slug, online = :online
+            WHERE type_name = :type_name AND id = :id;
         ');
         $statement->bindValue(':instance_id', $out->instance_id);
         $statement->bindValue(':ci_ai', $ci_ai);
@@ -2125,12 +2126,30 @@ class DB extends Base
         $statement->bindValue(':slug', $out->slug);
         $statement->bindValue(':type_name', $element->getTypeName());
         $statement->bindValue(':id', $out->id);
-        $statement->bindValue(':online', (true === $element->canBeFound()) ? 1 : 0);
+        $statement->bindValue(':online', $online);
         $statement->execute();
-        $success = (1 === $statement->rowCount());
+        if (0 < $statement->rowCount()) {
+            $statement = null;
+
+            return true;
+        }
+        // when another process inserted the same row in the meantime, that one is just as fresh
+        $statement = $this->conn->prepare('
+            INSERT INTO _ci_ai (instance_id, ci_ai, title, slug, type_name, id, online)
+            VALUES (:instance_id, :ci_ai, :title, :slug, :type_name, :id, :online)
+            ON CONFLICT DO NOTHING;
+        ');
+        $statement->bindValue(':instance_id', $out->instance_id);
+        $statement->bindValue(':ci_ai', $ci_ai);
+        $statement->bindValue(':title', $out->title);
+        $statement->bindValue(':slug', $out->slug);
+        $statement->bindValue(':type_name', $element->getTypeName());
+        $statement->bindValue(':id', $out->id);
+        $statement->bindValue(':online', $online);
+        $statement->execute();
         $statement = null;
 
-        return $success;
+        return true;
     }
 
     public function fetchElementsMissingCiAi(string $type_name, int $limit): array
@@ -4353,11 +4372,12 @@ class DB extends Base
     {
         if ('' === (string)($slug = $row->__ref)) return;
         $json = json_encode($row);
+        // @since 0.32.0 update the existing row, only insert when it is not there yet
         $statement = $this->conn->prepare('
-            INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page) 
-            VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page);
+            UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, id = :id,
+                since = NOW(), variant_page_json = NULL
+            WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;
         ');
-
         $statement->bindValue(':row_as_json', $json);
         $statement->bindValue(':type_name', $type_name);
         $statement->bindValue(':id', $id);
@@ -4365,6 +4385,21 @@ class DB extends Base
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
+        if (0 === $statement->rowCount()) {
+            // when another process inserted the same row in the meantime, that one is just as fresh
+            $statement = $this->conn->prepare('
+                INSERT INTO _cache (instance_id, slug, row_as_json, type_name, id, variant_page)
+                VALUES (:instance_id, :slug, :row_as_json, :type_name, :id, :variant_page)
+                ON CONFLICT DO NOTHING;
+            ');
+            $statement->bindValue(':row_as_json', $json);
+            $statement->bindValue(':type_name', $type_name);
+            $statement->bindValue(':id', $id);
+            $statement->bindValue(':variant_page', $variant_page);
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->bindValue(':slug', $slug);
+            $statement->execute();
+        }
         $json = null;
         $statement = null;
     }
@@ -4592,53 +4627,6 @@ class DB extends Base
     }
 
     /**
-     * It could happen that identical rows are inserted in the cache table, these are deleted immediately by this method
-     * @return int the amount of rows that were removed
-     * @since 0.8.3
-     */
-    public function removeDuplicatesFromCache(): int
-    {
-        // https://stackoverflow.com/a/12963112
-        // delete (older) duplicates from cache table
-        $statement = $this->conn->prepare('
-            DELETE FROM _cache c1 USING (
-              SELECT MAX(since) as since, slug, instance_id, variant_page
-                FROM _cache
-                GROUP BY slug, instance_id, variant_page HAVING COUNT(*) > 1
-              ) c2
-              WHERE c1.slug = c2.slug 
-                AND c1.variant_page = c2.variant_page
-                AND c1.instance_id = c2.instance_id
-                AND c1.since <> c2.since;
-        ');
-        $statement->execute();
-        $affected = $statement->rowCount();
-        $statement = null;
-
-        return $affected;
-    }
-
-    public function removeDuplicatesFromCiAi(): int
-    {
-        // https://stackoverflow.com/a/12963112
-        $statement = $this->conn->prepare('
-            DELETE FROM _ci_ai c1 USING (
-              SELECT MAX(ci_ai_id) as ci_ai_id, type_name, id
-                FROM _ci_ai
-                GROUP BY type_name, id HAVING COUNT(*) > 1
-              ) c2
-              WHERE c1.id = c2.id 
-                AND c1.type_name = c2.type_name
-                AND c1.ci_ai_id <> c2.ci_ai_id;
-        ');
-        $statement->execute();
-        $affected = $statement->rowCount();
-        $statement = null;
-
-        return $affected;
-    }
-
-    /**
      * @param int $limit
      * @return array the rows
      * @since 0.8.0 @since 0.8.19 ‘since’ can be in the future, for pages that need to be published just then
@@ -4648,7 +4636,7 @@ class DB extends Base
         // collect all the stale slugs
         $statement = $this->conn->prepare("
             SELECT DISTINCT s.slug, s.instance_id, s.since, c.slug in_cache FROM _stale s
-            LEFT OUTER JOIN _cache c ON c.slug = s.slug
+            LEFT OUTER JOIN _cache c ON c.instance_id = s.instance_id AND c.slug = s.slug
             WHERE s.since <= NOW()
             ORDER BY s.since DESC LIMIT $limit;");
         $statement->execute();

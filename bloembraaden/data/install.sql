@@ -3429,3 +3429,37 @@ COMMIT;
 BEGIN;
 
 COMMIT;
+
+-- version 0.32.0
+
+BEGIN;
+
+-- one row per instance / slug / variant page in the cache, so duplicates no longer need to be removed periodically
+-- block writes (not reads) so no new duplicates appear while removing them
+LOCK TABLE "public"."_cache" IN SHARE ROW EXCLUSIVE MODE;
+DELETE FROM "public"."_cache" a USING "public"."_cache" b
+WHERE a.instance_id = b.instance_id
+  AND a.slug = b.slug
+  AND a.variant_page = b.variant_page
+  AND (a.since < b.since OR (a.since = b.since AND a.ctid < b.ctid));
+CREATE UNIQUE INDEX IF NOT EXISTS "unique__cache_instance_id_slug_variant_page"
+    ON "public"."_cache" USING btree ("instance_id", "slug", "variant_page");
+-- the unique index starts with instance_id and slug, so this one is no longer needed
+DROP INDEX IF EXISTS "index_slug_i_cache";
+-- for the daemon looking for old cache rows
+CREATE INDEX IF NOT EXISTS "index__cache_since" ON "public"."_cache" USING btree ("since");
+
+-- one search index row per element
+LOCK TABLE "public"."_ci_ai" IN SHARE ROW EXCLUSIVE MODE;
+DELETE FROM "public"."_ci_ai" a USING "public"."_ci_ai" b
+WHERE a.type_name = b.type_name
+  AND a.id = b.id
+  AND a.ci_ai_id < b.ci_ai_id;
+CREATE UNIQUE INDEX IF NOT EXISTS "unique__ci_ai_type_name_id"
+    ON "public"."_ci_ai" USING btree ("type_name", "id");
+
+-- stale slugs are always looked up by instance_id and slug
+CREATE INDEX IF NOT EXISTS "index__stale_instance_id_slug" ON "public"."_stale" USING btree ("instance_id", "slug");
+DROP INDEX IF EXISTS "index_slug_stale";
+
+COMMIT;

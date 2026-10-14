@@ -670,9 +670,6 @@ switch ($interval) {
         $images = null;
         break;
     case '5': // interval should be 5
-        $trans->start('Remove duplicates from cache and search index');
-        echo 'Cache: ', $db->removeDuplicatesFromCache(), "\n";
-        echo 'Search index: ', $db->removeDuplicatesFromCiAi(), "\n";
         $trans->start('Parent chains');
         // when some serie has its brand_id updated
         $rows = $db->jobIncorrectChainForProduct();
