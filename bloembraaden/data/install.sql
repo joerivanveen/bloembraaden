@@ -3457,6 +3457,9 @@ WHERE a.type_name = b.type_name
   AND a.ci_ai_id < b.ci_ai_id;
 CREATE UNIQUE INDEX IF NOT EXISTS "unique__ci_ai_type_name_id"
     ON "public"."_ci_ai" USING btree ("type_name", "id");
+-- searching uses LIKE '%term%', which a trigram index can serve (pg_trgm is a trusted extension since PostgreSQL 13)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS "index__ci_ai_ci_ai_trgm" ON "public"."_ci_ai" USING gin ("ci_ai" gin_trgm_ops);
 
 -- stale slugs are always looked up by instance_id and slug
 CREATE INDEX IF NOT EXISTS "index__stale_instance_id_slug" ON "public"."_stale" USING btree ("instance_id", "slug");
