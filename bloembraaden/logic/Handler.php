@@ -1732,7 +1732,10 @@ class Handler extends BaseLogic
                     $path = $element->getSlug();
                 }
                 // try the cache one more time with the new slug, else cache it
-                if (null !== ($out = Help::getDB()->cached($path, 1, true))) {
+                // @since 0.32.0 admins do not get search pages from cache, the element is already fresh
+                if (false === (ADMIN && $element instanceof Search)
+                    && null !== ($out = Help::getDB()->cached($path, 1, true))
+                ) {
                     if (extension_loaded('newrelic')) {
                         $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
                         newrelic_name_transaction("$transaction_name from history");
@@ -1774,6 +1777,14 @@ class Handler extends BaseLogic
                 $element = $type->getElement();
                 $element->fetchById($row->id);
                 $element->setProperties($this->resolver->getProperties());
+                $out = $element->getOutputObject();
+                unset($element);
+                goto process_out;
+            }
+            // @since 0.32.0 cached search pages are for visitors, admins get them fresh including offline items
+            // (only output from cache has x_cache_timestamp)
+            if ('search' === $type_name && true === isset($out->x_cache_timestamp)) {
+                $element = $this->resolver->getElement();
                 $out = $element->getOutputObject();
                 unset($element);
                 goto process_out;

@@ -928,10 +928,12 @@ class DB extends Base
         } else {
             $where_table = "x.{$type_name}_id = :id";
         }
+        // @since 0.32.0 admins get the offline variants as well
+        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND v.online = TRUE' : '';
         $statement = $this->conn->prepare("
             SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
             INNER JOIN cms_variant v ON v.variant_id = x.variant_id
-            WHERE $where_table AND x.deleted = FALSE AND v.online = TRUE AND v.deleted = FALSE $imploded_sub_queries
+            WHERE $where_table AND x.deleted = FALSE AND v.deleted = FALSE $online_query $imploded_sub_queries
             ORDER BY date_popvote DESC;
         ");
 
@@ -4681,7 +4683,7 @@ class DB extends Base
      * @return void
      * @since 0.8.3
      */
-    private function markStale(string $slug): void
+    public function markStale(string $slug): void
     {
         if (isset($this->stale_slugs[$slug])) {
             return;

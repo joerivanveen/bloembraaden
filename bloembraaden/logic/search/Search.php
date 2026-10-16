@@ -201,7 +201,9 @@ class Search extends BaseElement
     {
         $instance_id = $instance_id ?? Setup::$instance_id;
         $filename = Setup::$DBCACHE . "filter/$instance_id/" . md5($path) . '.serialized';
-        if (true === file_exists($filename) && false === $rewrite) {
+        // @since 0.32.0 the files are for visitors only, admins get the values fresh including offline items
+        $admin = (true === defined('ADMIN') && true === ADMIN);
+        if (false === $admin && true === file_exists($filename) && false === $rewrite) {
             // @since 0.32.0 same age rules as cached search pages: refreshed in the background when old, regenerated when too old
             $age_in_minutes = (time() - filemtime($filename)) / 60;
             if ($age_in_minutes < Setup::$SEARCH_CACHE_MAX_MINUTES
@@ -218,7 +220,7 @@ class Search extends BaseElement
         }
         //
         $containing_folder = dirname($filename);
-        if (false === file_exists($containing_folder)) {
+        if (false === $admin && false === file_exists($containing_folder)) {
             mkdir($containing_folder, 0755);
         }
         //
@@ -232,7 +234,7 @@ class Search extends BaseElement
         // and get the prices
         $return_arr['prices'] = Help::getDB()->fetchAllPricesAsInts($variant_ids);
         // cache the values as a file
-        file_put_contents($filename, serialize($return_arr), LOCK_EX); // overwrites by default
+        if (false === $admin) file_put_contents($filename, serialize($return_arr), LOCK_EX); // overwrites by default
 
         return $return_arr;
     }

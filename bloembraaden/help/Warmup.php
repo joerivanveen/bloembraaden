@@ -29,6 +29,12 @@ class Warmup extends BaseLogic
         if ($element instanceof BaseElement && $slug !== $element->getPath()) {
             Help::getDB()->deleteFromCache($slug);
         }
+        // @since 0.32.0 admins do not cache search pages, let the daemon refresh it for visitors
+        if ($element instanceof Search && true === defined('ADMIN') && true === ADMIN) {
+            Help::getDB()->markStale($slug);
+
+            return true;
+        }
 
         return null === $element->cacheOutputObject(false);
     }

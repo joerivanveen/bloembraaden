@@ -112,6 +112,11 @@ class BaseLogic extends Base
     public function cacheOutputObject(bool $returnOutputObject = true): ?\stdClass
     {
         $out = $this->getOutputObject();
+        // @since 0.32.0 search pages are cached for visitors only, admins get them fresh including offline items
+        if ($this instanceof Search && true === defined('ADMIN') && true === ADMIN) {
+            if (true === $returnOutputObject) return $out;
+            return null;
+        }
         // cache the slug if it’s not a dynamic one (containing ‘__’)
         if (true === isset($out->__ref) && false === str_contains(($slug = $out->__ref), '__')) {
             $db = Help::getDB();
