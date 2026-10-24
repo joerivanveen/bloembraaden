@@ -1759,9 +1759,6 @@ class DB extends Base
                 'user_gender' => $vars['gender'] ?? '',
                 'user_email' => strtolower(trim($vars['email'])),
                 'user_phone' => strtolower(trim($vars['phone'] ?? '')),
-                'shipping_address_country_name' => $country->name,
-                'shipping_address_country_iso2' => $country->iso2,
-                'shipping_address_country_iso3' => $country->iso3,
                 'order_number' => $order_number,
             );
             // loop through the other fields we are going to insert
@@ -1786,6 +1783,9 @@ class DB extends Base
                     'shipping_address_street',
                     'shipping_address_street_addition',
                     'shipping_address_city',
+                    'shipping_address_country_name',
+                    'shipping_address_country_iso2',
+                    'shipping_address_country_iso3',
                     'shipping_remarks',
                     'remarks_user', // @deprecated use shipping_remarks
                     'local_pickup',
@@ -1816,6 +1816,12 @@ class DB extends Base
                         $value = mb_substr(trim($value), 0, 127);
                 }
                 $order_fields[$key] = $value;
+            }
+            // get the country specs from the actual shipping country if not local pickup address
+            if (false === $local_pickup) {
+                $order_fields['shipping_address_country_name'] = $country->name;
+                $order_fields['shipping_address_country_iso2'] = $country->iso2;
+                $order_fields['shipping_address_country_iso3'] = $country->iso3;
             }
             try {
                 $this->conn->beginTransaction();

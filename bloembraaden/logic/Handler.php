@@ -524,8 +524,9 @@ class Handler extends BaseLogic
                     $post_data = $this->resolver->escape($post_data);
                     $out = $this->sendMail($instance, $post_data);
                 } elseif ('countries' === $action) {
-                    $out = array('__rows__' => Help::getDB()->getCountries());
-                    $out['slug'] = 'countries';
+                    $out = array('slug' => 'countries', '__rows__' => Help::getDB()->getCountries());
+                } elseif ('addresses' === $action) {
+                    $out = array('slug' => 'addresses', '__rows__' => Help::getDB()->fetchInstanceAddresses($instance->getId()));
                 } elseif ('suggest_address' === $action) {
                     $country_code = $post_data->address_country_iso2;
                     $query = htmlspecialchars($post_data->query, ENT_QUOTES);
