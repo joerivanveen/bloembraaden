@@ -1755,9 +1755,9 @@ PEATCMS_history.prototype.displayValue = function (table_column, value) {
     // if we have info by id, use it:
     if ('_id' === table_column.slice(-3)) {
         const extra = (this.info[table_column.replace('sub_', '')] || {})[parseInt(value)];
-        if (extra) {
-            // template row has different columns
-            value = String(extra.hasOwnProperty('title') ? extra.title : extra.name);
+        // template row has name instead of title, some rows only have the id (e.g. user)
+        if (extra && (extra.title || extra.name)) {
+            value = String(extra.title || extra.name);
         }
     }
     // null values are saved as empty string as well
@@ -1776,10 +1776,16 @@ PEATCMS_history.prototype.contextLabel = function (context) {
     return JSON.parse(context).filter(function (link) {
         return !(link.type === self.type_name && link.id === key);
     }).map(function (link) {
+        // the order that changed the stock
+        if ('order' === link.type) {
+            return `order <a href="/__order__/${encodeURIComponent(link.title)}">${PEATCMS.replace('<', '&lt;', String(link.title))}</a>`;
+        }
         const current = (self.info[`${link.type}_id`] || {})[link.id],
             type = link.type.replace('_', ' ');
         if (current) {
-            return `${type} ‘<a href="/${current.slug}">${PEATCMS.replace('<', '&lt;', String(current.title))}</a>’`;
+            const title = PEATCMS.replace('<', '&lt;', String(current.title || current.name || link.title || link.id));
+            // only elements with a slug can be linked to
+            return current.slug ? `${type} ‘<a href="/${current.slug}">${title}</a>’` : `${type} ‘${title}’`;
         }
         return `${type} ‘${PEATCMS.replace('<', '&lt;', String(link.title || link.id))}’ (deleted)`;
     }).join(', ');

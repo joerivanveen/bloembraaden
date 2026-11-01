@@ -1120,7 +1120,7 @@ class DB extends Base
     }
 
     /**
-     * @param array $columns the columns you want to select, specifically
+     * @param array $columns the columns you want to select, specifically, the ones the table does not have are left out
      * @param Type $peat_type
      * @param string $column_name
      * @param array $in indexed array holding id’s, when empty this method always returns an empty array
@@ -1143,7 +1143,8 @@ class DB extends Base
                 return $table_info->hasColumn($column);
             });
             if (0 === count($columns)) {
-                $select_columns = 'el.*'; // fallback
+                // @since 0.32.0 only the id, never fall back to all columns (e.g. user or instance rows)
+                $select_columns = "el.$id_column";
             } else {
                 $select_columns = 'el.' . implode(', el.', $columns);
             }
@@ -1891,20 +1892,25 @@ class DB extends Base
     /**
      * @param array $rows containing row objects with at least variant_id and quantity
      * @param int $multiplier default -1 for subtracting, use 1 for (re-)adding
-     * @param string $reference may appear in error message
+     * @param string $reference the order number, may appear in error message and @since 0.32.0 in the history
      * @return void
      */
     private function updateStock(array $rows, int $multiplier = -1, string $reference = ''): void
     {
         try {
             $statement = $this->conn->prepare('SELECT quantity_in_stock FROM cms_variant WHERE variant_id = ?;');
+            // @since 0.32.0 the order (without id, its row must not be looked up) is shown with the change in the history
+            $context = json_encode(array(array('type' => 'order', 'title' => $reference)));
             foreach ($rows as $index => $row) {
                 $variant_id = $row->variant_id;
                 $statement->execute(array($variant_id));
                 $quantity_in_stock = $statement->fetchColumn(); // false means the variant_id is no longer present
                 if (null !== $quantity_in_stock && false !== $quantity_in_stock) { // only update when stock management is on
+                    $since = (new \DateTimeImmutable())->format('Y-m-d H:i:s.uP'); // same format as in addToHistory()
                     if (false === $this->updateVariantQuantityInStock($variant_id, $multiplier * $row->quantity)) {
                         $this->addError("Could not update quantity in stock for $variant_id");
+                    } elseif ('' !== $reference) {
+                        $this->addHistoryContext('cms_variant', $variant_id, $since, $context);
                     }
                 }
             }
@@ -5214,6 +5220,35 @@ class DB extends Base
         }
 
         return json_encode($context);
+    }
+
+    /**
+     * Adds context to the history entries of a row after the fact, e.g. the order that changed the stock
+     *
+     * @param string $table_name the table the change is in
+     * @param int $key the primary key of the changed row
+     * @param string $since the moment just before the change, entries written from then on get the context
+     * @param string $context json array of {type, id, title} objects, id may be left out when there is nothing to link
+     * @return int the number of history entries updated
+     * @since 0.32.0
+     */
+    private function addHistoryContext(string $table_name, int $key, string $since, string $context): int
+    {
+        $statement = $this->conn->prepare('
+            UPDATE _history SET context = :context
+            WHERE instance_id = :instance_id AND table_name = :table_name AND key = :key
+                AND date_created >= :since AND context IS NULL;
+        ');
+        $statement->bindValue(':context', $context);
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':table_name', $table_name);
+        $statement->bindValue(':key', $key);
+        $statement->bindValue(':since', $since);
+        $statement->execute();
+        $row_count = $statement->rowCount();
+        $statement = null;
+
+        return $row_count;
     }
 
     public function fetchHistory(Type $peat_type, int $key): ?array

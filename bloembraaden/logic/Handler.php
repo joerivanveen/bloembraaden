@@ -1141,13 +1141,15 @@ class Handler extends BaseLogic
                                 // @since 0.32.0 the elements a crosslink row links, to show their current title and slug
                                 if (null !== $row->context) {
                                     foreach (json_decode($row->context) ?? array() as $link) {
+                                        // links without id are not looked up (e.g. order, it has no title or slug)
+                                        if (false === isset($link->id)) continue;
                                         $info["{$link->type}_id"][(int)$link->id] = array();
                                     }
                                 }
                             }
                             foreach ($info as $column_name => $ids) {
                                 $type = new Type(substr($column_name, 0, -3)); // remove _id to get type name
-                                $element_rows = Help::getDB()->fetchElementColumnsWhereIn(array('title', 'slug'), $type, $column_name, array_keys($ids));
+                                $element_rows = Help::getDB()->fetchElementColumnsWhereIn(array('title', 'slug', 'name'),$type, $column_name, array_keys($ids));
                                 foreach ($element_rows as $index => $element_row) {
                                     $info[$column_name][$element_row->id] = $element_row;
                                 }
