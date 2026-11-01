@@ -897,6 +897,7 @@ class Help
             'template_id_payment_confirmation' => 'template_id',
             'template_id_internal_confirmation' => 'template_id',
         );
+        $id_column_tables = array(); // id column name => table name
         $repeat = -1;
         // read file
         while (($filename = array_shift($files)) && file_exists($filename)) {
@@ -975,6 +976,7 @@ class Help
                                         $logger->log("Importing table $table_name ($row_count rows)");
                                         // import the table line by line and register the id->id translation
                                         $ids[$id_column_name] = array();
+                                        $id_column_tables[$id_column_name] = $table_name; // @since 0.32.0 for the _history keys
                                     }
                                 } else { // 'wait' === $row_treat
                                     $logger->log("Save table $table_name for later");
@@ -1097,45 +1099,22 @@ class Help
         ) {
             $logger->log('Updated order numbers table');
         }
-        // update slugs in _history table to have auto-redirect restored
-        $logger->log('Update history for redirects');
-        $tables_with_slugs = array();
-        foreach ($db->getTablesWithSlugs() as $index => $row) {
-            $tables_with_slugs[$row->table_name] = $index;
-        }
+        // update keys in _history table to have auto-redirect restored and point the entries to the new rows
+        // @since 0.32.0 for all imported tables (including crosslink tables), and the elements the entries belong to
+        $logger->log('Update history');
         foreach ($ids as $col_name => $translated_ids) {
-            if (false === is_array($translated_ids)) continue;
-            // get table name from id:
-            $table_name = 'cms_' . substr($col_name, 0, -3);
-            if (false === isset($tables_with_slugs[$table_name])) continue;
-            // todo loop door de ids in $translated_ids, maar check op overlappingen, en doe die laatst,
-            // zodat je niet de net geüpdatete nog een keer update (van 1 naar 3 en van 3 naar 5)
-            /**
-             * 1 => 3
-             * 2 => 4
-             * 3 => 5
-             * 5 => 2
-             * 4 => 8 <- als deze naar 1 gaat kan het dus niet :-P
-             */
-            while (0 !== ($count = count($translated_ids))) {
-                foreach ($translated_ids as $old => $new) {
-                    // save for later, when this value exists as old as well
-                    if (isset($translated_ids[$new])) continue;
-                    // update the history table
-                    $db->updateHistoryKey($new, array(
-                        'instance_id' => $instance_id,
-                        'table_name' => $table_name,
-                        'key' => $old,
-                    ));
-                    // this one is done
-                    unset($translated_ids[$old]);
-                }
-                if ($count === count($translated_ids)) {
-                    $logger->log('ERROR: loop detected in history, cannot update');
-                    break;
+            if (false === is_array($translated_ids) || false === str_ends_with($col_name, '_id')) continue;
+            if (true === isset($id_column_tables[$col_name])) {
+                $table_name = $id_column_tables[$col_name];
+                if (($affected = $db->updateHistoryKeys($table_name, $translated_ids))) {
+                    $logger->log("Updated $affected history keys for $table_name");
                 }
             }
-            $logger->log("$table_name done");
+            // the element_name is the id column without _id, by convention
+            $element_name = substr($col_name, 0, -3);
+            if (($affected = $db->updateHistoryElementIds($element_name, $translated_ids))) {
+                $logger->log("Updated $affected history entries for $element_name");
+            }
         }
         // prepare images for import
         if (null === $static_root) {

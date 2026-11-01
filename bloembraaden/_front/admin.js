@@ -660,13 +660,16 @@ PEATCMS_actor.prototype.hasChanged = function () {
         }
         return this.changed || (this.server_value.toString() !== current_value);
     }
-    if (false === DOMElement.hasAttribute('type')) { // these may be embellished checkboxes and date_popvoted
+    if (false === DOMElement.hasAttribute('type')) { // embellished checkboxes and special fields
         if ((el = DOMElement.querySelector('[type="checkbox"]'))) {
             return el.checked !== this.server_value;
         }
         if ('date_popvote' === this.column['name']) {
             // for now we do not update this
             return false;
+        }
+        if ('quantity_in_stock' === this.column['name']) {
+            return String(this.server_value) !== DOMElement.getAttribute('data-quantity');
         }
     }
     return this.server_value !== this.DOMElement.value || this.changed;
@@ -1507,9 +1510,15 @@ PEATCMS_panels.prototype.resetTools = function () { // make sure the panels are 
     }
 }
 
-function PEATCMS_history(type_name, key) {
+/**
+ * @param type_name
+ * @param key
+ * @param element optional PEATCMS_element that is being edited, restoring updates its edit screen as well @since 0.32.0
+ */
+function PEATCMS_history(type_name, key, element) {
     this.type_name = type_name;
     this.key = key;
+    this.element = element || null;
     this.rows = [];
     this.info = [];
 }
@@ -1534,60 +1543,39 @@ PEATCMS_history.prototype.fetch = function(callback) {
     return this;
 }
 
+PEATCMS_history.prototype.show = function (parent) {
+    const self = this;
+    this.fetch(function () {
+        let div = document.getElementById('admin-history-area');
+        div && div.remove();
+        div = document.createElement('div');
+        div.id = 'admin-history-area';
+        // PEATCMS_admin prevents it from being hidden on admin pages (e.g. template)
+        div.classList.add('edit-area', 'PEATCMS_admin');
+        self.display(div);
+        requestAnimationFrame(function () {
+            parent.appendChild(div);
+        });
+    });
+    return this;
+}
+
 PEATCMS_history.prototype.display = function(container) {
-    let i, len, entry, el, column_name, table_reference, value_summary, value_more;
+    const rows = this.rows;
+    let i, len, entry, group;
     container.innerHTML = '<button class="close-history">×</button><h1>History:</h1>';
-    for (i = 0, len = this.rows.length; i < len; ++i) {
-        entry = this.rows[i];
-        const table_column = entry.table_column;
-        table_reference = `${entry.table_name}-${entry.key}"`;
-        el = document.createElement('details');
-        el.className = 'history-entry';
-        el.name = 'history-entry';
-        // if we have info by id, use it:
-        if ('_id' === table_column.slice(-3)) {
-            const column = table_column.replace('sub_', ''),
-                ref = this.info[column];
-            if (ref) {
-                const extra = ref[parseInt(entry.value)];
-                if (extra) {
-                    // template row has different columns
-                    if (extra.hasOwnProperty('title')) {
-                        entry.value = extra.title; // todo make a link using extra.slug?
-                    } else {
-                        entry.value = extra.name;
-                    }
-                }
-            }
-            column_name = column.replace('_id', '').replace('_', ' ');
-        } else {
-            column_name = table_column;
+    for (i = 0, len = rows.length; i < len; ++i) {
+        entry = rows[i];
+        // @since 0.32.0 the entries of one change have the same date, display them together
+        group = [entry];
+        while (i + 1 < len && rows[i + 1].date_created === entry.date_created
+            && rows[i + 1].table_name === entry.table_name && rows[i + 1].key === entry.key) {
+            group.push(rows[++i]);
         }
-        // for o (order) and deleted, set cross references
-        if ('o' === table_column || 'deleted' === table_column) {
-            column_name = `<span data-original-table="${table_reference}">${column_name}</span>`;
-            table_reference = ''; // do not set on summary, for this is not useful information to refer to
-        }
-        // handle value nicely, when it is huge, make it part of the ‘more’ section
-        const value = PEATCMS.replace('<', '&lt;', entry.value || '');
-        if (value.length > 99) {
-            value_summary = value.slice(0, 77) + '...';
-            value_more = `<div class="history-more">${PEATCMS.replace('\n','<br>',value)}</div>`;
-        } else {
-            value_summary = value;
-            value_more = '';
-        }
-        el.innerHTML = `<summary data-table="${table_reference}">${column_name}: ${value_summary}</summary>${value_more}${new Date(entry.date_created).toLocaleString()} - <em>${entry.admin_name || 'unknown'}</em> - ${entry.table_name}: ${table_column}</details>`;
-        container.appendChild(el);
+        container.appendChild(this.displayGroup(group));
     }
     if (0 === len) {
         container.innerHTML += '<p class="history-entry">No history available.</p>';
-    } else {
-        // update cross references
-        container.querySelectorAll('[data-original-table]').forEach(function (el) {
-            const ref = container.querySelector(`[data-table="${el.getAttribute('data-original-table')}"]`);
-            ref && el.parentElement.insertAdjacentHTML('beforeend', ` (${ref ? ref.textContent : 'unknown'})`);
-        });
     }
     // intersection observer makes sure the history display is gone when the sidebar is
     const observer = new IntersectionObserver(function (entries, observer) {
@@ -1606,6 +1594,195 @@ PEATCMS_history.prototype.display = function(container) {
         container.remove();
         observer.disconnect();
     });
+}
+
+PEATCMS_history.prototype.displayGroup = function (group) {
+    const first = group[0],
+        label = this.contextLabel(first.context),
+        el = document.createElement('details');
+    const self = this;
+    let summary, more = '', lines = group.map(function (entry, index) {
+        const line = this.displayEntry(entry, '' !== label);
+        line.index = index; // to find the entry when restoring
+        return line;
+    }, this);
+    // a new link has its ids in the history, they are already in the label, so it just says ‘linked’
+    if ('' !== label && group.some(function (entry) {
+        return '_id' === entry.table_column.slice(-3);
+    })) {
+        summary = 'linked';
+        more = lines.filter(function (line, index) {
+            return '_id' !== group[index].table_column.slice(-3);
+        }).map(this.displayLine).join('');
+    } else if (1 === lines.length) {
+        const line = lines[0];
+        if ('' === line.value) { // e.g. unlinked
+            summary = line.column;
+        } else if (null === line.previous) {
+            summary = `${line.column}: ${this.shorten(line.value)}`;
+            // when it is huge, make it part of the ‘more’ section
+            if (line.value.length > 45) {
+                more = `<div class="history-more">${PEATCMS.replace('\n', '<br>', line.value)}</div>`;
+            }
+        } else {
+            // @since 0.32.0 always show what changed, the full values are in the ‘more’ section when they are long
+            summary = `${line.column}: ${this.shorten(line.previous)} → ${this.shorten(line.value)}`;
+            if (line.value.length > 45 || line.previous.length > 45) {
+                more = `<div class="history-more previous">${PEATCMS.replace('\n', '<br>', line.previous)}</div>`;
+                more += `<div class="history-more new">${PEATCMS.replace('\n', '<br>', line.value)}</div>`;
+            }
+        }
+        if (true === line.restorable) {
+            more = '<div class="history-more restore"><button type="button" class="restore" data-restore="0">↺ restore previous value</button></div>' + more;
+        }
+    } else {
+        summary = lines.map(function (line) {
+            return line.column;
+        }).join(', ');
+        more = lines.map(this.displayLine).join('');
+    }
+    if ('' !== label) summary = `${label}: ${summary}`;
+    el.className = 'history-entry';
+    el.name = 'history-entry';
+    el.innerHTML = `<summary>${summary}</summary>${more}${new Date(first.date_created).toLocaleString()} - <em>${first.admin_name || 'unknown'}</em> - ${first.table_name}`;
+    el.querySelectorAll('[data-restore]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            self.restore(group[parseInt(this.getAttribute('data-restore'))]);
+        });
+    });
+    return el;
+}
+
+/**
+ * @param value escaped value
+ * @returns {string} the value on one line, shortened when it is longer than 40 characters
+ * @since 0.32.0
+ */
+PEATCMS_history.prototype.shorten = function (value) {
+    value = PEATCMS.replace('\n', ' ', value);
+    return (value.length > 45) ? `${value.slice(0, 37)}...` : value;
+}
+
+/**
+ * @param line as returned by displayEntry
+ * @returns {string} html line for the ‘more’ section, with the previous value when there is one
+ */
+PEATCMS_history.prototype.displayLine = function (line) {
+    const value = PEATCMS.replace('\n', '<br>', line.value);
+    if (null === line.previous) return `<div class="history-more">${line.column}: ${value}</div>`;
+    const restore = (true === line.restorable)
+        ? ` <button type="button" class="restore" data-restore="${line.index}">↺ restore</button>`
+        : '';
+    return `<div class="history-more">${line.column}: ${PEATCMS.replace('\n', '<br>', line.previous)} → ${value}${restore}</div>`;
+}
+
+/**
+ * Sets the column back to the previous value of this entry, using the regular update_column action
+ * @param entry a row from the history that has a previous value
+ * @since 0.32.0
+ */
+PEATCMS_history.prototype.restore = function (entry) {
+    const column_name = entry.table_column,
+        previous = entry.previous;
+    if (false === confirm(`Restore ${column_name} to the previous value?\n\n${previous.length > 200 ? `${previous.slice(0, 197)}...` : previous}`)) return;
+    // when opened from the edit screen, update like the edit screen does, so its fields show the restored value too
+    if (null !== this.element) {
+        const element = this.element;
+        NAV.invalidateCache();
+        NAV.ajax('/__action__/update_element/', {
+            'element': element.getElementName(),
+            'id': element.getElementId(),
+            'column_name': column_name,
+            'column_value': previous
+        }, function (data) {
+            if (data.hasOwnProperty(column_name)) {
+                element.set(data); // updates the edit fields and refreshes the page
+            } else {
+                console.error('Could not restore the previous value.', data);
+            }
+        });
+        return;
+    }
+    NAV.ajax('/__action__/update_column', {
+        'table_name': entry.table_name,
+        'column_name': column_name,
+        'id': entry.key,
+        'value': previous
+    }, function (data) {
+        if (data.hasOwnProperty(column_name)) {
+            NAV.refresh(); // show the restored value in the page
+        } else {
+            console.error('Could not restore the previous value.', data);
+        }
+    });
+}
+
+/**
+ * @param entry a row from the history
+ * @param is_link whether the entry is for a crosslink table (it has a context)
+ * @returns {{column: string, value: string, previous: string|null, restorable: boolean}} readable column name and
+ * (escaped) values, previous is null when there is no previous value (e.g. insert), restorable only for values of
+ * the element itself (not of linked items)
+ */
+PEATCMS_history.prototype.displayEntry = function (entry, is_link) {
+    const table_column = entry.table_column;
+    let column = table_column;
+    if ('_id' === table_column.slice(-3)) {
+        column = table_column.replace('sub_', '').replace('_id', '').replace('_', ' ');
+    }
+    if ('o' === table_column) column = 'order';
+    // @since 0.32.0 for links ‘deleted’ means unlinked
+    if (true === is_link && 'deleted' === table_column) {
+        return {column: ('1' === entry.value) ? 'unlinked' : 'linked again', value: '', previous: null, restorable: false};
+    }
+    const has_previous = (null !== entry.previous && undefined !== entry.previous);
+    return {
+        column: column,
+        value: this.displayValue(table_column, entry.value),
+        previous: has_previous ? this.displayValue(table_column, entry.previous) : null,
+        restorable: has_previous && true === entry.own && 'REDACTED' !== entry.previous
+    };
+}
+
+/**
+ * @param table_column the column the value is for
+ * @param value the value as saved in history
+ * @returns {string} escaped value, the title of the element for id columns when available
+ * @since 0.32.0
+ */
+PEATCMS_history.prototype.displayValue = function (table_column, value) {
+    value = value || '';
+    // if we have info by id, use it:
+    if ('_id' === table_column.slice(-3)) {
+        const extra = (this.info[table_column.replace('sub_', '')] || {})[parseInt(value)];
+        if (extra) {
+            // template row has different columns
+            value = String(extra.hasOwnProperty('title') ? extra.title : extra.name);
+        }
+    }
+    // null values are saved as empty string as well
+    if ('' === value) return '<em>(empty)</em>';
+    return PEATCMS.replace('<', '&lt;', value);
+}
+
+/**
+ * @param context json from the history row: the elements a crosslink row links (type, id, title), or null
+ * @returns {string} html with the linked elements, except the element this history is for
+ * @since 0.32.0
+ */
+PEATCMS_history.prototype.contextLabel = function (context) {
+    if (!context) return '';
+    const self = this, key = parseInt(this.key);
+    return JSON.parse(context).filter(function (link) {
+        return !(link.type === self.type_name && link.id === key);
+    }).map(function (link) {
+        const current = (self.info[`${link.type}_id`] || {})[link.id],
+            type = link.type.replace('_', ' ');
+        if (current) {
+            return `${type} ‘<a href="/${current.slug}">${PEATCMS.replace('<', '&lt;', String(current.title))}</a>’`;
+        }
+        return `${type} ‘${PEATCMS.replace('<', '&lt;', String(link.title || link.id))}’ (deleted)`;
+    }).join(', ');
 }
 
 function PEATCMS_quickie(quickie) {
@@ -2837,6 +3014,15 @@ function peatcms_admin_setup() {
     PEAT.html_node.classList.add('the_admin_is_present');
     // finally startup
     window.CMS_admin = new PEATCMS_admin();
+    // @since 0.32.0 history buttons on admin pages (e.g. template)
+    document.addEventListener('click', function (e) {
+        const button = e.target.closest('[data-history_type_name]');
+        if (null === button) return;
+        new PEATCMS_history(
+            button.getAttribute('data-history_type_name'),
+            button.getAttribute('data-history_key')
+        ).show(document.body);
+    });
     if (VERBOSE) { // subscribe to all the events, and log them in the console
         for (i = 0, len = peatcms_events.length; i < len; ++i) {
             document.addEventListener(peatcms_events[i], PEATCMS_logevent);

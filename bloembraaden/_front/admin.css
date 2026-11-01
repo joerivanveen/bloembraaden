@@ -1056,12 +1056,31 @@ body .PEATCMS_admin .peatcms-link:focus {
     display: inline-block;
 }
 
+/* @since 0.32.0 admin pages (e.g. template) have no sidebar */
+#PEATCMS_admin_page > #admin-history-area {
+    display: inline-block;
+    width: min(40rem, 100vw);
+    border-left: solid 4px var(--admin-color-accent);
+}
+
 #admin-history-area .history-entry {
     padding: 0 .5em;
 }
 
 #admin-history-area .history-more {
     color: var(--admin-color-accent-light);
+}
+
+#admin-history-area .history-more.previous::after {
+    content: '→';
+    color: var(--admin-color-accent);
+    font-weight: bold;
+    display: block;
+    /*background-color: var(--admin-color-accent-neutral);*/
+}
+
+#admin-history-area .history-more.new {
+    color: var(--admin-color-accent-neutral);
 }
 
 /* quickie is also a screen */

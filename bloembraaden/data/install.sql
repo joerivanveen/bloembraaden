@@ -3469,4 +3469,11 @@ DROP INDEX IF EXISTS "index_slug_stale";
 ALTER TABLE "public"."_system"
     DROP COLUMN IF EXISTS "cache_pointer_filter_filename";
 
+-- history entries for crosslink tables save the linked elements, with their titles at that moment
+ALTER TABLE "public"."_history"
+    ADD COLUMN IF NOT EXISTS "context" Text;
+-- and the value before the change, null when there was none (e.g. insert)
+ALTER TABLE "public"."_history"
+    ADD COLUMN IF NOT EXISTS "previous" Text;
+
 COMMIT;

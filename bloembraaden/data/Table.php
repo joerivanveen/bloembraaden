@@ -60,6 +60,19 @@ class Type extends Base
         return isset(self::PEATCMS_TYPES[$type_name]);
     }
 
+    /**
+     * @param string $table_name
+     * @return string|null the type name belonging to the table, null when the table is not an element table
+     * @since 0.32.0
+     */
+    public static function typeNameForTable(string $table_name): ?string
+    {
+        if ('' === $table_name) return null;
+        if (false === ($type_name = array_search($table_name, self::PEATCMS_TYPES, true))) return null;
+
+        return $type_name;
+    }
+
     public function __toString(): string
     {
         return $this->type_name;
@@ -226,7 +239,8 @@ class Table extends Base
         $col_type = $col->getType();
         $col_name = $col->getName();
         if ($col_type === 'boolean') {
-            if (true !== $value && false !== $value) {
+            // @since 0.32.0 also 0 and 1, as saved in _history, so previous values can be restored
+            if (true !== $value && false !== $value && false === in_array($value, array(0, 1, '0', '1'), true)) {
                 $this->addValidationError($col_name, var_export($value, true), __('must be boolean', 'peatcms'));
 
                 return false;

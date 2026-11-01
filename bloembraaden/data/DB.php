@@ -1419,7 +1419,6 @@ class DB extends Base
      * @param int $down_vote default 0: will put the element at the top
      * @return float the pop_vote value (between 0, the most popular, and 1, the least)
      * @since 0.5.12
-     * TODO 0.32.0 addtohistory!
      */
     public function updatePopVote(string $element_name, int $id, int $down_vote = 0): float
     {
@@ -1428,16 +1427,9 @@ class DB extends Base
         $type_name = $type->typeName();
         if (0 === $down_vote) {
             $statement = $this->conn->prepare("
-                UPDATE $table_name SET date_popvote = NOW() WHERE {$type_name}_id = ? AND instance_id = ?;
+                UPDATE $table_name SET date_popvote = NOW() WHERE {$type_name}_id = :id AND instance_id = :instance_id
+                RETURNING date_popvote;
             ");
-            $statement->execute(array($id, Setup::$instance_id));
-            if ($statement->rowCount() === 1) {
-                $this->reCacheWithWarmup($this->fetchElementRow($type, $id)->slug);
-
-                return 0; // this is now the highest voted
-            } else {
-                $this->addError("updatePopVote error for $element_name with id $id");
-            }
         } else { // downvote..., move approx x down on every vote by decreasing the date_popvote by random 1 - 20 minutes
             // or 8 hours when this is already the lowest
             $statement = $this->conn->prepare("UPDATE $table_name 
@@ -1448,22 +1440,24 @@ class DB extends Base
                             WHERE {$type_name}_id = :id AND instance_id = :instance_id AND deleted = FALSE)
                         ORDER BY date_popvote DESC LIMIT $down_vote) alias)
                     , date_popvote - CAST(8 ||  ' hours' as INTERVAL)
-                    ) WHERE {$type_name}_id = :id AND instance_id = :instance_id;");
-            $statement->bindValue(':id', $id);
-            $statement->bindValue(':instance_id', Setup::$instance_id);
-//            var_dump(str_replace(':id', (string)$id, str_replace(':instance_id', (string)Setup::$instance_id, $statement->queryString)));
-//            die();
-            $statement->execute();
-            $count = $statement->rowCount();
-            $statement = null;
-            if ($count === 1) {
-                $this->reCacheWithWarmup($this->fetchElementRow($type, $id)->slug);
-
-                return $this->getPopVote($element_name, $id);
-            } else {
-                $this->addError("updatePopVote returned $count rows affected...");
-            }
+                    ) WHERE {$type_name}_id = :id AND instance_id = :instance_id
+                RETURNING date_popvote;");
         }
+        $statement->bindValue(':id', $id);
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->execute();
+        $rows = $statement->fetchAll(5);
+        $statement = null;
+        if (1 === ($count = count($rows))) {
+            // @since 0.32.0 add to history, the value is already updated, so do not compare it with the current row
+            $this->addToHistory(new Table($this->getTableInfo($table_name)), $id,
+                array('date_popvote' => $rows[0]->date_popvote), true);
+            $this->reCacheWithWarmup($this->fetchElementRow($type, $id)->slug);
+            if (0 === $down_vote) return 0; // this is now the highest voted
+
+            return $this->getPopVote($element_name, $id);
+        }
+        $this->addError("updatePopVote updated $count rows for $element_name with id $id");
 
         return -1;
     }
@@ -1526,6 +1520,9 @@ class DB extends Base
         if (1 === $statement->rowCount()) {
             $quantity = $statement->fetchColumn();
             $statement = null;
+            // @since 0.32.0 add to history, the value is already updated, so do not compare it with the current row
+            $this->addToHistory(new Table($this->getTableInfo('cms_variant')), $variant_id,
+                array('quantity_in_stock' => $quantity), true);
             // manage in stock switch when going in and out of stock
             if (null !== $quantity) {
                 $this->updateRowAndReturnSuccess('cms_variant', array('in_stock' => (0 < $quantity)), $variant_id);
@@ -4835,14 +4832,19 @@ class DB extends Base
         return $row_count;
     }
 
-    public function insertHistoryEntry(\stdClass $row): bool
+    /**
+     * @param \stdClass $row the history entry, its instance_id is ignored (e.g. imported rows belong to another instance)
+     * @param int|null $instance_id @since 0.32.0 the instance the entry belongs to, default the current instance
+     * @return bool success
+     */
+    public function insertHistoryEntry(\stdClass $row, ?int $instance_id = null): bool
     {
         if (true === isset($row->user_id, $row->user_name, $row->table_name, $row->table_column, $row->key, $row->value, $row->date_created)) {
             $statement = $this->conn->prepare('
-                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value, element_name, element_id, date_created) 
-                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :element_name, :element_id, :date_created);
+                INSERT INTO _history (instance_id, admin_id, user_id, admin_name, user_name, table_name, table_column, key, value, previous, element_name, element_id, context, date_created) 
+                VALUES (:instance_id, :admin_id, :user_id, :admin_name, :user_name, :table_name, :table_column, :key, :value, :previous, :element_name, :element_id, :context, :date_created);
             ');
-            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->bindValue(':instance_id', $instance_id ?? Setup::$instance_id);
             $statement->bindValue(':admin_id', $row->admin_id ?? 0);
             $statement->bindValue(':admin_name', $row->admin_name ?? 'IMPORT');
             $statement->bindValue(':user_id', $row->user_id);
@@ -4853,6 +4855,8 @@ class DB extends Base
             $statement->bindValue(':value', $row->value);
             $statement->bindValue(':element_name', $row->element_name ?? null);
             $statement->bindValue(':element_id', (int)($row->element_id ?? null));
+            $statement->bindValue(':context', $row->context ?? null);
+            $statement->bindValue(':previous', $row->previous ?? null);
             $statement->bindValue(':date_created', $row->date_created);
             $success = $statement->execute();
             $statement = null;
@@ -4863,18 +4867,59 @@ class DB extends Base
         }
     }
 
-    public function updateHistoryKey(int $key, array $where): void
+    /**
+     * Translates the keys in _history, e.g. after an import
+     *
+     * @param string $table_name the table the keys are for
+     * @param array $translated_ids old id => new id
+     * @return int the number of history entries updated
+     * @since 0.32.0 replaces updateHistoryKey()
+     */
+    public function updateHistoryKeys(string $table_name, array $translated_ids): int
     {
-        if (0 === count($where)) {
-            $this->addError('updateHistoryKey() does not work with empty where');
-            return;
-        }
-        $table_info = $this->getTableInfo('_history');
-        $table = new Table($table_info);
-        $where = $table->formatColumnsAndData($where, true);
-        $where_statement = implode(' AND ', $where['parameterized']);
-        $statement = $this->conn->prepare("UPDATE _history SET key = $key WHERE $where_statement");
-        $statement->execute($where['values']);
+        return $this->translateHistoryColumn('key', 'table_name', $table_name, $translated_ids);
+    }
+
+    /**
+     * Translates the element ids in _history, e.g. after an import
+     *
+     * @param string $element_name the element the ids are for
+     * @param array $translated_ids old id => new id
+     * @return int the number of history entries updated
+     * @since 0.32.0
+     */
+    public function updateHistoryElementIds(string $element_name, array $translated_ids): int
+    {
+        return $this->translateHistoryColumn('element_id', 'element_name', $element_name, $translated_ids);
+    }
+
+    /**
+     * Translates ids in one statement, so overlapping translations (1 => 3, 3 => 5) do not update the same entry twice
+     *
+     * @param string $column the _history column holding the ids, not user input
+     * @param string $where_column the _history column to select the entries by, not user input
+     * @param string $where_value the value for $where_column
+     * @param array $translated_ids old id => new id
+     * @return int the number of history entries updated
+     * @since 0.32.0
+     */
+    private function translateHistoryColumn(string $column, string $where_column, string $where_value, array $translated_ids): int
+    {
+        if (0 === count($translated_ids)) return 0;
+        $statement = $this->conn->prepare("
+            UPDATE _history h SET $column = t.new_id
+            FROM unnest(CAST(:old_ids AS integer[]), CAST(:new_ids AS integer[])) AS t(old_id, new_id)
+            WHERE h.instance_id = :instance_id AND h.$where_column = :where_value AND h.$column = t.old_id;
+        ");
+        $statement->bindValue(':old_ids', '{' . implode(',', array_map('intval', array_keys($translated_ids))) . '}');
+        $statement->bindValue(':new_ids', '{' . implode(',', array_map('intval', array_values($translated_ids))) . '}');
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':where_value', $where_value);
+        $statement->execute();
+        $row_count = $statement->rowCount();
+        $statement = null;
+
+        return $row_count;
     }
 
     public function healTable(string $table_name): bool
@@ -5021,45 +5066,54 @@ class DB extends Base
             $user_id = $row->user_id;
         }
         // @since 0.31.0 add for which element this is done
-        // todo 0.32.0 (history): the job does not have this and has errors then and goes into a loop
-        $post_data = $GLOBALS['post'] ?? new \stdClass();
-        $element_name = $post_data->element ?? null;
-        $element_id = $post_data->id ?? null;
-//        var_dump($row);
-//        die(' ERJKWLWW');
-        // TODO 0.32.0 based on $row as well, make it more intelligible...
+        // @since 0.32.0 derived from the row itself, so it works the same for web, daemon and jobs
+        $source = (object)array_merge((array)($row ?? array()), $col_val);
+        $owners = $this->getHistoryOwners($table_name, (int)$key, $source);
+        $instance_id = (int)($source->instance_id ?? 0) ?: Setup::$instance_id; // admins can have instance_id 0
+        // @since 0.32.0 the same date for all columns, so the entries of this change can be displayed together
+        $date_created = (new \DateTimeImmutable())->format('Y-m-d H:i:s.uP');
+        $context = false; // determined when the first entry is actually written
+        $history_value = function (string $column_name, $value): string {
+            // booleans get butchered in $statement->execute(), interestingly, NULL values don't
+            if (true === is_bool($value)) return ($value ? '1' : '0');
+            if (true === in_array($column_name, $this::REDACTED_COLUMN_NAMES)) return 'REDACTED';
+
+            return (string)$value;
+        };
         foreach ($col_val as $column_name => $value) {
             if (false === $table_info->hasColumn($column_name)) continue;
             if (null !== $row && $row->{$column_name} === $value) continue; // no need to add to history when the value is the same
-            // booleans get butchered in $statement->execute(), interestingly, NULL values don't
-            if (true === is_bool($value)) {
-                $value = ($value ? '1' : '0');
-            } elseif (true === in_array($column_name, $this::REDACTED_COLUMN_NAMES)) {
-                $value = 'REDACTED';
-            } else {
-                $value = (string)$value;
-                if ('NOW()' === $value && str_starts_with($column_name, 'date_')) {
-                    $value = date('Y-m-d H:i:s', $now);
-                }
+            $value = $history_value($column_name, $value);
+            if ('NOW()' === $value && str_starts_with($column_name, 'date_')) {
+                $value = date('Y-m-d H:i:s', $now);
             }
-            $insert = (object)array(
-                'instance_id' => Setup::$instance_id,
-                'admin_id' => $admin_id,
-                'admin_name' => $admin_email,
-                'user_id' => $user_id,
-                'user_name' => $user_email,
-                'table_name' => $table_name,
-                'table_column' => $column_name,
-                'key' => (int)$key,
-                'value' => $value,
-                'element_name' => $element_name,
-                'element_id' => $element_id,
-                'date_created' => 'NOW()',
-            );
+            // @since 0.32.0 the value before this change, null when there was none (e.g. insert)
+            $previous = $row->{$column_name} ?? null;
+            if (null !== $previous) $previous = $history_value($column_name, $previous);
+            if (false === $context) $context = $this->getHistoryContext($table_name, $source);
+            // @since 0.32.0 one entry per element this change belongs to (crosslink tables belong to both sides)
+            foreach ($owners as $index => $owner) {
+                $insert = (object)array(
+                    'instance_id' => $instance_id,
+                    'admin_id' => $admin_id,
+                    'admin_name' => $admin_email,
+                    'user_id' => $user_id,
+                    'user_name' => $user_email,
+                    'table_name' => $table_name,
+                    'table_column' => $column_name,
+                    'key' => (int)$key,
+                    'value' => $value,
+                    'previous' => $previous,
+                    'element_name' => $owner[0],
+                    'element_id' => $owner[1],
+                    'context' => $context,
+                    'date_created' => $date_created,
+                );
 
-            if (false === $this->insertHistoryEntry($insert)) {
-                $this->addError(sprintf('addToHistory could not insert into _history for %1$s with %2$s = %3$s',
-                    $table_name, $column_name, $value));
+                if (false === $this->insertHistoryEntry($insert, $instance_id)) {
+                    $this->addError(sprintf('addToHistory could not insert into _history for %1$s with %2$s = %3$s',
+                        $table_name, $column_name, $value));
+                }
             }
         }
 
@@ -5076,10 +5130,96 @@ class DB extends Base
         return $row;
     }
 
+    /**
+     * Determines which elements a change in a table belongs to, based on the data, not on the request
+     *
+     * @param string $table_name the table the change is in
+     * @param int $key the primary key of the changed row
+     * @param \stdClass $source the (old) row merged with the new values
+     * @return array of [element_name, element_id] pairs, crosslink tables return both sides
+     * @since 0.32.0
+     */
+    private function getHistoryOwners(string $table_name, int $key, \stdClass $source): array
+    {
+        if (null !== ($type_name = Type::typeNameForTable($table_name))) {
+            return array(array($type_name, $key));
+        }
+        $owners = $this->getLinkedIds($table_name, $source);
+        if (true === str_ends_with($table_name, '_x_properties')) {
+            // properties are linked to many items, it would clutter the history of the property itself
+            $owners = array_values(array_filter($owners, function ($owner) {
+                return 'property' !== $owner[0];
+            }));
+        }
+        // legacy behaviour (same as the 0.31.0 update)
+        if (0 === count($owners)) $owners[] = array(ltrim(str_replace('cms', '', $table_name), '_'), $key);
+
+        return $owners;
+    }
+
+    /**
+     * @param string $table_name the table the change is in
+     * @param \stdClass $source the (old) row merged with the new values
+     * @return array of [element_name, element_id] pairs this crosslink row links, empty for other tables
+     * @since 0.32.0
+     */
+    private function getLinkedIds(string $table_name, \stdClass $source): array
+    {
+        if (false === str_contains($table_name, '_x_')) return array();
+        $linked = array();
+        foreach ($source as $column_name => $value) {
+            if (false === str_ends_with($column_name, '_id') || 0 === (int)$value) continue;
+            if (true === str_starts_with($column_name, 'sub_')) $column_name = substr($column_name, 4);
+            $type_name = substr($column_name, 0, -3);
+            if ('instance' === $type_name || false === Type::isTypeName($type_name)) continue;
+            $linked[] = array($type_name, (int)$value);
+        }
+
+        return $linked;
+    }
+
+    /**
+     * Saves which elements a crosslink row links, with their current titles, so the history remains readable
+     * when the row or the elements are gone
+     *
+     * @param string $table_name the table the change is in
+     * @param \stdClass $source the (old) row merged with the new values
+     * @return string|null json array of {type, id, title} objects, null when this is not a crosslink table
+     * @since 0.32.0
+     */
+    private function getHistoryContext(string $table_name, \stdClass $source): ?string
+    {
+        if (0 === count($linked = $this->getLinkedIds($table_name, $source))) return null;
+        $selects = array();
+        $values = array();
+        foreach ($linked as $index => $link) {
+            $type = new Type($link[0]);
+            if (false === $this->getTableInfo(($linked_table = $type->tableName()))->hasColumn('title')) continue;
+            $selects[] = "SELECT '{$type->typeName()}' AS type, {$type->idColumn()} AS id, title FROM $linked_table WHERE {$type->idColumn()} = ?";
+            $values[] = $link[1];
+        }
+        $titles = array();
+        if (0 < count($selects)) {
+            // one query for all the titles
+            $statement = $this->conn->prepare(implode(' UNION ALL ', $selects) . ';');
+            $statement->execute($values);
+            foreach ($statement->fetchAll(5) as $index => $row) {
+                $titles["$row->type.$row->id"] = $row->title;
+            }
+            $statement = null;
+        }
+        $context = array();
+        foreach ($linked as $index => $link) {
+            $context[] = array('type' => $link[0], 'id' => $link[1], 'title' => $titles["$link[0].$link[1]"] ?? null);
+        }
+
+        return json_encode($context);
+    }
+
     public function fetchHistory(Type $peat_type, int $key): ?array
     {
         $statement = $this->conn->prepare('
-            SELECT admin_name, user_name, table_name, table_column, key, value, date_created 
+            SELECT admin_name, user_name, table_name, table_column, key, value, previous, context, date_created 
             FROM _history 
             WHERE instance_id = :instance_id AND element_name = :element AND element_id = :id
             ORDER BY date_created DESC;

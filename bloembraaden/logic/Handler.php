@@ -1123,20 +1123,26 @@ class Handler extends BaseLogic
                     } elseif ('admin_get_history' === $action) {
                         if (true === isset($post_data->type_name, $post_data->key)) {
                             $type = new Type($post_data->type_name);
-                            $rows = Help::getDB()->fetchHistory($type, (int)$post_data->key);
+                            $key = (int)$post_data->key;
+                            $rows = Help::getDB()->fetchHistory($type, $key);
                             $info = array();
-                            //$table_name = $type->tableName();
+                            $table_name = $type->tableName();
                             $id_column = $type->idColumn();
                             foreach ($rows as $index => $row) {
-                                //if ($table_name === $row->table_name) continue;
+                                // @since 0.32.0 only values of the element itself can be restored, not of linked items
+                                $row->own = ($table_name === $row->table_name && $key === (int)$row->key);
                                 if (str_ends_with($row->table_column, '_id')) {
                                     $column = str_replace('sub_', '', $row->table_column);
                                     if ($column === $id_column) continue;
                                     if (false === Type::isTypeName(substr($column, 0, -3))) continue;
-                                    $value = (int)$row->value;
-                                    if (false === isset($info[$column])) $info[$column] = array();
-                                    if (true === isset($info[$column][$value])) continue;
-                                    $info[$column][$value] = array();
+                                    $info[$column][(int)$row->value] = array();
+                                    if (null !== $row->previous) $info[$column][(int)$row->previous] = array();
+                                }
+                                // @since 0.32.0 the elements a crosslink row links, to show their current title and slug
+                                if (null !== $row->context) {
+                                    foreach (json_decode($row->context) ?? array() as $link) {
+                                        $info["{$link->type}_id"][(int)$link->id] = array();
+                                    }
                                 }
                             }
                             foreach ($info as $column_name => $ids) {
@@ -1145,6 +1151,10 @@ class Handler extends BaseLogic
                                 foreach ($element_rows as $index => $element_row) {
                                     $info[$column_name][$element_row->id] = $element_row;
                                 }
+                                // leave out the ids that were not found (e.g. deleted)
+                                $info[$column_name] = array_filter($info[$column_name], function ($element_row) {
+                                    return array() !== $element_row;
+                                });
                             }
                             $out = array('rows' => $rows, 'info' => $info);
                         }

@@ -697,20 +697,9 @@ PEATCMS_element.prototype.edit = function (edit_area, callback) {
     el.classList.add('edit');
     el.title = 'History';
     el.onclick = function () {
-        const history = new PEATCMS_history(self.state.type_name, self.state.id);
-        history.fetch(function () {
-            let div = document.getElementById('admin-history-area');
-            div && div.remove();
-            div = document.createElement('div');
-            div.id = 'admin-history-area';
-            div.classList.add('edit-area');
-            history.display(div);
-            requestAnimationFrame(function () {
-                document.getElementById('admin_wrapper').appendChild(div);
-            });
-        });
+        new PEATCMS_history(self.state.type_name, self.state.id, self).show(document.getElementById('admin_wrapper'));
     };
-    //edit_area.insertAdjacentElement('beforeend', el); // TODO 0.32.0 disabled history because it’s still wonky
+    edit_area.insertAdjacentElement('beforeend', el);
     // add a view link
     el = document.createElement('button');
     el.innerText = '⊙';
