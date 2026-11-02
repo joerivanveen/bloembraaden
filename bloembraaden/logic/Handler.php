@@ -235,8 +235,12 @@ class Handler extends BaseLogic
                 if (null === ($el = db()->fetchElementIdAndTypeBySlug($slug))) {
                     $el = db()->fetchElementIdAndTypeByAncientSlug($slug);
                 }
-                if ($el && 'file' === $el->type_name) {
-                    $file = new File(db()->fetchElementRow(new Type('file'), $el->id));
+                // offline / unpublished files are only available to admins (e.g. for the preview after uploading)
+                if ($el && 'file' === $el->type_name
+                    && ($row = db()->fetchElementRow(new Type('file'), $el->id))
+                    && ($file = new File($row))
+                    && (true === ADMIN || true === $file->canBeSeen())
+                ) {
                     $file->serve();
                 } else {
                     $this->addError(sprintf('Download: no file found with slug %s.', $slug));
