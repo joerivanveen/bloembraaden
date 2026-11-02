@@ -116,7 +116,7 @@ class Addresses extends Base
         $result = curl_exec($curl);
         $error = curl_error($curl);
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-        curl_close($curl);
+        unset($curl);
 
         return array($result, $error, $status_code);
     }

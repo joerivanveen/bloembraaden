@@ -81,7 +81,7 @@ class Mailer extends Base
 
     public function __shutdown(): void
     {
-        if (true === isset($this->curl)) curl_close($this->curl);
+        if (true === isset($this->curl)) unset($this->curl);
     }
 
     public function set(array $fields): array

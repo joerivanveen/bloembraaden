@@ -266,12 +266,12 @@ switch ($interval) {
                         $result = curl_exec($curl);
                         if (false === $result) {
                             Help::addError(new \Exception(sprintf('Curl error invoice for order %s: ‘%s’', $order_number, curl_error($curl))));
-                            curl_close($curl);
+                            unset($curl);
                             break; // it’s not working apparently
                         }
                         $result = trim($result);
                         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-                        curl_close($curl);
+                        unset($curl);
                         if (200 !== $status_code || '%PDF' !== substr($result, 0, 4)) {
                             Help::addError(new \Exception(sprintf('Pdf error invoice for order %s: ‘%s’', $order_number, substr($result, 0, 300))));
                             break; // it’s not working apparently
@@ -486,7 +486,7 @@ switch ($interval) {
                 $err = curl_error($curl);
                 $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
                 $success = false;
-                curl_close($curl);
+                unset($curl);
                 if ($err) {
                     Help::addError(new \Exception("MyParcel curl error: $err"));
                 } else {

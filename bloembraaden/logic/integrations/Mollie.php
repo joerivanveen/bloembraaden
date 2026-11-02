@@ -86,7 +86,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         // receives a _links.checkout in the response by Mollie to redirect the client to, but we build that ourselves in javascript
         $error_message = curl_error($curl);
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-        curl_close($curl);
+        unset($curl);
         if ($error_message) {
             $this->addError($error_message);
             $this->addMessage(__('Payment request generated an error on the server.', 'peatcms'), 'error');
@@ -133,7 +133,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
         // receives a resource (payment object) with status and amount etc.
         $err = curl_error($curl);
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); //get status code
-        curl_close($curl);
+        unset($curl);
         if ($err) {
             $this->addError($err);
             $this->addMessage(__('Payment request generated an error on the server.', 'peatcms'), 'error');

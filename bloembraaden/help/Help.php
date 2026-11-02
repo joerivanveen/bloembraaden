@@ -502,7 +502,7 @@ class Help
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         $result = (array)json_decode(curl_exec($ch));
-        curl_close($ch);
+        unset($ch);
         if (0 === json_last_error()) {
             $valid = $result['isValid'];
             $success = true;
@@ -555,7 +555,7 @@ class Help
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             $result = (array)json_decode(curl_exec($ch));
-            curl_close($ch);
+            unset($ch);
             if (0 === json_last_error()) {
                 if (false === $result['success']) {
                     $turnstile_errors = $result['error-codes'];
