@@ -724,17 +724,33 @@ class Handler extends BaseLogic
                     }
                 } elseif ('account_password_forgotten' === $action) {
                     if (true === Help::turnstileVerify($instance, $post_data)) {
-                        if (true === isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
+                        if (true === isset($post_data->email)
+                            && false !== filter_var(($email_address = (string)$post_data->email), FILTER_VALIDATE_EMAIL)
+                        ) {
+                            // keep the original for the redirect urls / messages, use escaped values in the mail
+                            $posted = clone $post_data;
+                            $post_data = $this->resolver->escape($post_data);
+                            // the slug and subject are supplied by the form, make sure they are harmless
+                            if ('' === ($slug = Help::slugify((string)($posted->slug ?? '')))) $slug = 'account';
+                            $subject = str_replace(array("\r", "\n", "\t"), ' ', strip_tags((string)($posted->subject ?? '')));
+                            $subject = mb_substr(trim($subject), 0, 127);
+                            if ('' === $subject) $subject = "Mailed by {$instance->getDomain()}";
                             $post_data->check_string = db()->putInLocker(0,
                                 (object)array('email_address' => $email_address));
                             // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
                             $post_data->confirm_link = sprintf('%s/%s/locker:%s',
                                 $instance->getDomain(true),
-                                ($post_data->slug ?? 'account'),
+                                $slug,
                                 $post_data->check_string);
                             $post_data->instance_name = $instance->getName();
                             /* this largely duplicate code must be in a helper function or something... */
-                            if (true === isset($post_data->template) && $template_row = db()->getMailTemplate($post_data->template)) {
+                            // only use the template when it exists by that exact name (getMailTemplate falls back to the first one)
+                            // and it is a password reset template (contains the confirm_link), so no other mails can be sent this way
+                            if (true === isset($posted->template)
+                                && ($template_row = db()->getMailTemplate((string)$posted->template))
+                                && strtolower($template_row->name) === strtolower((string)$posted->template)
+                                && true === str_contains((string)$template_row->html, '{{confirm_link')
+                            ) {
                                 $temp = new Template($template_row);
                                 $body = $temp->renderObject($post_data);
                             }
@@ -745,12 +761,12 @@ class Handler extends BaseLogic
                             $mail->set(array(
                                 'to' => $email_address,
                                 'from' => $instance->getSetting('mail_verified_sender'),
-                                'subject' => $post_data->subject ?? "Mailed by {$instance->getDomain()}",
+                                'subject' => $subject,
                                 'text' => Help::html_to_text($body),
                                 'html' => $body,
                             ));
                             $out = $mail->send();
-                            $out = $this->after_posting($out, $post_data);
+                            $out = $this->after_posting($out, $posted);
                         } else {
                             $this->addMessage(__('E-mail is required.', 'peatcms'), 'warn');
                         }
