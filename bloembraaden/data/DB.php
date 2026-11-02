@@ -7,7 +7,8 @@ class DB extends Base
 {
     private string $db_version, $db_schema, $cache_folder;
     private ?\PDO $conn;
-    private array $cache_keys, $stale_slugs, $tables_with_slugs, $id_exists;
+    private array $cache_keys;
+    private array $memo = array();
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
         '_ci_ai',
@@ -282,12 +283,10 @@ class DB extends Base
                 );
             } else {
                 $values_by_property[$property_name] = array(); // since the properties are sorted and formatted, we can do this
+                // @since 0.32.0 from the property values remembered for the request, instead of a query per value
+                $ids = $this->fetchPropertyValueIds();
                 foreach ($property_values as $index => $value) {
-                    if (($row = $this->fetchElementIdAndTypeBySlug($value))) {
-                        if ('property_value' === $row->type_name) {
-                            $values_by_property[$property_name][] = (int)$row->id;
-                        }
-                    }
+                    if (true === isset($ids[$value])) $values_by_property[$property_name][] = $ids[$value];
                 }
             }
         }
@@ -797,17 +796,38 @@ class DB extends Base
      */
     public function fetchPropertiesForInstance(): array
     {
-        $statement = $this->conn->prepare('SELECT slug, title FROM cms_property WHERE instance_id = :instance_id;');
-        $statement->bindValue(':instance_id', Setup::$instance_id);
-        $statement->execute();
-        $rows = $statement->fetchAll(5);
-        $statement = null;
-        $return_arr = array();
-        foreach ($rows as $index => $row) {
-            $return_arr[$row->slug] = $row->title;
-        }
+        // @since 0.32.0 remembered for the request
+        return $this->memo('properties', function () {
+            $statement = $this->conn->prepare('SELECT slug, title FROM cms_property WHERE instance_id = :instance_id;');
+            $statement->bindValue(':instance_id', Setup::$instance_id);
+            $statement->execute();
+            $rows = $statement->fetchAll(5);
+            $statement = null;
+            $return_arr = array();
+            foreach ($rows as $index => $row) {
+                $return_arr[$row->slug] = $row->title;
+            }
 
-        return $return_arr;
+            return $return_arr;
+        });
+    }
+
+    /**
+     * @return array slug => property_value_id of all property values for this instance, remembered for the request
+     * @since 0.32.0
+     */
+    public function fetchPropertyValueIds(): array
+    {
+        return $this->memo('property_value_ids', function () {
+            $statement = $this->conn->prepare('
+                SELECT slug, property_value_id FROM cms_property_value WHERE instance_id = ? AND deleted = FALSE;
+            ');
+            $statement->execute(array(Setup::$instance_id));
+            $ids = array_map('intval', $statement->fetchAll(\PDO::FETCH_KEY_PAIR));
+            $statement = null;
+
+            return $ids;
+        });
     }
 
     /**
@@ -4238,14 +4258,15 @@ class DB extends Base
 
     public function idExists(string $id_column, int $id_value): bool
     {
-        if (isset($this->id_exists[$id_column][$id_value])) return $this->id_exists[$id_column][$id_value];
-        $type = new Type(substr($id_column, 0, -3)); // strip the standard _id from the column name
-        $statement = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM {$type->tableName()} WHERE {$id_column} = ?);");
-        $statement->execute(array($id_value));
-        $this->id_exists[$id_column][$id_value] = ($exists = (bool)$statement->fetchColumn(0));
-        $statement = null;
+        return $this->memo("id_exists.$id_column.$id_value", function () use ($id_column, $id_value) {
+            $type = new Type(substr($id_column, 0, -3)); // strip the standard _id from the column name
+            $statement = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM {$type->tableName()} WHERE {$id_column} = ?);");
+            $statement->execute(array($id_value));
+            $exists = (bool)$statement->fetchColumn(0);
+            $statement = null;
 
-        return $exists;
+            return $exists;
+        });
     }
 
     /**
@@ -4695,11 +4716,13 @@ class DB extends Base
      */
     private function markDirtyForSearchAndFilters(): void
     {
-        if (isset($this->stale_slugs['__dirty__'])) return; // once per request
-        $this->stale_slugs['__dirty__'] = true;
-        $folder = Setup::$DBCACHE . 'dirty';
-        if (false === file_exists($folder)) mkdir($folder, 0755);
-        touch("$folder/" . Setup::$instance_id);
+        // once per request (per instance, by memo)
+        $this->memo('dirty_marker', static function () {
+            $folder = Setup::$DBCACHE . 'dirty';
+            if (false === file_exists($folder)) mkdir($folder, 0755);
+
+            return touch("$folder/" . Setup::$instance_id);
+        });
     }
 
     /**
@@ -4737,18 +4760,18 @@ class DB extends Base
      */
     public function markStale(string $slug): void
     {
-        if (isset($this->stale_slugs[$slug])) {
-            return;
-        } // mark stale only once
-        $this->stale_slugs[$slug] = true;
-        $statement = $this->conn->prepare('SELECT EXISTS (SELECT 1 FROM _stale WHERE instance_id = ? AND slug = ?);');
-        $statement->execute(array(Setup::$instance_id, $slug));
-        $exists = (bool)$statement->fetchColumn(0);
-        if (false === $exists) {
-            $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug) VALUES (?, ?);');
+        // mark stale only once per request (per instance, by memo)
+        $this->memo("stale.$slug", function () use ($slug) {
+            $statement = $this->conn->prepare('SELECT EXISTS (SELECT 1 FROM _stale WHERE instance_id = ? AND slug = ?);');
             $statement->execute(array(Setup::$instance_id, $slug));
-        }
-        $statement = null;
+            if (false === (bool)$statement->fetchColumn(0)) {
+                $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug) VALUES (?, ?);');
+                $statement->execute(array(Setup::$instance_id, $slug));
+            }
+            $statement = null;
+
+            return true;
+        });
     }
 
     public function markStaleFrom(string $slug, string $date_from): bool
@@ -4760,8 +4783,10 @@ class DB extends Base
         // insert into stale table with the correct since date
         $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug, since) VALUES (?, ?, ?);');
         $statement->execute(array(Setup::$instance_id, $slug, $date_from));
-        $this->stale_slugs[$slug] = true;
         $statement = null;
+        $this->memo("stale.$slug", static function () {
+            return true; // so a later markStale in this request does not overwrite the since date
+        });
 
         return true;
     }
@@ -5368,6 +5393,31 @@ class DB extends Base
             $this->cache_keys[$key] = $val;
         }
         return $this->cache_keys[$key];
+    }
+
+    /**
+     * Remembers the value returned by $callback for the rest of this request, per instance
+     * (the daemon handles multiple instances), use it for data that is requested multiple times per request
+     * @param string $key
+     * @param callable $callback
+     * @return mixed the value returned by $callback
+     * @since 0.32.0
+     */
+    private function memo(string $key, callable $callback): mixed
+    {
+        $key = Setup::$instance_id . ".$key";
+        if (false === array_key_exists($key, $this->memo)) $this->memo[$key] = $callback();
+
+        return $this->memo[$key];
+    }
+
+    /**
+     * Long-running processes (the daemon) must forget the memo regularly to pick up changes
+     * @since 0.32.0
+     */
+    public function forgetMemo(): void
+    {
+        $this->memo = array();
     }
 
     /**

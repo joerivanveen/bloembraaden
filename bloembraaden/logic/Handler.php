@@ -1738,11 +1738,8 @@ class Handler extends BaseLogic
             if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1, true);
             if (null === $out && ($element = $this->resolver->getElement()) instanceof BaseElement) {
                 // construct the new path for this old slug
-                if (($properties = $this->resolver->getProperties())) {
-                    $path = Help::turnIntoPath(explode('/', $element->getSlug()), $properties);
-                } else {
-                    $path = $element->getSlug();
-                }
+                // @since 0.32.0 from the element, its properties are cleaned of nonsense values
+                $path = $element->getPath();
                 // try the cache one more time with the new slug, else cache it
                 // @since 0.32.0 admins do not get search pages from cache, the element is already fresh
                 if (false === (ADMIN && $element instanceof Search)

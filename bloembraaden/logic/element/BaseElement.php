@@ -508,12 +508,27 @@ class BaseElement extends BaseLogic implements Element
 
     public function setProperties(array $properties = []): void
     {
+        if (0 === count($properties)) {
+            $this->properties = $properties;
+
+            return;
+        }
         /* since 0.8.16 remove nonsense properties so they don’t turn up in the path as well */
         $allowed_properties = Help::getDB()->fetchPropertiesForInstance();
         $allowed_properties['price_min'] = '';
         $allowed_properties['price_max'] = '';
         foreach ($properties as $name => $values) {
             if (false === isset($allowed_properties[$name])) unset ($properties[$name]);
+        }
+        // @since 0.32.0 remove nonsense values as well, they are ignored by the filter but would end up in the path (and cache)
+        $valid = Help::getDB()->fetchPropertyValueIds();
+        foreach ($properties as $name => $values) {
+            $properties[$name] = array_values(array_filter($values, static function ($value) use ($name, $valid) {
+                if ('price_min' === $name || 'price_max' === $name) return null !== Help::asFloat($value);
+
+                return isset($valid[$value]);
+            }));
+            if (0 === count($properties[$name])) unset ($properties[$name]);
         }
         $this->properties = $properties;
     }

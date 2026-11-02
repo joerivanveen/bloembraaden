@@ -74,6 +74,7 @@ class Daemon
             /* start the actual work */
             $total_count = 0;
             $stove = new Warmup();
+            $db->forgetMemo(); // data may have changed since the previous loop
             $done = array();
             $this->start_timer = microtime(true);
             $rows = $db->jobStaleCacheRows(200);
