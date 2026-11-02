@@ -653,10 +653,12 @@ class Handler extends BaseLogic
                 } elseif ('account_login' === $action) {
                     if (true === isset($post_data->email, $post_data->pass)) {
                         $as_admin = $this->resolver->hasInstruction('admin');
-                        if ((false === $as_admin && true === Help::turnstileVerify($instance, $post_data))
-                            || (true === $as_admin && db()->mayAdminLogin())
-                        ) {
+                        // @since 0.32.0 rate limiting per ip address for admins and users, only failed attempts count
+                        if (false === db()->mayLogin($as_admin, (string)$post_data->email)) {
+                            $this->addMessage(__('Too many login attempts, please try again later.', 'peatcms'), 'warn');
+                        } elseif (true === $as_admin || true === Help::turnstileVerify($instance, $post_data)) {
                             if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
+                                db()->registerFailedLogin($as_admin, (string)$post_data->email);
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
                             } elseif (true === $as_admin) {
                                 // reload to get all the admin css and js via the console in html
@@ -671,8 +673,6 @@ class Handler extends BaseLogic
                                     '__user__' => Help::$session->getUser()->getOutput()
                                 );
                             }
-                        } elseif (true === $as_admin) {
-                            $this->addMessage(__('Rate limiting: no more admin logins for a while.', 'peatcms'), 'warn');
                         } else {
                             $this->addMessage(__('Login not allowed.', 'peatcms'), 'warn');
                         }

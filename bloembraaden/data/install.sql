@@ -3476,4 +3476,20 @@ ALTER TABLE "public"."_history"
 ALTER TABLE "public"."_history"
     ADD COLUMN IF NOT EXISTS "previous" Text;
 
+-- login attempts are counted per ip address (ipv6 per /64), for admins and users, instead of globally
+CREATE TABLE IF NOT EXISTS "public"."_login_attempt"
+(
+    "login_attempt_id" Serial PRIMARY KEY                    NOT NULL,
+    "ip_address"       Character Varying(50)                  NOT NULL,
+    "is_admin"         Boolean                  DEFAULT FALSE NOT NULL,
+    "account_hash"     Character Varying(64)                  NOT NULL,
+    "date_created"     Timestamp With Time Zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "index__login_attempt_ip_address_date_created"
+    ON "public"."_login_attempt" USING btree ("ip_address", "date_created");
+-- and per account (hmac of the normalized email address), also for email addresses that are not an account
+CREATE INDEX IF NOT EXISTS "index__login_attempt_account_hash_date_created"
+    ON "public"."_login_attempt" USING btree ("account_hash", "date_created");
+DROP TABLE IF EXISTS "public"."_admin_login_attempt";
+
 COMMIT;

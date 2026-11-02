@@ -2858,47 +2858,97 @@ class DB extends Base
     }
 
     /**
-     * @since 0.30.0 rate limiting on admin login attempts.
-     * Default: max 60 attempts in 60 minutes, max 5 in any one minute.
+     * Maximum failed login attempts per ip address (ipv6 per /64), users are a bit more lenient than admins
+     * because more of them can share an ip address (offices, mobile carriers)
      */
-    public function mayAdminLogin(): bool
-    {
-        $may = false;
-        $admin = Setup::$ADMIN;
-        $per_hour = $admin->login_attempts_per_hour ?? 60;
-        $each_min = $admin->login_attempts_each_min ?? 5;
+    private const LOGIN_ATTEMPTS_ADMIN_PER_MINUTE = 3;
+    private const LOGIN_ATTEMPTS_ADMIN_PER_HOUR = 10;
+    private const LOGIN_ATTEMPTS_USER_PER_MINUTE = 5;
+    private const LOGIN_ATTEMPTS_USER_PER_HOUR = 20;
+    /**
+     * Maximum failed login attempts per account (from any ip address), against distributed guessing
+     */
+    private const LOGIN_ATTEMPTS_PER_ACCOUNT_PER_HOUR = 10;
 
+    /**
+     * Rate limiting on login attempts, per ip address (ipv6 per /64) separately for admins and users,
+     * and per account (also for email addresses that are not an account, to prevent enumeration).
+     * Only failed attempts count (see registerFailedLogin()), limits are in the LOGIN_ATTEMPTS_ constants.
+     *
+     * @param bool $as_admin
+     * @param string $email the email address that is used to login
+     * @return bool true when this ip address may attempt to login to this account
+     * @since 0.30.0 for admins globally, @since 0.32.0 per ip address and per account for admins and users
+     */
+    public function mayLogin(bool $as_admin, string $email): bool
+    {
+        if (true === $as_admin) {
+            $per_hour = self::LOGIN_ATTEMPTS_ADMIN_PER_HOUR;
+            $each_min = self::LOGIN_ATTEMPTS_ADMIN_PER_MINUTE;
+        } else {
+            $per_hour = self::LOGIN_ATTEMPTS_USER_PER_HOUR;
+            $each_min = self::LOGIN_ATTEMPTS_USER_PER_MINUTE;
+        }
         $statement = $this->conn->prepare('
-            SELECT date_created FROM _admin_login_attempt 
-            WHERE date_created > NOW() - INTERVAL \'60 minutes\'
+            SELECT COUNT(*) FILTER (WHERE ip_address = :ip_address AND is_admin = :is_admin
+                    AND date_created > NOW() - INTERVAL \'60 minutes\') AS ip_per_hour,
+                COUNT(*) FILTER (WHERE ip_address = :ip_address AND is_admin = :is_admin
+                    AND date_created > NOW() - INTERVAL \'1 minute\') AS ip_each_min,
+                COUNT(*) FILTER (WHERE account_hash = :account_hash
+                    AND date_created > NOW() - INTERVAL \'60 minutes\') AS account_per_hour
+            FROM _login_attempt
+            WHERE (ip_address = :ip_address AND is_admin = :is_admin) OR account_hash = :account_hash;
         ');
+        $statement->bindValue(':ip_address', Help::ipNetwork(Help::$session->getIpAddress()));
+        $statement->bindValue(':is_admin', $as_admin, \PDO::PARAM_BOOL);
+        $statement->bindValue(':account_hash', $this->loginAccountHash($as_admin, $email));
         $statement->execute();
-        $rows = $statement->fetchAll(5);
+        $row = $statement->fetch(5);
         $statement = null;
 
-        $count = count($rows);
+        return $row->ip_per_hour < $per_hour
+            && $row->ip_each_min < $each_min
+            && $row->account_per_hour < self::LOGIN_ATTEMPTS_PER_ACCOUNT_PER_HOUR;
+    }
 
-        if ($count < $per_hour) {
-            if ($count < $each_min) {
-                $may = true;
-            } else {
-                // check if the last of the allowed attempts was more than a minute ago
-                $row = $rows[$each_min - 1]; // 0 based index
-                $may = 60 < Setup::getNow() - Date::intFromDate($row->date_created);
-            }
-        }
+    /**
+     * Registers a failed login attempt for the current ip address (ipv6 per /64) and account, removes old attempts
+     *
+     * @param bool $as_admin
+     * @param string $email the email address that was used to login
+     * @since 0.32.0
+     */
+    public function registerFailedLogin(bool $as_admin, string $email): void
+    {
+        $statement = $this->conn->prepare('
+            INSERT INTO _login_attempt (ip_address, is_admin, account_hash) VALUES (:ip_address, :is_admin, :account_hash);
+        ');
+        $statement->bindValue(':ip_address', Help::ipNetwork(Help::$session->getIpAddress()));
+        $statement->bindValue(':is_admin', $as_admin, \PDO::PARAM_BOOL);
+        $statement->bindValue(':account_hash', $this->loginAccountHash($as_admin, $email));
+        $statement->execute();
+        $statement = $this->conn->prepare('
+            DELETE FROM _login_attempt WHERE date_created < NOW() - INTERVAL \'60 minutes\';
+        ');
+        $statement->execute();
+        $statement = null;
+    }
 
-        // register this attempt when it is allowed
-        if (true === $may) {
-            $statement = $this->conn->prepare('
-                INSERT INTO _admin_login_attempt (domain) VALUES (:domain);
-            ');
-            $statement->bindValue(':domain', Setup::$INSTANCE_DOMAIN);
-            $statement->execute();
-            $statement = null;
-        }
+    /**
+     * Identifies the account for login rate limiting without storing the email address, the email address is
+     * normalized like in fetchForLogin(), admins are the same account on all instances, users are per instance
+     *
+     * @param bool $as_admin
+     * @param string $email
+     * @return string
+     * @since 0.32.0
+     */
+    private function loginAccountHash(bool $as_admin, string $email): string
+    {
+        $email = mb_strtolower($email);
+        $account = (true === $as_admin) ? "admin|$email" : 'user|' . Setup::$instance_id . "|$email";
 
-        return $may;
+        return Help::tokenHash($account);
     }
 
     public function fetchAdmin(int $admin_id): ?\stdClass
@@ -3861,7 +3911,7 @@ class DB extends Base
 
     public function fetchTablesToExport(bool $include_user_data = false): array
     {
-        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_admin_login_attempt', '_client', '_locker', '_payment', '_system', '_session', '_sessionvars', '_instance_domain', '_order_number', '_image_slug_history');
+        $never = array('_cache', '_stale', '_ci_ai', '_admin', '_login_attempt', '_client', '_locker', '_payment', '_system', '_session', '_sessionvars', '_instance_domain', '_order_number', '_image_slug_history');
         if (false === $include_user_data) {
             $never = array_merge($never, array('_payment_status_update', '_address', '_shoppinglist', '_shoppinglist_variant', '_order', '_order_number', '_order_variant', '_user'));
         }

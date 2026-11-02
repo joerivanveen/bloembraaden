@@ -618,6 +618,24 @@ class Help
     }
 
     /**
+     * Returns the network an ip address belongs to for rate limiting: ipv4 addresses as is, ipv6 addresses
+     * as their /64 prefix (one ipv6 host usually controls a whole /64)
+     *
+     * @param string $ip_address
+     * @return string
+     * @since 0.32.0
+     */
+    public static function ipNetwork(string $ip_address): string
+    {
+        $binary = inet_pton($ip_address);
+        if (false === $binary || 16 !== strlen($binary)) return $ip_address; // ipv4 (or not an ip address at all)
+        // ipv4-mapped ipv6 addresses (::ffff:1.2.3.4) are the ipv4 address
+        if (str_starts_with($binary, str_repeat("\0", 10) . "\xff\xff")) return inet_ntop(substr($binary, 12));
+
+        return inet_ntop(substr($binary, 0, 8) . str_repeat("\0", 8)) . '/64';
+    }
+
+    /**
      * Creates a safe lowercase slug from a UTF-8 string
      *
      * @param string $string The string you want to be converted to a slug
