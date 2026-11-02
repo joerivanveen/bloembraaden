@@ -9,6 +9,7 @@ class DB extends Base
     private ?\PDO $conn;
     private array $cache_keys;
     private array $memo = array();
+    private static ?DB $instance = null;
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
         '_ci_ai',
@@ -41,6 +42,15 @@ class DB extends Base
         'access_token',
         'myparcel_api_key',
     );
+
+    /**
+     * @return DB the one DB object for this process, use the shorthand db()
+     * @since 0.32.0
+     */
+    public static function get(): DB
+    {
+        return self::$instance ??= new DB();
+    }
 
     public function __construct()
     {
@@ -444,9 +454,9 @@ class DB extends Base
             if ('variant' === $type_name) {
                 $rows = array();
                 if (true === in_array($term, array('price_from', 'not_online'))) {
-                    $rows = Help::getDB()->findSpecialVariantResults($term);
-                } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term))) {
-                    $rows = Help::getDB()->findSpecialVariantResults($row->type_name, $row->id);
+                    $rows = db()->findSpecialVariantResults($term);
+                } elseif (null !== ($row = db()->fetchElementIdAndTypeBySlug($term))) {
+                    $rows = db()->findSpecialVariantResults($row->type_name, $row->id);
                 }
                 if (0 !== count($rows)) {
                     $ids = array();
@@ -4662,7 +4672,7 @@ class DB extends Base
         if (null === $id_and_type) return false;
         // you must mark stale also for deleted elements, so get this element also when deleted
         $peat_type = new Type($id_and_type->type_name);
-        $element_row = Help::getDB()->fetchRow(
+        $element_row = db()->fetchRow(
             $peat_type->tableName(),
             array('*'),
             array($peat_type->idColumn() => $id_and_type->id, 'deleted' => null)
@@ -5447,4 +5457,14 @@ class DB extends Base
         @include "$this->cache_folder$key.serialized"; // @ sets error level to 0, which will be caught by error handler
         return $val ?? false;
     }
+}
+
+/**
+ * Shorthand for DB::get()
+ * @return DB the one DB object for this process
+ * @since 0.32.0
+ */
+function db(): DB
+{
+    return DB::get();
 }

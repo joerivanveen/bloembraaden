@@ -25,7 +25,7 @@ class Daemon
             $force = isset($_GET['force']);
         }
         if (false === $force
-            && ($last_alive = Help::getDB()->getSystemValue('daemon_last_alive'))
+            && ($last_alive = db()->getSystemValue('daemon_last_alive'))
         ) {
             $this->log("DAEMON last alive $last_alive");
             if (strtotime($last_alive) > Setup::getNow() - (3 * self::MAX_LOOP_SECONDS)) {
@@ -34,14 +34,14 @@ class Daemon
         }
         $this->log('Starting DAEMON');
         $this->did = Help::randomString(10);
-        Help::getDB()->setSystemValue('daemon_did', $this->did);
+        db()->setSystemValue('daemon_did', $this->did);
         $this->doTheHustle(); //start infinite loop
     }
 
     public function doTheHustle(): void
     {
         $trans = new jobTransaction();
-        $db = Help::getDB();
+        $db = db();
         while (true) {
             /* report if necessary */
             if (true === isset($this->start_timer)) {
@@ -58,7 +58,7 @@ class Daemon
             /* check if we’re still the one and only */
             try {
                 if (
-                    $this->did !== Help::getDB()->getSystemValue('daemon_did')
+                    $this->did !== db()->getSystemValue('daemon_did')
                     // start a new daemon around midnight (UTC, same as the logfile name) to use the current logfile
                     || Setup::$THEDATE !== gmdate('Y-m-d')
                 ) {
@@ -70,7 +70,7 @@ class Daemon
                 $this->log("DAEMON $this->did stopped itself");
                 die();
             }
-            Help::getDB()->setSystemValue('daemon_last_alive', 'NOW()');
+            db()->setSystemValue('daemon_last_alive', 'NOW()');
             /* start the actual work */
             $total_count = 0;
             $stove = new Warmup();

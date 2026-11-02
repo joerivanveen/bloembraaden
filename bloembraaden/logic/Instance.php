@@ -72,7 +72,7 @@ class Instance extends BaseLogic
             $sources[] = 'https://www.google.com';
         }
         // get everything from the embeds...
-        $statement = Help::getDB()->queryAllRows('cms_embed', array('embed_code'), $this->getId());
+        $statement = db()->queryAllRows('cms_embed', array('embed_code'), $this->getId());
         while (($row = $statement->fetch(5))) {
             if (null === $row->embed_code) continue;
             $parts = explode('https://', $row->embed_code);
@@ -92,19 +92,19 @@ class Instance extends BaseLogic
         // TODO domains and admins should get the same lazy loading construction as menus
         $instance_id = $this->getId();
         if (false === isset($this->row->__domains__)) {
-            $this->row->__domains__ = Help::getDB()->fetchInstanceDomains($instance_id); // db only returns the rows, customarily
+            $this->row->__domains__ = db()->fetchInstanceDomains($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__admins__)) {
-            $this->row->__admins__ = Help::getDB()->fetchInstanceAdmins($instance_id); // db only returns the rows, customarily
+            $this->row->__admins__ = db()->fetchInstanceAdmins($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__payment_service_providers__)) {
-            $this->row->__payment_service_providers__ = Help::getDB()->fetchInstancePsps($instance_id); // db only returns the rows, customarily
+            $this->row->__payment_service_providers__ = db()->fetchInstancePsps($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__vat_categories__)) {
-            $this->row->__vat_categories__ = Help::getDB()->fetchInstanceVatCategories($instance_id); // db only returns the rows, customarily
+            $this->row->__vat_categories__ = db()->fetchInstanceVatCategories($instance_id); // db only returns the rows, customarily
         }
         if (false === isset($this->row->__addresses__)) {
-            $this->row->__addresses__ = Help::getDB()->fetchInstanceAddresses($instance_id);
+            $this->row->__addresses__ = db()->fetchInstanceAddresses($instance_id);
         }
         Help::prepareAdminRowForOutput($this->row, 'instance', $this->getDomain());
     }
@@ -117,7 +117,7 @@ class Instance extends BaseLogic
     public function getPaymentServiceProvider(): ?PaymentServiceProvider
     {
         if (($psp_id = $this->getSetting('payment_service_provider_id')) > 0) {
-            if (($row = Help::getDB()->getPaymentServiceProviderRow($psp_id))) {
+            if (($row = db()->getPaymentServiceProviderRow($psp_id))) {
                 if (class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                     return new $class_name($row);
                 }
@@ -158,9 +158,9 @@ class Instance extends BaseLogic
     private function load(string $domain): void
     {
         // load the instance based on the supplied host
-        if (null === ($this->row = Help::getDB()->fetchInstance($domain))) {
+        if (null === ($this->row = db()->fetchInstance($domain))) {
             // try to find alternative hosts to provide a 301 redirect
-            if (($canonical = Help::getDB()->fetchInstanceCanonicalDomain($domain))) {
+            if (($canonical = db()->fetchInstanceCanonicalDomain($domain))) {
                 // @since 0.7.1 also supply the originally requested uri...
                 // @since 0.31.0 only allow redirects to slugs
                 $path = Help::slugify(urldecode($_SERVER['REQUEST_URI']));

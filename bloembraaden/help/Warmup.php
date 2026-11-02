@@ -27,11 +27,11 @@ class Warmup extends BaseLogic
         $element = $resolver->getElement();
         // if the cached element now has a different slug, you can remove the old version safely
         if ($element instanceof BaseElement && $slug !== $element->getPath()) {
-            Help::getDB()->deleteFromCache($slug);
+            db()->deleteFromCache($slug);
         }
         // @since 0.32.0 admins do not cache search pages, let the daemon refresh it for visitors
         if ($element instanceof Search && true === defined('ADMIN') && true === ADMIN) {
-            Help::getDB()->markStale($slug);
+            db()->markStale($slug);
 
             return true;
         }

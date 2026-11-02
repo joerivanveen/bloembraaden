@@ -162,7 +162,7 @@ class Setup
     public static function loadInstanceSettingsFor(int $instance_id): void
     {
         if (self::$instance_id === $instance_id) return;
-        self::loadInstanceSettings(new Instance(Help::getDB()->fetchInstanceById($instance_id)));
+        self::loadInstanceSettings(new Instance(db()->fetchInstanceById($instance_id)));
     }
 
     public static function loadInstanceSettings(Instance $I): void

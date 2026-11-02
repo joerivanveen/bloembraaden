@@ -14,7 +14,7 @@ class Menu extends BaseElement
 
     public function create(?bool $online = true): ?int
     {
-        return Help::getDB()->insertElement($this->getType(), array(
+        return db()->insertElement($this->getType(), array(
             'title' => __('Menu', 'peatcms'),
             'slug' => __('menu', 'peatcms'),
             'online' => $online,
@@ -26,11 +26,11 @@ class Menu extends BaseElement
         // every item can only be in a menu once, this simplifies the programming a lot
         // check if item_id and to_item_id belong to the same instance as the menu
         $items_belong_to_this_instance = true;
-        if (null === Help::getDB()->fetchElementRow(new Type('menu_item'), $item_id)) {
+        if (null === db()->fetchElementRow(new Type('menu_item'), $item_id)) {
             $items_belong_to_this_instance = false;
         }
         if ($to_item_id > 0 and
-            null === Help::getDB()->fetchElementRow(new Type('menu_item'), $to_item_id)) {
+            null === db()->fetchElementRow(new Type('menu_item'), $to_item_id)) {
             $items_belong_to_this_instance = false;
         }
         if (false === $items_belong_to_this_instance) {
@@ -40,9 +40,9 @@ class Menu extends BaseElement
         // $relative can be 'child': put $item_id directly under the $to_item_id, or 'order': put it above it on the same level
         // find the right place and upsert the cross table
         if ($relative === 'child') {
-            return Help::getDB()->underMenuItem($this->getId(), $item_id, $to_item_id);
+            return db()->underMenuItem($this->getId(), $item_id, $to_item_id);
         } else { // order $item_id right before $to_item_id
-            return Help::getDB()->orderMenuItem($this->getId(), $item_id, $to_item_id);
+            return db()->orderMenuItem($this->getId(), $item_id, $to_item_id);
         }
     }
 
@@ -52,7 +52,7 @@ class Menu extends BaseElement
         $this->row->template_pointer = (object)Array('name' => 'menu', 'admin' => true);
         // get the children as well
         $this->row->__menu__ = array(
-            '__item__' => ($menu_items = Help::getDB()->fetchMenuItems($this->getId())),
+            '__item__' => ($menu_items = db()->fetchMenuItems($this->getId())),
             'title' => $this->row->title,
             'item_count' => ($count = count($menu_items)),
         );

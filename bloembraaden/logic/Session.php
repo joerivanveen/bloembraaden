@@ -97,7 +97,7 @@ class Session extends BaseLogic
         $session_id = $this->getId();
         foreach ($updated_vars as $name => $var) {
             if (null === $var) $var = (object)array('delete' => true);
-            Help::getDB()->updateSessionVar($session_id, $name, $var);
+            db()->updateSessionVar($session_id, $name, $var);
         }
         $updated_vars = null; // free memory
         // update own vars (from row) in database
@@ -108,7 +108,7 @@ class Session extends BaseLogic
             $own_variables['ip_address'] = $this->ip_address;
             $own_variables['reverse_dns'] = null; // to be filled by job
         }
-        Help::getDB()->registerSessionAccess($this->token, $own_variables);
+        db()->registerSessionAccess($this->token, $own_variables);
     }
 
 
@@ -120,7 +120,7 @@ class Session extends BaseLogic
     public function delete(): bool
     {
         // set the session to deleted in the db
-        if (true === Help::getDB()->updateColumns('_session', array('deleted' => true), Help::tokenHash($this->token))) {
+        if (true === db()->updateColumns('_session', array('deleted' => true), Help::tokenHash($this->token))) {
             // @since 0.7.9 remove remnants of the session from this instance
             $this->admin = null;
             $this->user = null;
@@ -133,13 +133,13 @@ class Session extends BaseLogic
 
     public function login(string $email, string $password, bool $as_admin): bool
     {
-        if (($row = Help::getDB()->fetchForLogin($email, $as_admin))) {
+        if (($row = db()->fetchForLogin($email, $as_admin))) {
             $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
             $verified = password_verify($hashed, $row->hash);
             // update hash to new way if it checks out the old way
             if (false === $verified && true === ($verified = password_verify($password, $row->hash))) {
                 $table = $as_admin ? '_admin' : '_user';
-                Help::getDB()->updateColumns($table, array('password_hash' => Help::passwordHash($password)), $row->id);
+                db()->updateColumns($table, array('password_hash' => Help::passwordHash($password)), $row->id);
                 $this->addError(sprintf('Password for %s with id %d updated to new method.', $as_admin ? 'admin' : 'user', $row->id));
             }
 
@@ -172,13 +172,13 @@ class Session extends BaseLogic
         // $columns_to_update holds the user_id or admin_id that you must update in the _session table
         $new_token = $this->generateToken();
         $columns_to_update['token_hash'] = Help::tokenHash($new_token); // also update the token
-        if (true === Help::getDB()->updateColumns('_session', $columns_to_update, Help::tokenHash($this->token))) {
+        if (true === db()->updateColumns('_session', $columns_to_update, Help::tokenHash($this->token))) {
             if (true === $this->setSessionCookie($new_token)) { // the new cookie SHOULD now reach the client
                 // @since 0.7.9: merge shoppinglists
                 if (true === isset($columns_to_update['user_id'])
                     && 0 < ($user_id = (int)$columns_to_update['user_id'])
                 ) {
-                    $affected = Help::getDB()->mergeShoppingLists($this->session_id, $user_id);
+                    $affected = db()->mergeShoppingLists($this->session_id, $user_id);
                 }
                 $this->token = $new_token;
                 // TODO update csrf token as well here?
@@ -337,7 +337,7 @@ class Session extends BaseLogic
     public function load(): bool
     {
         // get all the stuff from the database
-        if (($this->row = $row = Help::getDB()->fetchSession($this->token))) {
+        if (($this->row = $row = db()->fetchSession($this->token))) {
             // get user
             if ($row->user_id > 0) {
                 $this->user = new User($row->user_id);
@@ -398,10 +398,10 @@ class Session extends BaseLogic
     private function newSession(): string
     {
         // get fresh token, insert a new session row in database, keep trying until success (meaning the token is unique)
-        if (null === ($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
-            if (null === ($token = Help::getDB()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+        if (null === ($token = db()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
+            if (null === ($token = db()->insertSession($this->generateToken(), $this->ip_address, $this->user_agent))) {
                 // when failed twice there is something very fishy going on
-                $this->handleErrorAndStop(Help::getDB()->getLastError(),
+                $this->handleErrorAndStop(db()->getLastError(),
                     __('Unable to create unique session id.', 'peatcms'));
             }
         }

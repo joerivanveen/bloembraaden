@@ -20,7 +20,7 @@ class Resolver extends BaseLogic
     {
         parent::__construct();
         if (Setup::$instance_id !== $instance_id) {
-            $row = Help::getDB()->fetchInstanceById($instance_id);
+            $row = db()->fetchInstanceById($instance_id);
             //Setup::$instance_id = $instance_id;
             Setup::loadInstanceSettings(new Instance($row));
         }
@@ -266,7 +266,7 @@ class Resolver extends BaseLogic
                             $term = $this->getTerms()[0];
                             $src = "%$term"; // look up by last characters
                             // look for (multiple) orders
-                            $orders = Help::getDB()->fetchElementRowsWhere(
+                            $orders = db()->fetchElementRowsWhere(
                                 new Type('order'),
                                 array('order_number' => $src),
                             );
@@ -276,9 +276,9 @@ class Resolver extends BaseLogic
                             $page = (int)($this->getInstruction('page') ?? 1);
                             $page_size = 250;
                             $peat_type = new Type('order');
-                            $orders = Help::getDB()->fetchElementRowsPage($peat_type, $page, $page_size);
+                            $orders = db()->fetchElementRowsPage($peat_type, $page, $page_size);
                             $slug = "__order__/__page__:$page";
-                            $pages = Help::getDB()->fetchElementRowsPageNumbers($peat_type, $page, $page_size);
+                            $pages = db()->fetchElementRowsPageNumbers($peat_type, $page, $page_size);
                         }
                         if (1 === count($orders)) {
                             $order = new Order($orders[0]);
@@ -315,10 +315,10 @@ class Resolver extends BaseLogic
         } elseif (1 === $num_terms) {
             $term = $terms[0];
             // find element by slug TODO: no cache is necessary, but also slower, how to fix
-            if (null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($term, true))) {
+            if (null !== ($row = db()->fetchElementIdAndTypeBySlug($term, true))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type_name;
-            } elseif (null !== ($row = Help::getDB()->fetchElementIdAndTypeByAncientSlug($term))) {
+            } elseif (null !== ($row = db()->fetchElementIdAndTypeByAncientSlug($term))) {
                 $element_id = (int)$row->id;
                 $type_name = (string)$row->type_name;
             }
@@ -352,8 +352,8 @@ class Resolver extends BaseLogic
             // find the types we need from the template
             // todo for admin when working on templates without publishing, elements will be missing...
             // todo expand this to other places to reduce data (e.g. petitclos.nl/drank)
-            $template_id = Help::getDB()->getDefaultTemplateIdFor('search');
-            $json_prepared = Help::getDB()->appCacheGet("templates/$template_id");
+            $template_id = db()->getDefaultTemplateIdFor('search');
+            $json_prepared = db()->appCacheGet("templates/$template_id");
             if (true === is_array($json_prepared)) {
                 $types = array();
                 $keys = array_flip(array_keys($json_prepared)); // flip to use isset which is fast
@@ -378,7 +378,7 @@ class Resolver extends BaseLogic
                     break;
                 case 'instance':
                     if (true === isset($terms[1])) {
-                        $element = new Instance(Help::getDB()->fetchInstance($terms[1]));
+                        $element = new Instance(db()->fetchInstance($terms[1]));
                     } else {
                         $element = $session->getInstance();
                     }
@@ -398,13 +398,13 @@ class Resolver extends BaseLogic
                     if (true === isset($terms[1]) && ($id = (int)$terms[1])) {
                         // menu items are only returned for the current instance
                         $type = new Type('menu_item');
-                        $element = $type->getElement(Help::getDB()->fetchElementRow($type, $id));
+                        $element = $type->getElement(db()->fetchElementRow($type, $id));
                     }
                     break;
                 case 'payment_service_provider':
                     // get payment service provider for instance (this is a factory...)
                     if (isset($terms[1]) && ($id = (int)$terms[1])) {
-                        if (($row = Help::getDB()->getPaymentServiceProviderRow($id, null))) {
+                        if (($row = db()->getPaymentServiceProviderRow($id, null))) {
                             if (isset($row->provider_name) && class_exists(($class_name = __NAMESPACE__ . '\\' . ucfirst($row->provider_name)))) {
                                 $element = new $class_name($row);
                             } else {

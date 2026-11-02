@@ -17,7 +17,7 @@ class Order extends BaseElement
     public function getRows(): array
     {
         if (isset($this->rows)) return $this->rows;
-        $this->rows = Help::getDB()->fetchOrderRows($this->getId());
+        $this->rows = db()->fetchOrderRows($this->getId());
 
         return $this->rows;
     }
@@ -30,7 +30,7 @@ class Order extends BaseElement
     public function getPayments(): array
     {
         if (isset($this->payments)) return $this->payments;
-        $this->payments = Help::getDB()->fetchOrderPayments($this->getId());
+        $this->payments = db()->fetchOrderPayments($this->getId());
 
         return $this->payments;
     }
@@ -71,7 +71,7 @@ class Order extends BaseElement
     public function updateHTML($html): bool
     {
         // todo some error checking maybe or something
-        return Help::getDB()->updateColumns('_order', array('html' => $html), $this->getId());
+        return db()->updateColumns('_order', array('html' => $html), $this->getId());
     }
 
     public function completeRowForOutput(): void
@@ -81,7 +81,7 @@ class Order extends BaseElement
         // slug is mandatory for an element
         $row->slug = "__order__/$order_number";
         // get the template_id (if present)
-        $row->template_id = Help::getDB()->getDefaultTemplateIdFor('order');
+        $row->template_id = db()->getDefaultTemplateIdFor('order');
         // get the rows as well
         $list_rows = $this->getRows();
         $amount_row_total = 0;

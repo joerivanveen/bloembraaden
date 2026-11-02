@@ -38,7 +38,7 @@ class Search extends BaseElement
             "\n` and these properties: `" . var_export($properties, true) . '`';
         // set template_id to default search template, if necessary (and if it exists)
         if (false === isset($this->row->template_id)) {
-            $this->row->template_id = Help::getDB()->getDefaultTemplateIdFor('search');
+            $this->row->template_id = db()->getDefaultTemplateIdFor('search');
         }
         $template_settings = $this->getAndSetTemplateSettings();
         //
@@ -60,7 +60,7 @@ class Search extends BaseElement
         // @since 0.12.0 get results from ci_ai table
         $results = $this->getResults($terms, $clean_types);
         // @since 0.32.0 leave out variants and pages that do not have the requested property values before loading them
-        if (0 < count($properties)) $results = Help::getDB()->filterResultsByProperties($results, $properties);
+        if (0 < count($properties)) $results = db()->filterResultsByProperties($results, $properties);
         $item_count = count($results);
         if (null === $hydrate_until || $item_count <= $hydrate_until || $hydrate_until < 0) {
             $hydrate_until = (null === $hydrate_until) ? $item_count : abs($hydrate_until);
@@ -75,7 +75,7 @@ class Search extends BaseElement
                 // TODO this is a performance bottleneck, we need to be able to filter the items before getting output / from the db, or get the properties + price quickly in 1 go
                 // maybe look at getRelevantPropertyValuesAndPrices for inspiration
                 // @since 0.23.1 use cache for individual elements reducing queries
-                if (null !== ($output = Help::getDB()->cached($result->slug))) {
+                if (null !== ($output = db()->cached($result->slug))) {
                     $output = $output->slugs->{$output->__ref}; // get output full
                     // prevent search results in search results, probably the original item is offline
                     if ('search' === $output->type_name) continue;
@@ -140,10 +140,10 @@ class Search extends BaseElement
                 return in_array($item, array('not_online', 'price_from'));
             }))
         ) {
-            return Help::getDB()->findElementResults('variant', $clean_terms, $this->getProperties());
+            return db()->findElementResults('variant', $clean_terms, $this->getProperties());
         }
 
-        return Help::getDB()->findCiAi($clean_terms, $clean_types, static function (string $haystack, array $needles): float {
+        return db()->findCiAi($clean_terms, $clean_types, static function (string $haystack, array $needles): float {
             // the getWeight function
             $weight = 0.0;
             foreach ($needles as $index => $needle) {
@@ -230,9 +230,9 @@ class Search extends BaseElement
         $variant_ids = $this->getAllVariantIds($resolver->getTerms());
         $return_arr = array();
         // with all the variant_ids -> get all the appropriate property values that may be shown and return them
-        $return_arr['property_values'] = Help::getDB()->fetchAllPossiblePropertyValues($variant_ids);
+        $return_arr['property_values'] = db()->fetchAllPossiblePropertyValues($variant_ids);
         // and get the prices
-        $return_arr['prices'] = Help::getDB()->fetchAllPricesAsInts($variant_ids);
+        $return_arr['prices'] = db()->fetchAllPricesAsInts($variant_ids);
         // cache the values as a file
         if (false === $admin) file_put_contents($filename, serialize($return_arr), LOCK_EX); // overwrites by default
 
@@ -249,12 +249,12 @@ class Search extends BaseElement
         if (0 === count($terms)) return array();
         // probably when one term is present this is a property or a property_value
         if (1 === count($terms)) {
-            if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0])) && 'search' !== $row->type_name) {
+            if (($row = db()->fetchElementIdAndTypeBySlug($terms[0])) && 'search' !== $row->type_name) {
                 // only when we definitely found an element for this slug, try to get all attached variants
-                return Help::getDB()->fetchAllVariantIdsFor($row->type_name, $row->id, $this->getProperties());
+                return db()->fetchAllVariantIdsFor($row->type_name, $row->id, $this->getProperties());
             }
         }
-        $results = Help::getDB()->findElementResults('variant', $terms, $this->getProperties());
+        $results = db()->findElementResults('variant', $terms, $this->getProperties());
 
         $ids = array();
         foreach ($results as $key => $row) {
@@ -281,7 +281,7 @@ class Search extends BaseElement
      */
     public function getRelatedForVariant(array $terms, int $variant_id, int $quantity = 8): array
     {
-        $variant_ids_show = Help::getDB()->fetchRelatedVariantIds($variant_id);
+        $variant_ids_show = db()->fetchRelatedVariantIds($variant_id);
         if ($terms) {
             $variant_ids_term = $this->getAllVariantIds($terms);
             $variant_ids_show = array_intersect($variant_ids_show, $variant_ids_term);
@@ -289,7 +289,7 @@ class Search extends BaseElement
                 $variant_ids_show = array_merge($variant_ids_show, $variant_ids_term);
             }
         } elseif (count($variant_ids_show) < $quantity) {
-            $by_serie = Help::getDB()->fetchAllVariantIdsFor('serie', $variant_id, $this->getProperties());
+            $by_serie = db()->fetchAllVariantIdsFor('serie', $variant_id, $this->getProperties());
             $to_add = array_diff($by_serie, $variant_ids_show);
             $variant_ids_show = array_merge($variant_ids_show, $to_add);
         }
@@ -306,14 +306,14 @@ class Search extends BaseElement
     public function getRelatedForPage(int $page_id, int $quantity = 8): array
     {
         $not_in = array($page_id);
-        $linked_pages = Help::getDB()->fetchElementRowsLinked(
+        $linked_pages = db()->fetchElementRowsLinked(
             new Type('page'), $page_id, new Type('page'), 'cross_parent', 0, 0
         );
         foreach ($linked_pages as $index => $row) {
             $not_in[] = $row->page_id;
         }
         $linked_pages = null;
-        $rows = Help::getDB()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, $quantity);
+        $rows = db()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, $quantity);
 
         return $this->outputRows($rows, 'page');
     }
@@ -340,12 +340,12 @@ class Search extends BaseElement
             $variant_ids_in_list = array();
             $variant_ids_show = array();
             if (0 === $index) {
-                $variant_ids_show = Help::getDB()->listVariantIds($quantity);
+                $variant_ids_show = db()->listVariantIds($quantity);
             } else {
                 while ($index && count($variant_ids_show) < $quantity) {
                     --$index;
                     $variant_ids_in_list[] = ($variant_id = $list[$index]->variant_id);
-                    $variant_ids_collect = array_merge(Help::getDB()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
+                    $variant_ids_collect = array_merge(db()->fetchRelatedVariantIds($variant_id), $variant_ids_collect);
                     // exclude the variants that are already in the shoppinglist and reindex the array
                     $variant_ids_show = array_values(array_diff($variant_ids_collect, $variant_ids_in_list));
                 }
@@ -366,7 +366,7 @@ class Search extends BaseElement
     {
         $in = array_values(array_diff($in, $not_in)); // allow $in array containing id’s from $not_in, filter that here
         $type = new Type('variant');
-        $rows = Help::getDB()->fetchElementRowsWhereIn($type, 'variant_id', $in);
+        $rows = db()->fetchElementRowsWhereIn($type, 'variant_id', $in);
         // @since 0.21.0 order by the original array
         $sorted = array(); // todo expensive filtering :-(
         foreach ($in as $index => $id) {
@@ -385,7 +385,7 @@ class Search extends BaseElement
 
     public function suggestPages(array $terms = array(), int $limit = 8): array
     {
-        $rows = Help::getDB()->findElementsFiltered(new Type('page'), $this->getProperties());
+        $rows = db()->findElementsFiltered(new Type('page'), $this->getProperties());
 
         if ($limit > 0) array_splice($rows, $limit); // $limit > 0 means you want to cut off the results there
 
@@ -400,7 +400,7 @@ class Search extends BaseElement
         foreach ($rows as $index => $row) {
             if (isset($row->__ref)) continue; // already an object
             //$rows[$index] = $peat_type->getElement($row)->getOutput();
-            if (null === ($out = Help::getDB()->cached($row->slug))) {
+            if (null === ($out = db()->cached($row->slug))) {
                 $out = $peat_type->getElement($row)->cacheOutputObject(true);
             }
             $rows[$index] = $out;

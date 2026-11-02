@@ -177,7 +177,7 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                 $amount = (float)($result->amount->value ?? 0);
                 $status = strtolower($result->status);
                 // get the order having this payment_id
-                if (($order_row = Help::getDB()->getOrderByPaymentTrackingId($payment_id))) {
+                if (($order_row = db()->getOrderByPaymentTrackingId($payment_id))) {
                     $order_update_array = array(
                         'payment_status' => $status,
                     );
@@ -197,14 +197,14 @@ class Mollie extends PaymentServiceProvider implements PaymentServiceProviderInt
                         }
                     }
                     // update the log entry
-                    Help::getDB()->updateColumns('_payment_status_update', array(
+                    db()->updateColumns('_payment_status_update', array(
                         'bool_processed' => true,
                         'date_processed' => 'NOW()',
                         'order_id' => $order_id,
                         'amount' => (int)($amount * 100),
                     ), $log_id);
                     // update the status in the order
-                    return Help::getDB()->updateElement(new Type('order'), $order_update_array, $order_id);
+                    return db()->updateElement(new Type('order'), $order_update_array, $order_id);
                 } else {
                     $this->addError(sprintf('%s->updatePaymentStatus no order found.', 'Mollie'));
                 }

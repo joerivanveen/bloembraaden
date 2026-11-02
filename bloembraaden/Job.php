@@ -20,7 +20,7 @@ if (str_starts_with($interval, 'interval=')) {
 }
 // the work starts here
 $start_timer = microtime(true);
-$db = new DB();
+$db = db();
 ob_start();
 echo "\n", date('Y-m-d H:i:s'), " JOB $interval:\n";
 
@@ -1094,7 +1094,7 @@ switch ($interval) {
             echo "Usage: php job.php pass 'email' 'newpassword' (use single quotes around the values!).\n";
             break;
         }
-        $db = Help::getDB();
+        $db = db();
         $rows = $db->fetchElementRowsWhere(new Type('admin'), array('email' => $mail, 'instance_id' => 0));
         if (0 === count($rows)) {
             echo "Email must belong to an existing super admin.\n";

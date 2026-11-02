@@ -9,7 +9,6 @@ namespace Bloembraaden;
  */
 class Help
 {
-    private static DB $db;
     private static array $errors = array();
     private static array $values = array();
     private static array $messages = array(); // indexed array of objects {message:..,count:..,level:..}
@@ -25,15 +24,6 @@ class Help
      */
     private function __construct()
     {
-    }
-
-    public static function getDB(): DB
-    {
-        if (!isset(static::$db)) {
-            static::$db = new DB();
-        }
-
-        return static::$db;
     }
 
     /**
@@ -796,7 +786,7 @@ class Help
             die();
         }
         $logger->log("Exporting instance $instance_name");
-        $db = self::getDB();
+        $db = db();
         $tables = $db->fetchTablesToExport($include_user_data);
         $version = Setup::$VERSION;
         $date_as_string = date('Y-m-d H:i:s', Setup::getNow());
@@ -869,7 +859,7 @@ class Help
         }
         // prepare some vars
         $files = array($filename);
-        $db = self::getDB();
+        $db = db();
         $tables = array_map(function ($value) {
             return $value->table_name;
         }, $db->fetchTablesToExport(true));
@@ -1150,13 +1140,13 @@ class Help
     public static function publishTemplates(int $instance_id): bool
     {
         // update the instance with global published value
-        if (false === Help::getDB()->updateColumns('_instance', array(
+        if (false === db()->updateColumns('_instance', array(
                 'date_published' => 'NOW()'
             ), $instance_id)) {
             self::addMessage(__('Could not update date published.', 'peatcms'), 'warn');
         }
         // @since 0.9.4 cache css file on disk when all templates are published, to be included later
-        $edit_instance = new Instance(Help::getDB()->fetchInstanceById($instance_id));
+        $edit_instance = new Instance(db()->fetchInstanceById($instance_id));
         $file_location = Setup::$DBCACHE . "css/$instance_id.css";
         $doc = file_get_contents(CORE . '_front/peat.css'); // reset and some basic stuff
         $doc .= file_get_contents(CORE . "../htdocs/_site/{$edit_instance->getPresentationInstance()}/style.css");
@@ -1182,7 +1172,7 @@ class Help
             self::handleErrorAndStop('Saving css failed.', __('Saving css failed', 'peatcms'));
         }
         // get all templates for this instance_id, loop through them and publish
-        $rows = Help::getDB()->getTemplates($instance_id);
+        $rows = db()->getTemplates($instance_id);
         foreach ($rows as $index => $row) {
             $temp = new Template($row);
             if (false === $temp->publish()) {
@@ -1193,7 +1183,7 @@ class Help
             }
         }
         // clear template default id cache
-        self::getDB()->appCacheSet("templates/defaults.$instance_id", array());
+        db()->appCacheSet("templates/defaults.$instance_id", array());
         self::addMessage(__('Publishing done.', 'peatcms'));
         unset($rows);
 
@@ -1202,7 +1192,7 @@ class Help
 
     public static function supplementAddresses(array $rows, array $by_key): void
     {
-        $db = self::getDB();
+        $db = db();
         foreach ($rows as $i => $row) {
             // get shipping / billing address key, if not in the addresses by key, add it
             foreach (array('billing', 'shipping') as $index => $address_type) {
@@ -1239,7 +1229,7 @@ class Help
     {
         echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         $domain = Setup::$INSTANCE_DOMAIN;
-        $statement = self::getDB()->querySitemap(Setup::$instance_id);
+        $statement = db()->querySitemap(Setup::$instance_id);
         while (($row = $statement->fetch(5))) {
             echo '<url><loc>';
             echo 'https://', $domain, '/', urlencode($row->slug);

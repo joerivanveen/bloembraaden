@@ -99,7 +99,7 @@ class Handler extends BaseLogic
             $props = $this->resolver->getProperties();
             $until = Setup::getNow();
             if (true === isset($props['from'][0]) && 0 < ($timestamp = (int)$props['from'][0])) {
-                $rows = Help::getDB()->fetchHistoryFrom($timestamp, ADMIN);
+                $rows = db()->fetchHistoryFrom($timestamp, ADMIN);
             } else {
                 $rows = array();
             }
@@ -111,7 +111,7 @@ class Handler extends BaseLogic
             $user = Help::$session->getUser();
             $out = array('session' => Help::$session->getUpdatedTimestamp());
             if ($user) {
-                $out['user'] = Help::getDB()->fetchHistoryTimestamp(array('user_id' => $user->getId()));
+                $out['user'] = db()->fetchHistoryTimestamp(array('user_id' => $user->getId()));
             }
         } elseif ('get_template' === $action) {
             // NOTE since a template can contain a template for __messages__, you may never add __messages__ to the template object
@@ -119,7 +119,7 @@ class Handler extends BaseLogic
                 // as of 0.5.5 load templates by id (from cache) with fallback to the old ways
                 if (true === isset($post_data->template_id)) {
                     $template_id = (int) $post_data->template_id;
-                    if (ADMIN && ($row = Help::getDB()->fetchTemplateRow($template_id, Setup::$instance_id))) {
+                    if (ADMIN && ($row = db()->fetchTemplateRow($template_id, Setup::$instance_id))) {
                         $temp = new Template($row);
                         if (false === $temp->checkIfPublished()) {
                             $out = $temp->getFreshJson();
@@ -167,7 +167,7 @@ class Handler extends BaseLogic
             }
         } elseif ('get_template_by_name' === $action) {
             if (isset($post_data->template_name)) {
-                if (($template_row = Help::getDB()->getTemplateByName($post_data->template_name))) {
+                if (($template_row = db()->getTemplateByName($post_data->template_name))) {
                     $filename = Setup::$DBCACHE . "templates/$template_row->template_id.gz";
                     if (true === file_exists($filename)) {
                         header('Content-Type: application/json');
@@ -232,11 +232,11 @@ class Handler extends BaseLogic
             //$out = array('__variants__' => $variants, 'slug' => 'suggest');
         } elseif ('download' === $action) {
             if (($slug = $this->resolver->getTerms()[0] ?? null)) {
-                if (null === ($el = Help::getDB()->fetchElementIdAndTypeBySlug($slug))) {
-                    $el = Help::getDB()->fetchElementIdAndTypeByAncientSlug($slug);
+                if (null === ($el = db()->fetchElementIdAndTypeBySlug($slug))) {
+                    $el = db()->fetchElementIdAndTypeByAncientSlug($slug);
                 }
                 if ($el && 'file' === $el->type_name) {
-                    $file = new File(Help::getDB()->fetchElementRow(new Type('file'), $el->id));
+                    $file = new File(db()->fetchElementRow(new Type('file'), $el->id));
                     $file->serve();
                 } else {
                     $this->addError(sprintf('Download: no file found with slug %s.', $slug));
@@ -266,7 +266,7 @@ class Handler extends BaseLogic
             }
         } elseif ('properties' === $action) { // @since 0.8.11: retrieve all the properties and relations for this instance
             $for = $post_data->for ?? 'variant';
-            $out = array('properties' => Help::getDB()->fetchProperties($for));
+            $out = array('properties' => db()->fetchProperties($for));
         } elseif ('properties_valid_values_for_path' === $action) { // @since 0.8.12: retrieve valid options for the path
             // get _all_ the variant id’s for this path, and then all the property_values that are coupled
             // only property and property_value can be filtered thusly, and search as well through its own method
@@ -279,7 +279,7 @@ class Handler extends BaseLogic
             $properties = $this->resolver->getProperties();
             if (true === isset($properties['order_number'])) {
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
-                if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
+                if (($order_row = db()->getOrderByNumber($order_number))) {
                     if ($order_row->payment_confirmed_bool) {
                         $this->addMessage(sprintf(__('Order %s is marked as paid.', 'peatcms'), $order_number), 'note');
                         $out = (object)array('redirect_uri' => '/');
@@ -308,7 +308,7 @@ class Handler extends BaseLogic
                 $shoppinglist_name = $properties['shoppinglist'][0];
                 $shoppinglist = new Shoppinglist($shoppinglist_name);
                 $order_number = str_replace(' ', '', htmlentities($properties['order_number'][0]));
-                if (($order_row = Help::getDB()->getOrderByNumber($order_number))) {
+                if (($order_row = db()->getOrderByNumber($order_number))) {
                     if ($order_row->user_id !== $user->getId()) {
                         $this->addMessage(__('Order not found.', 'peatcms'), 'warn');
                         $out = true;
@@ -366,7 +366,7 @@ class Handler extends BaseLogic
             }
             if (($slug = $props['slug'][0])) {
                 // find element by slug
-                if (null === ($row = Help::getDB()->fetchElementIdAndTypeBySlug($slug))) {
+                if (null === ($row = db()->fetchElementIdAndTypeBySlug($slug))) {
                     $this->addError(sprintf('process_file: no element found with slug %s.', $slug));
                     $sse->log(sprintf(__('Could not process %s, check your logs to know more.', 'peatcms'), $slug));
                 }
@@ -406,7 +406,7 @@ class Handler extends BaseLogic
                 // TODO 0.32.0 check if the instance is empty, if not, request a special user-agent string
                 Help::import_into_this_instance($import_file_name, $sse);
                 // clear cache
-                $rows_affected = Help::getDB()->clear_cache_for_instance(Setup::$instance_id);
+                $rows_affected = db()->clear_cache_for_instance(Setup::$instance_id);
                 $sse->log(sprintf(__('Cleared %s items from cache.', 'peatcms'), $rows_affected));
                 // publish templates
                 if (true === Help::publishTemplates(Setup::$instance_id)) {
@@ -450,7 +450,7 @@ class Handler extends BaseLogic
                     }
                     if (true === isset($_SERVER['HTTP_REFERER']) && $url_parts = explode('/', urldecode($_SERVER['HTTP_REFERER']))) {
                         $post_data->referer = end($url_parts);
-                        if (null === ($element_row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->referer))) {
+                        if (null === ($element_row = db()->fetchElementIdAndTypeBySlug($post_data->referer))) {
                             $this->addError(sprintf('Commented with unknown referer %s.', $post_data->referer));
                             $this->addMessage(__('This page does not accept comments.', 'peatcms'), 'warn');
                             $valid = false;
@@ -478,7 +478,7 @@ class Handler extends BaseLogic
                         $slug = Help::slugify("$referer $title");
                         $reply_to_id = $post_data->reply_to_id ?? null;
                         $reply_after = $post_data->reply_after ?? $reply_to_id;
-                        if (null !== ($comment_id = Help::getDB()->insertElement($peat_type, array(
+                        if (null !== ($comment_id = db()->insertElement($peat_type, array(
                                 'referer' => $referer,
                                 'slug' => $slug,
                                 'email' => $post_data->email,
@@ -493,14 +493,14 @@ class Handler extends BaseLogic
                                 'user_agent' => $session->getUserAgent(),
                                 'online' => false,
                             )))) {
-                            $comment = new Comment(Help::getDB()->fetchElementRow($peat_type, $comment_id));
+                            $comment = new Comment(db()->fetchElementRow($peat_type, $comment_id));
                             // note: link the comment to the element (not the other way around) to get the correct order
                             $element_type = new Type($element_row->type_name);
                             $element_id = $element_row->id;
                             $element = ($element_type)->getElement()->fetchById($element_id);
                             if (true === $element->link('comment', $comment_id)) {
                                 if (null !== $reply_after) {
-                                    if (false === Help::getDB()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_after)) {
+                                    if (false === db()->orderAfterId($element_type, $element_id, $peat_type, $comment_id, $reply_after)) {
                                         $this->addMessage(__('Comment added to end.', 'peatcms'), 'warn');
                                     }
                                 }
@@ -524,9 +524,9 @@ class Handler extends BaseLogic
                     $post_data = $this->resolver->escape($post_data);
                     $out = $this->sendMail($instance, $post_data);
                 } elseif ('countries' === $action) {
-                    $out = array('slug' => 'countries', '__rows__' => Help::getDB()->getCountries());
+                    $out = array('slug' => 'countries', '__rows__' => db()->getCountries());
                 } elseif ('addresses' === $action) {
-                    $out = array('slug' => 'addresses', '__rows__' => Help::getDB()->fetchInstanceAddresses($instance->getId()));
+                    $out = array('slug' => 'addresses', '__rows__' => db()->fetchInstanceAddresses($instance->getId()));
                 } elseif ('suggest_address' === $action) {
                     $country_code = $post_data->address_country_iso2;
                     $query = htmlspecialchars($post_data->query, ENT_QUOTES);
@@ -561,7 +561,7 @@ class Handler extends BaseLogic
                             if (false === filter_var($post_data->email, FILTER_VALIDATE_EMAIL)) {
                                 $this->addMessage(sprintf(__('%s is not recognized as a valid email address.', 'peatcms'), $post_data->email), 'warn');
                                 $valid = false;
-                            } elseif (null === Help::getDB()->getCountryById((int)$post_data->shipping_country_id)) {
+                            } elseif (null === db()->getCountryById((int)$post_data->shipping_country_id)) {
                                 $this->addMessage(sprintf(__('%s is not recognized as a country id.', 'peatcms'), $post_data->shipping_country_id), 'warn');
                                 $valid = false;
                             }
@@ -599,7 +599,7 @@ class Handler extends BaseLogic
                                 if (true === Help::$session->getValue('shipping_address_collect')) {
                                     $post_data->local_pickup = true;
                                 }
-                                if (null !== ($order_number = Help::getDB()->placeOrder($shoppinglist, $session, (array)$post_data))) {
+                                if (null !== ($order_number = db()->placeOrder($shoppinglist, $session, (array)$post_data))) {
                                     $session->setVar('order_number', $order_number);
                                     // out object
                                     $out = array('success' => true, 'order_number' => $order_number);
@@ -622,12 +622,12 @@ class Handler extends BaseLogic
                     if (true === isset($post_data->order_number, $post_data->rating)) {
                         $order_number = htmlentities(trim($post_data->order_number));
                         $rating = Help::asFloat($post_data->rating);
-                        $order = Help::getDB()->getOrderByNumber($order_number);
+                        $order = db()->getOrderByNumber($order_number);
                         $own = Help::$session->getId() === $order->session_id;
                         if (true === isset($order, $rating)) {
                             if (true === $own) {
                                 $out = array(
-                                    'success' => Help::getDB()->updateColumns('_order',
+                                    'success' => db()->updateColumns('_order',
                                         array('rating' => $rating),
                                         $order->order_id,
                                     )
@@ -643,7 +643,7 @@ class Handler extends BaseLogic
                     if (true === isset($post_data->email, $post_data->pass)) {
                         $as_admin = $this->resolver->hasInstruction('admin');
                         if ((false === $as_admin && true === Help::turnstileVerify($instance, $post_data))
-                            || (true === $as_admin && Help::getDB()->mayAdminLogin())
+                            || (true === $as_admin && db()->mayAdminLogin())
                         ) {
                             if (false === Help::$session->login($post_data->email, (string)$post_data->pass, $as_admin)) {
                                 $this->addMessage(__('Could not login.', 'peatcms'), 'warn');
@@ -676,23 +676,23 @@ class Handler extends BaseLogic
                             $password = (string)$post_data->pass;
                             if (12 > strlen($password)) {
                                 $this->addMessage(__('Password must be at least 12 characters long.', 'peatcms'), 'warn');
-                            } elseif (null !== ($user_id = Help::getDB()->insertUserAccount(
+                            } elseif (null !== ($user_id = db()->insertUserAccount(
                                     $email_address,
                                     Help::passwordHash($password))
                                 )) { // todo what if the e-mail address already is an account? Now it just errors.
                                 $this->addMessage(__('Account created.', 'peatcms'), 'note');
                                 // @since 0.26.0 add current order and address to the account already, by session id
-                                Help::getDB()->updateColumnsWhere('_order',
+                                db()->updateColumnsWhere('_order',
                                     array('user_id' => $user_id),
                                     array('session_id' => Help::$session->getId()) // could be slow, no index
                                 );
                                 // get the shop addresses so they will not be added to the account
                                 $by_key = array();
-                                foreach (Help::getDB()->fetchInstanceAddresses(Setup::$instance_id) as $index => $address) {
+                                foreach (db()->fetchInstanceAddresses(Setup::$instance_id) as $index => $address) {
                                     $by_key[Address::makeKey($address)] = 'Shop';
                                 }
                                 // get the orders for this user to supplement the addresses to the account
-                                $rows = Help::getDB()->fetchOrdersByUserId($user_id);
+                                $rows = db()->fetchOrdersByUserId($user_id);
                                 Help::supplementAddresses($rows, $by_key);
                                 // auto login
                                 if (false === Help::$session->login($email_address, $password, false)) {
@@ -718,7 +718,7 @@ class Handler extends BaseLogic
                 } elseif ('account_password_forgotten' === $action) {
                     if (true === Help::turnstileVerify($instance, $post_data)) {
                         if (true === isset($post_data->email) && strpos(($email_address = $post_data->email), '@')) {
-                            $post_data->check_string = Help::getDB()->putInLocker(0,
+                            $post_data->check_string = db()->putInLocker(0,
                                 (object)array('email_address' => $email_address));
                             // locker is put in the properties for the request, NOTE does not work as querystring, only this proprietary format
                             $post_data->confirm_link = sprintf('%s/%s/locker:%s',
@@ -727,7 +727,7 @@ class Handler extends BaseLogic
                                 $post_data->check_string);
                             $post_data->instance_name = $instance->getName();
                             /* this largely duplicate code must be in a helper function or something... */
-                            if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+                            if (true === isset($post_data->template) && $template_row = db()->getMailTemplate($post_data->template)) {
                                 $temp = new Template($template_row);
                                 $body = $temp->renderObject($post_data);
                             }
@@ -757,21 +757,21 @@ class Handler extends BaseLogic
                             if (12 > strlen($password)) {
                                 $this->addMessage(__('Password must be at least 12 characters long.', 'peatcms'), 'warn');
                             } elseif (true === isset($post_data->locker)
-                                && $row = Help::getDB()->emptyLocker($post_data->locker)
+                                && $row = db()->emptyLocker($post_data->locker)
                             ) {
                                 if (true === isset($row->information, $row->information->email_address)
                                     && ($email_address = $row->information->email_address) === $post_data->email
                                 ) {
                                     // if it’s indeed an account, update the password
                                     // (since the code proves the email address is read by the owner)
-                                    if (false === Help::getDB()->updateUserPassword($email_address, Help::passwordHash($password))) {
+                                    if (false === db()->updateUserPassword($email_address, Help::passwordHash($password))) {
                                         // @since 0.31.0 the highest admin can also reset their password like this, for when the hashkey changes
                                         // note that this does not work when their email address is also a user.
-                                        if (1 === count(($admin_rows = Help::getDB()->fetchElementRowsWhere(
+                                        if (1 === count(($admin_rows = db()->fetchElementRowsWhere(
                                                 new Type('admin'),
                                                 array('email' => $email_address, 'instance_id' => 0)
                                             )))) {
-                                            if (true === Help::getDB()->updateElement(new Type('admin'), array('password_hash' => Help::passwordHash($password)), $admin_rows[0]->id)) {
+                                            if (true === db()->updateElement(new Type('admin'), array('password_hash' => Help::passwordHash($password)), $admin_rows[0]->id)) {
                                                 $this->addMessage(__('Admin password updated.', 'peatcms'), 'note');
                                                 $out['success'] = true;
                                             } else {
@@ -822,7 +822,7 @@ class Handler extends BaseLogic
                                 }
                             }
                             if (count($data) > 0) {
-                                $out = array('success' => Help::getDB()->updateElement($user->getType(), $data, $user->getId()));
+                                $out = array('success' => db()->updateElement($user->getType(), $data, $user->getId()));
                             }
                             if (false === $out['success']) {
                                 $this->addMessage(__('Email address could not be updated.', 'peatcms'), 'warn');
@@ -845,7 +845,7 @@ class Handler extends BaseLogic
                         $my_session = Help::$session;
                         if ($session_id === $my_session->getId()) {
                             $this->addMessage(__('You can not destroy your own session this way.', 'peatcms'), 'warn');
-                        } elseif (true === Help::getDB()->deleteSessionById(
+                        } elseif (true === db()->deleteSessionById(
                                 $session_id,
                                 ($user = $my_session->getUser()) ? $user->getId() : 0,
                                 ($admin = $my_session->getAdmin()) ? $admin->getId() : 0
@@ -860,7 +860,7 @@ class Handler extends BaseLogic
                     }
                 } elseif ('account_delete_sessions' === $action) {
                     if ((null !== ($user = Help::$session->getUser()))) {
-                        $out['success'] = 0 < Help::getDB()->deleteSessionsForUser(
+                        $out['success'] = 0 < db()->deleteSessionsForUser(
                                 $user->getId(),
                                 Help::$session->getId()
                             );
@@ -878,12 +878,12 @@ class Handler extends BaseLogic
                             unset($post_data->json);
                             unset($post_data->timestamp);
                             unset($post_data->csrf_token);
-                            if (1 === Help::getDB()->updateColumnsWhere(
+                            if (1 === db()->updateColumnsWhere(
                                     '_address',
                                     (array)$post_data,
                                     array('address_id' => $address_id, 'user_id' => $user->getId()) // user_id checks whether the address belongs to the user
                                 )) {
-                                $out = Help::getDB()->fetchElementRow(new Type('address'), $address_id);
+                                $out = db()->fetchElementRow(new Type('address'), $address_id);
                                 if ('delete_address' === $action) {
                                     $out = array('success' => true);
                                 } elseif (null === $out) {
@@ -905,7 +905,7 @@ class Handler extends BaseLogic
                     if (true === Help::turnstileVerify($instance, $post_data)) {
                         $post_data = $this->resolver->escape($post_data);
                         if ((null !== ($user = Help::$session->getUser()))) {
-                            if (null !== ($address_id = Help::getDB()->insertElement(
+                            if (null !== ($address_id = db()->insertElement(
                                     new Type('address'),
                                     array('user_id' => $user->getId())))
                             ) {
@@ -921,7 +921,7 @@ class Handler extends BaseLogic
                     $order_number = Help::$session->getValue('order_number');
                     if (null === $order_number) {
                         $out = array('slug' => '__order__');
-                    } elseif (($row = Help::getDB()->getOrderByNumber($order_number))
+                    } elseif (($row = db()->getOrderByNumber($order_number))
                         && $row->session_id === Help::$session->getId()
                     ) {
                         $out = (new Order($row))->getOutput();
@@ -932,7 +932,7 @@ class Handler extends BaseLogic
                 } elseif ('payment_start' === $action) {
                     // TODO NOTE the order may not belong to the current user, so do not expose any sensitive data
                     if (true === isset($post_data->order_number)) {
-                        if (($row = Help::getDB()->getOrderByNumber($post_data->order_number))) {
+                        if (($row = db()->getOrderByNumber($post_data->order_number))) {
                             if (($order = new Order($row))) {
                                 $max_age = max(3600, $instance->getSetting('payment_link_valid_hours', 24) * 3600); // in seconds
                                 if (true === $row->cancelled) { // you can’t pay for a cancelled order
@@ -943,7 +943,7 @@ class Handler extends BaseLogic
                                     if (false === $psp->hasError()) {
                                         if (($tracking_id = $psp->beginTransaction($order, $instance))) {
                                             // add payment to this order
-                                            if (null !== Help::getDB()->insertRowAndReturnKey('_payment', array(
+                                            if (null !== db()->insertRowAndReturnKey('_payment', array(
                                                     'payment_id' => Help::tokenHash($tracking_id),
                                                     'order_id' => $order->getId(),
                                                 ))
@@ -1022,7 +1022,7 @@ class Handler extends BaseLogic
                             } elseif ($admin->isRelatedElement($element)) {
                                 $path = $element->getSlug();
                                 if (true === ($success = $element->delete())) {
-                                    Help::getDB()->reCacheWithWarmup($path);
+                                    db()->reCacheWithWarmup($path);
                                     $this->addMessage(__('Please allow 5 - 10 minutes for the element to disappear completely.', 'peatcms'));
                                 }
                             } else {
@@ -1067,7 +1067,7 @@ class Handler extends BaseLogic
                                     // #TRANSLATORS: %1$s is the type name, %2$s is the element title
                                     $title = sprintf(__('%1$s added to %2$s.', 'peatcms'), ucfirst($type_name), $element_title);
                                     //var_dump($key, $id);
-                                    Help::getDB()->updateElement(new Type($type_name), array(
+                                    db()->updateElement(new Type($type_name), array(
                                         'title' => $title,
                                         'slug' => $title,
                                     ), $id);
@@ -1077,13 +1077,13 @@ class Handler extends BaseLogic
                             foreach ($post_data->properties as $property => $value) {
                                 $property = Help::slugify($property);
                                 $value = Help::slugify($value);
-                                $row = Help::getDB()->fetchElementIdAndTypeBySlug($property);
+                                $row = db()->fetchElementIdAndTypeBySlug($property);
                                 if (null === $row || 'property' !== $row->type_name) {
                                     $this->addMessage(sprintf(__('Property %s not found.', 'peatcms'), $property), 'error');
                                     continue;
                                 }
                                 $property_id = $row->id;
-                                $row = Help::getDB()->fetchElementIdAndTypeBySlug($value);
+                                $row = db()->fetchElementIdAndTypeBySlug($value);
                                 if (null === $row || 'property_value' !== $row->type_name) {
                                     $this->addMessage(sprintf(__('Property value %s not found.', 'peatcms'), $value), 'error');
                                     continue;
@@ -1103,11 +1103,11 @@ class Handler extends BaseLogic
                             }
                             // if you received a template string, set the correct template id, else, set the default id for this type
                             if (true === isset($post_data->template_name)
-                                && ($row = Help::getDB()->getTemplateByName($post_data->template_name, Setup::$instance_id))
+                                && ($row = db()->getTemplateByName($post_data->template_name, Setup::$instance_id))
                             ) {
                                 $update['template_id'] = $row->template_id;
                             } else {
-                                $update['template_id'] = Help::getDB()->getDefaultTemplateIdFor($post_data->element);
+                                $update['template_id'] = db()->getDefaultTemplateIdFor($post_data->element);
                             }
                             if (false === $element->update($update)) {
                                 $this->addMessage(sprintf(__('Could not update %s.', 'peatcms'), $element_title), 'error');
@@ -1123,7 +1123,7 @@ class Handler extends BaseLogic
                         if (true === isset($post_data->type_name, $post_data->key)) {
                             $type = new Type($post_data->type_name);
                             $key = (int)$post_data->key;
-                            $rows = Help::getDB()->fetchHistory($type, $key);
+                            $rows = db()->fetchHistory($type, $key);
                             $info = array();
                             $table_name = $type->tableName();
                             $id_column = $type->idColumn();
@@ -1148,7 +1148,7 @@ class Handler extends BaseLogic
                             }
                             foreach ($info as $column_name => $ids) {
                                 $type = new Type(substr($column_name, 0, -3)); // remove _id to get type name
-                                $element_rows = Help::getDB()->fetchElementColumnsWhereIn(array('title', 'slug', 'name'),$type, $column_name, array_keys($ids));
+                                $element_rows = db()->fetchElementColumnsWhereIn(array('title', 'slug', 'name'),$type, $column_name, array_keys($ids));
                                 foreach ($element_rows as $index => $element_row) {
                                     $info[$column_name][$element_row->id] = $element_row;
                                 }
@@ -1162,7 +1162,7 @@ class Handler extends BaseLogic
                     } elseif ('admin_uncache' === $action) {
                         if (true === isset($post_data->path)) {
                             $path = $post_data->path;
-                            if (true === Help::getDB()->reCacheWithWarmup($path)) {
+                            if (true === db()->reCacheWithWarmup($path)) {
                                 if (false === isset($post_data->silent) || false === $post_data->silent) {
                                     $this->addMessage(sprintf(__('%s refreshed in cache.', 'peatcms'), $path), 'log');
                                 }
@@ -1171,13 +1171,13 @@ class Handler extends BaseLogic
                         }
                     } elseif ('admin_clear_cache_for_instance' === $action) {
                         if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                            $out = array('rows_affected' => ($rows_affected = Help::getDB()->clear_cache_for_instance($instance_id)));
+                            $out = array('rows_affected' => ($rows_affected = db()->clear_cache_for_instance($instance_id)));
                             $this->addMessage(sprintf(__('Cleared %s items from cache.', 'peatcms'), $rows_affected));
                         }
                     } elseif ('admin_export_templates_by_name' === $action) {
                         if (true === isset($post_data->instance_id) && $admin->isRelatedInstanceId(($instance_id = $post_data->instance_id))) {
-                            $content = Help::getDB()->getTemplates($instance_id);
-                            $instance_row = Help::getDB()->fetchInstanceById($instance_id);
+                            $content = db()->getTemplates($instance_id);
+                            $instance_row = db()->fetchInstanceById($instance_id);
                             $filename = Help::slugify($instance_row->name) . '-Templates.json';
                             $out = array('download' => array('content' => $content, 'file_name' => $filename));
                         }
@@ -1187,18 +1187,18 @@ class Handler extends BaseLogic
                                 $count_done = 0;
                                 foreach ($templates as $key => $posted_row) {
                                     if (($template_name = $posted_row->name)) {
-                                        if (($db_row = Help::getDB()->getTemplateByName($template_name, $instance_id))) {
+                                        if (($db_row = db()->getTemplateByName($template_name, $instance_id))) {
                                             $template_id = $db_row->template_id;
                                         } else {
                                             // insert
-                                            if (!($template_id = Help::getDB()->insertTemplate($template_name, $instance_id))) {
+                                            if (!($template_id = db()->insertTemplate($template_name, $instance_id))) {
                                                 $this->addMessage(sprintf(__('Update %s failed.', 'peatcms'), $template_name), 'error');
                                                 continue;
                                             }
                                             $this->addMessage(sprintf(__('Created new template ‘%s’.', 'peatcms'), $template_name), 'note');
                                         }
                                         // update
-                                        if (true === Help::getDB()->updateColumns('_template', array(
+                                        if (true === db()->updateColumns('_template', array(
                                                 'element' => $posted_row->element,
                                                 'html' => $posted_row->html,
                                                 'instance_id' => $instance_id,
@@ -1244,7 +1244,7 @@ class Handler extends BaseLogic
                         if ($element->fetchById((int)$post_data->id)) {
                             if (true === $admin->isRelatedElement($element)) {
                                 if ('admin_linkable_slug' === $action) { // id is the sub, slug is the parent
-                                    if (true === isset($post_data->slug) && ($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->slug))) {
+                                    if (true === isset($post_data->slug) && ($row = db()->fetchElementIdAndTypeBySlug($post_data->slug))) {
                                         $parent = (new Type($row->type_name))->getElement()->fetchById($row->id);
                                         $element_type_name = $element->type_name;
                                         $success = $parent->link($element_type_name, $element->getId());
@@ -1294,7 +1294,7 @@ class Handler extends BaseLogic
                                 } elseif ('admin_x_value_remove' === $action) {
                                     if (isset($post_data->x_value_id) and $x_value_id = (int)$post_data->x_value_id) {
                                         // todo move this to a method in baseelement
-                                        Help::getDB()->deleteXValueLink($peat_type, $element->getId(), $x_value_id);
+                                        db()->deleteXValueLink($peat_type, $element->getId(), $x_value_id);
                                         $element->reCache();
                                         $out = $element->getLinked('x_value');
                                     }
@@ -1307,22 +1307,22 @@ class Handler extends BaseLogic
                                         if (false === $admin->isRelatedElement($property)) {
                                             $this->addMessage('Security warning, after multiple warnings your account may be blocked.', 'warn');
                                             $out = true;
-                                        } elseif (($property_value_id = Help::getDB()->insertElement(new Type('property_value'), array(
+                                        } elseif (($property_value_id = db()->insertElement(new Type('property_value'), array(
                                             'title' => $title,
                                             'slug' => Help::slugify($title),
                                             'content' => __('Auto generated property value.', 'peatcms'),
                                             'excerpt' => '',
-                                            'template_id' => Help::getDB()->getDefaultTemplateIdFor('property_value'),
+                                            'template_id' => db()->getDefaultTemplateIdFor('property_value'),
                                             'online' => true // for here the default is true, or else we can’t add simply from edit screen
                                         )))) { // create a property value
                                             // index immediately
-                                            if (false === Help::getDB()->updateSearchIndex((new PropertyValue())->fetchById($property_value_id))) {
+                                            if (false === db()->updateSearchIndex((new PropertyValue())->fetchById($property_value_id))) {
                                                 $this->addMessage(__('Please wait a few minutes for the property value to become available.', 'peatcms'), 'warn');
                                             }
                                             // link to the supplied property
                                             if (true === $property->link('property_value', $property_value_id)) {
                                                 // create x_value entry
-                                                if (!Help::getDB()->insertRowAndReturnKey(
+                                                if (!db()->insertRowAndReturnKey(
                                                     $peat_type->tableName() . '_x_properties',
                                                     array(
                                                         $peat_type->idColumn() => $element->getId(),
@@ -1354,7 +1354,7 @@ class Handler extends BaseLogic
                         }
                         unset($element);
                     } elseif ('admin_put_menu_item' === $action) {
-                        if (($row = Help::getDB()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
+                        if (($row = db()->fetchElementIdAndTypeBySlug($post_data->menu)) && 'menu' === $row->type_name) {
                             $type = new Type('menu');
                             $menu = $type->getElement();
                             if ($menu->fetchById($row->id) instanceof Menu) {
@@ -1363,7 +1363,7 @@ class Handler extends BaseLogic
                                     /** @noinspection PhpPossiblePolymorphicInvocationInspection */ /* we just checked it's a menu */
                                     if (true === $menu->putItem($post_data->dropped_menu_item_id, $post_data->menu_item_id, $post_data->command)) {
                                         $out = $menu->getOutput();
-                                        if (false === Help::getDB()->reCacheWithWarmup($menu->getPath())) {
+                                        if (false === db()->reCacheWithWarmup($menu->getPath())) {
                                             Help::addMessage('Cache update of the menu failed.', 'warn');
                                         }
                                     } else {
@@ -1383,7 +1383,7 @@ class Handler extends BaseLogic
                         $for = $post_data->for ?? $this->resolver->getTerms()[0] ?? null;
                         if (isset($for)) {
                             if ($admin->isRelatedInstanceId($instance_id)) {
-                                $out = Help::getDB()->getTemplates($instance_id, $for);
+                                $out = db()->getTemplates($instance_id, $for);
                                 if (count($out) === 0) {
                                     $this->addMessage(sprintf(__('No templates found for %s.', 'peatcms'), $for), 'warn');
                                 }
@@ -1397,20 +1397,20 @@ class Handler extends BaseLogic
                     } elseif ('admin_get_vat_categories' === $action) {
                         $instance_id = $post_data->instance_id ?? Setup::$instance_id;
                         if ($admin->isRelatedInstanceId($instance_id)) {
-                            $out = Help::getDB()->getVatCategories($instance_id);
+                            $out = db()->getVatCategories($instance_id);
                             if (count($out) === 0) {
                                 $this->addMessage(__('No vat categories found', 'peatcms'), 'warn');
                             }
                         }
                     } elseif ('search_log' === $action) {
                         // only shows log of the current instance
-                        $rows = Help::getDB()->fetchSearchLog();
+                        $rows = db()->fetchSearchLog();
                         $out = array('__rows__' => $rows, 'item_count' => count($rows));
                     } elseif ('admin_redirect' === $action) {
                         if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                             if ($admin->isRelatedInstanceId($instance_id)) {
                                 $out = array(
-                                    '__row__' => Help::getDB()->getRedirects($instance_id),
+                                    '__row__' => db()->getRedirects($instance_id),
                                     'slug' => 'admin_redirect',
                                 );
                             }
@@ -1419,7 +1419,7 @@ class Handler extends BaseLogic
                         if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                             if ($admin->isRelatedInstanceId($instance_id)) {
                                 $out = array(
-                                    '__row__' => Help::getDB()->getTemplates($instance_id),
+                                    '__row__' => db()->getTemplates($instance_id),
                                     'content' => __('Available templates.', 'peatcms'),
                                     'slug' => 'templates',
                                 );
@@ -1438,14 +1438,14 @@ class Handler extends BaseLogic
                     } elseif ('admin_countries' === $action) {
                         if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                             if ($admin->isRelatedInstanceId($instance_id)) {
-                                $out = array('__rows__' => Help::getDB()->getCountries($instance_id));
+                                $out = array('__rows__' => db()->getCountries($instance_id));
                                 $out['slug'] = 'admin_countries';
                             }
                         }
                     } elseif ('admin_payment_service_providers' === $action) {
                         if ($post_data->type === 'instance' && $instance_id = $post_data->id) {
                             if ($admin->isRelatedInstanceId($instance_id)) {
-                                $out = array('__rows__' => Help::getDB()->getPaymentServiceProviders($instance_id));
+                                $out = array('__rows__' => db()->getPaymentServiceProviders($instance_id));
                                 $out['slug'] = 'admin_payment_service_providers';
                             }
                         }
@@ -1453,12 +1453,12 @@ class Handler extends BaseLogic
                         // you only get them for the current instance
                         $out = array();
                         $out['slug'] = 'admin_get_payment_status_updates';
-                        $out['__rows__'] = Help::getDB()->fetchPaymentStatuses();
+                        $out['__rows__'] = db()->fetchPaymentStatuses();
                     } elseif ('cancel_order' === $action) {
                         if (true === isset($post_data->order_id) && ($order_id = $post_data->order_id)
                             && true === $admin->canDo($action, '_order', $order_id)
                         ) {
-                            $out = array('success' => Help::getDB()->cancelOrder($order_id));
+                            $out = array('success' => db()->cancelOrder($order_id));
                         }
                     } elseif ('update_column' === $action) {
                         // security check
@@ -1498,13 +1498,13 @@ class Handler extends BaseLogic
                             if (0 < count($update_arr)) {
                                 if ('_admin' === $posted_table_name) {
                                     $admin_id = (int)$posted_id;
-                                    $rows = Help::getDB()->fetchAdminSessions($admin_id);
+                                    $rows = db()->fetchAdminSessions($admin_id);
                                     foreach ($rows as $key => $row) {
-                                        Help::getDB()->deleteSessionById($row->session_id, 0, $admin_id);
+                                        db()->deleteSessionById($row->session_id, 0, $admin_id);
                                     }
                                 } elseif ('_user' === $posted_table_name) {
                                     $user_id = (int)$posted_id;
-                                    Help::getDB()->deleteSessionsForUser($user_id, 0);
+                                    db()->deleteSessionsForUser($user_id, 0);
                                 }
                             }
                             //
@@ -1527,7 +1527,7 @@ class Handler extends BaseLogic
                                             __('Domain not found, check your input and try again later.', 'peatcms'));
                                     }
                                     // if the domain is already in use somewhere in this bloembraaden installation, block it
-                                    if (Help::getDB()->domainIsInUse($value)) {
+                                    if (db()->domainIsInUse($value)) {
                                         $this->handleErrorAndStop(
                                             sprintf('Domain %1$s is already in use for another instance.', $value),
                                             __('Domain cannot be updated.', 'peatcms'));
@@ -1554,15 +1554,15 @@ class Handler extends BaseLogic
                              */
                             if (0 === count($update_arr)) {
                                 $this->addMessage(__('Update column failed.', 'peatcms'), 'error');
-                            } elseif (Help::getDB()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
-                                $out = Help::getDB()->selectRow($posted_table_name, $posted_id);
+                            } elseif (db()->updateColumns($posted_table_name, $update_arr, $posted_id)) {
+                                $out = db()->selectRow($posted_table_name, $posted_id);
                             } else {
-                                $this->addError(Help::getDB()->getLastError()->getMessage());
+                                $this->addError(db()->getLastError()->getMessage());
                                 $this->addMessage(__('Update column failed.', 'peatcms'), 'error');
                             }
                             // check published for templates
                             if ($posted_table_name === '_template') {
-                                if (($row = Help::getDB()->selectRow('_template', $posted_id))) {
+                                if (($row = db()->selectRow('_template', $posted_id))) {
                                     $out->published = $this->updatePublishedForTemplates($row->instance_id, $posted_id);
                                 }
                             }
@@ -1573,8 +1573,8 @@ class Handler extends BaseLogic
                         if (true === isset($post_data->variant_id)
                             && true === $admin->canDo($action, 'cms_variant', $post_data->variant_id)
                         ) {
-                            if (true === Help::getDB()->updateVariantQuantityInStock($post_data->variant_id, $post_data->quantity)) {
-                                $out = Help::getDB()->selectRow('cms_variant', $post_data->variant_id);
+                            if (true === db()->updateVariantQuantityInStock($post_data->variant_id, $post_data->quantity)) {
+                                $out = db()->selectRow('cms_variant', $post_data->variant_id);
                             }
                         }
                     } elseif ('admin_popvote' === $action) {
@@ -1585,20 +1585,20 @@ class Handler extends BaseLogic
                             && true === $admin->canDo($action, "cms_$element", $id)
                         ) {
                             if (($direction = $post_data->direction) === 'up') {
-                                $pop_vote = Help::getDB()->updatePopVote($element, $id);
+                                $pop_vote = db()->updatePopVote($element, $id);
                             } elseif ($direction === 'down') {
                                 $how_much = max(1, (int)($post_data->places ?? 1));
-                                $pop_vote = Help::getDB()->updatePopVote($element, $id, $how_much);
+                                $pop_vote = db()->updatePopVote($element, $id, $how_much);
                             } else { // return the relative position always
-                                $pop_vote = Help::getDB()->getPopVote($element, $id);
+                                $pop_vote = db()->getPopVote($element, $id);
                             }
                         }
                         $out = array('pop_vote' => $pop_vote);
                     } elseif ('admin_set_homepage' === $action) {
                         if (isset($post_data->slug)) {
-                            if (!$out = Help::getDB()->setHomepage(Setup::$instance_id, $post_data->slug)) {
+                            if (!$out = db()->setHomepage(Setup::$instance_id, $post_data->slug)) {
                                 $this->addError(sprintf(
-                                    '->getDB()->setHomepage failed with slug %1$s for instanceid %2$s.',
+                                    'db()->setHomepage failed with slug %1$s for instanceid %2$s.',
                                     var_export($post_data->slug, true), Setup::$instance_id));
                                 $out = $instance->row;
                             }
@@ -1629,7 +1629,7 @@ class Handler extends BaseLogic
                                 if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
                                 // process it in cms
                                 if (true === isset($_SERVER['HTTP_X_SLUG'])) {
-                                    if ($row = Help::getDB()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
+                                    if ($row = db()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
                                         if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
                                             $el = $this->updateElement($row->type_name, $post_data, $row->id);
                                         } else { // make a new element and link it to this posted element (if possible)
@@ -1653,7 +1653,7 @@ class Handler extends BaseLogic
                         }
                     } elseif ('admin_database_report' === $action) {
                         if (0 === $admin->getInstanceId()) {
-                            $out = array('__rows__' => Help::unpackKeyValueRows(Help::getDB()->fetchAdminReport()));
+                            $out = array('__rows__' => Help::unpackKeyValueRows(db()->fetchAdminReport()));
                             $opcache = function_exists('opcache_get_status') ? opcache_get_status() : 'n/a';
                             $out['__rows__'][] = array('key' => 'opcache', 'value' => print_r($opcache, true));
                         } else {
@@ -1717,7 +1717,7 @@ class Handler extends BaseLogic
         if (false === ADMIN && true === isset($_SERVER['HTTP_X_CACHE_TIMESTAMP'])) {
             $check_timestamp = (int)$_SERVER['HTTP_X_CACHE_TIMESTAMP'];
             // check if it’s ok, then just return ok immediately
-            if (true === Help::getDB()->cachex($slug, $check_timestamp)) {
+            if (true === db()->cachex($slug, $check_timestamp)) {
                 if ($variant_page > 1) $slug = "$slug/variant_page$variant_page";
                 $response = sprintf('{"__ref":"%s","x_cache_timestamp_ok":true}', rawurlencode($slug));
                 header('Content-Type: application/json');
@@ -1728,14 +1728,14 @@ class Handler extends BaseLogic
         }
         // usually we get the src from cache, only when not cached yet get it from the resolver
         // @since 0.8.2 admin also gets from cache, table_info is added later anyway
-        // warmup does an update of the cache row (getDB()->cache handles this automatically) so the client never misses out
+        // warmup does an update of the cache row (db()->cache handles this automatically) so the client never misses out
         if (true === $this->resolver->hasInstructions()) {
             $element = $this->resolver->getElement();
             $out = $element->getOutputObject();
             unset($element);
-        } elseif (null === ($out = Help::getDB()->cached($slug, $variant_page, true))) {
+        } elseif (null === ($out = db()->cached($slug, $variant_page, true))) {
             // check if it’s a paging error
-            if ($variant_page !== 1) $out = Help::getDB()->cached($slug, 1, true);
+            if ($variant_page !== 1) $out = db()->cached($slug, 1, true);
             if (null === $out && ($element = $this->resolver->getElement()) instanceof BaseElement) {
                 // construct the new path for this old slug
                 // @since 0.32.0 from the element, its properties are cleaned of nonsense values
@@ -1743,7 +1743,7 @@ class Handler extends BaseLogic
                 // try the cache one more time with the new slug, else cache it
                 // @since 0.32.0 admins do not get search pages from cache, the element is already fresh
                 if (false === (ADMIN && $element instanceof Search)
-                    && null !== ($out = Help::getDB()->cached($path, 1, true))
+                    && null !== ($out = db()->cached($path, 1, true))
                 ) {
                     if (extension_loaded('newrelic')) {
                         $transaction_name = (ADMIN) ? 'Admin:' : 'Visit:';
@@ -1779,7 +1779,7 @@ class Handler extends BaseLogic
             $type_name = $element_row->type_name;
             // if you get a search page from cache as admin, check if the original slug also exists to see it (can be offline etc)
             if ('search' === $type_name && 1 === count(($terms = $this->resolver->getTerms()))
-                && null !== ($row = Help::getDB()->fetchElementIdAndTypeBySlug($terms[0], true))
+                && null !== ($row = db()->fetchElementIdAndTypeBySlug($terms[0], true))
             ) {
                 $this->addMessage(sprintf(__('%s is replaced by a search result for visitors.', 'peatcms'), $slug), 'warn');
                 $type = new Type($row->type_name);
@@ -1946,7 +1946,7 @@ class Handler extends BaseLogic
          * echo 'Help::slugify(): ' . Help::slugify($str) . '<br/>';
          * echo 'preg_replace 1: ' . preg_replace('/[^\p{L}\s]/u','',$str) . '<br/>';
          * echo 'preg_replace 2: ' . preg_replace('/[^\p{L}\p{N}\p{M}\s]/u','',$str) . '<br/>';
-         * echo 'DB()->slugify(): ' . Help::getDB()->slugify($str);
+         * echo 'DB()->slugify(): ' . db()->slugify($str);
          */
     }
 
@@ -1955,7 +1955,7 @@ class Handler extends BaseLogic
         if (true === isset($post_data->from_email)
             && strpos(($from_email = $post_data->from_email), '@')
         ) {
-            if (true === isset($post_data->template) && $template_row = Help::getDB()->getMailTemplate($post_data->template)) {
+            if (true === isset($post_data->template) && $template_row = db()->getMailTemplate($post_data->template)) {
                 $temp = new Template($template_row);
                 $body = $temp->renderObject($post_data);
             }
@@ -2091,7 +2091,7 @@ class Handler extends BaseLogic
     private function getElementSuggestions(string $type_name, string $term = ''): ?object
     {
         if ('x_value' === $type_name) {
-            return Help::getDB()->fetchPropertiesRowSuggestions($term);
+            return db()->fetchPropertiesRowSuggestions($term);
         } elseif (($type = new Type($type_name))) {
             if (strlen($term) >= Search::MIN_TERM_LENGTH && 'menu_item' !== $type_name) {
                 $src = new Search();
@@ -2103,7 +2103,7 @@ class Handler extends BaseLogic
                     'rows' => $src->getOutputFull()->__results__,
                 );
             } else {
-                return Help::getDB()->fetchElementRowSuggestions($type, $term);
+                return db()->fetchElementRowSuggestions($type, $term);
             }
         }
 
@@ -2112,20 +2112,20 @@ class Handler extends BaseLogic
 
     private function getElements(string $type_name): array
     {
-        return Help::getDB()->fetchElementRowsWhere(new Type($type_name), array());
+        return db()->fetchElementRowsWhere(new Type($type_name), array());
     }
 
     private function getElementRow(Type $peat_type, int $id = 0): ?\stdClass
     {
         if ('search' === $peat_type->typeName()) return null;
 
-        return Help::getDB()->fetchElementRow($peat_type, $id);
+        return db()->fetchElementRow($peat_type, $id);
     }
 
     private function getElementById(string $type_name, int $id): ?BaseElement
     {
         if ($peat_type = new Type($type_name)) {
-            if ($row = Help::getDB()->fetchElementRow($peat_type, $id)) {
+            if ($row = db()->fetchElementRow($peat_type, $id)) {
                 return $peat_type->getElement($row);
             } else {
                 return null;
@@ -2168,23 +2168,23 @@ class Handler extends BaseLogic
 
                 return null;
             }
-            if (($instance_id = Help::getDB()->insertInstance(
+            if (($instance_id = db()->insertInstance(
                 'example.com',
                 __('New instance', 'peatcms'),
                 //Help::$session->getAdmin()->getClient()->getOutput()->client_id
                 $admin->getClient()->getId()
             ))) {
                 // a new instance must have a homepage
-                if (($page_id = Help::getDB()->insertElement(new Type('page'), array(
+                if (($page_id = db()->insertElement(new Type('page'), array(
                     'title' => 'homepage',
                     'slug' => 'home',
                     'template' => 'peatcms',
                     'content' => 'My first homepage.',
                     'instance_id' => $instance_id
                 )))) {
-                    Help::getDB()->updateInstance($instance_id, array('homepage_id' => $page_id));
+                    db()->updateInstance($instance_id, array('homepage_id' => $page_id));
 
-                    return Help::getDB()->selectRow('_instance', $instance_id);
+                    return db()->selectRow('_instance', $instance_id);
                 } else {
                     $this->addError('Could not add homepage to instance.');
 
@@ -2201,54 +2201,54 @@ class Handler extends BaseLogic
             // switch tasks according to table name
             switch ($post_data->table_name) {
                 case '_country':
-                    if ($country_id = Help::getDB()->insertCountry(
+                    if ($country_id = db()->insertCountry(
                         __('New country', 'peatcms'),
                         $instance_id,
                     )) {
-                        return Help::getDB()->selectRow('_country', $country_id);
+                        return db()->selectRow('_country', $country_id);
                     } else {
                         $this->addError('Could not create new country.');
 
                         return (object)true;
                     }
                 case '_address_shop':
-                    if ($id = Help::getDB()->insertAddressShop(
+                    if ($id = db()->insertAddressShop(
                         __('New address', 'peatcms'),
                         $instance_id,
                     )) {
-                        return Help::getDB()->selectRow('_address_shop', $id);
+                        return db()->selectRow('_address_shop', $id);
                     } else {
                         $this->addError('Could not create new address.');
 
                         return (object)true;
                     }
                 case '_template':
-                    if ($template_id = Help::getDB()->insertTemplate(
+                    if ($template_id = db()->insertTemplate(
                         __('New template', 'peatcms'),
                         $instance_id,
                     )) {
-                        return Help::getDB()->selectRow('_template', $template_id);
+                        return db()->selectRow('_template', $template_id);
                     } else {
                         $this->addError('Could not create new template.');
 
                         return (object)true;
                     }
                 case '_instance_domain':
-                    if ($new_instance_domain_key = Help::getDB()->insertInstanceDomain(array(
+                    if ($new_instance_domain_key = db()->insertInstanceDomain(array(
                         'domain' => 'example.com',
                         'instance_id' => $instance_id,
                     ))) {
-                        return Help::getDB()->selectRow('_instance_domain', $new_instance_domain_key);
+                        return db()->selectRow('_instance_domain', $new_instance_domain_key);
                     } else {
                         $this->addError('Could not create domain');
 
                         return (object)true;
                     }
                 case '_admin':
-                    $instance = new Instance(Help::getDB()->selectRow('_instance', $instance_id));
+                    $instance = new Instance(db()->selectRow('_instance', $instance_id));
                     if ($client_id = $instance->getClientId()) {
                         $domain_name = str_replace('www.', '', ($instance->getDomain()));
-                        if (null === Help::getDB()->insertAdmin(
+                        if (null === db()->insertAdmin(
                                 Help::randomString(10) . "@$domain_name", // email
                                 Help::passwordHash(Help::randomString(12)), // password
                                 $client_id, // client_id
@@ -2259,25 +2259,25 @@ class Handler extends BaseLogic
                     }
                     break;
                 case '_payment_service_provider':
-                    if ($psp_id = Help::getDB()->insertPaymentServiceProvider(
+                    if ($psp_id = db()->insertPaymentServiceProvider(
                         __('New psp', 'peatcms'),
                         $instance_id,
                     )) {
-                        return Help::getDB()->selectRow('_payment_service_provider', $psp_id);
+                        return db()->selectRow('_payment_service_provider', $psp_id);
                     } else {
                         $this->addError('Could not create new psp.');
 
                         return (object)true;
                     }
                 case '_redirect':
-                    Help::getDB()->insertRowAndReturnKey('_redirect', array(
+                    db()->insertRowAndReturnKey('_redirect', array(
                         'instance_id' => $instance_id,
                         'term' => '',
                         'to_slug' => 'to-slug',
                     ));
                     break;
                 case '_vat_category':
-                    Help::getDB()->insertRowAndReturnKey('_vat_category', array(
+                    db()->insertRowAndReturnKey('_vat_category', array(
                         'instance_id' => $instance_id,
                         'title' => __('vat', 'peatcms'),
                         'percentage' => '21',
@@ -2301,11 +2301,11 @@ class Handler extends BaseLogic
     {
         $published_for_template_id = null;
         // run through all the templates for this instance to set their published value correctly
-        $rows = Help::getDB()->getTemplates($instance_id);
+        $rows = db()->getTemplates($instance_id);
         foreach ($rows as $key => $row) {
             $temp = new Template($row);
             if (($published = $temp->checkIfPublished()) !== $row->published) { // update the value
-                Help::getDB()->updateColumns('_template', array('published' => $published), $row->template_id);
+                db()->updateColumns('_template', array('published' => $published), $row->template_id);
             }
             unset($temp);
             // if this is the current element set the published value for return as well
@@ -2324,7 +2324,7 @@ class Handler extends BaseLogic
      */
     public function getTableInfoForOutput(Type $peat_type): ?\stdClass
     {
-        $arr = (array)Help::getDB()->getTableInfo($peat_type->tableName());
+        $arr = (array)db()->getTableInfo($peat_type->tableName());
         $info = new \stdClass();
         foreach ($arr as $key => $value) {
             // trim is needed to remove the \0 byte denoting a (former) private property
@@ -2346,7 +2346,7 @@ class Handler extends BaseLogic
             $info->{$key} = $value;
         }
         $arr = null;
-        $info->link_tables = Help::getDB()->getLinkTables($peat_type);
+        $info->link_tables = db()->getLinkTables($peat_type);
 
         return $info;
     }

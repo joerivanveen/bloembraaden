@@ -14,7 +14,7 @@ class PropertyValue extends BaseElement
 
     public function create(?bool $online = true): ?int
     {
-        return Help::getDB()->insertElement($this->getType(), array(
+        return db()->insertElement($this->getType(), array(
             'title' => __('New property value', 'peatcms'),
             'content' => __('SEO text here.', 'peatcms'),
             'excerpt' => '',

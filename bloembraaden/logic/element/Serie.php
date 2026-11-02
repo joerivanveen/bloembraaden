@@ -14,7 +14,7 @@ class Serie extends BaseElement
 
     public function create(?bool $online = true): ?int
     {
-        return Help::getDB()->insertElement($this->getType(), array(
+        return db()->insertElement($this->getType(), array(
             'title' => __('New series', 'peatcms'),
             'content' => __('Default content.', 'peatcms'),
             'online' => $online,

@@ -17,19 +17,19 @@ class Shoppinglist extends BaseLogic
         $session = Help::$session;
         $user = $session->getUser();
         if (null === $user) {
-            $this->row = Help::getDB()->fetchShoppingList(
+            $this->row = db()->fetchShoppingList(
                 $name,
                 $session->getId(),
                 0
             );
         } else {
-            $this->row = Help::getDB()->fetchShoppingList(
+            $this->row = db()->fetchShoppingList(
                 $name,
                 0,
                 $user->getId()
             );
         }
-        $this->rows = Help::getDB()->fetchShoppingListRows($this->getId());
+        $this->rows = db()->fetchShoppingListRows($this->getId());
         // remember the state, so you can update the db on __shutdown
         $this->setState($this->getStateCurrent()); // WARNING state is for the rows only now
         register_shutdown_function(array($this, '__shutdown'));
@@ -42,8 +42,8 @@ class Shoppinglist extends BaseLogic
     {
         if (true === $this->hasChanged()) {
             $shoppinglist_id = $this->getId();
-            Help::getDB()->upsertShoppingListRows($shoppinglist_id, $this->rows);
-            Help::getDB()->updateColumns(
+            db()->upsertShoppingListRows($shoppinglist_id, $this->rows);
+            db()->updateColumns(
                 '_shoppinglist',
                 array('date_updated' => 'NOW()'),
                 $shoppinglist_id,
@@ -153,7 +153,7 @@ class Shoppinglist extends BaseLogic
         foreach ($list_rows as $index => $list_row) {
             // @since 0.23.0 try to get variant from cache before building the whole thing
             if (true === isset($list_row->variant_slug)) {
-                $variant_out = Help::getDB()->cached($list_row->variant_slug);
+                $variant_out = db()->cached($list_row->variant_slug);
                 if (null !== $variant_out) {
                     $variant_out = $variant_out->slugs->{$variant_out->__ref};
                     if ('variant' !== $variant_out->type_name) { // no longer a variant behind this slug
@@ -248,7 +248,7 @@ class Shoppinglist extends BaseLogic
         if (
             true !== Help::$session->getValue('shipping_address_collect')
             && ($country_id = (int)Help::$session->getValue('shipping_country_id'))
-            && ($country = Help::getDB()->getCountryById($country_id))
+            && ($country = db()->getCountryById($country_id))
         ) {
             if ($amount_grand_total < Help::asFloat($country->shipping_free_from)) {
                 $shipping_costs = Help::asFloat($country->shipping_costs);
@@ -258,7 +258,7 @@ class Shoppinglist extends BaseLogic
         }
         $output_object->amount_grand_total = Help::asMoney($amount_grand_total);
         // set template_id to default template, if it exists // TODO make shoppinglist editable like a page
-        $output_object->template_id = Help::getDB()->getDefaultTemplateIdFor('shoppinglist');
+        $output_object->template_id = db()->getDefaultTemplateIdFor('shoppinglist');
         $this->row = $output_object;
     }
 

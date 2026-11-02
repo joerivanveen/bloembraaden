@@ -11,7 +11,7 @@ class User extends BaseLogic
     public function __construct(int $user_id)
     {
         parent::__construct();
-        if (!($this->row = Help::getDB()->fetchUser($user_id))) {
+        if (!($this->row = db()->fetchUser($user_id))) {
             $this->addError(
                 sprintf('User not found with id %s in instance %s.',
                     var_export($user_id, true), Setup::$INSTANCE_DOMAIN)
@@ -35,7 +35,7 @@ class User extends BaseLogic
     {
         if (false === isset($this->addresses)) {
             if (0 !== ($user_id = $this->getId())) {
-                $this->addresses = Help::getDB()->fetchAddressesByUserId($user_id);
+                $this->addresses = db()->fetchAddressesByUserId($user_id);
             } else { // just for security purposes a non-specific user id should not be able to ‘fetch’ anything
                 $this->addresses = array();
             }
@@ -47,7 +47,7 @@ class User extends BaseLogic
     {
         if (false === isset($this->orders)) {
             if (0 !== ($user_id = $this->getId())) {
-                $this->orders = Help::getDB()->fetchOrdersByUserId($user_id);
+                $this->orders = db()->fetchOrdersByUserId($user_id);
             } else { // just for security purposes a non-specific user id should not be able to ‘fetch’ anything
                 $this->orders = array();
             }
@@ -64,7 +64,7 @@ class User extends BaseLogic
         $this->row->__addresses__ = $this->getAddresses();
         $this->row->__orders__ = $this->getOrders();
         // TODO because this is not used currently and there is no index on user_id in _session, remove entirely
-        //$this->row->__has_multiple_sessions__ = 1 < Help::getDB()->fetchUserSessionCount($this->getId());
+        //$this->row->__has_multiple_sessions__ = 1 < db()->fetchUserSessionCount($this->getId());
         $this->row->slug = '__user__'; //the default slug...
         // some fields can never be output
         unset($this->row->password_hash);

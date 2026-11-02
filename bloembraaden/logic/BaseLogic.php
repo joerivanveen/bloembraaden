@@ -119,7 +119,7 @@ class BaseLogic extends Base
         }
         // cache the slug if it’s not a dynamic one (containing ‘__’)
         if (true === isset($out->__ref) && false === str_contains(($slug = $out->__ref), '__')) {
-            $db = Help::getDB();
+            $db = db();
             // for elements with no results or that are not online, drop the cache
             if (0 === $this->getResultCount()) {
                 $db->deleteFromCache($slug);
@@ -234,7 +234,7 @@ class BaseLogic extends Base
     public function getAndSetTemplateSettings(): \stdClass
     {
         if (true === isset($this->template_settings)) return $this->template_settings;
-        if (false === isset($this->row->template_id) || null === ($settings = Help::getDB()->fetchTemplateSettings($this->row->template_id))) { // return default settings
+        if (false === isset($this->row->template_id) || null === ($settings = db()->fetchTemplateSettings($this->row->template_id))) { // return default settings
             $settings = (object)array(
                 'nested_max' => $this->nested_max,
                 'nested_show_first_only' => $this->nested_show_first_only,

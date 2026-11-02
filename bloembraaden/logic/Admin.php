@@ -12,7 +12,7 @@ class Admin extends BaseLogic
     public function __construct(int $admin_id)
     {
         parent::__construct();
-        if (!($this->row = Help::getDB()->fetchAdmin($admin_id))) {
+        if (!($this->row = db()->fetchAdmin($admin_id))) {
             $this->handleErrorAndStop(
                 sprintf(__('Admin not found with id %s in instance %s', 'peatcms'),
                     var_export($admin_id, true), Setup::$instance_id),
@@ -48,7 +48,7 @@ class Admin extends BaseLogic
     public function canDo(string $action, string $table_name, $id): bool
     {
         $allowed = false;
-        if ($row = Help::getDB()->selectRow($table_name, $id)) {
+        if ($row = db()->selectRow($table_name, $id)) {
             if (isset($row->instance_id)) {
                 $allowed = $this->isRelatedInstanceId($row->instance_id);
             } elseif (isset($row->property_id)) {
@@ -82,10 +82,10 @@ class Admin extends BaseLogic
             $this->row->__clients__ = array($this->getClient()->getOutput()); // Templator needs index based array for complex tags
             $this->row->__instances__ = array();
         } else {
-            $this->row->__instances__ = array(Help::getDB()->fetchInstanceById($this->row->instance_id));
+            $this->row->__instances__ = array(db()->fetchInstanceById($this->row->instance_id));
             $this->row->__clients__ = array();
         }
-        $this->row->__sessions__ = Help::getDB()->fetchAdminSessions($this->getId());
+        $this->row->__sessions__ = db()->fetchAdminSessions($this->getId());
         Help::prepareAdminRowForOutput($this->row, 'admin');
         // some fields can never be output
         unset($this->row->password_hash);

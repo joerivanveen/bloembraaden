@@ -20,7 +20,7 @@ class BaseElement extends BaseLogic implements Element
                 $type_name = $this->getType()->typeName();
                 $this->addError("fetchById() called on an already filled $type_name with id: $id");
             }
-            if (($this->row = Help::getDB()->fetchElementRow($this->getType(), $id))) {
+            if (($this->row = db()->fetchElementRow($this->getType(), $id))) {
                 return $this;
             }
         }
@@ -30,7 +30,7 @@ class BaseElement extends BaseLogic implements Element
 
     private function refreshRow(): bool
     {
-        if (($row = Help::getDB()->fetchElementRow($this->getType(), $this->getId()))) {
+        if (($row = db()->fetchElementRow($this->getType(), $this->getId()))) {
             // update the row with fresh values (leave everything else alone)
             foreach ($row as $column_name => $value) {
                 $this->row->{$column_name} = $value;
@@ -59,11 +59,11 @@ class BaseElement extends BaseLogic implements Element
                 $data = array_merge($data, $arr);
             }
         }
-        if (true === Help::getDB()->updateElement($peat_type, $data, $this->getId())) {
+        if (true === db()->updateElement($peat_type, $data, $this->getId())) {
             // get a fresh row straight from the database, if that fails, the element is deleted, or otherwise gone
             $this->row->deleted = (false === $this->refreshRow());
             // update ci_ai
-            if (false === Help::getDB()->updateSearchIndex($this)) {
+            if (false === db()->updateSearchIndex($this)) {
                 $this->addError("Could not update search index column for {$this->getSlug()}");
             }
 
@@ -89,7 +89,7 @@ class BaseElement extends BaseLogic implements Element
         // TODO the element knows too much, the chain must be automated
         $arr = array($column_name => $column_value);
         if (isset($arr['product_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('product'), $column_value))) {
+            if (($tmp = db()->fetchElementRow(new Type('product'), $column_value))) {
                 if ($serie_id = $tmp->serie_id) {
                     $arr = array_merge($arr, array('serie_id' => $serie_id));
                 } else {
@@ -100,7 +100,7 @@ class BaseElement extends BaseLogic implements Element
             }
         }
         if (isset($arr['serie_id'])) {
-            if (($tmp = Help::getDB()->fetchElementRow(new Type('serie'), $arr['serie_id']))) {
+            if (($tmp = db()->fetchElementRow(new Type('serie'), $arr['serie_id']))) {
                 if ($brand_id = $tmp->brand_id) {
                     $arr = array_merge($arr, array('brand_id' => $brand_id));
                 } else {
@@ -193,13 +193,13 @@ class BaseElement extends BaseLogic implements Element
 
             return false;
         }
-        $linked_types = Help::getDB()->getLinkTables($peat_type);
+        $linked_types = db()->getLinkTables($peat_type);
         foreach ($linked_types as $linked_type_name => $relation) {
             if ('x_value' === $linked_type_name) { // linked property values are a special breed...
                 if ('properties' === $relation) {
                     if (false === isset($this->row->__x_values__)) {
                         // to improve performance we only get property slug and title, and property_value slug and title
-                        $this->row->__x_values__ = Help::getDB()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
+                        $this->row->__x_values__ = db()->fetchPropertyRowsLinked($peat_type, $id) ?? array();
                         $this->row->__x_values__['item_count'] = count($this->row->__x_values__);
                     }
                 } elseif (1 === $this->nested_level) { // only get these from base property and property_value
@@ -210,7 +210,7 @@ class BaseElement extends BaseLogic implements Element
                         $plural_tag = "__{$element_name}s__";
                         if (false === isset($this->row->{$plural_tag})) {
                             $this->row->{$plural_tag} = array();
-                            if (($tmp = Help::getDB()->fetchElementRowsLinkedX(
+                            if (($tmp = db()->fetchElementRowsLinkedX(
                                 $peat_type, $id, $linked_type, $this->variant_page_size, $this->variant_page_counter, $this->getProperties()
                             ))) {
                                 foreach ($tmp as $key => $row) {
@@ -228,7 +228,7 @@ class BaseElement extends BaseLogic implements Element
                 $plural_tag = "__{$linked_type_name}s__"; // this is for the template etc., '__files__' in stead of 'file'
                 if (false === isset($this->row->{$plural_tag})) {
                     $this->row->{$plural_tag} = array();
-                    if (($tmp = Help::getDB()->fetchElementRowsLinked(
+                    if (($tmp = db()->fetchElementRowsLinked(
                         $peat_type, $id, $linked_type, $relation, $this->variant_page_size, $this->variant_page_counter
                     ))) {
                         // in the deepest level, only display the first record (e.g. first image) when requested
@@ -259,7 +259,7 @@ class BaseElement extends BaseLogic implements Element
     {
         unset($this->linked_types); // these are possibly changed
         if (($sub_type = new Type($sub_element_name))) {
-            if (Help::getDB()->upsertLinked($this->getType(), $this->getId(), $sub_type, $sub_id, $unlink)) {
+            if (db()->upsertLinked($this->getType(), $this->getId(), $sub_type, $sub_id, $unlink)) {
                 // todo special case for the element unlinked is really not nice
                 if (true === $unlink) {
                     $element = $sub_type->getElement()->fetchById($sub_id);
@@ -278,7 +278,7 @@ class BaseElement extends BaseLogic implements Element
 
     public function linkX(int $property_id, int $property_value_id): bool
     {
-        if (Help::getDB()->addXValueLink($this->getType(), $this->getId(), $property_id, $property_value_id)) {
+        if (db()->addXValueLink($this->getType(), $this->getId(), $property_id, $property_value_id)) {
             return $this->reCache();
         } else {
             $this->addError('Could not link property');
@@ -304,21 +304,21 @@ class BaseElement extends BaseLogic implements Element
             $link_element = $linkable_type->getElement($element_row);
             if ($link_element->getSlug() === $slug) continue; // don't process the dropped item in the row
             if ($link_element->getSlug() === $before_slug) {
-                $dropped_element = Help::getDB()->fetchElementIdAndTypeBySlug($slug);
-                Help::getDB()->upsertLinked($this->getType(), $this->getId(),
+                $dropped_element = db()->fetchElementIdAndTypeBySlug($slug);
+                db()->upsertLinked($this->getType(), $this->getId(),
                     new Type($dropped_element->type_name), $dropped_element->id, false, $keep_order);
                 $keep_order++;
                 $is_ordered = true;
             }
             if ($link_element->getRow()->{$order_column} !== $keep_order) {
-                Help::getDB()->upsertLinked($this->getType(), $this->getId(),
+                db()->upsertLinked($this->getType(), $this->getId(),
                     $link_element->getType(), $link_element->getId(), false, $keep_order);
             }
             $keep_order++;
         }
         // when the dropped item could not be ordered, it is dropped outside the list, must be unlinked
         if (false === $is_ordered) {
-            $dropped_element = Help::getDB()->fetchElementIdAndTypeBySlug($slug);
+            $dropped_element = db()->fetchElementIdAndTypeBySlug($slug);
             $this->link($dropped_element->type_name, $dropped_element->id, true);
         }
         if (true === $full_feedback) {
@@ -352,7 +352,7 @@ class BaseElement extends BaseLogic implements Element
             //$relation = 'cross_child';
             $GLOBALS['slugs'] = new \stdClass();
 
-            return Help::getDB()->fetchElementRowsLinked(
+            return db()->fetchElementRowsLinked(
                 $peat_type,
                 $id,
                 $linked_type,
@@ -384,10 +384,10 @@ class BaseElement extends BaseLogic implements Element
             if (false === is_int($key)) continue;
             if ($element_row->x_value_id === $x_value_id) continue; // don't process the dropped item in the row
             if ($element_row->x_value_id === $before_x_value_id) {
-                Help::getDB()->updateColumns($table_name, array('o' => $keep_order), $x_value_id);
+                db()->updateColumns($table_name, array('o' => $keep_order), $x_value_id);
                 $keep_order++;
             }
-            Help::getDB()->updateColumns($table_name, array('o' => $keep_order), $element_row->x_value_id);
+            db()->updateColumns($table_name, array('o' => $keep_order), $element_row->x_value_id);
             $keep_order++;
         }
         unset($this->linked_types);
@@ -402,7 +402,7 @@ class BaseElement extends BaseLogic implements Element
     public function reCache(): bool
     {
         if (true === isset($this->row->slug)) {
-            return Help::getDB()->reCacheWithWarmup($this->row->slug);
+            return db()->reCacheWithWarmup($this->row->slug);
         }
 
         return false;
@@ -467,7 +467,7 @@ class BaseElement extends BaseLogic implements Element
             if ($timestamp > Setup::getNow()) {
                 $this->row->is_published = false;
                 // and also set it to stale on the specific date so it will in fact be published
-                Help::getDB()->markStaleFrom($slug, $this->row->date_published);
+                db()->markStaleFrom($slug, $this->row->date_published);
             }
         }
         // getOutput must be after fetchLinked for the parser to take advantage of it
@@ -514,14 +514,14 @@ class BaseElement extends BaseLogic implements Element
             return;
         }
         /* since 0.8.16 remove nonsense properties so they don’t turn up in the path as well */
-        $allowed_properties = Help::getDB()->fetchPropertiesForInstance();
+        $allowed_properties = db()->fetchPropertiesForInstance();
         $allowed_properties['price_min'] = '';
         $allowed_properties['price_max'] = '';
         foreach ($properties as $name => $values) {
             if (false === isset($allowed_properties[$name])) unset ($properties[$name]);
         }
         // @since 0.32.0 remove nonsense values as well, they are ignored by the filter but would end up in the path (and cache)
-        $valid = Help::getDB()->fetchPropertyValueIds();
+        $valid = db()->fetchPropertyValueIds();
         foreach ($properties as $name => $values) {
             $properties[$name] = array_values(array_filter($values, static function ($value) use ($name, $valid) {
                 if ('price_min' === $name || 'price_max' === $name) return null !== Help::asFloat($value);
