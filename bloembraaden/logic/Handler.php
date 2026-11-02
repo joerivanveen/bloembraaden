@@ -433,6 +433,7 @@ class Handler extends BaseLogic
                         // filter out session variables that may not be set from the client
                         if (in_array($name, array('csrf_token', 'import_file_name', 'order_number', 'umami_identifier'))
                             || str_starts_with($name, '.locks.')
+                            || str_starts_with($name, '.server.') // server-only session vars
                         ) {
                             $this->addMessage(sprintf(__('Session variable %s cannot be set.', 'peatcms'), htmlentities($name)), 'warn');
                         } else {
@@ -557,6 +558,8 @@ class Handler extends BaseLogic
                 } elseif ('order' === $action) {
                     if (true === Help::turnstileVerify($instance, $post_data)) {
                         $post_data = $this->resolver->escape($post_data);
+                        // vat validity is determined by the server only, never accept it from the client
+                        unset($post_data->vat_valid, $post_data->vat_history);
                         if (false === isset($post_data->shoppinglist)) {
                             $this->addError('Shoppinglist is not set for order action.');
                             $out = true;
@@ -587,13 +590,12 @@ class Handler extends BaseLogic
                             if (true === $valid) {
                                 // check vat, if supplied
                                 if (true === isset($post_data->vat_number, $post_data->vat_country_iso2)) {
-                                    $check = Help::validate_vat($post_data->vat_country_iso2, $post_data->vat_number);
-                                    if (false === isset($check['valid']) || false === $check['valid']) {
+                                    if (null === ($vat_validation = $this->checkVat((string)$post_data->vat_country_iso2, (string)$post_data->vat_number))) {
                                         $valid = false;
                                         $this->addMessage(__('Vat number not valid according to VIES.', 'peatcms'), 'warn');
                                     } else {
                                         $post_data->vat_valid = true;
-                                        $post_data->vat_history = json_encode($check);
+                                        $post_data->vat_history = $vat_validation->history;
                                     }
                                 }
                             }
@@ -872,7 +874,7 @@ class Handler extends BaseLogic
                         $out['__user__'] = Help::$session->getUser()->getOutput();
                     }
                 } elseif ('validate_vat' === $action) {
-                    $out = Help::validate_vat($post_data->country_iso2, $post_data->number);
+                    $this->checkVat((string)($post_data->country_iso2 ?? ''), (string)($post_data->number ?? ''), $out);
                 } elseif (('update_address' === $action || 'delete_address' === $action)) {
                     if (true === Help::turnstileVerify($instance, $post_data)) {
                         //$post_data = $this->resolver->escape($post_data);
@@ -2070,6 +2072,47 @@ class Handler extends BaseLogic
         }
 
         return false;
+    }
+
+    /**
+     * Validates a vat number with VIES and remembers a positive result in the server-only session var
+     * .server.vat_validation, so the order can rely on it and VIES is not called again for the same number.
+     *
+     * @param string $country_iso2
+     * @param string $number
+     * @param array|null $result will hold the VIES result array (as returned by Help::validate_vat)
+     * @return \stdClass|null the validation (country_iso2, number, history) when valid, null otherwise
+     */
+    private function checkVat(string $country_iso2, string $number, ?array &$result = null): ?\stdClass
+    {
+        $session = Help::$session;
+        $country_iso2 = strtoupper(trim($country_iso2));
+        $number = strtoupper(str_replace(' ', '', $number));
+        if (($validation = $session->getValue('.server.vat_validation'))
+            && $validation->country_iso2 === $country_iso2
+            && $validation->number === $number
+        ) {
+            $result = array('success' => true, 'valid' => true, 'response' => json_decode($validation->history)->response ?? null);
+
+            return $validation;
+        }
+        $result = Help::validate_vat($country_iso2, $number);
+        if (true === isset($result['valid']) && true === $result['valid']) {
+            $validation = (object)array(
+                'country_iso2' => $country_iso2,
+                'number' => $number,
+                'history' => json_encode($result),
+            );
+            $session->setVar('.server.vat_validation', $validation);
+
+            return $validation;
+        }
+        // only forget a previous validation when VIES actually answered (not when the service is unavailable)
+        if (true === isset($result['success']) && true === $result['success']) {
+            $session->delVar('.server.vat_validation');
+        }
+
+        return null;
     }
 
     /**

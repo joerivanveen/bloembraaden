@@ -489,8 +489,10 @@ class Help
     {
         // check availability: https://ec.europa.eu/taxation_customs/vies/#/self-monitoring
         $number = strtoupper(str_replace(' ', '', $number));
+        $country_iso2 = strtoupper(trim($country_iso2));
         // VAT numbers are 8 to 12 chars long and may contain only alphanumeric chars
-        if (2 !== strlen($country_iso2) || false === preg_match('/^[A-Z0-9]{8,12}$/', $number)) {
+        // NOTE preg_match returns 0 (not false) when there is no match, both values are used in the VIES url
+        if (1 !== preg_match('/^[A-Z]{2}$/', $country_iso2) || 1 !== preg_match('/^[A-Z0-9]{8,12}$/', $number)) {
             return array('success' => true, 'valid' => false, 'response' => 'Incorrect format');
         }
         $ch = curl_init();
