@@ -3931,22 +3931,34 @@ class DB extends Base
         return $tables;
     }
 
+    /**
+     * Tables without instance_id (crosslink tables and some user data tables) belong to an instance through
+     * the element they point to, this returns that foreign table and id column, or null for regular tables.
+     *
+     * @param string $table_name
+     * @return array|null [foreign table name, foreign id column name]
+     */
+    private function getInstanceForeignKey(string $table_name): ?array
+    {
+        if (str_contains($table_name, '_x_')) {
+            $split = explode('_x_', $table_name);
+            $foreign_part = str_replace('properties', 'property', $split[1]);
+
+            return array("cms_$foreign_part", "{$foreign_part}_id");
+        }
+        if ('_order_variant' === $table_name || '_shoppinglist_variant' === $table_name) {
+            $foreign_table = str_replace('_variant', '', $table_name);
+
+            return array($foreign_table, substr("{$foreign_table}_id", 1));
+        }
+
+        return null;
+    }
+
     public function queryRowsForExport(string $table_name, int $instance_id): \PDOStatement
     {
-        if (
-            false !== ($is_x_table = strpos($table_name, '_x_'))
-            || '_order_variant' === $table_name
-            || '_shoppinglist_variant' === $table_name
-        ) {
-            if ($is_x_table) {
-                $split = explode('_x_', $table_name);
-                $foreign_part = str_replace('properties', 'property', $split[1]);
-                $foreign_table = "cms_$foreign_part";
-                $foreign_id = "{$foreign_part}_id";
-            } else {
-                $foreign_table = str_replace('_variant', '', $table_name);
-                $foreign_id = substr("{$foreign_table}_id", 1);
-            }
+        if (null !== ($foreign = $this->getInstanceForeignKey($table_name))) {
+            [$foreign_table, $foreign_id] = $foreign;
             $statement = $this->conn->prepare("SELECT * FROM $table_name WHERE $foreign_id IN
                     (SELECT $foreign_id FROM $foreign_table WHERE instance_id = ?);");
         } else {
@@ -3955,6 +3967,28 @@ class DB extends Base
         $statement->execute(array($instance_id));
 
         return $statement;
+    }
+
+    /**
+     * Crosslink tables have no instance_id, their rows are deleted through the element they point to.
+     * NOTE call this before the elements themselves are deleted, or the rows cannot be found anymore.
+     *
+     * @param string $table_name a crosslink (_x_) table
+     * @param int $instance_id
+     * @return int number of rows deleted
+     * @since 0.32.0
+     */
+    public function deleteCrosslinksForInstance(string $table_name, int $instance_id): int
+    {
+        if (false === str_contains($table_name, '_x_')) return 0;
+        [$foreign_table, $foreign_id] = $this->getInstanceForeignKey($table_name);
+        $statement = $this->conn->prepare("DELETE FROM $table_name WHERE $foreign_id IN
+                (SELECT $foreign_id FROM $foreign_table WHERE instance_id = ?);");
+        $statement->execute(array($instance_id));
+        $row_count = $statement->rowCount();
+        $statement = null;
+
+        return $row_count;
     }
 
     /**

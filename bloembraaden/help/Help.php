@@ -901,6 +901,12 @@ class Help
         $tables = array_map(function ($value) {
             return $value->table_name;
         }, $db->fetchTablesToExport(true));
+        // crosslink tables have no instance_id, clear them now through their elements, before those are deleted
+        foreach ($tables as $table_name) {
+            if (($affected = $db->deleteCrosslinksForInstance($table_name, $instance_id))) {
+                $logger->log("Cleared $affected rows from $table_name");
+            }
+        }
         /**
          * ignore _id columns that are false
          * _id columns that are string, translate from that other column
@@ -1053,8 +1059,10 @@ class Help
                                                     $row[$col_name] = 0;
                                                 } else {
                                                     if (false === isset($ids_for_col[$col_value])) {
-                                                        $logger->log("Id $col_value not found for column $col_name");
-                                                        continue; // if the id was no longer in the original, no need to import
+                                                        $logger->log("Id $col_value not found for column $col_name, row skipped");
+                                                        // the id was no longer in the original, skip the whole row and continue with the next line
+                                                        $string = '';
+                                                        continue 2;
                                                     }
                                                     $row[$col_name] = $ids_for_col[$col_value];
                                                 }
