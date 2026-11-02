@@ -2451,11 +2451,11 @@ class Handler extends BaseLogic
         };
 
         if (false === $out->success) {
-            if (true === isset($post_data->failure_url)
+            if (true === isset($post_data->failure_url) && true === is_string($post_data->failure_url)
                 && null !== ($url = $safeUrl($post_data->failure_url))
             ) {
                 $out->redirect_uri = $url;
-            } elseif (true === isset($post_data->failure_message)) {
+            } elseif (true === isset($post_data->failure_message) && true === is_string($post_data->failure_message)) {
                 $this->addMessage($post_data->failure_message, 'error');
             } else {
                 $this->addMessage(__('Form posting failed.', 'peatcms'), 'error');
@@ -2464,11 +2464,11 @@ class Handler extends BaseLogic
             return $out;
         }
 
-        if (true === isset($post_data->success_url)
+        if (true === isset($post_data->success_url) && true === is_string($post_data->success_url)
             && null !== ($url = $safeUrl($post_data->success_url))
         ) {
             $out->redirect_uri = $url;
-        } elseif (true === isset($post_data->success_message)) {
+        } elseif (true === isset($post_data->success_message) && true === is_string($post_data->success_message)) {
             $this->addMessage($post_data->success_message);
         }
 
