@@ -488,15 +488,21 @@ class Help
     public static function validate_vat(string $country_iso2, string $number): array
     {
         // check availability: https://ec.europa.eu/taxation_customs/vies/#/self-monitoring
-        $number = strtoupper(str_replace(' ', '', $number));
-        $country_iso2 = strtoupper(trim($country_iso2));
-        // VAT numbers are 8 to 12 chars long and may contain only alphanumeric chars
+        // Greece uses EL as vat prefix and VIES member state code instead of its iso2 code GR
+        if ('GR' === ($member_state = strtoupper(trim($country_iso2)))) $member_state = 'EL';
+        // a two letter country code and a vat number of 8 to 12 alphanumeric chars, optionally preceded by the country prefix,
+        // separators (spaces, dots, dashes) in the vat number are ignored
         // NOTE preg_match returns 0 (not false) when there is no match, both values are used in the VIES url
-        if (1 !== preg_match('/^[A-Z]{2}$/', $country_iso2) || 1 !== preg_match('/^[A-Z0-9]{8,12}$/', $number)) {
+        if (1 !== preg_match(
+                '/^([A-Z]{2}):(?:\1|(?<=^EL:)GR)?([A-Z0-9]{8,12})$/',
+                $member_state . ':' . preg_replace('/[^A-Z0-9]/', '', strtoupper($number)),
+                $matches
+            )) {
             return array('success' => true, 'valid' => false, 'response' => 'Incorrect format');
         }
+        $number = $matches[2];
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/$country_iso2/vat/$number");
+        curl_setopt($ch, CURLOPT_URL, "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/$member_state/vat/$number");
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
