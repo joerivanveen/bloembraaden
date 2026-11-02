@@ -131,16 +131,31 @@ class Session extends BaseLogic
         return false;
     }
 
+    /**
+     * Argon2id hash of a random string, generated with Help::PASSWORD_HASH_OPTIONS, used to verify against when the
+     * email address is unknown, so a failed login takes the same time whether the account exists or not
+     * NOTE regenerate this when Help::PASSWORD_HASH_OPTIONS changes
+     */
+    private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=1$WWljQTMxemsvUVdrRzU3Rw$5XJGTqw2hsiq0Bugccdxgi2SwbG86ifJ70c0+VUslKs';
+
     public function login(string $email, string $password, bool $as_admin): bool
     {
-        if (($row = db()->fetchForLogin($email, $as_admin))) {
-            $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
-            $verified = password_verify($hashed, $row->hash);
-            // update hash to new way if it checks out the old way
-            if (false === $verified && true === ($verified = password_verify($password, $row->hash))) {
-                $table = $as_admin ? '_admin' : '_user';
+        $row = db()->fetchForLogin($email, $as_admin);
+        // always verify (twice, like an existing account with a wrong password) to prevent account enumeration by timing
+        $hash = (null === $row) ? self::DUMMY_HASH : $row->hash;
+        $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
+        $verified = password_verify($hashed, $hash);
+        $verified_old_way = (false === $verified && true === password_verify($password, $hash));
+        if (null !== $row) {
+            $table = $as_admin ? '_admin' : '_user';
+            if (true === $verified_old_way) {
+                // update hash to new way if it checks out the old way
+                $verified = true;
                 db()->updateColumns($table, array('password_hash' => Help::passwordHash($password)), $row->id);
                 $this->addError(sprintf('Password for %s with id %d updated to new method.', $as_admin ? 'admin' : 'user', $row->id));
+            } elseif (true === $verified && true === Help::passwordNeedsRehash($row->hash)) {
+                // the hash parameters changed, upgrade the hash while we have the password
+                db()->updateColumns($table, array('password_hash' => Help::passwordHash($password)), $row->id);
             }
 
             if (true === $verified) {
@@ -156,8 +171,6 @@ class Session extends BaseLogic
             }
         }
         $this->addMessage(__('Name / pass combination unknown.', 'peatcms'), 'warn');
-        // delay based on user input against timing attacks
-        usleep(abs(crc32("pseudorandomstr1ng$email$password") % 1000));
 
         return false;
     }

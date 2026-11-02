@@ -597,7 +597,19 @@ class Help
     public static function passwordHash(string $password): bool|string|null
     {
         $password = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
-        return password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 15360, 'time_cost' => 128, 'threads' => 1]);
+        return password_hash($password, PASSWORD_ARGON2ID, self::PASSWORD_HASH_OPTIONS);
+    }
+
+    /**
+     * Argon2id parameters (RFC 9106 second recommended option, 64 MiB, 3 passes), existing hashes contain their own
+     * parameters so they keep verifying, and are upgraded on the next successful login (see passwordNeedsRehash)
+     * NOTE when changing these, also regenerate Session::DUMMY_HASH with the same parameters
+     */
+    public const PASSWORD_HASH_OPTIONS = array('memory_cost' => 65536, 'time_cost' => 3, 'threads' => 1);
+
+    public static function passwordNeedsRehash(string $hash): bool
+    {
+        return password_needs_rehash($hash, PASSWORD_ARGON2ID, self::PASSWORD_HASH_OPTIONS);
     }
 
     public static function tokenHash(string $token): bool|string|null
