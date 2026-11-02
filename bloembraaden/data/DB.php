@@ -3416,6 +3416,34 @@ class DB extends Base
         return $this->insertRowAndReturnLastId('_instance_domain', $data);
     }
 
+    /**
+     * Whether the instance has content, so an import would mix with it. A new instance (only the homepage) has none.
+     * @param int $instance_id
+     * @return bool true when there are templates, elements other than one page, or more than one page
+     * @since 0.32.0
+     */
+    public function instanceHasContent(int $instance_id): bool
+    {
+        $tables = array('_template');
+        foreach (array('brand', 'embed', 'file', 'image', 'page', 'product', 'property', 'property_value', 'serie', 'variant') as $index => $type_name) {
+            $tables[] = "cms_$type_name";
+        }
+        $counts = implode(' UNION ALL ', array_map(static function ($table_name) {
+            return "SELECT '$table_name' AS table_name, COUNT(*) AS count FROM $table_name WHERE instance_id = :instance_id AND deleted = FALSE";
+        }, $tables));
+        $statement = $this->conn->prepare("$counts;");
+        $statement->bindValue(':instance_id', $instance_id);
+        $statement->execute();
+        $counts = $statement->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $statement = null;
+        foreach ($counts as $table_name => $count) {
+            // every new instance gets a homepage
+            if ((int)$count > ('cms_page' === $table_name ? 1 : 0)) return true;
+        }
+
+        return false;
+    }
+
     public function insertInstance(string $domain, string $name, int $client_id): ?int
     {
         if ($this->rowExists('_instance', array('domain' => $domain))) {

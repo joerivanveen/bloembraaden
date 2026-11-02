@@ -696,7 +696,7 @@ switch ($interval) {
             Setup::loadInstanceSettingsFor($row->instance_id);
             if (null === ($serie = $db->fetchElementRow(new Type('serie'), $row->serie_id))) {
                 echo "Error: serie $row->serie_id not found.\n";
-                // TODO 0.32.0: if there is an error, it will loop forever?
+                // TODO 0.33.0: if there is an error, it will loop forever?
                 if (($affected = count($db->updateElementsWhere(
                     new Type('variant'),
                     array('serie_id' => 0),
@@ -756,7 +756,7 @@ switch ($interval) {
         $trans->start('Purge deleted');
         echo $db->jobPurgeDeleted((int)$interval ?: 5), "\n";
         // delete cross table entries with orphaned id’s
-        // todo 0.32.0: dit is zo’n ding dat de import routine in de war kan schoppen, als die halverwege uitgevoerd wordt
+        // todo 0.33.0: dit is zo’n ding dat de import routine in de war kan schoppen, als die halverwege uitgevoerd wordt
         // dus doe iets met date_updated, dat je alleen oude weggooit? net geïmporteerde kunnen nog incorrect zijn?
         // nee toch? de ids zijn toch al vertaald adhv de element tabellen?
         $trans->start('Clear cross (_x_) tables');

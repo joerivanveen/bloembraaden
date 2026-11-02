@@ -402,8 +402,13 @@ class Handler extends BaseLogic
                     $sse->log(__('You may not import / export that instance.', 'peatcms'));
                     $sse->addError("{$admin->getRow()->name} may not import / export instance $instance_id.");
                 }
+            } elseif (null !== Help::$session->getValue('import_file_name')
+                && true === db()->instanceHasContent(Setup::$instance_id)
+                && trim((string)($props['confirm'][0] ?? '')) !== mb_strtolower($instance->getDomain()) // path is lowercase
+            ) {
+                // @since 0.32.0 importing mixes with existing content, check before the file name is removed from the session
+                $sse->log(__('This instance is not empty, to import anyway type its domain exactly as shown above in the confirm field.', 'peatcms'));
             } elseif (($import_file_name = Help::$session->getValue('import_file_name', true))) {
-                // TODO 0.32.0 check if the instance is empty, if not, request a special user-agent string
                 Help::import_into_this_instance($import_file_name, $sse);
                 // clear cache
                 $rows_affected = db()->clear_cache_for_instance(Setup::$instance_id);
