@@ -991,7 +991,9 @@ class Handler extends BaseLogic
                     if ('update_element' === $action) {
                         if (true === isset($post_data->element, $post_data->id)) {
                             if (($element = $this->getElementById($post_data->element, $post_data->id))) {
-                                if (true === $admin->isRelatedElement($element)) {
+                                if (true === $admin->isRelatedElement($element)
+                                    && true === $admin->mayUpdateColumn($element->getType()->tableName(), (string)$post_data->column_name)
+                                ) {
                                     // @since 0.8.19 check the prices
                                     if (in_array($post_data->column_name, array('price', 'price_from'))) {
                                         $value = Help::asFloat($post_data->column_value);
@@ -1468,8 +1470,11 @@ class Handler extends BaseLogic
                             $out = array('success' => db()->cancelOrder($order_id));
                         }
                     } elseif ('update_column' === $action) {
-                        // security check
-                        if (true === $admin->canDo($action, $post_data->table_name, $post_data->id)) {
+                        // security check: the column must be updatable, and the row must belong to the admin
+                        if (true === isset($post_data->table_name, $post_data->column_name, $post_data->id)
+                            && true === $admin->mayUpdateColumn((string)$post_data->table_name, (string)$post_data->column_name)
+                            && true === $admin->canDo($action, $post_data->table_name, $post_data->id)
+                        ) {
                             $posted_column_name = $post_data->column_name;
                             $posted_table_name = $post_data->table_name;
                             $posted_value = $post_data->value;

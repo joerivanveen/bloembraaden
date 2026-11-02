@@ -58,6 +58,56 @@ class Admin extends BaseLogic
         return $allowed;
     }
 
+    /**
+     * Tables (besides all cms_ tables) that admins may update column by column
+     */
+    private const UPDATABLE_TABLES = array(
+        '_instance',
+        '_instance_domain',
+        '_address_shop',
+        '_template',
+        '_country',
+        '_payment_service_provider',
+        '_redirect',
+        '_admin',
+        '_vat_category',
+    );
+
+    /**
+     * Columns that determine ownership or security, these can never be updated by an admin directly
+     */
+    private const PROTECTED_COLUMNS = array(
+        'instance_id',
+        'client_id',
+        'admin_id',
+        'user_id',
+        'session_id',
+        'password_hash',
+        'token_hash',
+        'filename_saved',
+    );
+
+    /**
+     * Checks whether a column may be updated by an admin through the generic update actions,
+     * this does not check whether the row belongs to the admin, use canDo() or isRelatedElement() for that
+     *
+     * @param string $table_name
+     * @param string $column_name
+     * @return bool
+     */
+    public function mayUpdateColumn(string $table_name, string $column_name): bool
+    {
+        $allowed = (true === str_starts_with($table_name, 'cms_') || true === in_array($table_name, self::UPDATABLE_TABLES, true))
+            && false === in_array($column_name, self::PROTECTED_COLUMNS, true)
+            && $column_name !== db()->getTableInfo($table_name)->getPrimaryKeyColumn()->getName();
+        if (false === $allowed) {
+            $this->addError(sprintf('Admin %1$s may not update %2$s.%3$s.', $this->getId(), $table_name, $column_name));
+            $this->addMessage(__('Security warning, after multiple warnings your account may be blocked.', 'peatcms'), 'warn');
+        }
+
+        return $allowed;
+    }
+
     public function checkPassword(string $password): bool
     {
         $hashed = hash_hmac('sha256', $password, Setup::$HASHKEY, false);
