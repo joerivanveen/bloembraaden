@@ -4649,6 +4649,7 @@ class DB extends Base
         if (null === $element_row) return false;
         $element = $peat_type->getElement($element_row);
         $element_row = null;
+        $this->markDirtyForSearchAndFilters();
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
         foreach ($linked_types as $type => $relation) {
@@ -4684,6 +4685,48 @@ class DB extends Base
         }
 
         return true;
+    }
+
+    /**
+     * Search pages, filtered pages and filter files cannot be invalidated by relation, leave a marker so
+     * the 5-minute job removes them for this instance, which means at most once every 5 minutes
+     * @return void
+     * @since 0.32.0
+     */
+    private function markDirtyForSearchAndFilters(): void
+    {
+        if (isset($this->stale_slugs['__dirty__'])) return; // once per request
+        $this->stale_slugs['__dirty__'] = true;
+        $folder = Setup::$DBCACHE . 'dirty';
+        if (false === file_exists($folder)) mkdir($folder, 0755);
+        touch("$folder/" . Setup::$instance_id);
+    }
+
+    /**
+     * Removes cached search pages for the instance, they are cached again when visited.
+     * Filtered pages (elements with a path containing a slash) are marked stale instead, so they
+     * are refreshed by the daemon and remain in the sitemap.
+     * @param int $instance_id
+     * @return array the number of search rows removed and the number of filtered rows marked stale
+     * @since 0.32.0
+     */
+    public function jobInvalidateSearchAndFilteredCache(int $instance_id): array
+    {
+        $statement = $this->conn->prepare("DELETE FROM _cache WHERE instance_id = ? AND type_name = 'search';");
+        $statement->execute(array($instance_id));
+        $deleted = $statement->rowCount();
+        $statement = $this->conn->prepare("
+            INSERT INTO _stale (instance_id, slug)
+            SELECT DISTINCT c.instance_id, c.slug FROM _cache c
+            WHERE c.instance_id = :instance_id AND c.slug LIKE '%/%'
+            AND NOT EXISTS (SELECT 1 FROM _stale s WHERE s.instance_id = c.instance_id AND s.slug = c.slug);
+        ");
+        $statement->bindValue(':instance_id', $instance_id);
+        $statement->execute();
+        $marked = $statement->rowCount();
+        $statement = null;
+
+        return array($deleted, $marked);
     }
 
     /**

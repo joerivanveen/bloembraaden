@@ -672,6 +672,21 @@ switch ($interval) {
     case '5': // interval should be 5
         $trans->start('Delete expired search pages from cache');
         echo $db->jobDeleteExpiredSearchCache(Setup::$SEARCH_CACHE_MAX_MINUTES), "\n";
+        // @since 0.32.0 after edits, search pages, filtered pages and filter files are refreshed at most every 5 minutes
+        $trans->start('Invalidate search and filtered pages for edited instances');
+        $swept = 0;
+        foreach (glob(Setup::$DBCACHE . 'dirty/*') ?: array() as $index => $marker) {
+            unlink($marker); // an edit during the sweep places a new marker
+            if (0 === ($instance_id = (int)basename($marker))) continue;
+            [$deleted, $marked] = $db->jobInvalidateSearchAndFilteredCache($instance_id);
+            $files = 0;
+            foreach (glob(Setup::$DBCACHE . "filter/$instance_id/*.serialized") ?: array() as $index2 => $filename) {
+                if (true === unlink($filename)) ++$files;
+            }
+            echo "($instance_id) $deleted search pages deleted, $marked filtered pages marked stale, $files filter files deleted.\n";
+            ++$swept;
+        }
+        if (0 === $swept) ob_clean();
         $trans->start('Parent chains');
         // when some serie has its brand_id updated
         $rows = $db->jobIncorrectChainForProduct();
