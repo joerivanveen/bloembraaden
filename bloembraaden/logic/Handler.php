@@ -816,19 +816,18 @@ class Handler extends BaseLogic
                             if (true === isset($post_data->nickname)) $data['nickname'] = $post_data->nickname;
                             if (true === isset($post_data->email)) {
                                 if (true === isset($post_data->password_challenge)
-                                    && true === $user->checkPassword($post_data->password_challenge)
+                                    && true === $user->checkPassword((string) $post_data->password_challenge)
                                 ){
                                     $data['email'] = $post_data->email;
-                                } else {
-                                    $this->addMessage(__('Email address could not be updated.', 'peatcms'), 'warn');
                                 }
                             }
                             if (count($data) > 0) {
-                                $out = array('success' => $user->updateRow($data));
+                                $out = array('success' => Help::getDB()->updateElement($user->getType(), $data, $user->getId()));
                             }
-                            if (true === isset($out)) {
-                                $out['__user__'] = $user->getOutput(); // get a new user
+                            if (false === $out['success']) {
+                                $this->addMessage(__('Email address could not be updated.', 'peatcms'), 'warn');
                             }
+                            $out['__user__'] = (new User($user->getId()))->getOutput(); // get a new user
                         }
                     } else {
                         $out = true; // turnstile failed, so no action

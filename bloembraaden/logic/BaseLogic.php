@@ -289,22 +289,6 @@ class BaseLogic extends Base
     }
 
     /**
-     * @param array $row
-     * @return bool
-     * @since 0.7.9
-     */
-    public function updateRow(array $row): bool
-    {
-        // for each element in $row update $this->row
-        foreach ($row as $item => $value) {
-            $this->row->{$item} = $value;
-        }
-
-        // todo maybe save everything on shutdown?
-        return Help::getDB()->updateElement($this->getType(), $row, $this->getId());
-    }
-
-    /**
      * @return string
      * @since 0.6.0 for caching
      */
