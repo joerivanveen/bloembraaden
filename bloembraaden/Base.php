@@ -66,11 +66,12 @@ class Base
         // prepare the message to log and the message for frontend
         $s = str_replace(array("\n", "\r", "\t"), '', strip_tags($message_for_frontend));
         $error_message = sprintf(
-            "%s\t%s\t%s\t%s\nFATAL: $e\n",
+            "%s\t%s\t%s\t%s\nFATAL: %s\n",
             ($_SERVER['REMOTE_ADDR'] ?? 'INTERNAL'),
             date('Y-m-d H:i:s'),
             ($_SERVER['REQUEST_METHOD'] ?? 'NON-WEB'),
-            ($_SERVER['REQUEST_URI'] ?? '')
+            ($_SERVER['REQUEST_URI'] ?? ''),
+            $e
         );
         try {
             if (0 !== count(($messages = Help::getErrorMessages()))) {
