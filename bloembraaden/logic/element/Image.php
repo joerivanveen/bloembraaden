@@ -235,7 +235,7 @@ class Image extends BaseElement
                 $css_class .= ' bloembraaden-brightness-' . min(floor($brightness / 7.9), 10);
                 $data['css_class'] = trim(preg_replace('/( )+/', ' ', $css_class));
             }
-            imagedestroy($newImage);
+            unset($newImage);
             // always requests webp, will be redirected to jpg if necessary webserver config
             $relativePath = substr($newPath, strlen(Setup::$CDNPATH));
             // remember values
@@ -250,7 +250,7 @@ class Image extends BaseElement
                 return false;
             }
         }
-        imagedestroy($image);
+        unset($image);
         // update the element
         $data['date_processed'] = 'NOW()';
         if (true === $this->update($data)) {
@@ -312,7 +312,7 @@ class Image extends BaseElement
                 $totalBrightness += (max($red, $green, $blue) + min($red, $green, $blue)) / 2;
             }
         }
-        imagedestroy($img);
+        unset($img);
 
         return ($totalBrightness / ($width * $height)) / 2.55;
     }
