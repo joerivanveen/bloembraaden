@@ -370,7 +370,7 @@ class Handler extends BaseLogic
             }
             if (($slug = $props['slug'][0])) {
                 // find element by slug
-                if (null === ($row = db()->fetchElementIdAndTypeBySlug($slug))) {
+                if (null === ($row = db()->fetchElementIdAndTypeBySlug($slug, true))) {
                     $this->addError(sprintf('process_file: no element found with slug %s.', $slug));
                     $sse->log(sprintf(__('Could not process %s, check your logs to know more.', 'peatcms'), $slug));
                 }
@@ -1661,7 +1661,7 @@ class Handler extends BaseLogic
                                 if (true === str_starts_with($post_data['content_type'], 'image')) $default_type = 'image';
                                 // process it in cms
                                 if (true === isset($_SERVER['HTTP_X_SLUG'])) {
-                                    if ($row = db()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']))) {
+                                    if ($row = db()->fetchElementIdAndTypeBySlug(urldecode($_SERVER['HTTP_X_SLUG']), true)) {
                                         if (in_array($row->type_name, array('file', 'image'))) { // update the existing element when file or image
                                             $el = $this->updateElement($row->type_name, $post_data, $row->id);
                                         } else { // make a new element and link it to this posted element (if possible)
