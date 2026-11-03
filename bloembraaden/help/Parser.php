@@ -225,10 +225,13 @@ class Parser extends Base
                         $index++; // back to 1-based
                         echo '<p class="error">', sprintf(__('Image %d not found.', 'peatcms'), $index), '</p>';
                     }
+                    $end++;
+                    $this->pointer = $end;
+                    $sig = '';
+                } else {
+                    // no closing bracket: setting the pointer to $end + 1 (= 0) would restart the parsing from the beginning, loop
+                    $this->addMessage('Unclosed image tag found near: ' . substr($text, max(0, $pointer - 10), 20), 'warn');
                 }
-                $end++;
-                $this->pointer = $end;
-                $sig = '';
             } elseif ('a' === $tag) {
                 $pointer = $this->pointer;
                 $positions = $this->nextPartOfCommandOnSameLine($text, ']:', $pointer);
