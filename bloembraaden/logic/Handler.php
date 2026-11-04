@@ -852,7 +852,7 @@ class Handler extends BaseLogic
                                 $out = array('success' => db()->updateElement($user->getType(), $data, $user->getId()));
                             }
                             if (false === $out['success']) {
-                                $this->addMessage(__('Email address could not be updated.', 'peatcms'), 'warn');
+                                $this->addMessage(__('Account could not be updated.', 'peatcms'), 'warn');
                             }
                             $out['__user__'] = (new User($user->getId()))->getOutput(); // get a new user
                         }
