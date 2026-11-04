@@ -16,7 +16,7 @@ CREATE TABLE "public"."_user"
     "date_updated"  Timestamp With Time Zone DEFAULT NOW() NOT NULL,
     "deleted"       Boolean                  DEFAULT false NOT NULL,
     CONSTRAINT "unique__user_user_id" UNIQUE ("user_id"),
-    CONSTRAINT "unique__user_nickname" UNIQUE ("instance_id", "nickname"),
+    -- CONSTRAINT "unique__user_nickname" UNIQUE ("instance_id", "nickname"),
     CONSTRAINT "unique__user_email" UNIQUE ("instance_id", "email")
 );
 ;
