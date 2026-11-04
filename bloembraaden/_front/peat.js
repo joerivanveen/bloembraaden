@@ -169,6 +169,8 @@ function Address(wrapper) {
     }
     this.enhanceLists();
     this.enhanceWrapper();
+    // remember the values as rendered, to determine whether the address has unsaved changes
+    this.saved_fields = this.getFields();
 }
 
 Address.prototype.enhanceWrapper = function () {
@@ -314,6 +316,9 @@ Address.prototype.enhanceInput = function (input) {
             }, 200);
         });
     } else {
+        input.addEventListener('input', function () {
+            this.peatcms_address.updateDirty();
+        });
         input.addEventListener('change', function () {
             this.peatcms_address.send();
         });
@@ -430,7 +435,10 @@ Address.prototype.send = function () {
 }
 Address.prototype.save = function (fields) {
     const self = this, wrapper = self.wrapper, timestamp = Date.now();
-    wrapper.setAttribute('data-updating', '1');
+    requestAnimationFrame(function() {
+        wrapper.setAttribute('data-updating', '1');
+        wrapper.removeAttribute('data-dirty');
+    });
     if (fields.hasOwnProperty('address_id')) {
         NAV.ajax('/__action__/update_address', fields, function (json) {
             self.updateClientOnly(json);
@@ -512,6 +520,25 @@ Address.prototype.getUserAddress = function (fields) {
     }
     return {}; // not found
 }
+/**
+ * sets data-dirty on the wrapper when any input differs from the last saved value, removes it otherwise
+ */
+Address.prototype.updateDirty = function () {
+    const saved = this.saved_fields || {}, inputs = this.inputs;
+    let i, len, input, input_name, value;
+    for (i = 0, len = inputs.length; i < len; ++i) {
+        input = inputs[i];
+        // suggest search box is not part of the address
+        if ('search' === input.type || input === this.myparcel) continue;
+        input_name = input.name.replace('shipping_', '').replace('billing_', '');
+        value = saved.hasOwnProperty(input_name) && null !== saved[input_name] ? String(saved[input_name]) : '';
+        if (input.value !== value) {
+            this.wrapper.setAttribute('data-dirty', '1');
+            return;
+        }
+    }
+    this.wrapper.removeAttribute('data-dirty');
+}
 Address.prototype.updateClientOnly = function (fields) {
     const inputs = this.inputs, user_address = this.getUserAddress(fields);
     let i, len, input, input_name;
@@ -527,12 +554,16 @@ Address.prototype.updateClientOnly = function (fields) {
         input_name = input.name.replace('shipping_', '').replace('billing_', '');
         if (fields.hasOwnProperty(input_name)) {
             if (document.activeElement !== input) input.value = fields[input_name];
+            // the server values are the saved values now, also for a focused input that keeps its typed value
+            if ('search' !== input.type) this.saved_fields[input_name] = fields[input_name];
         }
     }
     // update the country list in the form
     this.updateClientCountryList(fields);
     // update the gender list in the form
     this.updateClientGenderList(fields);
+    // typing during a save may leave the address dirty
+    this.updateDirty();
 }
 Address.prototype.updateClientGenderList = function (fields) {
     let options, value, i, len;
