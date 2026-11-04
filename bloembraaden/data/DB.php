@@ -18,6 +18,7 @@ class DB extends Base
         '_system',
         //'_shoppinglist', @since 0.26.0 shoppinglist itself is in history
         '_shoppinglist_variant',
+        '_payment',
         '_payment_status_update',
         '_cache',
         '_stale',

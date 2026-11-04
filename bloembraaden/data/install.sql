@@ -3464,6 +3464,9 @@ CREATE INDEX IF NOT EXISTS "index__ci_ai_ci_ai_trgm" ON "public"."_ci_ai" USING 
 -- stale slugs are always looked up by instance_id and slug
 CREATE INDEX IF NOT EXISTS "index__stale_instance_id_slug" ON "public"."_stale" USING btree ("instance_id", "slug");
 DROP INDEX IF EXISTS "index_slug_stale";
+-- filtered slugs can be as long as the ones in _cache
+ALTER TABLE "public"."_stale"
+    ALTER COLUMN "slug" TYPE Character Varying(1024);
 
 -- filter files are no longer refreshed by walking the directory, so no need to remember where that stopped
 ALTER TABLE "public"."_system"
