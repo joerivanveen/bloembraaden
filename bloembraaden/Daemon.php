@@ -73,6 +73,7 @@ class Daemon
             db()->setSystemValue('daemon_last_alive', 'NOW()');
             /* start the actual work */
             $total_count = 0;
+            $published_count = 0;
             $stove = new Warmup();
             $db->forgetMemo(); // data may have changed since the previous loop
             $done = array();
@@ -94,6 +95,14 @@ class Daemon
                     }
                     echo "\n";
                 }
+                // @since 0.32.1 a scheduled publication also changes the pages the element appears on (and filtered
+                // and search pages), whether the element itself is in cache or not, so mark those stale like an edit does
+                if (true === $row->scheduled) {
+                    Setup::loadInstanceSettingsFor($instance_id); // markStaleTheParents works for the current instance
+                    echo 'Published (', $instance_id, ') ', $stale_slug, ': ';
+                    echo (true === $db->markStaleTheParents($stale_slug)) ? 'pages marked stale' : 'NOT FOUND', "\n";
+                    ++$published_count;
+                }
                 // delete the slug when we’re done
                 $db->deleteFromStale($stale_slug, $instance_id);
                 if ($this->runningLate()) {
@@ -102,7 +111,8 @@ class Daemon
             }
             echo $total_count;
             echo " done\n";
-            if (0 === $total_count) ob_clean();
+            if (0 < $published_count) echo "$published_count scheduled publications\n";
+            if (0 === $total_count && 0 === $published_count) ob_clean();
             /* update csp and homepage slug, if necessary */
             $total_count = 0;
             $trans->start('Check instance CSP default-src and homepage slug');

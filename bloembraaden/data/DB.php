@@ -4935,7 +4935,8 @@ class DB extends Base
         $statement = $this->conn->prepare('DELETE FROM _stale WHERE instance_id = ? AND slug = ?;');
         $statement->execute(array(Setup::$instance_id, $slug));
         // insert into stale table with the correct since date
-        $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug, since) VALUES (?, ?, ?);');
+        // @since 0.32.1 marked as scheduled, so the daemon refreshes the pages it appears on as well
+        $statement = $this->conn->prepare('INSERT INTO _stale (instance_id, slug, since, scheduled) VALUES (?, ?, ?, TRUE);');
         $statement->execute(array(Setup::$instance_id, $slug, $date_from));
         $statement = null;
         $this->memo("stale.$slug", static function () {
@@ -4954,7 +4955,7 @@ class DB extends Base
     {
         // collect all the stale slugs
         $statement = $this->conn->prepare("
-            SELECT DISTINCT s.slug, s.instance_id, s.since, c.slug in_cache FROM _stale s
+            SELECT DISTINCT s.slug, s.instance_id, s.since, s.scheduled, c.slug in_cache FROM _stale s
             LEFT OUTER JOIN _cache c ON c.instance_id = s.instance_id AND c.slug = s.slug
             WHERE s.since <= NOW()
             ORDER BY s.since DESC LIMIT $limit;");

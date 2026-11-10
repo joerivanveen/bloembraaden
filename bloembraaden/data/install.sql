@@ -3496,3 +3496,13 @@ CREATE INDEX IF NOT EXISTS "index__login_attempt_account_hash_date_created"
 DROP TABLE IF EXISTS "public"."_admin_login_attempt";
 
 COMMIT;
+
+-- version 0.32.1
+
+BEGIN;
+
+-- stale rows for a scheduled publication, so the daemon refreshes the pages the element appears on as well
+ALTER TABLE "public"."_stale"
+    ADD COLUMN IF NOT EXISTS "scheduled" Boolean DEFAULT FALSE NOT NULL;
+
+COMMIT;
