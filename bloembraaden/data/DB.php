@@ -955,7 +955,9 @@ class DB extends Base
             $imploded_sub_queries = '';
         }
         if ('serie' === $type_name || 'brand' === $type_name) {
-            $where_table = "v.{$type_name}_id = (SELECT {$type_name}_id FROM cms_variant WHERE variant_id = :id)";
+            // @since 0.32.1 a variant without a serie or brand (id 0) has none in common with others, the sub query
+            // returns null then, otherwise all variants without one would match, from all instances
+            $where_table = "v.{$type_name}_id = (SELECT {$type_name}_id FROM cms_variant WHERE variant_id = :id AND {$type_name}_id <> 0)";
         } else {
             $where_table = "x.{$type_name}_id = :id";
         }
