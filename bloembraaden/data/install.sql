@@ -3501,8 +3501,52 @@ COMMIT;
 
 BEGIN;
 
+-- crosslink (_x_) tables had no indexes on their id columns, so every lookup of the elements linked to an element
+-- was a sequential scan of the whole crosslink table: index every id column that is not yet the first column of an index
+DO
+$$
+    DECLARE
+        r record;
+    BEGIN
+        FOR r IN SELECT c.table_name, c.column_name
+                 FROM information_schema.columns c
+                 WHERE c.table_schema = 'public'
+                   AND c.table_name LIKE 'cms\_%\_x\_%'
+                   AND c.column_name LIKE '%\_id'
+                   AND c.column_name <> substr(c.table_name, 5) || '_id' -- the primary key
+                   AND NOT EXISTS(SELECT 1
+                                  FROM pg_index i
+                                           JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = i.indkey[0]
+                                  WHERE i.indrelid = format('"public".%I', c.table_name)::regclass
+                                    AND a.attname = c.column_name)
+                 ORDER BY c.table_name, c.column_name
+            LOOP
+                EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON "public".%I USING btree (%I);',
+                               left('index_' || r.table_name || '_' || r.column_name, 63),
+                               r.table_name, r.column_name);
+            END LOOP;
+    END
+$$;
+-- variants are fetched by their parent product, serie and brand (direct_parent relations and related items)
+CREATE INDEX IF NOT EXISTS "index_cms_variant_product_id" ON "public"."cms_variant" USING btree ("product_id");
+CREATE INDEX IF NOT EXISTS "index_cms_variant_serie_id" ON "public"."cms_variant" USING btree ("serie_id");
+CREATE INDEX IF NOT EXISTS "index_cms_variant_brand_id" ON "public"."cms_variant" USING btree ("brand_id");
+-- order rows are fetched by order, and by variant for the related items (other variants ordered together with it)
+CREATE INDEX IF NOT EXISTS "index__order_variant_order_id" ON "public"."_order_variant" USING btree ("order_id");
+CREATE INDEX IF NOT EXISTS "index__order_variant_variant_id" ON "public"."_order_variant" USING btree ("variant_id");
+-- products are fetched by their parent serie and brand (direct_parent relations)
+CREATE INDEX IF NOT EXISTS "index_cms_product_serie_id" ON "public"."cms_product" USING btree ("serie_id");
+CREATE INDEX IF NOT EXISTS "index_cms_product_brand_id" ON "public"."cms_product" USING btree ("brand_id");
+-- whether a property value is used with an x_value is checked for every element its properties are fetched for,
+-- only the few rows that have an x_value are in these indexes, so that check need not read all rows of the value
+CREATE INDEX IF NOT EXISTS "index_cms_variant_x_properties_property_value_id_x_value"
+    ON "public"."cms_variant_x_properties" USING btree ("property_value_id") WHERE TRIM("x_value") <> '';
+CREATE INDEX IF NOT EXISTS "index_cms_page_x_properties_property_value_id_x_value"
+    ON "public"."cms_page_x_properties" USING btree ("property_value_id") WHERE TRIM("x_value") <> '';
 -- stale rows for a scheduled publication, so the daemon refreshes the pages the element appears on as well
 ALTER TABLE "public"."_stale"
     ADD COLUMN IF NOT EXISTS "scheduled" Boolean DEFAULT FALSE NOT NULL;
+-- the crosslink tables were never analyzed, give the planner up-to-date statistics
+ANALYZE;
 
 COMMIT;
