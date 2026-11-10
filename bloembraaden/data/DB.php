@@ -4595,10 +4595,29 @@ class DB extends Base
     {
         if ('' === (string)($slug = $row->__ref)) return;
         $json = json_encode($row);
-        // @since 0.32.0 update the existing row, only insert when it is not there yet
+        // @since 0.32.1 when the row did not change, only update since, so the (large) json is not written again
         $statement = $this->conn->prepare('
-            UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, id = :id,
-                since = NOW(), variant_page_json = NULL
+            UPDATE _cache SET since = NOW()
+            WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page
+            AND type_name = :type_name AND id = :id AND row_as_json = :row_as_json;
+        ');
+        $statement->bindValue(':row_as_json', $json);
+        $statement->bindValue(':type_name', $type_name);
+        $statement->bindValue(':id', $id);
+        $statement->bindValue(':variant_page', $variant_page);
+        $statement->bindValue(':instance_id', Setup::$instance_id);
+        $statement->bindValue(':slug', $slug);
+        $statement->execute();
+        if (0 < $statement->rowCount()) {
+            $json = null;
+            $statement = null;
+
+            return;
+        }
+        // @since 0.32.0 update the existing row, only insert when it is not there yet
+        // @since 0.32.1 the paging (variant_page_json) is left alone, it is updated separately when it changed
+        $statement = $this->conn->prepare('
+            UPDATE _cache SET row_as_json = :row_as_json, type_name = :type_name, id = :id, since = NOW()
             WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page;
         ');
         $statement->bindValue(':row_as_json', $json);
@@ -4630,15 +4649,17 @@ class DB extends Base
     /**
      * Set paging / pages in cache row for the slug
      * @param string $slug
-     * @param string $json properly formatted json containing all the variant_pages for this slug
-     * @return int
+     * @param string|null $json properly formatted json containing all the variant_pages for this slug, null for no paging
+     * @return int the number of rows that were updated, rows that already had this paging are not
      * @since 0.8.5
      */
-    public function updateVariantPageJsonInCache(string $slug, string $json): int
+    public function updateVariantPageJsonInCache(string $slug, ?string $json): int
     {
-        $statement = $this->conn->prepare(
-            'UPDATE _cache SET variant_page_json = :json WHERE slug = :slug AND instance_id = :instance_id;'
-        );
+        // @since 0.32.1 only write the rows whose paging changed
+        $statement = $this->conn->prepare('
+            UPDATE _cache SET variant_page_json = :json
+            WHERE slug = :slug AND instance_id = :instance_id AND variant_page_json IS DISTINCT FROM :json;
+        ');
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':json', $json);
         $statement->bindValue(':instance_id', Setup::$instance_id);

@@ -169,9 +169,11 @@ class BaseLogic extends Base
                 }
                 $json = json_encode($pages);
                 $pages = null;
-                if ($count > ($affected = $db->updateVariantPageJsonInCache($slug, $json))) {
-                    $this->addError("Updated $affected rows in cache for $slug");
-                }
+                // @since 0.32.1 only the rows whose paging changed are updated, so no check on the number of rows
+                $db->updateVariantPageJsonInCache($slug, $json);
+            } else {
+                // @since 0.32.1 a single page has no paging, remove it when there were more pages before
+                $db->updateVariantPageJsonInCache($slug, null);
             }
             // when the cache is built during this request, sorry you can only get the first page back for now
             // this may return null sometimes on the first try...
