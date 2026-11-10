@@ -288,8 +288,10 @@ class Search extends BaseElement
             if (count($variant_ids_show) < $quantity) { // add some variants from the terms to the suggested ones
                 $variant_ids_show = array_merge($variant_ids_show, $variant_ids_term);
             }
-        } elseif (count($variant_ids_show) < $quantity) {
-            $by_serie = db()->fetchAllVariantIdsFor('serie', $variant_id, $this->getProperties());
+        } elseif (count($variant_ids_show) < $quantity
+            && null !== ($variant = db()->fetchElementRow(new Type('variant'), $variant_id))
+        ) {
+            $by_serie = db()->fetchAllVariantIdsFor('serie', (int)$variant->serie_id, $this->getProperties());
             $to_add = array_diff($by_serie, $variant_ids_show);
             $variant_ids_show = array_merge($variant_ids_show, $to_add);
         }

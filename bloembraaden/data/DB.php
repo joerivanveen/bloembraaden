@@ -938,8 +938,7 @@ class DB extends Base
      * Return the variant_ids that have all the provided property values attached to them as
      * well as the property->id or property_value->id that is the first two arguments
      * @param string $type_name literal ‘property’, ‘property_value’, ‘serie’ or ‘brand’
-     * @param int $id the id of the property or property_value that is mandatory for the variant_ids,
-     * or the variant_id whose serie or brand you need
+     * @param int $id the id of the property, property_value, serie or brand that is mandatory for the variant_ids
      * @param array $properties
      * @return array indexed array with all the variant_ids
      * @since 0.8.12
@@ -955,9 +954,9 @@ class DB extends Base
             $imploded_sub_queries = '';
         }
         if ('serie' === $type_name || 'brand' === $type_name) {
-            // @since 0.32.1 a variant without a serie or brand (id 0) has none in common with others, the sub query
-            // returns null then, otherwise all variants without one would match, from all instances
-            $where_table = "v.{$type_name}_id = (SELECT {$type_name}_id FROM cms_variant WHERE variant_id = :id AND {$type_name}_id <> 0)";
+            // @since 0.32.1 the id is that of the serie or brand itself, not of a variant that belongs to it,
+            if (0 === $id) return array();
+            $where_table = "v.{$type_name}_id = :id";
         } else {
             $where_table = "x.{$type_name}_id = :id";
         }
