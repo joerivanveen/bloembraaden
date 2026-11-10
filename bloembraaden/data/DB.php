@@ -4879,6 +4879,8 @@ class DB extends Base
         });
     }
 
+    // @since 0.32.1 after an edit, the filtered pages of the instance are refreshed spread over this many minutes
+    private const MINUTES_SPREAD_STALE_FILTERED_PAGES = 120;
     /**
      * Removes cached search pages for the instance, they are cached again when visited.
      * Filtered pages (elements with a path containing a slash) are marked stale instead, so they
@@ -4892,11 +4894,19 @@ class DB extends Base
         $statement = $this->conn->prepare("DELETE FROM _cache WHERE instance_id = ? AND type_name = 'search';");
         $statement->execute(array($instance_id));
         $deleted = $statement->rowCount();
+        // @since 0.32.1 the filtered pages are spread evenly over a period, the oldest cache first, instead of all
+        // at once, so the daemon does not render thousands of pages in a row. Pages still waiting are not marked
+        // again, so several edits in that period lead to one refresh per page, that contains all of them.
+        $minutes = self::MINUTES_SPREAD_STALE_FILTERED_PAGES;
         $statement = $this->conn->prepare("
-            INSERT INTO _stale (instance_id, slug)
-            SELECT DISTINCT c.instance_id, c.slug FROM _cache c
-            WHERE c.instance_id = :instance_id AND c.slug LIKE '%/%'
-            AND NOT EXISTS (SELECT 1 FROM _stale s WHERE s.instance_id = c.instance_id AND s.slug = c.slug);
+            INSERT INTO _stale (instance_id, slug, since)
+            SELECT f.instance_id, f.slug, NOW() + (f.n - 1) * interval '$minutes minutes' / f.total FROM (
+                SELECT c.instance_id, c.slug, row_number() OVER (ORDER BY MIN(c.since)) AS n, count(*) OVER () AS total
+                FROM _cache c
+                WHERE c.instance_id = :instance_id AND c.slug LIKE '%/%'
+                AND NOT EXISTS (SELECT 1 FROM _stale s WHERE s.instance_id = c.instance_id AND s.slug = c.slug)
+                GROUP BY c.instance_id, c.slug
+            ) f;
         ");
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
