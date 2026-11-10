@@ -291,12 +291,15 @@ class Search extends BaseElement
         } elseif (count($variant_ids_show) < $quantity
             && null !== ($variant = db()->fetchElementRow(new Type('variant'), $variant_id))
         ) {
-            $by_serie = db()->fetchAllVariantIdsFor('serie', (int)$variant->serie_id, $this->getProperties());
+            // @since 0.32.1 only the first $quantity are shown, at most count($variant_ids_show) of those are already in it,
+            // plus one for the variant itself, which is in its own serie
+            $by_serie = db()->fetchAllVariantIdsFor('serie', (int)$variant->serie_id, $this->getProperties(), $quantity + 1);
             $to_add = array_diff($by_serie, $variant_ids_show);
             $variant_ids_show = array_merge($variant_ids_show, $to_add);
         }
 
-        return $this->getVariantsByIds($variant_ids_show, array(), $quantity);
+        // @since 0.32.1 exclude the variant itself (again)
+        return $this->getVariantsByIds($variant_ids_show, array($variant_id), $quantity);
     }
 
     /**
@@ -367,6 +370,9 @@ class Search extends BaseElement
     private function getVariantsByIds(array $in, array $not_in, int $fixed_quantity): array
     {
         $in = array_values(array_diff($in, $not_in)); // allow $in array containing id’s from $not_in, filter that here
+        // @since 0.32.1 only the first $fixed_quantity are shown, so only fetch those rows
+        if (0 < $fixed_quantity) $in = array_slice($in, 0, $fixed_quantity);
+        if (0 === count($in)) return array();
         $type = new Type('variant');
         $rows = db()->fetchElementRowsWhereIn($type, 'variant_id', $in);
         // @since 0.21.0 order by the original array
