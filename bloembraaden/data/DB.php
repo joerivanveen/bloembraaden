@@ -940,12 +940,14 @@ class DB extends Base
      * @param string $type_name literal ‘property’, ‘property_value’, ‘serie’ or ‘brand’
      * @param int $id the id of the property, property_value, serie or brand that is mandatory for the variant_ids
      * @param array $properties
+     * @param int $limit @since 0.32.1 the maximum number of variant_ids, the most popular first, 0 for all
      * @return array indexed array with all the variant_ids
      * @since 0.8.12
      */
-    public function fetchAllVariantIdsFor(string $type_name, int $id, array $properties): array
+    public function fetchAllVariantIdsFor(string $type_name, int $id, array $properties, int $limit = 0): array
     {
         if (false === in_array($type_name, array('property', 'property_value', 'serie', 'brand'))) return array();
+        $limit_clause = (0 < $limit) ? " LIMIT $limit" : '';
         // TODO also get the attached (x-table) variants for eg page?
         // @since 0.32.1 serie and brand are columns of the variant, so the crosslink table is only needed for properties
         $by_column = ('serie' === $type_name || 'brand' === $type_name);
@@ -965,14 +967,14 @@ class DB extends Base
             $statement = $this->conn->prepare("
                 SELECT v.variant_id FROM cms_variant v
                 WHERE v.{$type_name}_id = :id AND v.deleted = FALSE $online_query $imploded_sub_queries
-                ORDER BY v.date_popvote DESC;
+                ORDER BY v.date_popvote DESC$limit_clause;
             ");
         } else {
             $statement = $this->conn->prepare("
                 SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
                 INNER JOIN cms_variant v ON v.variant_id = x.variant_id
                 WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.deleted = FALSE $online_query $imploded_sub_queries
-                ORDER BY date_popvote DESC;
+                ORDER BY date_popvote DESC$limit_clause;
             ");
         }
 
