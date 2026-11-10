@@ -947,27 +947,34 @@ class DB extends Base
     {
         if (false === in_array($type_name, array('property', 'property_value', 'serie', 'brand'))) return array();
         // TODO also get the attached (x-table) variants for eg page?
-        $sub_queries = $this->queriesProperties($properties, 'variant', 'x');
+        // @since 0.32.1 serie and brand are columns of the variant, so the crosslink table is only needed for properties
+        $by_column = ('serie' === $type_name || 'brand' === $type_name);
+        // the property filters are sub queries on the crosslink table of their own, they only need the variant_id
+        $sub_queries = $this->queriesProperties($properties, 'variant', (true === $by_column) ? 'v' : 'x');
         if (0 !== count($sub_queries)) { // todo duplicate code
             $imploded_sub_queries = ' AND ' . implode(' AND ', $sub_queries);
         } else {
             $imploded_sub_queries = '';
         }
-        if ('serie' === $type_name || 'brand' === $type_name) {
-            // @since 0.32.1 the id is that of the serie or brand itself, not of a variant that belongs to it,
-            if (0 === $id) return array();
-            $where_table = "v.{$type_name}_id = :id";
-        } else {
-            $where_table = "x.{$type_name}_id = :id";
-        }
         // @since 0.32.0 admins get the offline variants as well
         $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND v.online = TRUE' : '';
-        $statement = $this->conn->prepare("
-            SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
-            INNER JOIN cms_variant v ON v.variant_id = x.variant_id
-            WHERE $where_table AND x.deleted = FALSE AND v.deleted = FALSE $online_query $imploded_sub_queries
-            ORDER BY date_popvote DESC;
-        ");
+        if (true === $by_column) {
+            // @since 0.32.1 the id is that of the serie or brand itself, not of a variant that belongs to it,
+            // 0 (no serie or brand) would match all variants without one, from all instances
+            if (0 === $id) return array();
+            $statement = $this->conn->prepare("
+                SELECT v.variant_id FROM cms_variant v
+                WHERE v.{$type_name}_id = :id AND v.deleted = FALSE $online_query $imploded_sub_queries
+                ORDER BY v.date_popvote DESC;
+            ");
+        } else {
+            $statement = $this->conn->prepare("
+                SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
+                INNER JOIN cms_variant v ON v.variant_id = x.variant_id
+                WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.deleted = FALSE $online_query $imploded_sub_queries
+                ORDER BY date_popvote DESC;
+            ");
+        }
 
         $statement->bindValue(':id', $id);
         //Help::addMessage(str_replace(':id', (string)$id, $statement->queryString), 'note');
