@@ -651,12 +651,13 @@ body .PEATCMS.progress {
 }
 
 /**
- * PEATCMS_admin please use normal font
+ * PEATCMS_admin please use normal font and position
  */
 body .PEATCMS_admin,
 body .PEATCMS_admin * {
     font-family: Arial, sans-serif;
     font-size: 1rem;
+    position: static;
     /*padding: 0;
     margin: 0;*/
 }
@@ -1180,6 +1181,7 @@ body .PEATCMS_admin .peatcms-link:focus {
     max-width: calc(100% - .5em);
     border-radius: 0;
     text-align: left;
+    height: auto;
 }
 
 /* why we need the #PEATCMS_admin_page on top of .PEATCMS_admin is me a riddle ;-) */
@@ -1238,6 +1240,7 @@ body .PEATCMS_admin .peatcms-link:focus {
 .PEATCMS_admin textarea {
     min-width: calc(100% - .5em);
     border-radius: 0;
+    display: block;
 }
 
 .PEATCMS_admin #admin_content,
@@ -1250,14 +1253,14 @@ body .PEATCMS_admin .peatcms-link:focus {
     position: absolute;
     display: none;
     font-size: 12px;
-    margin-top: -11px;
+    margin-top: calc(-.25em - 1px);
     padding: 1px 4px 2px 2px;
     border-bottom-right-radius: 8px;
     background-color: var(--admin-color-accent-fierce);
 }
 
 #admin_sidebar .edit-area input + .word_counter {
-    margin-top: -5px; /* .25em padding apparently works differently here */
+    /*margin-top: -5px; /* .25em padding apparently works differently here */
 }
 
 #admin_sidebar .edit-area textarea:focus + .word_counter,
