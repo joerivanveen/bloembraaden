@@ -132,8 +132,8 @@ class Parser extends Base
      */
     private function echoParagraphWhenNecessary()
     {
-        // the img must be 'in' another tag unless this is a sub text
-        if (false === $this->is_sub_parser && null === $this->getOpenTag()) {
+        // content must be 'in' another tag unless this is a sub text
+        if (false === $this->is_sub_parser && in_array($this->getOpenTag(), array(null, 'div'), true)) {
             echo $this->openTag('p');
         }
     }
