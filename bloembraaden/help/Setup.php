@@ -12,7 +12,7 @@ if (class_exists('Setup')) {
 class Setup
 {
     public static bool $INSTALL, $VERBOSE, $NOT_IN_STOCK_CAN_BE_ORDERED, $NEWRELIC_RECORDS_BACKEND = false;
-    public static int $instance_id, $DECIMAL_DIGITS, $SEARCH_CACHE_REFRESH_MINUTES, $SEARCH_CACHE_MAX_MINUTES;
+    public static int $instance_id, $DECIMAL_DIGITS, $SEARCH_CACHE_REFRESH_MINUTES, $SEARCH_CACHE_MAX_MINUTES, $REMEMBER_HISTORY_DAYS;
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH, $HASHKEY, $LOGFILE_STARTSWITH;
     public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $HOMEPAGE_SLUG, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
@@ -155,6 +155,7 @@ class Setup
         // @since 0.32.0 cached search pages are refreshed when visited after this many minutes, and not served anymore after max minutes
         self::$SEARCH_CACHE_REFRESH_MINUTES = (int)($config->search_cache_refresh_minutes ?? 30);
         self::$SEARCH_CACHE_MAX_MINUTES = (int)($config->search_cache_max_minutes ?? 120);
+        self::$REMEMBER_HISTORY_DAYS = (int)($config->remember_history_days ?? 400);
         $config = null;
     }
 

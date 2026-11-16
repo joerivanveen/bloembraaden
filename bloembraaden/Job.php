@@ -906,7 +906,7 @@ switch ($interval) {
         $trans->start('Remove orphaned shoppinglist rows (variants)');
         echo $db->jobDeleteOrphanedShoppinglistVariants(), "\n";
         $trans->start('Remove old _history rows');
-        echo $db->jobDeleteOldHistory(), "\n";
+        echo $db->jobDeleteOldHistory(Setup::$REMEMBER_HISTORY_DAYS), "\n";
         // duplicate code, to finish the current job
         $trans->start('Report current job');
         echo date('Y-m-d H:i:s');

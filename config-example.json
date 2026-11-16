@@ -30,6 +30,7 @@
   },
   "search_cache_refresh_minutes": 30,
   "search_cache_max_minutes": 120,
+  "remember_history_days": 400,
   "newrelic_records_backend": false,
   "max_memory_limit": "1g",
   "VERBOSE": true,
