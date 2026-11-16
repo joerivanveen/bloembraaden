@@ -3419,15 +3419,17 @@ PEATCMS.prototype.scrollToTop = function () {
 }
 PEATCMS.prototype.scrollTo = function (x, y, element) {
     if (!element) element = window;
-    if ('scrollBehavior' in document.documentElement.style) {
-        element.scrollTo({
-            left: x,
-            top: y,
-            behavior: 'smooth'
-        });
-    } else {
-        element.scrollTo(x, y);
-    }
+    requestAnimationFrame(function () {
+        if ('scrollBehavior' in document.documentElement.style) {
+            element.scrollTo({
+                left: x,
+                top: y,
+                behavior: 'smooth'
+            });
+        } else {
+            element.scrollTo(x, y);
+        }
+    });
 }
 
 window.addEventListener('popstate', function (e) {
