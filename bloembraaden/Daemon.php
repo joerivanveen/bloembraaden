@@ -13,8 +13,6 @@ class Daemon
 {
     private string $did;
     private float $start_timer;
-    // TODO make configurable using config file
-    public const MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD = 120;
     public const MAX_LOOP_SECONDS = 10;
 
     public function __construct()
@@ -132,26 +130,7 @@ class Daemon
                 }
             }
             if (0 === $total_count) ob_clean();
-            /* old cache (least important, most time-consuming) */
-            $trans->start('Warmup old (elements) cache');
-            $rows = $db->jobOldCacheRows(self::MINUTES_ELEMENT_CACHE_IS_CONSIDERED_OLD, 60 - $total_count);
-            $total_count = 0;
-            foreach ($rows as $key => $row) {
-                echo 'Warming up (', $row->instance_id, ') ', $row->slug, ': ';
-                if (true === $stove->Warmup($row->slug, $row->instance_id)) {
-                    echo 'OK.';
-                    $total_count++;
-                } else {
-                    echo 'NO.';
-                }
-                echo "\n";
-                if ($this->runningLate()) {
-                    break;
-                }
-            }
-            echo $total_count;
-            echo " done.\n";
-            if (0 === $total_count) ob_clean();
+            // @since 0.32.1 old cache is refreshed by Job.php (interval 1), so the daemon stays quick for changes
         }
     }
 

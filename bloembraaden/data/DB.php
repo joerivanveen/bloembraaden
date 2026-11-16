@@ -4879,14 +4879,16 @@ class DB extends Base
         });
     }
 
-    // @since 0.32.1 after an edit, the filtered pages of the instance are refreshed spread over this many minutes
-    private const MINUTES_SPREAD_STALE_FILTERED_PAGES = 120;
+    // @since 0.32.1 cached elements older than this are refreshed by the old cache job, as a safety net:
+    // changes are refreshed when they happen (see markStaleTheParents and the dirty marker)
+    public const MINUTES_CACHE_REFRESH = 1440;
+
     /**
      * Removes cached search pages for the instance, they are cached again when visited.
-     * Filtered pages (elements with a path containing a slash) are marked stale instead, so they
-     * are refreshed by the daemon and remain in the sitemap.
+     * Filtered pages (elements with a path containing a slash) are made due for the old cache job instead,
+     * so they are refreshed in the background at the pace of that job and remain in the sitemap.
      * @param int $instance_id
-     * @return array the number of search rows removed and the number of filtered rows marked stale
+     * @return array the number of search rows removed and the number of filtered rows made due
      * @since 0.32.0
      */
     public function jobInvalidateSearchAndFilteredCache(int $instance_id): array
@@ -4894,26 +4896,18 @@ class DB extends Base
         $statement = $this->conn->prepare("DELETE FROM _cache WHERE instance_id = ? AND type_name = 'search';");
         $statement->execute(array($instance_id));
         $deleted = $statement->rowCount();
-        // @since 0.32.1 the filtered pages are spread evenly over a period, the oldest cache first, instead of all
-        // at once, so the daemon does not render thousands of pages in a row. Pages still waiting are not marked
-        // again, so several edits in that period lead to one refresh per page, that contains all of them.
-        $minutes = self::MINUTES_SPREAD_STALE_FILTERED_PAGES;
+        // @since 0.32.1 move since back so the old cache job picks them up, rows that are already due keep their place
+        $minutes = self::MINUTES_CACHE_REFRESH + 1;
         $statement = $this->conn->prepare("
-            INSERT INTO _stale (instance_id, slug, since)
-            SELECT f.instance_id, f.slug, NOW() + (f.n - 1) * interval '$minutes minutes' / f.total FROM (
-                SELECT c.instance_id, c.slug, row_number() OVER (ORDER BY MIN(c.since)) AS n, count(*) OVER () AS total
-                FROM _cache c
-                WHERE c.instance_id = :instance_id AND c.slug LIKE '%/%'
-                AND NOT EXISTS (SELECT 1 FROM _stale s WHERE s.instance_id = c.instance_id AND s.slug = c.slug)
-                GROUP BY c.instance_id, c.slug
-            ) f;
+            UPDATE _cache SET since = NOW() - interval '$minutes minutes'
+            WHERE instance_id = :instance_id AND slug LIKE '%/%' AND since > NOW() - interval '$minutes minutes';
         ");
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
-        $marked = $statement->rowCount();
+        $due = $statement->rowCount();
         $statement = null;
 
-        return array($deleted, $marked);
+        return array($deleted, $due);
     }
 
     /**
@@ -5005,9 +4999,10 @@ class DB extends Base
     public function jobOldCacheRows(int $interval = 600, int $limit = 60): array
     {
         // @since 0.32.0 search pages are refreshed when visited (see cached()), not periodically
-        $statement = $this->conn->prepare("SELECT DISTINCT slug, instance_id, since FROM _cache 
+        // @since 0.32.1 one row per slug, the variant pages are cached by the same warmup
+        $statement = $this->conn->prepare("SELECT slug, instance_id, MIN(since) AS since FROM _cache
             WHERE since < NOW() - interval '$interval minutes' AND (type_name IS NULL OR type_name <> 'search')
-            ORDER BY since LIMIT $limit;");
+            GROUP BY instance_id, slug ORDER BY MIN(since) LIMIT $limit;");
         $statement->execute();
         if ($statement->rowCount() > 0) {
             $rows = $statement->fetchAll(5);
@@ -5017,6 +5012,23 @@ class DB extends Base
         $statement = null;
 
         return $rows;
+    }
+
+    /**
+     * How far the old cache job is behind
+     * @param int $interval in minutes that is considered ‘old’
+     * @return \stdClass with the number of slugs that are due (due) and the oldest since (oldest, null when none)
+     * @since 0.32.1
+     */
+    public function jobOldCacheBacklog(int $interval): \stdClass
+    {
+        $statement = $this->conn->prepare("SELECT COUNT(DISTINCT (instance_id, slug)) AS due, MIN(since) AS oldest FROM _cache
+            WHERE since < NOW() - interval '$interval minutes' AND (type_name IS NULL OR type_name <> 'search');");
+        $statement->execute();
+        $row = $statement->fetch(5);
+        $statement = null;
+
+        return $row;
     }
 
     /**

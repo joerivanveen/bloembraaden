@@ -668,6 +668,28 @@ switch ($interval) {
             if (microtime(true) - $start_timer > 55) break;
         }
         $images = null;
+        // @since 0.32.1 refresh old cache here instead of in the daemon, with a time budget, oldest first for all
+        // instances: one heavy page or many light ones each minute, the daemon stays quick for changes
+        $trans->start('Warmup old (elements) cache');
+        $lock = fopen(Setup::$DBCACHE . 'old_cache.lock', 'c');
+        if (false === $lock || false === flock($lock, LOCK_EX | LOCK_NB)) {
+            echo "Previous run still busy.\n";
+        } else {
+            $section_timer = microtime(true);
+            $stove = new Warmup();
+            $total_count = 0;
+            $rows = $db->jobOldCacheRows(DB::MINUTES_CACHE_REFRESH, 60);
+            foreach ($rows as $index => $row) {
+                echo 'Warming up (', $row->instance_id, ') ', $row->slug, ': ';
+                echo (true === $stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO', "\n";
+                ++$total_count;
+                if (microtime(true) - $section_timer > 20) break;
+            }
+            flock($lock, LOCK_UN);
+            echo "$total_count done.\n";
+            if (0 === $total_count) ob_clean();
+        }
+        if (false !== $lock) fclose($lock);
         break;
     case '5': // interval should be 5
         $trans->start('Delete expired search pages from cache');
@@ -683,7 +705,7 @@ switch ($interval) {
             foreach (glob(Setup::$DBCACHE . "filter/$instance_id/*.serialized") ?: array() as $index2 => $filename) {
                 if (true === unlink($filename)) ++$files;
             }
-            echo "($instance_id) $deleted search pages deleted, $marked filtered pages marked stale, $files filter files deleted.\n";
+            echo "($instance_id) $deleted search pages deleted, $marked filtered pages due for refresh, $files filter files deleted.\n";
             ++$swept;
         }
         if (0 === $swept) ob_clean();
@@ -854,6 +876,18 @@ switch ($interval) {
         if (0 === $refreshed) ob_clean();
         break;
     case 'hourly': // interval should be hourly
+        // @since 0.32.1 warn when the old cache job (interval 1) does not keep up
+        $trans->start('Check old cache backlog');
+        $backlog = $db->jobOldCacheBacklog(DB::MINUTES_CACHE_REFRESH);
+        echo "$backlog->due due, oldest since ", $backlog->oldest ?? '-', "\n";
+        $overdue_hours = 12; // after being due for this long a warning is issued
+        if (null !== $backlog->oldest
+            && strtotime($backlog->oldest) < Setup::getNow() - 60 * DB::MINUTES_CACHE_REFRESH - 3600 * $overdue_hours
+        ) {
+            Help::addError(new \Exception(sprintf(
+                'Old cache job does not keep up: %d pages due, oldest since %s.', $backlog->due, $backlog->oldest
+            )));
+        }
         // @since 0.32.0 filter files that were not requested for a while are not served anymore
         $trans->start('Remove expired properties filters');
         $deleted = 0;
