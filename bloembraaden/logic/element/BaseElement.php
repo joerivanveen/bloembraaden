@@ -163,7 +163,7 @@ class BaseElement extends BaseLogic implements Element
             // call fetchlinked again, will overwrite any linked items that aren’t set (yet)
             if (true === $this->fetchLinked()) {
                 // return the number of variants
-                return count($this->row->__variants__);
+                return $this->row->__variants__['item_count'] ?? 0;
             } else {
                 $this->addError('pageVariants failed...');
             }
@@ -209,7 +209,7 @@ class BaseElement extends BaseLogic implements Element
                         $linked_type = new Type($element_name);
                         $plural_tag = "__{$element_name}s__";
                         if (false === isset($this->row->{$plural_tag})) {
-                            $this->row->{$plural_tag} = array();
+                            $this->row->{$plural_tag} = array('item_count' => 0); // 0 items until filled, so the template can check for it
                             if (($tmp = db()->fetchElementRowsLinkedX(
                                 $peat_type, $id, $linked_type, $this->variant_page_size, $this->variant_page_counter, $this->getProperties()
                             ))) {
@@ -227,7 +227,7 @@ class BaseElement extends BaseLogic implements Element
                 $nested_level = ('property_value' === $linked_type_name) ? 2 : $this->nested_level;
                 $plural_tag = "__{$linked_type_name}s__"; // this is for the template etc., '__files__' in stead of 'file'
                 if (false === isset($this->row->{$plural_tag})) {
-                    $this->row->{$plural_tag} = array();
+                    $this->row->{$plural_tag} = array('item_count' => 0); // 0 items until filled, so the template can check for it
                     if (($tmp = db()->fetchElementRowsLinked(
                         $peat_type, $id, $linked_type, $relation, $this->variant_page_size, $this->variant_page_counter
                     ))) {
