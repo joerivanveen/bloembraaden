@@ -85,11 +85,18 @@ class Daemon
                 if (isset($row->in_cache)) { // only warmup rows already in cache
                     $done[$stale_slug] = $instance_id;
                     echo 'Warming up (', $instance_id, ') ', $stale_slug, ': ';
+                    $changes = $db->getCacheChanges();
                     if (true === $stove->Warmup($stale_slug, $instance_id)) {
                         echo 'OK';
                         $total_count++;
                     } else {
                         echo 'NO';
+                    }
+                    // @since 0.32.1 when the cache changed, the pages it appears on are changed as well, make those
+                    // due for the old cache job (that does not pass it on), scheduled ones are marked stale below
+                    if ($changes !== $db->getCacheChanges() && false === $row->scheduled) {
+                        Setup::loadInstanceSettingsFor($instance_id); // markStaleTheParents works for the current instance
+                        echo (true === $db->markStaleTheParents($stale_slug, true)) ? ', relations due' : '';
                     }
                     echo "\n";
                 }

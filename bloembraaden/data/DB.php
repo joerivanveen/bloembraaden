@@ -9,6 +9,7 @@ class DB extends Base
     private ?\PDO $conn;
     private array $cache_keys;
     private array $memo = array();
+    private int $cache_changes = 0; // @since 0.32.1 number of times cache content was written or removed
     private static ?DB $instance = null;
     public const TABLES_WITHOUT_HISTORY = array(
         '_history',
@@ -4614,6 +4615,7 @@ class DB extends Base
 
             return;
         }
+        ++$this->cache_changes;
         // @since 0.32.0 update the existing row, only insert when it is not there yet
         // @since 0.32.1 the paging (variant_page_json) is left alone, it is updated separately when it changed
         $statement = $this->conn->prepare('
@@ -4793,6 +4795,7 @@ class DB extends Base
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $from_variant_page_upwards);
         $statement->execute();
+        if (0 < $statement->rowCount()) ++$this->cache_changes;
         $statement = null;
 
         return true;
@@ -4801,11 +4804,12 @@ class DB extends Base
     /**
      * Relations of the supplied slug are put in the _stale table so the job that warms up cache can pick them up
      * @param string $slug
+     * @param bool $due_only @since 0.32.1 true to make the cache of the relations due for the old cache job instead
      * @return bool
      * @since 0.8.8
      * TODO move to element / baseelement or something, not here
      */
-    public function markStaleTheParents(string $slug): bool
+    public function markStaleTheParents(string $slug, bool $due_only = false): bool
     {
         // get all the slugs we need to warmup for this element
         $id_and_type = $this->fetchElementIdAndTypeBySlug($slug);
@@ -4824,7 +4828,15 @@ class DB extends Base
         if (null === $element_row) return false;
         $element = $peat_type->getElement($element_row);
         $element_row = null;
-        $this->markDirtyForSearchAndFilters();
+        $due = array();
+        $mark = function (string $slug) use ($due_only, &$due) {
+            if (true === $due_only) {
+                $due[] = $slug;
+            } else {
+                $this->markStale($slug);
+            }
+        };
+        if (false === $due_only) $this->markDirtyForSearchAndFilters();
         $linked_types = $element->getLinkedTypes();
         $linked = $element->getLinked();
         foreach ($linked_types as $type => $relation) {
@@ -4832,14 +4844,14 @@ class DB extends Base
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
                     if (false === is_int($index)) continue;
-                    $this->markStale($row->property_slug);
-                    $this->markStale($row->slug); // meaning property value slug
+                    $mark($row->property_slug);
+                    $mark($row->slug); // meaning property value slug
                 }
             } elseif (in_array($relation, array('direct_child', 'cross_child', 'cross_parent'))) {
                 $arr = $linked[$type];
                 foreach ($arr as $index => $row) {
                     if (false === is_int($index)) continue;
-                    $this->markStale($row->__ref ?? $row->slug);
+                    $mark($row->__ref ?? $row->slug);
                 }
             }
         }
@@ -4854,12 +4866,41 @@ class DB extends Base
             if ($statement->rowCount() > 0) {
                 $rows = $statement->fetchAll(5);
                 foreach ($rows as $index => $row) {
-                    $this->markStale($row->slug);
+                    $mark($row->slug);
                 }
             }
         }
+        if (0 < count($due)) $this->makeCacheDue($due);
 
         return true;
+    }
+
+    /**
+     * Make the cache of the slugs due for the old cache job (Job.php interval 1), rows already due keep their place
+     * @param array $slugs for the current instance
+     * @return void
+     * @since 0.32.1
+     */
+    private function makeCacheDue(array $slugs): void
+    {
+        $slugs = array_values(array_unique($slugs));
+        $minutes = self::MINUTES_CACHE_REFRESH + 1;
+        $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+        $statement = $this->conn->prepare("
+            UPDATE _cache SET since = NOW() - interval '$minutes minutes'
+            WHERE instance_id = ? AND slug IN ($placeholders) AND since > NOW() - interval '$minutes minutes';
+        ");
+        $statement->execute(array_merge(array(Setup::$instance_id), $slugs));
+        $statement = null;
+    }
+
+    /**
+     * @return int number of times cache content was written or removed during this process
+     * @since 0.32.1
+     */
+    public function getCacheChanges(): int
+    {
+        return $this->cache_changes;
     }
 
     /**
