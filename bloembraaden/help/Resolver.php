@@ -66,6 +66,14 @@ class Resolver extends BaseLogic
                 } elseif ('sitemap.xml' === $value) {
                     Help::outputSitemap();
                     die();
+                } elseif ('llms.txt' === $value) {
+                    $presentation_instance = Setup::$PRESENTATION_INSTANCE;
+                    if (file_exists(CORE . "../htdocs/_site/$presentation_instance/llms.txt")) {
+                        header("Location: /_site/$presentation_instance/llms.txt", TRUE, 307);
+                        die();
+                    } else {
+                        die(sprintf(__('%s is not found.', 'peatcms'), 'llms.txt'));
+                    }
                 }
 
                 return true;

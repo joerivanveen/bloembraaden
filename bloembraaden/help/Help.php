@@ -685,14 +685,15 @@ class Help
      * @param mixed $data
      * @return string|null
      */
-    public static function export(mixed $data): string {
+    public static function export(mixed $data): string
+    {
         if (null === $data) return '';
-        $cleanup = function(mixed $data) {
+        $cleanup = function (mixed $data) {
             if (true === is_object($data)) {
                 $data = (array)$data;
             }
             if (false === is_array($data)) {
-                return (string) $data;
+                return (string)$data;
             }
             foreach ($data as $key => $value) {
                 if (in_array($key, ['password', 'pass', 'pass_word', 'secret', 'token', 'hash', 'csrf', 'csrf_token'], true)) {
@@ -1284,6 +1285,14 @@ class Help
             echo '</lastmod></url>';
         }
         $statement = null;
+        $presentation_instance = Setup::$PRESENTATION_INSTANCE;
+        if (file_exists(CORE . "../htdocs/_site/$presentation_instance/llms.txt")) {
+            echo '<url><loc>';
+            echo 'https://', $domain, '/llms.txt';
+            echo '</loc><lastmod>';
+            echo substr(date('Y-m-d', (int)filemtime(CORE . "../htdocs/_site/$presentation_instance/llms.txt")), 0, 10);
+            echo '</lastmod></url>';
+        }
         echo '</urlset>';
     }
 

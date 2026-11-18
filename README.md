@@ -136,9 +136,10 @@ Should multiple daemons be running at the same time for whatever reason, the old
 Your clients’ websites’ assets will reside under a folder `/_site` in the webroot, e.g. `/_site/example`.
 Each website must contain a `script.js` and `style.css` that will be compiled by bloembraaden.
 
-You can configure 2 optional files:
+You can configure 3 optional files:
 - `editor_config.json`, the configuration of the editor for this instance.
 - `example.mo` (and .po if you wish), the translation file for all generic texts. Use PoEdit to generate it from the code.
+- `llms.txt`, file for AI and bots, you can link to it as if it were in the root (domain.tld/llms.txt) and it will automatically be added to your sitemap.
 
 The website itself is build with simple templates that you put in the admin interface.
 You also point to the `/_site/example` folder through that admin interface.
