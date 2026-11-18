@@ -3550,3 +3550,14 @@ ALTER TABLE "public"."_stale"
 ANALYZE;
 
 COMMIT;
+
+-- version 0.32.2
+
+BEGIN;
+
+-- the last visit of each cached page, recorded at most once per hour, filtered pages not visited for a while are removed
+-- (deliberately not indexed, so the touch can be a HOT update)
+ALTER TABLE "public"."_cache"
+    ADD COLUMN IF NOT EXISTS "visited" Timestamp With Time Zone DEFAULT now() NOT NULL;
+
+COMMIT;

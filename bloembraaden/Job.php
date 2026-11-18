@@ -694,6 +694,9 @@ switch ($interval) {
     case '5': // interval should be 5
         $trans->start('Delete expired search pages from cache');
         echo $db->jobDeleteExpiredSearchCache(Setup::$SEARCH_CACHE_MAX_MINUTES), "\n";
+        // @since 0.32.2 before the dirty sweep, so unvisited filtered pages are not refreshed for nothing
+        $trans->start('Delete unvisited filtered pages from cache');
+        echo $db->jobDeleteUnvisitedFilteredCache(Setup::$FILTERED_CACHE_MAX_MINUTES), "\n";
         // @since 0.32.0 after edits, search pages, filtered pages and filter files are refreshed at most every 5 minutes
         $trans->start('Invalidate search and filtered pages for edited instances');
         $swept = 0;
@@ -888,7 +891,8 @@ switch ($interval) {
                 'Old cache job does not keep up: %d pages due, oldest since %s.', $backlog->due, $backlog->oldest
             )));
         }
-        // @since 0.32.0 filter files that were not requested for a while are not served anymore
+        // @since 0.32.0 filter files are rewritten when requested after the refresh age, so files past
+        //  the max age were not requested for a while.
         $trans->start('Remove expired properties filters');
         $deleted = 0;
         $expired = time() - 60 * Setup::$SEARCH_CACHE_MAX_MINUTES;

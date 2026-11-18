@@ -4474,15 +4474,13 @@ class DB extends Base
     public function querySitemap(int $instance_id): \PDOStatement
     {
         $skip = array('image', 'file', 'menu', 'comment'); //todo make user configurable
-        ob_start();
+        $selects = array();
         foreach ($this->getTablesWithSlugs() as $index => $row) {
             if (true === in_array(str_replace('cms_', '', $row->table_name), $skip)) continue;
-            echo "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND can_be_found = TRUE AND instance_id = :instance_id\n";
-            echo "UNION ALL\n";
+            $selects[] = "SELECT slug, date_updated FROM $row->table_name WHERE online = TRUE AND deleted = FALSE AND can_be_found = TRUE AND instance_id = :instance_id";
         }
-        echo "SELECT slug, since AS date_updated FROM _cache WHERE slug LIKE '%/%' AND instance_id = :instance_id";
-        echo ' AND type_name NOT IN(\'', implode('\', \'', $skip), '\');';
-        $statement = $this->conn->prepare(ob_get_clean());
+        // @since 0.32.2 filtered pages are not in the sitemap, they are removed from cache when not visited
+        $statement = $this->conn->prepare(implode("\nUNION ALL\n", $selects) . ';');
         $statement->bindValue(':instance_id', $instance_id);
         $statement->execute();
         if ($statement->rowCount() > 40000) {
@@ -4673,19 +4671,31 @@ class DB extends Base
     }
 
     /**
+     * Prefix for a select on _cache by :instance_id and :slug, records the visit of a page (all its variant pages)
+     * at most once per hour, the select sees the rows as they were before this update
+     * @since 0.32.2
+     */
+    private const TOUCH_VISITED = "WITH touch AS (
+            UPDATE _cache SET visited = NOW()
+            WHERE instance_id = :instance_id AND slug = :slug AND visited < NOW() - interval '60 minutes'
+        ) ";
+
+    /**
      * Cached will return the row object of a cached item by slug for this instance, or null when not present
      *
      * @param string $slug the unique slug to look for this instance
      * @param int $variant_page
-     * @param bool $for_view @since 0.32.0 true when serving a page, applies the age rules for search pages
+     * @param bool $for_view @since 0.32.0 true when serving a page, applies the age rules for search pages and records the visit (@since 0.32.2)
      * @return \stdClass|null the row object found or null when not cached
      * @since 0.5.4
      */
     public function cached(string $slug, int $variant_page = 1, bool $for_view = false): ?\stdClass
     {
-        $statement = $this->conn->prepare('SELECT row_as_json, since, variant_page_json, type_name FROM _cache 
+        // @since 0.32.2 when serving a page, the visit is recorded in the same statement
+        $touch = (true === $for_view) ? self::TOUCH_VISITED : '';
+        $statement = $this->conn->prepare("{$touch}SELECT row_as_json, since, variant_page_json, type_name FROM _cache 
                     WHERE instance_id = :instance_id AND slug = :slug AND variant_page = :variant_page
-                    ORDER BY since DESC LIMIT 1;');
+                    ORDER BY since DESC LIMIT 1;");
         $statement->bindValue(':instance_id', (Setup::$instance_id));
         $statement->bindValue(':slug', $slug);
         $statement->bindValue(':variant_page', $variant_page);
@@ -4719,7 +4729,8 @@ class DB extends Base
      */
     public function cachex(string $slug, int $in_browser_timestamp): bool
     {
-        $statement = $this->conn->prepare('SELECT since, type_name FROM _cache WHERE instance_id = :instance_id AND slug = :slug LIMIT 1;');
+        // @since 0.32.2 a page served from the browser cache is a visit as well
+        $statement = $this->conn->prepare(self::TOUCH_VISITED . 'SELECT since, type_name FROM _cache WHERE instance_id = :instance_id AND slug = :slug LIMIT 1;');
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->bindValue(':slug', $slug);
         $statement->execute();
@@ -4927,7 +4938,7 @@ class DB extends Base
     /**
      * Removes cached search pages for the instance, they are cached again when visited.
      * Filtered pages (elements with a path containing a slash) are made due for the old cache job instead,
-     * so they are refreshed in the background at the pace of that job and remain in the sitemap.
+     * so they are refreshed in the background at the pace of that job and are always ready for a visitor.
      * @param int $instance_id
      * @return array the number of search rows removed and the number of filtered rows made due
      * @since 0.32.0
@@ -5082,6 +5093,23 @@ class DB extends Base
     {
         $statement = $this->conn->prepare("DELETE FROM _cache 
             WHERE type_name = 'search' AND since < NOW() - interval '$minutes minutes';");
+        $statement->execute();
+        $affected = $statement->rowCount();
+        $statement = null;
+
+        return $affected;
+    }
+
+    /**
+     * Filtered pages that were not visited for a while are removed from cache, they are cached again when visited
+     * @param int $minutes the time without a visit after which cached filtered pages are removed
+     * @return int the number of rows removed
+     * @since 0.32.2
+     */
+    public function jobDeleteUnvisitedFilteredCache(int $minutes): int
+    {
+        $statement = $this->conn->prepare("DELETE FROM _cache 
+            WHERE slug LIKE '%/%' AND visited < NOW() - interval '$minutes minutes';");
         $statement->execute();
         $affected = $statement->rowCount();
         $statement = null;
