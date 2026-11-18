@@ -903,7 +903,12 @@ class DB extends Base
      */
     public function listVariantIds(int $limit = 8): array
     {
-        $statement = $this->conn->prepare("SELECT variant_id FROM cms_variant ORDER BY date_popvote DESC LIMIT $limit;");
+        // @since 0.32.2 only variants that can be shown, of this instance, so the first $limit are all shown
+        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND online = TRUE' : '';
+        $statement = $this->conn->prepare("SELECT variant_id FROM cms_variant
+            WHERE instance_id = :instance_id AND deleted = FALSE $online_query
+            ORDER BY date_popvote DESC LIMIT $limit;");
+        $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
         $rows = $statement->fetchAll(3);
         $statement = null;
@@ -923,7 +928,11 @@ class DB extends Base
     {
         // fetch some variant_id’s based on other orders that include the supplied variant_id
         // you don’t need to check instance id because in each order variants are necessarily of the same instance
-        $statement = $this->conn->prepare('SELECT DISTINCT variant_id FROM _order_variant WHERE order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id) AND variant_id <> :variant_id;');
+        // @since 0.32.2 only variants that can be shown, so the first ones taken for display are all shown
+        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND v.online = TRUE' : '';
+        $statement = $this->conn->prepare("SELECT DISTINCT ov.variant_id FROM _order_variant ov
+            INNER JOIN cms_variant v ON v.variant_id = ov.variant_id AND v.deleted = FALSE $online_query
+            WHERE ov.order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id) AND ov.variant_id <> :variant_id;");
         $statement->bindValue(':variant_id', $variant_id);
         $statement->execute();
         $rows = $statement->fetchAll(3);
