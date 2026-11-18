@@ -4059,7 +4059,12 @@ class DB extends Base
             echo ' ORDER BY o';
         } elseif ('_template' !== $table_name && $table_info->hasColumn('date_published')) {
             if (defined('ADMIN') && false === ADMIN) {
-                echo ' AND (date_published IS NULL OR date_published < NOW())';
+                if ('' === $where_statement) {
+                    echo ' WHERE';
+                } else {
+                    echo ' AND';
+                }
+                echo ' (date_published IS NULL OR date_published < NOW())';
             }
             echo ' ORDER BY date_published DESC';
         } elseif ('_order' !== $table_name && in_array('date_updated', $columns['names'])) {
