@@ -968,22 +968,21 @@ class DB extends Base
         } else {
             $imploded_sub_queries = '';
         }
-        // @since 0.32.0 admins get the offline variants as well
-        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND v.online = TRUE' : '';
+        // @since 0.32.2 online only, also for admins, like the (cached) element pages these filter values are for
         if (true === $by_column) {
             // @since 0.32.1 the id is that of the serie or brand itself, not of a variant that belongs to it,
             // 0 (no serie or brand) would match all variants without one, from all instances
             if (0 === $id) return array();
             $statement = $this->conn->prepare("
                 SELECT v.variant_id FROM cms_variant v
-                WHERE v.{$type_name}_id = :id AND v.deleted = FALSE $online_query $imploded_sub_queries
+                WHERE v.{$type_name}_id = :id AND v.deleted = FALSE AND v.online = TRUE $imploded_sub_queries
                 ORDER BY v.date_popvote DESC$limit_clause;
             ");
         } else {
             $statement = $this->conn->prepare("
                 SELECT DISTINCT x.variant_id, v.date_popvote FROM cms_variant_x_properties x
                 INNER JOIN cms_variant v ON v.variant_id = x.variant_id
-                WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.deleted = FALSE $online_query $imploded_sub_queries
+                WHERE x.{$type_name}_id = :id AND x.deleted = FALSE AND v.deleted = FALSE AND v.online = TRUE $imploded_sub_queries
                 ORDER BY date_popvote DESC$limit_clause;
             ");
         }
