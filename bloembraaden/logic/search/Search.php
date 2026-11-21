@@ -318,7 +318,8 @@ class Search extends BaseElement
             $not_in[] = $row->page_id;
         }
         $linked_pages = null;
-        $rows = db()->fetchElementRowsWhereIn(new Type('page'), 'page_id', $not_in, true, $quantity);
+        // @since 0.32.2 only pages visitors can see, including not those published in the future
+        $rows = db()->findElementsFiltered(new Type('page'), array(), $not_in, true, $quantity);
 
         return $this->outputRows($rows, 'page');
     }
@@ -373,8 +374,8 @@ class Search extends BaseElement
         // @since 0.32.1 only the first $fixed_quantity are shown, so only fetch those rows
         if (0 < $fixed_quantity) $in = array_slice($in, 0, $fixed_quantity);
         if (0 === count($in)) return array();
-        $type = new Type('variant');
-        $rows = db()->fetchElementRowsWhereIn($type, 'variant_id', $in);
+        // @since 0.32.2 only variants visitors can see, the same rules as other suggestions
+        $rows = db()->findElementsFiltered(new Type('variant'), array(), $in, false, count($in));
         // @since 0.21.0 order by the original array
         $sorted = array(); // todo expensive filtering :-(
         foreach ($in as $index => $id) {

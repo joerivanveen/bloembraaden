@@ -324,6 +324,30 @@ class DB extends Base
     }
 
     /**
+     * The conditions an element must meet to be shown to visitors, depending on the columns the table has:
+     * not deleted, online and not published in the future.
+     * @param TableInfo $table_info
+     * @param string $alias optional table alias including the dot, e.g. 'v.'
+     * @return array sub queries to be joined with AND
+     * @since 0.32.2
+     */
+    private function visibleConditions(TableInfo $table_info, string $alias = ''): array
+    {
+        $conditions = array();
+        if ($table_info->hasColumn('deleted')) {
+            $conditions[] = "{$alias}deleted = FALSE";
+        }
+        if ($table_info->hasColumn('online')) {
+            $conditions[] = "{$alias}online = TRUE";
+        }
+        if ($table_info->hasColumn('date_published')) {
+            $conditions[] = "({$alias}date_published IS NULL OR {$alias}date_published < NOW())";
+        }
+
+        return $conditions;
+    }
+
+    /**
      * Removes variants and pages from search results that do not have the property values in $properties, using the
      * same rules as Search->findWeighted (every property must have one of its values), so they need not be loaded first.
      * Price filters are left to Search.
@@ -379,30 +403,45 @@ class DB extends Base
     }
 
     /**
-     * Returns max 100 Elements (row objects) of $peat_type filtered by $properties, sorted by preferred sorting column.
+     * Returns Elements (row objects) of $peat_type that visitors can see, filtered by $properties,
+     * sorted by preferred sorting column.
      * @param Type $peat_type
      * @param array $properties
+     * @param array|null $ids @since 0.32.2 only (or with $exclude: all but) the elements with these ids
+     * @param bool $exclude @since 0.32.2 when true the $ids are left out instead of selected
+     * @param int $limit @since 0.32.2 the maximum number of rows, default 100
      * @return array
      */
-    public function findElementsFiltered(Type $peat_type, array $properties = array()): array
+    public function findElementsFiltered(Type $peat_type, array $properties = array(), ?array $ids = null, bool $exclude = false, int $limit = 100): array
     {
         $type_name = $peat_type->typeName();
         $sub_queries = $this->queriesProperties($properties, $type_name);
         $table_info = $this->getTableInfo($peat_type->tableName());
+        // @since 0.32.2 the same visibility everywhere, also for admins: these are (suggested) lists for the frontend
+        $sub_queries = array_merge($sub_queries, $this->visibleConditions($table_info));
+        $values = array(':instance_id' => Setup::$instance_id);
+        if (null !== $ids) {
+            if (0 === count($ids)) {
+                if (false === $exclude) return array();
+            } else {
+                $placeholders = array();
+                foreach (array_values($ids) as $index => $id) {
+                    $placeholders[] = ":id_$index";
+                    $values[":id_$index"] = (int)$id;
+                }
+                $not = (true === $exclude) ? 'NOT ' : '';
+                $sub_queries[] = "{$type_name}_id {$not}IN (" . implode(',', $placeholders) . ')';
+            }
+        }
         // preferred sorting:
         if ($table_info->hasColumn('date_popvote')) {
             $sorting = 'ORDER BY date_popvote DESC';
         } elseif ($table_info->hasColumn('date_published')) {
             $sorting = 'ORDER BY date_published DESC';
-            $sub_queries[] = '(date_published IS NULL OR date_published < NOW())';
         } elseif ($table_info->hasStandardColumns()) {
             $sorting = 'ORDER BY date_created DESC';
-            $sub_queries[] = 'deleted = FALSE';
         } else {
             $sorting = '';
-        }
-        if ($table_info->hasColumn('online')) {
-            $sub_queries[] = 'online = TRUE';
         }
 
         if (0 !== count($sub_queries)) {
@@ -413,12 +452,11 @@ class DB extends Base
 
         // @since 0.29.0 bugfix: select * because if the element is not already cached we need the whole row to build it
         $statement = $this->conn->prepare("
-            SELECT *, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name 
-            WHERE instance_id = :instance_id $imploded_sub_queries $sorting LIMIT 100;
+            SELECT *, '$type_name' as type_name, {$type_name}_id AS id FROM cms_$type_name
+            WHERE instance_id = :instance_id $imploded_sub_queries $sorting LIMIT $limit;
         ");
-        $statement->bindValue(':instance_id', Setup::$instance_id);
         //Help::addMessage($statement->queryString, 'note');
-        $statement->execute();
+        $statement->execute($values);
         $rows = $statement->fetchAll(5);
         $statement = null;
 
@@ -904,9 +942,9 @@ class DB extends Base
     public function listVariantIds(int $limit = 8): array
     {
         // @since 0.32.2 only variants that can be shown, of this instance, so the first $limit are all shown
-        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND online = TRUE' : '';
+        $visible = implode(' AND ', $this->visibleConditions($this->getTableInfo('cms_variant')));
         $statement = $this->conn->prepare("SELECT variant_id FROM cms_variant
-            WHERE instance_id = :instance_id AND deleted = FALSE $online_query
+            WHERE instance_id = :instance_id AND $visible
             ORDER BY date_popvote DESC LIMIT $limit;");
         $statement->bindValue(':instance_id', Setup::$instance_id);
         $statement->execute();
@@ -929,9 +967,9 @@ class DB extends Base
         // fetch some variant_id’s based on other orders that include the supplied variant_id
         // you don’t need to check instance id because in each order variants are necessarily of the same instance
         // @since 0.32.2 only variants that can be shown, so the first ones taken for display are all shown
-        $online_query = (false === defined('ADMIN') || false === ADMIN) ? 'AND v.online = TRUE' : '';
+        $visible = implode(' AND ', $this->visibleConditions($this->getTableInfo('cms_variant'), 'v.'));
         $statement = $this->conn->prepare("SELECT DISTINCT ov.variant_id FROM _order_variant ov
-            INNER JOIN cms_variant v ON v.variant_id = ov.variant_id AND v.deleted = FALSE $online_query
+            INNER JOIN cms_variant v ON v.variant_id = ov.variant_id AND $visible
             WHERE ov.order_id IN (SELECT order_id FROM _order_variant WHERE variant_id = :variant_id) AND ov.variant_id <> :variant_id;");
         $statement->bindValue(':variant_id', $variant_id);
         $statement->execute();
@@ -1234,59 +1272,6 @@ class DB extends Base
 
             return array();
         }
-    }
-
-    /**
-     * @param Type $peat_type
-     * @param string $column_name
-     * @param array $in indexed array holding id’s, when empty this method always returns an empty array
-     * @param bool $exclude default false, when true ‘NOT IN’ is used rather than ‘IN’
-     * @param int $limit default 1000 limits the number of rows
-     * @return array indexed array holding plain row objects that are online (non-admin only) and not deleted
-     * @since 0.5.15
-     */
-    public function fetchElementRowsWhereIn(Type $peat_type, string $column_name, array $in, bool $exclude = false, int $limit = 1000): array
-    {
-        return $this->fetchElementColumnsWhereIn(array('*'), $peat_type, $column_name, $in, $exclude, $limit);
-//        if (0 === count($in)) return array();
-//        $table_name = $peat_type->tableName();
-//        $table_info = $this->getTableInfo($table_name);
-//        $id_column = $table_info->getIdColumn();
-//        $instance_id = Setup::$instance_id;
-//        if (false === $exclude) {
-//            $not = '';
-//        } else {
-//            $not = 'NOT';
-//        }
-//        $in_placeholders = str_repeat('?,', count($in) - 1); // NOTE you need one more ? at the end of this
-//        if ($table_info->hasColumn('date_popvote')) {
-//            $sorting = 'ORDER BY date_popvote DESC';
-//        } elseif ($table_info->hasColumn('date_published')) {
-//            $sorting = 'ORDER BY date_published DESC';
-//        } elseif ($table_info->hasColumn('o')) {
-//            $sorting = 'ORDER BY o ASC';
-//        } else {
-//            $sorting = '';
-//        }
-//        if ($table_info->hasColumn($column_name)) {
-//            if (defined('ADMIN') && false === ADMIN) {
-//                $and_where_online = ' AND el.online = TRUE';
-//            } else {
-//                $and_where_online = '';
-//            }
-//            $statement = $this->conn->prepare("SELECT el.*, $id_column AS id, '$table_name' AS table_name
-//                FROM $table_name el WHERE el.deleted = FALSE AND el.instance_id = $instance_id $and_where_online
-//                AND el.$column_name $not IN ($in_placeholders?) $sorting LIMIT $limit;");
-//            $statement->execute($in);
-//            $rows = $statement->fetchAll(5);
-//            $statement = null;
-//
-//            return $rows;
-//        } else {
-//            $this->addError(sprintf('Column %s does not exist', $column_name));
-//
-//            return array();
-//        }
     }
 
     /**
