@@ -20,6 +20,8 @@ class Mailer extends Base
     // https://sendgrid.com/docs/for-developers/sending-email/curl-examples/#sending-a-basic-email-to-multiple-recipients
     // or mailchimp formerly mandrill...
     // https://mailchimp.com/developer/transactional/api/messages/
+    // or postmark
+    // https://postmarkapp.com/developer/api/email-api
     /**
      * Mailer constructor.
      * @param string|null $custom_domain
@@ -68,6 +70,16 @@ class Mailer extends Base
             curl_setopt($curl, CURLOPT_HTTPHEADER, array(
                 'Authorization: Bearer ' . $this->api_key,
                 'Content-Type: application/json'
+            ));
+            curl_setopt($curl, CURLOPT_POST, true);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        } elseif ($active_provider === 'postmark') {
+            // postmark returns 200 with ErrorCode 0 on success, 422 with an ErrorCode on failure
+            curl_setopt($curl, CURLOPT_URL, 'https://api.postmarkapp.com/email');
+            curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+                'Accept: application/json',
+                'Content-Type: application/json',
+                'X-Postmark-Server-Token: ' . $this->api_key,
             ));
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -177,6 +189,38 @@ class Mailer extends Base
             $post_data->content = array((object)array('type' => 'text/plain', 'value' => $this->fields['text']));
             if (true === isset($this->fields['html'])) {
                 $post_data->content[] = (object)array('type' => 'text/html', 'value' => $this->fields['html']);
+            }
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($post_data));
+            $post_data = null;
+        } elseif ($this->active_provider === 'postmark') {
+            // build the postmark-specific object to send as json
+            $to = $this->fields['to'];
+            if (true === isset($this->fields['to_name']) && $this->fields['to_name'] !== $to) {
+                $to = '"' . str_replace('"', '', (string)$this->fields['to_name']) . "\" <$to>";
+            }
+            $post_data = new \stdClass();
+            $post_data->From = $this->fields['from'];
+            $post_data->To = $to;
+            $post_data->Subject = $this->fields['subject'];
+            $post_data->TextBody = $this->fields['text'];
+            $post_data->HtmlBody = $this->fields['html'];
+            $post_data->MessageStream = 'outbound';
+            if (true === isset($this->fields['reply_to'])) {
+                $post_data->ReplyTo = $this->fields['reply_to'];
+            }
+            if (true === isset($this->fields['bcc'])
+                && false !== filter_var($this->fields['bcc'], FILTER_VALIDATE_EMAIL)
+            ) {
+                $post_data->Bcc = $this->fields['bcc'];
+            }
+            if ($this->attachments) {
+                $post_data->Attachments = array_map(static function ($attachment) {
+                    return (object)array(
+                        'Name' => $attachment['name'],
+                        'ContentType' => $attachment['type'],
+                        'Content' => $attachment['content'],
+                    );
+                }, $this->attachments);
             }
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, json_encode($post_data));
             $post_data = null;
