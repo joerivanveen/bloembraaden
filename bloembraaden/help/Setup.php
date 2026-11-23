@@ -16,6 +16,7 @@ class Setup
     public static string $DECIMAL_SEPARATOR, $RADIX, $timezone, $THEDATE;
     public static string $VERSION, $UPLOADS, $INVOICE, $LOGFILE, $DBCACHE, $CDNROOT, $CDNPATH, $HASHKEY, $LOGFILE_STARTSWITH;
     public static string $PRESENTATION_INSTANCE, $INSTANCE_DOMAIN, $HOMEPAGE_SLUG, $MAX_MEMORY_LIMIT, $FRAME_ANCESTORS;
+    public static float $BACKGROUND_PAUSE_RATIO;
     public static array $translations;
     public static stdClass $MAIL, $PDFMAKER;
     private static int $ms_delta;
@@ -158,6 +159,8 @@ class Setup
         // @since 0.32.2 cached filtered pages that are not visited for this many minutes are removed
         self::$FILTERED_CACHE_MAX_MINUTES = (int)($config->filtered_cache_max_minutes ?? 1440);
         self::$REMEMBER_HISTORY_DAYS = (int)($config->remember_history_days ?? 400);
+        // @since 0.32.2 background work pauses this many times the time it worked, 1 keeps it at most at 50% of a core
+        self::$BACKGROUND_PAUSE_RATIO = max(0.0, (float)($config->background_pause_ratio ?? 1));
         $config = null;
     }
 

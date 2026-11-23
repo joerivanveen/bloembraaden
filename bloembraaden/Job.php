@@ -681,9 +681,13 @@ switch ($interval) {
             $rows = $db->jobOldCacheRows(DB::MINUTES_CACHE_REFRESH, 60);
             foreach ($rows as $index => $row) {
                 echo 'Warming up (', $row->instance_id, ') ', $row->slug, ': ';
+                $page_timer = microtime(true);
                 echo (true === $stove->Warmup($row->slug, $row->instance_id)) ? 'OK' : 'NO', "\n";
                 ++$total_count;
-                if (microtime(true) - $section_timer > 20) break;
+                // @since 0.32.2 the budget includes the pauses, so less is done per run but the db server is never choked
+                if (microtime(true) - $section_timer > 40) break;
+                // pause relative to the work, a ratio of 1 keeps this job at most at half a core of the db server
+                usleep((int)(1000000 * Setup::$BACKGROUND_PAUSE_RATIO * (microtime(true) - $page_timer)));
             }
             flock($lock, LOCK_UN);
             echo "$total_count done.\n";
