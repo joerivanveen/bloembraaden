@@ -435,7 +435,7 @@ Address.prototype.send = function () {
 }
 Address.prototype.save = function (fields) {
     const self = this, wrapper = self.wrapper, timestamp = Date.now();
-    requestAnimationFrame(function() {
+    requestAnimationFrame(function () {
         wrapper.setAttribute('data-updating', '1');
         wrapper.removeAttribute('data-dirty');
     });
@@ -2898,15 +2898,19 @@ PEATCMS.prototype.ajaxNavigate = function (e) {
     e.preventDefault();
     e.stopPropagation();
 
-    const href = this.getAttribute('data-peatcms_href');
+    const href = this.getAttribute('data-peatcms_href'),
+        attention = this.hasAttribute('data-peatcms_attention');
     if (-1 !== href.indexOf('#')) {
         const parts = href.split('#'),
             el = document.getElementById(parts[1]);
         if (el) {
             PEAT.scrollIntoView(el, 200); // todo
-            setTimeout(function () {
-                PEAT.grabAttention(el);
-            }, 300);
+            el.focus();
+            if (attention) {
+                setTimeout(function () {
+                    PEAT.grabAttention(el);
+                }, 300);
+            }
             return;
         }
     }
@@ -3846,7 +3850,7 @@ PEATCMS.numericHashFromString = function (str) {
     return hash;
 }
 
-PEATCMS.uniqid = function() {
+PEATCMS.uniqid = function () {
     return window.performance.now() + Math.random().toString(16).slice(2);
 }
 
